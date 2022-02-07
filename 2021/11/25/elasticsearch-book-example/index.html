@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Mist","version":"8.2.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="elastic版本为7.10.0.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="elasticsearch-book-example">
+<meta property="og:url" content="https://maoeryu.github.io/2021/11/25/elasticsearch-book-example/index.html">
+<meta property="og:site_name" content="Flying Pig">
+<meta property="og:description" content="elastic版本为7.10.0.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2021-11-24T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-11-25T10:09:17.342Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="elasticsearch">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/11/25/elasticsearch-book-example/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>elasticsearch-book-example | Flying Pig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Flying Pig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95%E9%85%8D%E7%BD%AE"><span class="nav-number">1.</span> <span class="nav-text">索引配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A1%AB%E5%85%85%E6%95%B0%E6%8D%AE"><span class="nav-number">2.</span> <span class="nav-text">填充数据</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%88%B6%E6%96%87%E6%A1%A3"><span class="nav-number">2.1.</span> <span class="nav-text">父文档</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%90%E6%96%87%E6%A1%A3"><span class="nav-number">2.2.</span> <span class="nav-text">子文档</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">63</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/11/25/elasticsearch-book-example/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Flying Pig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          elasticsearch-book-example
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2021-11-25 00:00:00 / Modified: 18:09:17" itemprop="dateCreated datePublished" datetime="2021-11-25T00:00:00+08:00">2021-11-25</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/elastic/" itemprop="url" rel="index"><span itemprop="name">elastic</span></a>
+        </span>
+    </span>
+
+  
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Valine: </span>
+  
+    <a title="valine" href="/2021/11/25/elasticsearch-book-example/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/11/25/elasticsearch-book-example/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>elastic版本为7.10.0.</p>
+<span id="more"></span>
+
+
+<h3 id="索引配置"><a href="#索引配置" class="headerlink" title="索引配置"></a>索引配置</h3><p><code>put get-together</code><br><code>put get-together/_mapping</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;group&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;organizer&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="attr">&quot;name&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="attr">&quot;description&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span>,</span><br><span class="line">                    <span class="attr">&quot;term_vector&quot;</span>: <span class="string">&quot;with_positions_offsets&quot;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="attr">&quot;created_on&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;date&quot;</span>,</span><br><span class="line">                    <span class="attr">&quot;format&quot;</span>: <span class="string">&quot;yyyy-MM-dd&quot;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="attr">&quot;tags&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span>,</span><br><span class="line">                    <span class="attr">&quot;fields&quot;</span>: &#123;</span><br><span class="line">                        <span class="attr">&quot;verbatim&quot;</span>: &#123;</span><br><span class="line">                            <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="attr">&quot;members&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="attr">&quot;location&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;event&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;host&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="attr">&quot;title&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="attr">&quot;description&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span>,</span><br><span class="line">                    <span class="attr">&quot;term_vector&quot;</span>: <span class="string">&quot;with_positions_offsets&quot;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="attr">&quot;attendees&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="attr">&quot;date&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;date&quot;</span>,</span><br><span class="line">                    <span class="attr">&quot;format&quot;</span>: <span class="string">&quot;date_hour_minute&quot;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="attr">&quot;reviews&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;integer&quot;</span>,</span><br><span class="line">                    <span class="attr">&quot;null_value&quot;</span>: <span class="number">0</span></span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="attr">&quot;location&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                    <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                        <span class="attr">&quot;name&quot;</span>: &#123;</span><br><span class="line">                            <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">                        &#125;,</span><br><span class="line">                        <span class="attr">&quot;geolocation&quot;</span>: &#123;</span><br><span class="line">                            <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;geo_point&quot;</span></span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;relation&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;join&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;relations&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;parent&quot;</span>: [</span><br><span class="line">                    <span class="string">&quot;child&quot;</span></span><br><span class="line">                ]</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="填充数据"><a href="#填充数据" class="headerlink" title="填充数据"></a>填充数据</h3><h4 id="父文档"><a href="#父文档" class="headerlink" title="父文档"></a>父文档</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/1&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;relation&quot;: &quot;parent&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.name&quot;: &quot;Denver Clojure&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.organizer&quot;: [&quot;Daniel&quot;, &quot;Lee&quot;],</span></span><br><span class="line"><span class="string">  &quot;group.description&quot;: &quot;Group of Clojure enthusiasts from Denver who want to hack on code together and learn more about Clojure&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.created_on&quot;: &quot;2012-06-15&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.tags&quot;: [&quot;clojure&quot;, &quot;denver&quot;, &quot;functional programming&quot;, &quot;jvm&quot;, &quot;java&quot;],</span></span><br><span class="line"><span class="string">  &quot;group.members&quot;: [&quot;Lee&quot;, &quot;Daniel&quot;, &quot;Mike&quot;],</span></span><br><span class="line"><span class="string">  &quot;group.location&quot;: &quot;Denver, Colorado, USA&quot;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/2&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;relation&quot;: &quot;parent&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.name&quot;: &quot;Elasticsearch Denver&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.organizer&quot;: &quot;Lee&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.description&quot;: &quot;Get together to learn more about using Elasticsearch, the applications and neat things you can do with ES!&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.created_on&quot;: &quot;2013-03-15&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.tags&quot;: [&quot;denver&quot;, &quot;elasticsearch&quot;, &quot;big data&quot;, &quot;lucene&quot;, &quot;solr&quot;],</span></span><br><span class="line"><span class="string">  &quot;group.members&quot;: [&quot;Lee&quot;, &quot;Mike&quot;],</span></span><br><span class="line"><span class="string">  &quot;group.location&quot;: &quot;Denver, Colorado, USA&quot;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/3&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;relation&quot;: &quot;parent&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.name&quot;: &quot;Elasticsearch San Francisco&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.organizer&quot;: &quot;Mik&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.description&quot;: &quot;Elasticsearch group for ES users of all knowledge levels&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.created_on&quot;: &quot;2012-08-07&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.tags&quot;: [&quot;elasticsearch&quot;, &quot;big data&quot;, &quot;lucene&quot;, &quot;open source&quot;],</span></span><br><span class="line"><span class="string">  &quot;group.members&quot;: [&quot;Lee&quot;, &quot;Igor&quot;],</span></span><br><span class="line"><span class="string">  &quot;group.location&quot;: &quot;San Francisco, California, USA&quot;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/4&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;relation&quot;: &quot;parent&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.name&quot;: &quot;Boulder/Denver big data get-together&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.organizer&quot;: &quot;Andy&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.description&quot;: &quot;Come learn and share your experience with nosql &amp; big data technologies, no experience required&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.created_on&quot;: &quot;2010-04-02&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.tags&quot;: [&quot;big data&quot;, &quot;data visualization&quot;, &quot;open source&quot;, &quot;cloud computing&quot;, &quot;hadoop&quot;],</span></span><br><span class="line"><span class="string">  &quot;group.members&quot;: [&quot;Greg&quot;, &quot;Bill&quot;],</span></span><br><span class="line"><span class="string">  &quot;group.location&quot;: &quot;Boulder, Colorado, USA&quot;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/5&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;relation&quot;: &quot;parent&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.name&quot;: &quot;Enterprise search London get-together&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.organizer&quot;: &quot;Tyler&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.description&quot;: &quot;Enterprise search get-togethers are an opportunity to get together with other people doing search.&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.created_on&quot;: &quot;2009-11-25&quot;,</span></span><br><span class="line"><span class="string">  &quot;group.tags&quot;: [&quot;enterprise search&quot;, &quot;apache lucene&quot;, &quot;solr&quot;, &quot;open source&quot;, &quot;text analytics&quot;],</span></span><br><span class="line"><span class="string">  &quot;group.members&quot;: [&quot;Clint&quot;, &quot;James&quot;],</span></span><br><span class="line"><span class="string">  &quot;group.location&quot;: &quot;London, England, UK&quot;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="子文档"><a href="#子文档" class="headerlink" title="子文档"></a>子文档</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br></pre></td><td class="code"><pre><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/100?routing=1&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;event.host&quot;: [&quot;Lee&quot;, &quot;Troy&quot;],</span></span><br><span class="line"><span class="string">  &quot;event.title&quot;: &quot;Liberator and Immutant&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.description&quot;: &quot;We will discuss two different frameworks in Clojure for doing different things. Liberator is a ring-compatible web framework based on Erlang Webmachine. Immutant is an all-in-one enterprise application based on JBoss.&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.attendees&quot;: [&quot;Lee&quot;, &quot;Troy&quot;, &quot;Daniel&quot;, &quot;Tom&quot;],</span></span><br><span class="line"><span class="string">  &quot;event.date&quot;: &quot;2013-09-05T18:00&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.location&quot;: &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;: &quot;Stoneys Full Steam Tavern&quot;,</span></span><br><span class="line"><span class="string">    &quot;geolocation&quot;: &quot;39.752337,-105.00083&quot;</span></span><br><span class="line"><span class="string">  &#125;,</span></span><br><span class="line"><span class="string">  &quot;event.reviews&quot;: 4,</span></span><br><span class="line"><span class="string">  &quot;relation&quot;:</span></span><br><span class="line"><span class="string">  &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;:&quot;child&quot;,</span></span><br><span class="line"><span class="string">    &quot;parent&quot;:1</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/101?routing=1&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;event.host&quot;: &quot;Sean&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.title&quot;: &quot;Sunday, Surly Sunday&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.description&quot;: &quot;Sort out any setup issues and work on Surlybird issues. We can use the EC2 node as a bounce point for pairing.&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.attendees&quot;: [&quot;Daniel&quot;, &quot;Michael&quot;, &quot;Sean&quot;],</span></span><br><span class="line"><span class="string">  &quot;event.date&quot;: &quot;2013-07-21T18:30&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.location&quot;: &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;: &quot;IRC, #denofclojure&quot;</span></span><br><span class="line"><span class="string">  &#125;,</span></span><br><span class="line"><span class="string">  &quot;event.reviews&quot;: 2,</span></span><br><span class="line"><span class="string">  &quot;relation&quot;:</span></span><br><span class="line"><span class="string">  &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;:&quot;child&quot;,</span></span><br><span class="line"><span class="string">    &quot;parent&quot;:1</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/102?routing=1&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;event.host&quot;: &quot;Daniel&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.title&quot;: &quot;10 Clojure coding techniques you should know, and project openbike&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.description&quot;: &quot;What are ten Clojure coding techniques that you wish everyone knew? We will also check on the status of Project Openbike.&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.attendees&quot;: [&quot;Lee&quot;, &quot;Tyler&quot;, &quot;Daniel&quot;, &quot;Stuart&quot;, &quot;Lance&quot;],</span></span><br><span class="line"><span class="string">  &quot;event.date&quot;: &quot;2013-07-11T18:00&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.location&quot;: &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;: &quot;Stoneys Full Steam Tavern&quot;,</span></span><br><span class="line"><span class="string">    &quot;geolocation&quot;: &quot;39.752337,-105.00083&quot;</span></span><br><span class="line"><span class="string">  &#125;,</span></span><br><span class="line"><span class="string">  &quot;event.reviews&quot;: 3,</span></span><br><span class="line"><span class="string">  &quot;relation&quot;:</span></span><br><span class="line"><span class="string">  &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;:&quot;child&quot;,</span></span><br><span class="line"><span class="string">    &quot;parent&quot;:1</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/103?routing=2&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;event.host&quot;: &quot;Lee&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.title&quot;: &quot;Introduction to Elasticsearch&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.description&quot;: &quot;An introduction to ES and each other. We can meet and greet and I will present on some Elasticsearch basics and how we use it.&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.attendees&quot;: [&quot;Lee&quot;, &quot;Martin&quot;, &quot;Greg&quot;, &quot;Mike&quot;],</span></span><br><span class="line"><span class="string">  &quot;event.date&quot;: &quot;2013-04-17T19:00&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.location&quot;: &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;: &quot;Stoneys Full Steam Tavern&quot;,</span></span><br><span class="line"><span class="string">    &quot;geolocation&quot;: &quot;39.752337,-105.00083&quot;</span></span><br><span class="line"><span class="string">  &#125;,</span></span><br><span class="line"><span class="string">  &quot;event.reviews&quot;: 5,</span></span><br><span class="line"><span class="string">  &quot;relation&quot;:</span></span><br><span class="line"><span class="string">  &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;:&quot;child&quot;,</span></span><br><span class="line"><span class="string">    &quot;parent&quot;:2</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/104?routing=2&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;event.host&quot;: &quot;Lee&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.title&quot;: &quot;Queries and Filters&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.description&quot;: &quot;A get together to talk about different ways to query Elasticsearch, what works best for different kinds of applications.&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.attendees&quot;: [&quot;Lee&quot;, &quot;Greg&quot;, &quot;Richard&quot;],</span></span><br><span class="line"><span class="string">  &quot;event.date&quot;: &quot;2013-06-17T18:00&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.location&quot;: &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;: &quot;Stoneys Full Steam Tavern&quot;,</span></span><br><span class="line"><span class="string">    &quot;geolocation&quot;: &quot;39.752337,-105.00083&quot;</span></span><br><span class="line"><span class="string">  &#125;,</span></span><br><span class="line"><span class="string">  &quot;event.reviews&quot;: 1,</span></span><br><span class="line"><span class="string">  &quot;relation&quot;:</span></span><br><span class="line"><span class="string">  &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;:&quot;child&quot;,</span></span><br><span class="line"><span class="string">    &quot;parent&quot;:2</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/105?routing=2&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;event.host&quot;: &quot;Lee&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.title&quot;: &quot;Elasticsearch and Logstash&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.description&quot;: &quot;We can get together and talk about Logstash - http://logstash.net with a sneak peek at Kibana&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.attendees&quot;: [&quot;Lee&quot;, &quot;Greg&quot;, &quot;Mike&quot;, &quot;Delilah&quot;],</span></span><br><span class="line"><span class="string">  &quot;event.date&quot;: &quot;2013-07-17T18:30&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.location&quot;: &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;: &quot;Stoneys Full Steam Tavern&quot;,</span></span><br><span class="line"><span class="string">    &quot;geolocation&quot;: &quot;39.752337,-105.00083&quot;</span></span><br><span class="line"><span class="string">  &#125;,</span></span><br><span class="line"><span class="string">  &quot;event.reviews&quot;: null,</span></span><br><span class="line"><span class="string">  &quot;relation&quot;:</span></span><br><span class="line"><span class="string">  &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;:&quot;child&quot;,</span></span><br><span class="line"><span class="string">    &quot;parent&quot;:2</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/106?routing=3&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;event.host&quot;: &quot;Mik&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.title&quot;: &quot;Social management and monitoring tools&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.description&quot;: &quot;Shay Banon will be there to answer questions and we can talk about management tools.&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.attendees&quot;: [&quot;Shay&quot;, &quot;Mik&quot;, &quot;John&quot;, &quot;Chris&quot;],</span></span><br><span class="line"><span class="string">  &quot;event.date&quot;: &quot;2013-03-06T18:00&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.location&quot;: &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;: &quot;Quid Inc&quot;,</span></span><br><span class="line"><span class="string">    &quot;geolocation&quot;: &quot;37.798442,-122.399801&quot;</span></span><br><span class="line"><span class="string">  &#125;,</span></span><br><span class="line"><span class="string">  &quot;event.reviews&quot;: 5,</span></span><br><span class="line"><span class="string">  &quot;relation&quot;:</span></span><br><span class="line"><span class="string">  &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;:&quot;child&quot;,</span></span><br><span class="line"><span class="string">    &quot;parent&quot;:3</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/107?routing=3&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;event.host&quot;: &quot;Mik&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.title&quot;: &quot;Logging and Elasticsearch&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.description&quot;: &quot;Get a deep dive for what Elasticsearch is and how it can be used for logging with Logstash as well as Kibana!&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.attendees&quot;: [&quot;Shay&quot;, &quot;Rashid&quot;, &quot;Erik&quot;, &quot;Grant&quot;, &quot;Mik&quot;],</span></span><br><span class="line"><span class="string">  &quot;event.date&quot;: &quot;2013-04-08T18:00&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.location&quot;: &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;: &quot;Salesforce headquarters&quot;,</span></span><br><span class="line"><span class="string">    &quot;geolocation&quot;: &quot;37.793592,-122.397033&quot;</span></span><br><span class="line"><span class="string">  &#125;,</span></span><br><span class="line"><span class="string">  &quot;event.reviews&quot;: 3,</span></span><br><span class="line"><span class="string">  &quot;relation&quot;:</span></span><br><span class="line"><span class="string">  &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;:&quot;child&quot;,</span></span><br><span class="line"><span class="string">    &quot;parent&quot;:3</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/108?routing=3&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;event.host&quot;: &quot;Elyse&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.title&quot;: &quot;Piggyback on Elasticsearch training in San Francisco&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.description&quot;: &quot;We can piggyback on training by Elasticsearch to have some Q&amp;A time with the ES devs&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.attendees&quot;: [&quot;Shay&quot;, &quot;Igor&quot;, &quot;Uri&quot;, &quot;Elyse&quot;],</span></span><br><span class="line"><span class="string">  &quot;event.date&quot;: &quot;2013-05-23T19:00&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.location&quot;: &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;: &quot;NoSQL Roadshow&quot;,</span></span><br><span class="line"><span class="string">    &quot;geolocation&quot;: &quot;37.787742,-122.398964&quot;</span></span><br><span class="line"><span class="string">  &#125;,</span></span><br><span class="line"><span class="string">  &quot;event.reviews&quot;: 5,</span></span><br><span class="line"><span class="string">  &quot;relation&quot;:</span></span><br><span class="line"><span class="string">  &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;:&quot;child&quot;,</span></span><br><span class="line"><span class="string">    &quot;parent&quot;:3</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/109?routing=4&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;event.host&quot;: &quot;Andy&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.title&quot;: &quot;Hortonworks, the future of Hadoop and big data&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.description&quot;: &quot;Presentation on the work that hortonworks is doing on Hadoop&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.attendees&quot;: [&quot;Andy&quot;, &quot;Simon&quot;, &quot;David&quot;, &quot;Sam&quot;],</span></span><br><span class="line"><span class="string">  &quot;event.date&quot;: &quot;2013-06-19T18:00&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.location&quot;: &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;: &quot;SendGrid Denver office&quot;,</span></span><br><span class="line"><span class="string">    &quot;geolocation&quot;: &quot;39.748477,-104.998852&quot;</span></span><br><span class="line"><span class="string">  &#125;,</span></span><br><span class="line"><span class="string">  &quot;event.reviews&quot;: 2,</span></span><br><span class="line"><span class="string">  &quot;relation&quot;:</span></span><br><span class="line"><span class="string">  &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;:&quot;child&quot;,</span></span><br><span class="line"><span class="string">    &quot;parent&quot;:4</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/110?routing=4&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;event.host&quot;: &quot;Andy&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.title&quot;: &quot;Big Data and the cloud at Microsoft&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.description&quot;: &quot;Discussion about the Microsoft Azure cloud and HDInsight.&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.attendees&quot;: [&quot;Andy&quot;, &quot;Michael&quot;, &quot;Ben&quot;, &quot;David&quot;],</span></span><br><span class="line"><span class="string">  &quot;event.date&quot;: &quot;2013-07-31T18:00&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.location&quot;: &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;: &quot;Bing Boulder office&quot;,</span></span><br><span class="line"><span class="string">    &quot;geolocation&quot;: &quot;40.018528,-105.275806&quot;</span></span><br><span class="line"><span class="string">  &#125;,</span></span><br><span class="line"><span class="string">  &quot;event.reviews&quot;: 1,</span></span><br><span class="line"><span class="string">  &quot;relation&quot;:</span></span><br><span class="line"><span class="string">  &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;:&quot;child&quot;,</span></span><br><span class="line"><span class="string">    &quot;parent&quot;:4</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/111?routing=4&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;event.host&quot;: &quot;Andy&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.title&quot;: &quot;Moving Hadoop to the mainstream&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.description&quot;: &quot;Come hear about how Hadoop is moving to the main stream&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.attendees&quot;: [&quot;Andy&quot;, &quot;Matt&quot;, &quot;Bill&quot;],</span></span><br><span class="line"><span class="string">  &quot;event.date&quot;: &quot;2013-07-21T18:00&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.location&quot;: &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;: &quot;Courtyard Boulder Louisville&quot;,</span></span><br><span class="line"><span class="string">    &quot;geolocation&quot;: &quot;39.959409,-105.163497&quot;</span></span><br><span class="line"><span class="string">  &#125;,</span></span><br><span class="line"><span class="string">  &quot;event.reviews&quot;: 4,</span></span><br><span class="line"><span class="string">  &quot;relation&quot;:</span></span><br><span class="line"><span class="string">  &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;:&quot;child&quot;,</span></span><br><span class="line"><span class="string">    &quot;parent&quot;:4</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/112?routing=5&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;event.host&quot;: &quot;Dave Nolan&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.title&quot;: &quot;real-time Elasticsearch&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.description&quot;: &quot;We will discuss using Elasticsearch to index data in real time&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.attendees&quot;: [&quot;Dave&quot;, &quot;Shay&quot;, &quot;John&quot;, &quot;Harry&quot;],</span></span><br><span class="line"><span class="string">  &quot;event.date&quot;: &quot;2013-02-18T18:30&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.location&quot;: &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;: &quot;SkillsMatter Exchange&quot;,</span></span><br><span class="line"><span class="string">    &quot;geolocation&quot;: &quot;51.524806,-0.099095&quot;</span></span><br><span class="line"><span class="string">  &#125;,</span></span><br><span class="line"><span class="string">  &quot;event.reviews&quot;: 3,</span></span><br><span class="line"><span class="string">  &quot;relation&quot;:</span></span><br><span class="line"><span class="string">  &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;:&quot;child&quot;,</span></span><br><span class="line"><span class="string">    &quot;parent&quot;:5</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/113?routing=5&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;event.host&quot;: &quot;Dave&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.title&quot;: &quot;Elasticsearch at Rangespan and Exonar&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.description&quot;: &quot;Representatives from Rangespan and Exonar will come and discuss how they use Elasticsearch&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.attendees&quot;: [&quot;Dave&quot;, &quot;Andrew&quot;, &quot;David&quot;, &quot;Clint&quot;],</span></span><br><span class="line"><span class="string">  &quot;event.date&quot;: &quot;2013-06-24T18:30&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.location&quot;: &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;: &quot;Alumni Theatre&quot;,</span></span><br><span class="line"><span class="string">    &quot;geolocation&quot;: &quot;51.51558,-0.117699&quot;</span></span><br><span class="line"><span class="string">  &#125;,</span></span><br><span class="line"><span class="string">  &quot;event.reviews&quot;: 3,</span></span><br><span class="line"><span class="string">  &quot;relation&quot;:</span></span><br><span class="line"><span class="string">  &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;:&quot;child&quot;,</span></span><br><span class="line"><span class="string">    &quot;parent&quot;:5</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">curl -X POST <span class="string">&quot;localhost:9200/get-together/_doc/114?routing=5&quot;</span> -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> -d<span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">  &quot;event.host&quot;: &quot;Yann&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.title&quot;: &quot;Using Hadoop with Elasticsearch&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.description&quot;: &quot;We will walk through using Hadoop with Elasticsearch for big data crunching!&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.attendees&quot;: [&quot;Yann&quot;, &quot;Bill&quot;, &quot;James&quot;],</span></span><br><span class="line"><span class="string">  &quot;event.date&quot;: &quot;2013-09-09T18:30&quot;,</span></span><br><span class="line"><span class="string">  &quot;event.location&quot;: &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;: &quot;SkillsMatter Exchange&quot;,</span></span><br><span class="line"><span class="string">    &quot;geolocation&quot;: &quot;51.524806,-0.099095&quot;</span></span><br><span class="line"><span class="string">  &#125;,</span></span><br><span class="line"><span class="string">  &quot;event.reviews&quot;: 2,</span></span><br><span class="line"><span class="string">  &quot;relation&quot;:</span></span><br><span class="line"><span class="string">  &#123;</span></span><br><span class="line"><span class="string">    &quot;name&quot;:&quot;child&quot;,</span></span><br><span class="line"><span class="string">    &quot;parent&quot;:5</span></span><br><span class="line"><span class="string">  &#125;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span></span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/elasticsearch/" rel="tag"># elasticsearch</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/11/24/elasticsearch-%E8%BF%9E%E6%8E%A5%E6%9F%A5%E8%AF%A2/" rel="prev" title="elasticsearch-连接查询">
+                  <i class="fa fa-chevron-left"></i> elasticsearch-连接查询
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/11/26/elasticsearch-query%20dsl/" rel="next" title="elasticsearch-query dsl">
+                  elasticsearch-query dsl <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/mist/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+<script>
+NexT.utils.loadComments('#valine-comments', () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
+    new Valine(Object.assign({"enable":true,"appId":"MReDMTqKpcLEQVg2IQ2XTdvz-gzGzoHsz","appKey":"YQEiqNfKWJKOozdjCb2O9hGt","serverURLs":"https://avoscloud.com","placeholder":"Just go go","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"lang":null,"visitor":false,"comment_count":true,"recordIP":false,"enableQQ":false,"requiredFields":[]}, {
+      el: '#valine-comments',
+      path: "/2021/11/25/elasticsearch-book-example/",
+      serverURLs: "https://avoscloud.com"
+    }));
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
