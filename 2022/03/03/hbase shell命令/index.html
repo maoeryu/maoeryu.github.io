@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Mist","version":"8.2.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="hbase shell命令.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hbase shell命令">
+<meta property="og:url" content="https://maoeryu.github.io/2022/03/03/hbase%20shell%E5%91%BD%E4%BB%A4/index.html">
+<meta property="og:site_name" content="Flying Pig">
+<meta property="og:description" content="hbase shell命令.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-03-02T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-03-03T03:50:37.059Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hbase">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/03/03/hbase%20shell%E5%91%BD%E4%BB%A4/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hbase shell命令 | Flying Pig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Flying Pig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E5%85%A5hbase"><span class="nav-number">1.</span> <span class="nav-text">进入hbase</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B%E5%91%BD%E4%BB%A4%E5%B8%AE%E5%8A%A9"><span class="nav-number">1.1.</span> <span class="nav-text">查看命令帮助</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#general"><span class="nav-number">1.2.</span> <span class="nav-text">general</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ddl"><span class="nav-number">1.3.</span> <span class="nav-text">ddl</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#namespace"><span class="nav-number">1.4.</span> <span class="nav-text">namespace</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dml"><span class="nav-number">1.5.</span> <span class="nav-text">dml</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tools"><span class="nav-number">1.6.</span> <span class="nav-text">tools</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#replication"><span class="nav-number">1.7.</span> <span class="nav-text">replication</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#snapshots"><span class="nav-number">1.8.</span> <span class="nav-text">snapshots</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#configuration"><span class="nav-number">1.9.</span> <span class="nav-text">configuration</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#quotas"><span class="nav-number">1.10.</span> <span class="nav-text">quotas</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#security"><span class="nav-number">1.11.</span> <span class="nav-text">security</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#procedures"><span class="nav-number">1.12.</span> <span class="nav-text">procedures</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#visibility-labels"><span class="nav-number">1.13.</span> <span class="nav-text">visibility labels</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%91%BD%E4%BB%A4%E4%BE%8B%E5%AD%90"><span class="nav-number">2.</span> <span class="nav-text">命令例子</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#status"><span class="nav-number">2.1.</span> <span class="nav-text">status</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#table-help"><span class="nav-number">2.2.</span> <span class="nav-text">table_help</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#version"><span class="nav-number">2.3.</span> <span class="nav-text">version</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#whoami"><span class="nav-number">2.4.</span> <span class="nav-text">whoami</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#alter"><span class="nav-number">2.5.</span> <span class="nav-text">alter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#alter-async"><span class="nav-number">2.6.</span> <span class="nav-text">alter_async</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#alter-status"><span class="nav-number">2.7.</span> <span class="nav-text">alter_status</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#create"><span class="nav-number">2.8.</span> <span class="nav-text">create</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#describe"><span class="nav-number">2.9.</span> <span class="nav-text">describe</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#disable"><span class="nav-number">2.10.</span> <span class="nav-text">disable</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#disable-all"><span class="nav-number">2.11.</span> <span class="nav-text">disable_all</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#drop"><span class="nav-number">2.12.</span> <span class="nav-text">drop</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#drop-all"><span class="nav-number">2.13.</span> <span class="nav-text">drop_all</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#enable"><span class="nav-number">2.14.</span> <span class="nav-text">enable</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#enable-all"><span class="nav-number">2.15.</span> <span class="nav-text">enable_all</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#exists"><span class="nav-number">2.16.</span> <span class="nav-text">exists</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#get-table"><span class="nav-number">2.17.</span> <span class="nav-text">get_table</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#is-disabled"><span class="nav-number">2.18.</span> <span class="nav-text">is_disabled</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#is-enabled"><span class="nav-number">2.19.</span> <span class="nav-text">is_enabled</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#list"><span class="nav-number">2.20.</span> <span class="nav-text">list</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#locate-region"><span class="nav-number">2.21.</span> <span class="nav-text">locate_region</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#show-filters"><span class="nav-number">2.22.</span> <span class="nav-text">show_filters</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#alter-namespace"><span class="nav-number">2.23.</span> <span class="nav-text">alter_namespace</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#create-namespace"><span class="nav-number">2.24.</span> <span class="nav-text">create_namespace</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#describe-namespace"><span class="nav-number">2.25.</span> <span class="nav-text">describe_namespace</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#drop-namespace"><span class="nav-number">2.26.</span> <span class="nav-text">drop_namespace</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#list-namespace"><span class="nav-number">2.27.</span> <span class="nav-text">list_namespace</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#list-namespace-tables"><span class="nav-number">2.28.</span> <span class="nav-text">list_namespace_tables</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#append"><span class="nav-number">2.29.</span> <span class="nav-text">append</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#count"><span class="nav-number">2.30.</span> <span class="nav-text">count</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#delete"><span class="nav-number">2.31.</span> <span class="nav-text">delete</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#deleteall"><span class="nav-number">2.32.</span> <span class="nav-text">deleteall</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#get"><span class="nav-number">2.33.</span> <span class="nav-text">get</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#get-counter"><span class="nav-number">2.34.</span> <span class="nav-text">get_counter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#get-splits"><span class="nav-number">2.35.</span> <span class="nav-text">get_splits</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#incr"><span class="nav-number">2.36.</span> <span class="nav-text">incr</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#put"><span class="nav-number">2.37.</span> <span class="nav-text">put</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#scan"><span class="nav-number">2.38.</span> <span class="nav-text">scan</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#truncate"><span class="nav-number">2.39.</span> <span class="nav-text">truncate</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#truncate-preserve"><span class="nav-number">2.40.</span> <span class="nav-text">truncate_preserve</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#assign"><span class="nav-number">2.41.</span> <span class="nav-text">assign</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#balance-switch"><span class="nav-number">2.42.</span> <span class="nav-text">balance_switch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#balancer"><span class="nav-number">2.43.</span> <span class="nav-text">balancer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#balancer-enabled"><span class="nav-number">2.44.</span> <span class="nav-text">balancer_enabled</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#catalogjanitor-enabled"><span class="nav-number">2.45.</span> <span class="nav-text">catalogjanitor_enabled</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#catalogjanitor-run"><span class="nav-number">2.46.</span> <span class="nav-text">catalogjanitor_run</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#catalogjanitor-switch"><span class="nav-number">2.47.</span> <span class="nav-text">catalogjanitor_switch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#close-region"><span class="nav-number">2.48.</span> <span class="nav-text">close_region</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#compact"><span class="nav-number">2.49.</span> <span class="nav-text">compact</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#compact-rs"><span class="nav-number">2.50.</span> <span class="nav-text">compact_rs</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#flush"><span class="nav-number">2.51.</span> <span class="nav-text">flush</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#major-compact"><span class="nav-number">2.52.</span> <span class="nav-text">major_compact</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#merge-region"><span class="nav-number">2.53.</span> <span class="nav-text">merge_region</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#move"><span class="nav-number">2.54.</span> <span class="nav-text">move</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#normalize"><span class="nav-number">2.55.</span> <span class="nav-text">normalize</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#normalizer-enabled"><span class="nav-number">2.56.</span> <span class="nav-text">normalizer_enabled</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#normalizer-switch"><span class="nav-number">2.57.</span> <span class="nav-text">normalizer_switch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#split"><span class="nav-number">2.58.</span> <span class="nav-text">split</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#trace"><span class="nav-number">2.59.</span> <span class="nav-text">trace</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#unassign"><span class="nav-number">2.60.</span> <span class="nav-text">unassign</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#wal-roll"><span class="nav-number">2.61.</span> <span class="nav-text">wal_roll</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zk-dump"><span class="nav-number">2.62.</span> <span class="nav-text">zk_dump</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#add-peer"><span class="nav-number">2.63.</span> <span class="nav-text">add_peer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#append-peer-tableCFs"><span class="nav-number">2.64.</span> <span class="nav-text">append_peer_tableCFs</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#disable-peer"><span class="nav-number">2.65.</span> <span class="nav-text">disable_peer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#disable-table-replication"><span class="nav-number">2.66.</span> <span class="nav-text">disable_table_replication</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#enable-peer"><span class="nav-number">2.67.</span> <span class="nav-text">enable_peer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#enable-table-replication"><span class="nav-number">2.68.</span> <span class="nav-text">enable_table_replication</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#list-peers"><span class="nav-number">2.69.</span> <span class="nav-text">list_peers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#list-replicated-tables"><span class="nav-number">2.70.</span> <span class="nav-text">list_replicated_tables</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#remove-peer"><span class="nav-number">2.71.</span> <span class="nav-text">remove_peer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#remove-peer-tableCFs"><span class="nav-number">2.72.</span> <span class="nav-text">remove_peer_tableCFs</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#set-peer-tableCFs"><span class="nav-number">2.73.</span> <span class="nav-text">set_peer_tableCFs</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#show-peer-tableCFs"><span class="nav-number">2.74.</span> <span class="nav-text">show_peer_tableCFs</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#clone-snapshot"><span class="nav-number">2.75.</span> <span class="nav-text">clone_snapshot</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#delete-all-snapshot"><span class="nav-number">2.76.</span> <span class="nav-text">delete_all_snapshot</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#delete-snapshot"><span class="nav-number">2.77.</span> <span class="nav-text">delete_snapshot</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#list-snapshots"><span class="nav-number">2.78.</span> <span class="nav-text">list_snapshots</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#restore-snapshot"><span class="nav-number">2.79.</span> <span class="nav-text">restore_snapshot</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#snapshot"><span class="nav-number">2.80.</span> <span class="nav-text">snapshot</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#update-all-config"><span class="nav-number">2.81.</span> <span class="nav-text">update_all_config</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#update-config"><span class="nav-number">2.82.</span> <span class="nav-text">update_config</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#list-quotas"><span class="nav-number">2.83.</span> <span class="nav-text">list_quotas</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#set-quota"><span class="nav-number">2.84.</span> <span class="nav-text">set_quota</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#grant"><span class="nav-number">2.85.</span> <span class="nav-text">grant</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#list-security-capabilities"><span class="nav-number">2.86.</span> <span class="nav-text">list_security_capabilities</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#revoke"><span class="nav-number">2.87.</span> <span class="nav-text">revoke</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#user-permission"><span class="nav-number">2.88.</span> <span class="nav-text">user_permission</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#abort-procedure"><span class="nav-number">2.89.</span> <span class="nav-text">abort_procedure</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#list-procedures"><span class="nav-number">2.90.</span> <span class="nav-text">list_procedures</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#add-labels"><span class="nav-number">2.91.</span> <span class="nav-text">add_labels</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#clear-auths"><span class="nav-number">2.92.</span> <span class="nav-text">clear_auths</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#get-auths"><span class="nav-number">2.93.</span> <span class="nav-text">get_auths</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#list-labels"><span class="nav-number">2.94.</span> <span class="nav-text">list_labels</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#set-auths"><span class="nav-number">2.95.</span> <span class="nav-text">set_auths</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#set-visibility"><span class="nav-number">2.96.</span> <span class="nav-text">set_visibility</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">79</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/03/03/hbase%20shell%E5%91%BD%E4%BB%A4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Flying Pig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hbase shell命令
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2022-03-03 00:00:00 / Modified: 11:50:37" itemprop="dateCreated datePublished" datetime="2022-03-03T00:00:00+08:00">2022-03-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/database/" itemprop="url" rel="index"><span itemprop="name">database</span></a>
+        </span>
+    </span>
+
+  
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Valine: </span>
+  
+    <a title="valine" href="/2022/03/03/hbase%20shell%E5%91%BD%E4%BB%A4/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2022/03/03/hbase%20shell%E5%91%BD%E4%BB%A4/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>hbase shell命令.</p>
+<span id="more"></span>
+
+<h2 id="进入hbase"><a href="#进入hbase" class="headerlink" title="进入hbase"></a>进入hbase</h2><p>hbase shell</p>
+<h3 id="查看命令帮助"><a href="#查看命令帮助" class="headerlink" title="查看命令帮助"></a>查看命令帮助</h3><p>help<br>help &quot;command&quot;<br>help &quot;command_group&quot;</p>
+<h3 id="general"><a href="#general" class="headerlink" title="general"></a>general</h3><p>status,table_help,version,whoami</p>
+<h3 id="ddl"><a href="#ddl" class="headerlink" title="ddl"></a>ddl</h3><p>alter,alter_async,alter_status,create,describe,disable,disable_all,drop,drop_all,enable,enable_all,exists,get_table,is_disabled,is_enabled,list,locate_region,show_filters</p>
+<h3 id="namespace"><a href="#namespace" class="headerlink" title="namespace"></a>namespace</h3><p>alter_namespace,create_namespace,describe_namespace,drop_namespace,list_namespace,list_namespace_tables</p>
+<h3 id="dml"><a href="#dml" class="headerlink" title="dml"></a>dml</h3><p>append,count,delete,deleteall,get,get_counter,get_splits,incr,put,scan,truncate,truncate_preserve</p>
+<h3 id="tools"><a href="#tools" class="headerlink" title="tools"></a>tools</h3><p>assign,balance_switch,balancer,balancer_enabled,catalogjanitor_enabled,catalogjanitor_run,catalogjanitor_switch,close_region,compact,compact_rs,flush,major_compact,merge_region,move,normalize,normalizer_enabled,normalizer_switch,split,trace,unassign,wal_roll,zk_dump</p>
+<h3 id="replication"><a href="#replication" class="headerlink" title="replication"></a>replication</h3><p>add_peer,append_peer_tableCFs,disable_peer,disable_table_replication,enable_peer,enable_table_replication,list_peers,list_replicated_tables,remove_peer,remove_peer_tableCFs,set_peer_tableCFs,show_peer_tableCFs</p>
+<h3 id="snapshots"><a href="#snapshots" class="headerlink" title="snapshots"></a>snapshots</h3><p>clone_snapshot,delete_all_snapshot,delete_snapshot,list_snapshots,restore_snapshot,snapshot</p>
+<h3 id="configuration"><a href="#configuration" class="headerlink" title="configuration"></a>configuration</h3><p>update_all_config,update_config</p>
+<h3 id="quotas"><a href="#quotas" class="headerlink" title="quotas"></a>quotas</h3><p>list_quotas,set_quota</p>
+<h3 id="security"><a href="#security" class="headerlink" title="security"></a>security</h3><p>grant,list_security_capabilities,revoke,user_permission</p>
+<h3 id="procedures"><a href="#procedures" class="headerlink" title="procedures"></a>procedures</h3><p>abort_procedure,list_procedures</p>
+<h3 id="visibility-labels"><a href="#visibility-labels" class="headerlink" title="visibility labels"></a>visibility labels</h3><p>add_labels,clear_auths,get_auths,list_labels,set_auths,set_visibility</p>
+<h2 id="命令例子"><a href="#命令例子" class="headerlink" title="命令例子"></a>命令例子</h2><h3 id="status"><a href="#status" class="headerlink" title="status"></a>status</h3><p>Show cluster status. Can be &#39;summary&#39;, &#39;simple&#39;, &#39;detailed&#39;, or &#39;replication&#39;. The default is &#39;summary&#39;. Examples:</p>
+<p>  hbase&gt; status<br>  hbase&gt; status &#39;simple&#39;<br>  hbase&gt; status &#39;summary&#39;<br>  hbase&gt; status &#39;detailed&#39;<br>  hbase&gt; status &#39;replication&#39;<br>  hbase&gt; status &#39;replication&#39;, &#39;source&#39;<br>  hbase&gt; status &#39;replication&#39;, &#39;sink&#39;</p>
+<h3 id="table-help"><a href="#table-help" class="headerlink" title="table_help"></a>table_help</h3><p>Help for table-reference commands.</p>
+<p>You can either create a table via &#39;create&#39; and then manipulate the table via commands like &#39;put&#39;, &#39;get&#39;, etc.<br>See the standard help information for how to use each of these commands.</p>
+<p>However, as of 0.96, you can also get a reference to a table, on which you can invoke commands.<br>For instance, you can get create a table and keep around a reference to it via:</p>
+<p>   hbase&gt; t = create &#39;t&#39;, &#39;cf&#39;</p>
+<p>Or, if you have already created the table, you can get a reference to it:</p>
+<p>   hbase&gt; t = get_table &#39;t&#39;</p>
+<p>You can do things like call &#39;put&#39; on the table:</p>
+<p>  hbase&gt; t.put &#39;r&#39;, &#39;cf:q&#39;, &#39;v&#39;</p>
+<p>which puts a row &#39;r&#39; with column family &#39;cf&#39;, qualifier &#39;q&#39; and value &#39;v&#39; into table t.</p>
+<p>To read the data out, you can scan the table:</p>
+<p>  hbase&gt; t.scan</p>
+<p>which will read all the rows in table &#39;t&#39;.</p>
+<p>Essentially, any command that takes a table name can also be done via table reference.<br>Other commands include things like: get, delete, deleteall,<br>get_all_columns, get_counter, count, incr. These functions, along with<br>the standard JRuby object methods are also available via tab completion.</p>
+<p>For more information on how to use each of these commands, you can also just type:</p>
+<p>   hbase&gt; t.help &#39;scan&#39;</p>
+<p>which will output more information on how to use that command.</p>
+<p>You can also do general admin actions directly on a table; things like enable, disable,<br>flush and drop just by typing:</p>
+<p>   hbase&gt; t.enable<br>   hbase&gt; t.flush<br>   hbase&gt; t.disable<br>   hbase&gt; t.drop</p>
+<p>Note that after dropping a table, your reference to it becomes useless and further usage<br>is undefined (and not recommended).</p>
+<h3 id="version"><a href="#version" class="headerlink" title="version"></a>version</h3><p>Output this HBase version</p>
+<h3 id="whoami"><a href="#whoami" class="headerlink" title="whoami"></a>whoami</h3><p>Show the current hbase user.<br>Syntax : whoami<br>For example:</p>
+<pre><code>hbase&gt; whoami
+</code></pre>
+<h3 id="alter"><a href="#alter" class="headerlink" title="alter"></a>alter</h3><p>Alter a table. If the &quot;hbase.online.schema.update.enable&quot; property is set to<br>false, then the table must be disabled (see help &#39;disable&#39;). If the<br>&quot;hbase.online.schema.update.enable&quot; property is set to true, tables can be<br>altered without disabling them first. Altering enabled tables has caused problems<br>in the past, so use caution and test it before using in production. </p>
+<p>You can use the alter command to add,<br>modify or delete column families or change table configuration options.<br>Column families work in a similar way as the &#39;create&#39; command. The column family<br>specification can either be a name string, or a dictionary with the NAME attribute.<br>Dictionaries are described in the output of the &#39;help&#39; command, with no arguments.</p>
+<p>For example, to change or add the &#39;f1&#39; column family in table &#39;t1&#39; from<br>current value to keep a maximum of 5 cell VERSIONS, do:</p>
+<p>  hbase&gt; alter &#39;t1&#39;, NAME =&gt; &#39;f1&#39;, VERSIONS =&gt; 5</p>
+<p>You can operate on several column families:</p>
+<p>  hbase&gt; alter &#39;t1&#39;, &#39;f1&#39;, {NAME =&gt; &#39;f2&#39;, IN_MEMORY =&gt; true}, {NAME =&gt; &#39;f3&#39;, VERSIONS =&gt; 5}</p>
+<p>To delete the &#39;f1&#39; column family in table &#39;ns1:t1&#39;, use one of:</p>
+<p>  hbase&gt; alter &#39;ns1:t1&#39;, NAME =&gt; &#39;f1&#39;, METHOD =&gt; &#39;delete&#39;<br>  hbase&gt; alter &#39;ns1:t1&#39;, &#39;delete&#39; =&gt; &#39;f1&#39;</p>
+<p>You can also change table-scope attributes like MAX_FILESIZE, READONLY,<br>MEMSTORE_FLUSHSIZE, DURABILITY, etc. These can be put at the end;<br>for example, to change the max size of a region to 128MB, do:</p>
+<p>  hbase&gt; alter &#39;t1&#39;, MAX_FILESIZE =&gt; &#39;134217728&#39;</p>
+<p>You can add a table coprocessor by setting a table coprocessor attribute:</p>
+<p>  hbase&gt; alter &#39;t1&#39;,<br>    &#39;coprocessor&#39;=&gt;&#39;hdfs:///foo.jar|com.foo.FooRegionObserver|1001|arg1=1,arg2=2&#39;</p>
+<p>Since you can have multiple coprocessors configured for a table, a<br>sequence number will be automatically appended to the attribute name<br>to uniquely identify it.</p>
+<p>The coprocessor attribute must match the pattern below in order for<br>the framework to understand how to load the coprocessor classes:</p>
+<p>  [coprocessor jar file location] | class name | [priority] | [arguments]</p>
+<p>You can also set configuration settings specific to this table or column family:</p>
+<p>  hbase&gt; alter &#39;t1&#39;, CONFIGURATION =&gt; {&#39;hbase.hregion.scan.loadColumnFamiliesOnDemand&#39; =&gt; &#39;true&#39;}<br>  hbase&gt; alter &#39;t1&#39;, {NAME =&gt; &#39;f2&#39;, CONFIGURATION =&gt; {&#39;hbase.hstore.blockingStoreFiles&#39; =&gt; &#39;10&#39;}}</p>
+<p>You can also remove a table-scope attribute:</p>
+<p>  hbase&gt; alter &#39;t1&#39;, METHOD =&gt; &#39;table_att_unset&#39;, NAME =&gt; &#39;MAX_FILESIZE&#39;</p>
+<p>  hbase&gt; alter &#39;t1&#39;, METHOD =&gt; &#39;table_att_unset&#39;, NAME =&gt; &#39;coprocessor$1&#39;</p>
+<p>You can also set REGION_REPLICATION:</p>
+<p>  hbase&gt; alter &#39;t1&#39;, {REGION_REPLICATION =&gt; 2}</p>
+<p>There could be more than one alteration in one command:</p>
+<p>  hbase&gt; alter &#39;t1&#39;, { NAME =&gt; &#39;f1&#39;, VERSIONS =&gt; 3 },<br>   { MAX_FILESIZE =&gt; &#39;134217728&#39; }, { METHOD =&gt; &#39;delete&#39;, NAME =&gt; &#39;f2&#39; },<br>   OWNER =&gt; &#39;johndoe&#39;, METADATA =&gt; { &#39;mykey&#39; =&gt; &#39;myvalue&#39; }</p>
+<h3 id="alter-async"><a href="#alter-async" class="headerlink" title="alter_async"></a>alter_async</h3><p>Alter column family schema, does not wait for all regions to receive the<br>schema changes. Pass table name and a dictionary specifying new column<br>family schema. Dictionaries are described on the main help command output.<br>Dictionary must include name of column family to alter. For example,</p>
+<p>To change or add the &#39;f1&#39; column family in table &#39;t1&#39; from defaults<br>to instead keep a maximum of 5 cell VERSIONS, do:</p>
+<p>  hbase&gt; alter_async &#39;t1&#39;, NAME =&gt; &#39;f1&#39;, VERSIONS =&gt; 5</p>
+<p>To delete the &#39;f1&#39; column family in table &#39;ns1:t1&#39;, do:</p>
+<p>  hbase&gt; alter_async &#39;ns1:t1&#39;, NAME =&gt; &#39;f1&#39;, METHOD =&gt; &#39;delete&#39;</p>
+<p>or a shorter version:</p>
+<p>  hbase&gt; alter_async &#39;ns1:t1&#39;, &#39;delete&#39; =&gt; &#39;f1&#39;</p>
+<p>You can also change table-scope attributes like MAX_FILESIZE<br>MEMSTORE_FLUSHSIZE, READONLY, and DEFERRED_LOG_FLUSH.</p>
+<p>For example, to change the max size of a family to 128MB, do:</p>
+<p>  hbase&gt; alter &#39;t1&#39;, METHOD =&gt; &#39;table_att&#39;, MAX_FILESIZE =&gt; &#39;134217728&#39;</p>
+<p>There could be more than one alteration in one command:</p>
+<p>  hbase&gt; alter &#39;t1&#39;, {NAME =&gt; &#39;f1&#39;}, {NAME =&gt; &#39;f2&#39;, METHOD =&gt; &#39;delete&#39;}</p>
+<p>To check if all the regions have been updated, use alter_status <table_name></p>
+<h3 id="alter-status"><a href="#alter-status" class="headerlink" title="alter_status"></a>alter_status</h3><p>Get the status of the alter command. Indicates the number of regions of the<br>table that have received the updated schema<br>Pass table name.</p>
+<p>hbase&gt; alter_status &#39;t1&#39;<br>hbase&gt; alter_status &#39;ns1:t1&#39;</p>
+<h3 id="create"><a href="#create" class="headerlink" title="create"></a>create</h3><p>Creates a table. Pass a table name, and a set of column family<br>specifications (at least one), and, optionally, table configuration.<br>Column specification can be a simple string (name), or a dictionary<br>(dictionaries are described below in main help output), necessarily<br>including NAME attribute.<br>Examples:</p>
+<p>Create a table with namespace=ns1 and table qualifier=t1<br>  hbase&gt; create &#39;ns1:t1&#39;, {NAME =&gt; &#39;f1&#39;, VERSIONS =&gt; 5}</p>
+<p>Create a table with namespace=default and table qualifier=t1<br>  hbase&gt; create &#39;t1&#39;, {NAME =&gt; &#39;f1&#39;}, {NAME =&gt; &#39;f2&#39;}, {NAME =&gt; &#39;f3&#39;}<br>  hbase&gt; # The above in shorthand would be the following:<br>  hbase&gt; create &#39;t1&#39;, &#39;f1&#39;, &#39;f2&#39;, &#39;f3&#39;<br>  hbase&gt; create &#39;t1&#39;, {NAME =&gt; &#39;f1&#39;, VERSIONS =&gt; 1, TTL =&gt; 2592000, BLOCKCACHE =&gt; true}<br>  hbase&gt; create &#39;t1&#39;, {NAME =&gt; &#39;f1&#39;, CONFIGURATION =&gt; {&#39;hbase.hstore.blockingStoreFiles&#39; =&gt; &#39;10&#39;}}</p>
+<p>Table configuration options can be put at the end.<br>Examples:</p>
+<p>  hbase&gt; create &#39;ns1:t1&#39;, &#39;f1&#39;, SPLITS =&gt; [&#39;10&#39;, &#39;20&#39;, &#39;30&#39;, &#39;40&#39;]<br>  hbase&gt; create &#39;t1&#39;, &#39;f1&#39;, SPLITS =&gt; [&#39;10&#39;, &#39;20&#39;, &#39;30&#39;, &#39;40&#39;]<br>  hbase&gt; create &#39;t1&#39;, &#39;f1&#39;, SPLITS_FILE =&gt; &#39;splits.txt&#39;, OWNER =&gt; &#39;johndoe&#39;<br>  hbase&gt; create &#39;t1&#39;, {NAME =&gt; &#39;f1&#39;, VERSIONS =&gt; 5}, METADATA =&gt; { &#39;mykey&#39; =&gt; &#39;myvalue&#39; }<br>  hbase&gt; # Optionally pre-split the table into NUMREGIONS, using<br>  hbase&gt; # SPLITALGO (&quot;HexStringSplit&quot;, &quot;UniformSplit&quot; or classname)<br>  hbase&gt; create &#39;t1&#39;, &#39;f1&#39;, {NUMREGIONS =&gt; 15, SPLITALGO =&gt; &#39;HexStringSplit&#39;}<br>  hbase&gt; create &#39;t1&#39;, &#39;f1&#39;, {NUMREGIONS =&gt; 15, SPLITALGO =&gt; &#39;HexStringSplit&#39;, REGION_REPLICATION =&gt; 2, CONFIGURATION =&gt; {&#39;hbase.hregion.scan.loadColumnFamiliesOnDemand&#39; =&gt; &#39;true&#39;}}<br>  hbase&gt; create &#39;t1&#39;, {NAME =&gt; &#39;f1&#39;, DFS_REPLICATION =&gt; 1}</p>
+<p>You can also keep around a reference to the created table:</p>
+<p>  hbase&gt; t1 = create &#39;t1&#39;, &#39;f1&#39;</p>
+<p>Which gives you a reference to the table named &#39;t1&#39;, on which you can then<br>call methods.</p>
+<h3 id="describe"><a href="#describe" class="headerlink" title="describe"></a>describe</h3><p>Describe the named table. For example:<br>  hbase&gt; describe &#39;t1&#39;<br>  hbase&gt; describe &#39;ns1:t1&#39;</p>
+<p>Alternatively, you can use the abbreviated &#39;desc&#39; for the same thing.<br>  hbase&gt; desc &#39;t1&#39;<br>  hbase&gt; desc &#39;ns1:t1&#39;</p>
+<h3 id="disable"><a href="#disable" class="headerlink" title="disable"></a>disable</h3><p>Start disable of named table:<br>  hbase&gt; disable &#39;t1&#39;<br>  hbase&gt; disable &#39;ns1:t1&#39;</p>
+<h3 id="disable-all"><a href="#disable-all" class="headerlink" title="disable_all"></a>disable_all</h3><p>Disable all of tables matching the given regex:</p>
+<p>hbase&gt; disable_all &#39;t.<em>&#39;<br>hbase&gt; disable_all &#39;ns:t.</em>&#39;<br>hbase&gt; disable_all &#39;ns:.*&#39;</p>
+<h3 id="drop"><a href="#drop" class="headerlink" title="drop"></a>drop</h3><p>Drop the named table. Table must first be disabled:<br>  hbase&gt; drop &#39;t1&#39;<br>  hbase&gt; drop &#39;ns1:t1&#39;</p>
+<h3 id="drop-all"><a href="#drop-all" class="headerlink" title="drop_all"></a>drop_all</h3><p>Drop all of the tables matching the given regex:</p>
+<p>hbase&gt; drop_all &#39;t.<em>&#39;<br>hbase&gt; drop_all &#39;ns:t.</em>&#39;<br>hbase&gt; drop_all &#39;ns:.*&#39;</p>
+<h3 id="enable"><a href="#enable" class="headerlink" title="enable"></a>enable</h3><p>Start enable of named table:<br>  hbase&gt; enable &#39;t1&#39;<br>  hbase&gt; enable &#39;ns1:t1&#39;</p>
+<h3 id="enable-all"><a href="#enable-all" class="headerlink" title="enable_all"></a>enable_all</h3><p>Enable all of the tables matching the given regex:</p>
+<p>hbase&gt; enable_all &#39;t.<em>&#39;<br>hbase&gt; enable_all &#39;ns:t.</em>&#39;<br>hbase&gt; enable_all &#39;ns:.*&#39;</p>
+<h3 id="exists"><a href="#exists" class="headerlink" title="exists"></a>exists</h3><p>Does the named table exist?<br>  hbase&gt; exists &#39;t1&#39;<br>  hbase&gt; exists &#39;ns1:t1&#39;</p>
+<h3 id="get-table"><a href="#get-table" class="headerlink" title="get_table"></a>get_table</h3><p>Get the given table name and return it as an actual object to<br>be manipulated by the user. See table.help for more information<br>on how to use the table.<br>Eg.</p>
+<p>  hbase&gt; t1 = get_table &#39;t1&#39;<br>  hbase&gt; t1 = get_table &#39;ns1:t1&#39;</p>
+<p>returns the table named &#39;t1&#39; as a table object. You can then do</p>
+<p>  hbase&gt; t1.help</p>
+<p>which will then print the help for that table.</p>
+<h3 id="is-disabled"><a href="#is-disabled" class="headerlink" title="is_disabled"></a>is_disabled</h3><p>Is named table disabled? For example:<br>  hbase&gt; is_disabled &#39;t1&#39;<br>  hbase&gt; is_disabled &#39;ns1:t1&#39;</p>
+<h3 id="is-enabled"><a href="#is-enabled" class="headerlink" title="is_enabled"></a>is_enabled</h3><p>Is named table enabled? For example:<br>  hbase&gt; is_enabled &#39;t1&#39;<br>  hbase&gt; is_enabled &#39;ns1:t1&#39;</p>
+<h3 id="list"><a href="#list" class="headerlink" title="list"></a>list</h3><p>List all tables in hbase. Optional regular expression parameter could<br>be used to filter the output. Examples:</p>
+<p>  hbase&gt; list<br>  hbase&gt; list &#39;abc.<em>&#39;<br>  hbase&gt; list &#39;ns:abc.</em>&#39;<br>  hbase&gt; list &#39;ns:.*&#39;</p>
+<h3 id="locate-region"><a href="#locate-region" class="headerlink" title="locate_region"></a>locate_region</h3><p>Locate the region given a table name and a row-key</p>
+<p>  hbase&gt; locate_region &#39;tableName&#39;, &#39;key0&#39;</p>
+<h3 id="show-filters"><a href="#show-filters" class="headerlink" title="show_filters"></a>show_filters</h3><p>Show all the filters in hbase. Example:<br>  hbase&gt; show_filters</p>
+<p>  ColumnPrefixFilter<br>  TimestampsFilter<br>  PageFilter<br>  .....<br>  KeyOnlyFilter</p>
+<h3 id="alter-namespace"><a href="#alter-namespace" class="headerlink" title="alter_namespace"></a>alter_namespace</h3><p>Alter namespace properties.</p>
+<p>To add/modify a property:</p>
+<p>  hbase&gt; alter_namespace &#39;ns1&#39;, {METHOD =&gt; &#39;set&#39;, &#39;PROPERTY_NAME&#39; =&gt; &#39;PROPERTY_VALUE&#39;}</p>
+<p>To delete a property:</p>
+<p>  hbase&gt; alter_namespace &#39;ns1&#39;, {METHOD =&gt; &#39;unset&#39;, NAME=&gt;&#39;PROPERTY_NAME&#39;}</p>
+<h3 id="create-namespace"><a href="#create-namespace" class="headerlink" title="create_namespace"></a>create_namespace</h3><p>Create namespace; pass namespace name,<br>and optionally a dictionary of namespace configuration.<br>Examples:</p>
+<p>  hbase&gt; create_namespace &#39;ns1&#39;<br>  hbase&gt; create_namespace &#39;ns1&#39;, {&#39;PROPERTY_NAME&#39;=&gt;&#39;PROPERTY_VALUE&#39;}</p>
+<h3 id="describe-namespace"><a href="#describe-namespace" class="headerlink" title="describe_namespace"></a>describe_namespace</h3><p>Describe the named namespace. For example:<br>  hbase&gt; describe_namespace &#39;ns1&#39;</p>
+<h3 id="drop-namespace"><a href="#drop-namespace" class="headerlink" title="drop_namespace"></a>drop_namespace</h3><p>Drop the named namespace. The namespace must be empty.</p>
+<h3 id="list-namespace"><a href="#list-namespace" class="headerlink" title="list_namespace"></a>list_namespace</h3><p>List all namespaces in hbase. Optional regular expression parameter could<br>be used to filter the output. Examples:</p>
+<p>  hbase&gt; list_namespace<br>  hbase&gt; list_namespace &#39;abc.*&#39;</p>
+<h3 id="list-namespace-tables"><a href="#list-namespace-tables" class="headerlink" title="list_namespace_tables"></a>list_namespace_tables</h3><p>List all tables that are members of the namespace.<br>Examples:</p>
+<p>  hbase&gt; list_namespace_tables &#39;ns1&#39;</p>
+<h3 id="append"><a href="#append" class="headerlink" title="append"></a>append</h3><p>Appends a cell &#39;value&#39; at specified table/row/column coordinates.</p>
+<p>  hbase&gt; append &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;, ATTRIBUTES=&gt;{&#39;mykey&#39;=&gt;&#39;myvalue&#39;}<br>  hbase&gt; append &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;, {VISIBILITY=&gt;&#39;PRIVATE|SECRET&#39;}</p>
+<p>The same commands also can be run on a table reference. Suppose you had a reference<br>t to table &#39;t1&#39;, the corresponding command would be:</p>
+<p>  hbase&gt; t.append &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;, ATTRIBUTES=&gt;{&#39;mykey&#39;=&gt;&#39;myvalue&#39;}<br>  hbase&gt; t.append &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;, {VISIBILITY=&gt;&#39;PRIVATE|SECRET&#39;}</p>
+<h3 id="count"><a href="#count" class="headerlink" title="count"></a>count</h3><p>Count the number of rows in a table.  Return value is the number of rows.<br>This operation may take a LONG time (Run &#39;$HADOOP_HOME/bin/hadoop jar<br>hbase.jar rowcount&#39; to run a counting mapreduce job). Current count is shown<br>every 1000 rows by default. Count interval may be optionally specified. Scan<br>caching is enabled on count scans by default. Default cache size is 10 rows.<br>If your rows are small in size, you may want to increase this<br>parameter. Examples:</p>
+<p> hbase&gt; count &#39;ns1:t1&#39;<br> hbase&gt; count &#39;t1&#39;<br> hbase&gt; count &#39;t1&#39;, INTERVAL =&gt; 100000<br> hbase&gt; count &#39;t1&#39;, CACHE =&gt; 1000<br> hbase&gt; count &#39;t1&#39;, INTERVAL =&gt; 10, CACHE =&gt; 1000</p>
+<p>The same commands also can be run on a table reference. Suppose you had a reference<br>t to table &#39;t1&#39;, the corresponding commands would be:</p>
+<p> hbase&gt; t.count<br> hbase&gt; t.count INTERVAL =&gt; 100000<br> hbase&gt; t.count CACHE =&gt; 1000<br> hbase&gt; t.count INTERVAL =&gt; 10, CACHE =&gt; 1000</p>
+<h3 id="delete"><a href="#delete" class="headerlink" title="delete"></a>delete</h3><p>Put a delete cell value at specified table/row/column and optionally<br>timestamp coordinates.  Deletes must match the deleted cell&#39;s<br>coordinates exactly.  When scanning, a delete cell suppresses older<br>versions. To delete a cell from  &#39;t1&#39; at row &#39;r1&#39; under column &#39;c1&#39;<br>marked with the time &#39;ts1&#39;, do:</p>
+<p>  hbase&gt; delete &#39;ns1:t1&#39;, &#39;r1&#39;, &#39;c1&#39;, ts1<br>  hbase&gt; delete &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, ts1<br>  hbase&gt; delete &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, ts1, {VISIBILITY=&gt;&#39;PRIVATE|SECRET&#39;}</p>
+<p>The same command can also be run on a table reference. Suppose you had a reference<br>t to table &#39;t1&#39;, the corresponding command would be:</p>
+<p>  hbase&gt; t.delete &#39;r1&#39;, &#39;c1&#39;,  ts1<br>  hbase&gt; t.delete &#39;r1&#39;, &#39;c1&#39;,  ts1, {VISIBILITY=&gt;&#39;PRIVATE|SECRET&#39;}</p>
+<h3 id="deleteall"><a href="#deleteall" class="headerlink" title="deleteall"></a>deleteall</h3><p>Delete all cells in a given row; pass a table name, row, and optionally<br>a column and timestamp. Examples:</p>
+<p>  hbase&gt; deleteall &#39;ns1:t1&#39;, &#39;r1&#39;<br>  hbase&gt; deleteall &#39;t1&#39;, &#39;r1&#39;<br>  hbase&gt; deleteall &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;<br>  hbase&gt; deleteall &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, ts1<br>  hbase&gt; deleteall &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, ts1, {VISIBILITY=&gt;&#39;PRIVATE|SECRET&#39;}</p>
+<p>The same commands also can be run on a table reference. Suppose you had a reference<br>t to table &#39;t1&#39;, the corresponding command would be:</p>
+<p>  hbase&gt; t.deleteall &#39;r1&#39;<br>  hbase&gt; t.deleteall &#39;r1&#39;, &#39;c1&#39;<br>  hbase&gt; t.deleteall &#39;r1&#39;, &#39;c1&#39;, ts1<br>  hbase&gt; t.deleteall &#39;r1&#39;, &#39;c1&#39;, ts1, {VISIBILITY=&gt;&#39;PRIVATE|SECRET&#39;}</p>
+<h3 id="get"><a href="#get" class="headerlink" title="get"></a>get</h3><p>Get row or cell contents; pass table name, row, and optionally<br>a dictionary of column(s), timestamp, timerange and versions. Examples:</p>
+<p>  hbase&gt; get &#39;ns1:t1&#39;, &#39;r1&#39;<br>  hbase&gt; get &#39;t1&#39;, &#39;r1&#39;<br>  hbase&gt; get &#39;t1&#39;, &#39;r1&#39;, {TIMERANGE =&gt; [ts1, ts2]}<br>  hbase&gt; get &#39;t1&#39;, &#39;r1&#39;, {COLUMN =&gt; &#39;c1&#39;}<br>  hbase&gt; get &#39;t1&#39;, &#39;r1&#39;, {COLUMN =&gt; [&#39;c1&#39;, &#39;c2&#39;, &#39;c3&#39;]}<br>  hbase&gt; get &#39;t1&#39;, &#39;r1&#39;, {COLUMN =&gt; &#39;c1&#39;, TIMESTAMP =&gt; ts1}<br>  hbase&gt; get &#39;t1&#39;, &#39;r1&#39;, {COLUMN =&gt; &#39;c1&#39;, TIMERANGE =&gt; [ts1, ts2], VERSIONS =&gt; 4}<br>  hbase&gt; get &#39;t1&#39;, &#39;r1&#39;, {COLUMN =&gt; &#39;c1&#39;, TIMESTAMP =&gt; ts1, VERSIONS =&gt; 4}<br>  hbase&gt; get &#39;t1&#39;, &#39;r1&#39;, {FILTER =&gt; &quot;ValueFilter(=, &#39;binary:abc&#39;)&quot;}<br>  hbase&gt; get &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;<br>  hbase&gt; get &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#39;c2&#39;<br>  hbase&gt; get &#39;t1&#39;, &#39;r1&#39;, [&#39;c1&#39;, &#39;c2&#39;]<br>  hbase&gt; get &#39;t1&#39;, &#39;r1&#39;, {COLUMN =&gt; &#39;c1&#39;, ATTRIBUTES =&gt; {&#39;mykey&#39;=&gt;&#39;myvalue&#39;}}<br>  hbase&gt; get &#39;t1&#39;, &#39;r1&#39;, {COLUMN =&gt; &#39;c1&#39;, AUTHORIZATIONS =&gt; [&#39;PRIVATE&#39;,&#39;SECRET&#39;]}<br>  hbase&gt; get &#39;t1&#39;, &#39;r1&#39;, {CONSISTENCY =&gt; &#39;TIMELINE&#39;}<br>  hbase&gt; get &#39;t1&#39;, &#39;r1&#39;, {CONSISTENCY =&gt; &#39;TIMELINE&#39;, REGION_REPLICA_ID =&gt; 1}</p>
+<p>Besides the default &#39;toStringBinary&#39; format, &#39;get&#39; also supports custom formatting by<br>column.  A user can define a FORMATTER by adding it to the column name in the get<br>specification.  The FORMATTER can be stipulated: </p>
+<ol>
+<li>either as a org.apache.hadoop.hbase.util.Bytes method name (e.g, toInt, toString)</li>
+<li>or as a custom class followed by method name: e.g. &#39;c(MyFormatterClass).format&#39;.</li>
+</ol>
+<p>Example formatting cf:qualifier1 and cf:qualifier2 both as Integers:<br>  hbase&gt; get &#39;t1&#39;, &#39;r1&#39; {COLUMN =&gt; [&#39;cf:qualifier1:toInt&#39;,<br>    &#39;cf:qualifier2:c(org.apache.hadoop.hbase.util.Bytes).toInt&#39;] } </p>
+<p>Note that you can specify a FORMATTER by column only (cf:qualifier).  You cannot specify<br>a FORMATTER for all columns of a column family.</p>
+<p>The same commands also can be run on a reference to a table (obtained via get_table or<br>create_table). Suppose you had a reference t to table &#39;t1&#39;, the corresponding commands<br>would be:</p>
+<p>  hbase&gt; t.get &#39;r1&#39;<br>  hbase&gt; t.get &#39;r1&#39;, {TIMERANGE =&gt; [ts1, ts2]}<br>  hbase&gt; t.get &#39;r1&#39;, {COLUMN =&gt; &#39;c1&#39;}<br>  hbase&gt; t.get &#39;r1&#39;, {COLUMN =&gt; [&#39;c1&#39;, &#39;c2&#39;, &#39;c3&#39;]}<br>  hbase&gt; t.get &#39;r1&#39;, {COLUMN =&gt; &#39;c1&#39;, TIMESTAMP =&gt; ts1}<br>  hbase&gt; t.get &#39;r1&#39;, {COLUMN =&gt; &#39;c1&#39;, TIMERANGE =&gt; [ts1, ts2], VERSIONS =&gt; 4}<br>  hbase&gt; t.get &#39;r1&#39;, {COLUMN =&gt; &#39;c1&#39;, TIMESTAMP =&gt; ts1, VERSIONS =&gt; 4}<br>  hbase&gt; t.get &#39;r1&#39;, {FILTER =&gt; &quot;ValueFilter(=, &#39;binary:abc&#39;)&quot;}<br>  hbase&gt; t.get &#39;r1&#39;, &#39;c1&#39;<br>  hbase&gt; t.get &#39;r1&#39;, &#39;c1&#39;, &#39;c2&#39;<br>  hbase&gt; t.get &#39;r1&#39;, [&#39;c1&#39;, &#39;c2&#39;]<br>  hbase&gt; t.get &#39;r1&#39;, {CONSISTENCY =&gt; &#39;TIMELINE&#39;}<br>  hbase&gt; t.get &#39;r1&#39;, {CONSISTENCY =&gt; &#39;TIMELINE&#39;, REGION_REPLICA_ID =&gt; 1}</p>
+<h3 id="get-counter"><a href="#get-counter" class="headerlink" title="get_counter"></a>get_counter</h3><p>Return a counter cell value at specified table/row/column coordinates.<br>A counter cell should be managed with atomic increment functions on HBase<br>and the data should be binary encoded (as long value). Example:</p>
+<p>  hbase&gt; get_counter &#39;ns1:t1&#39;, &#39;r1&#39;, &#39;c1&#39;<br>  hbase&gt; get_counter &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;</p>
+<p>The same commands also can be run on a table reference. Suppose you had a reference<br>t to table &#39;t1&#39;, the corresponding command would be:</p>
+<p>  hbase&gt; t.get_counter &#39;r1&#39;, &#39;c1&#39;</p>
+<h3 id="get-splits"><a href="#get-splits" class="headerlink" title="get_splits"></a>get_splits</h3><p>Get the splits of the named table:<br>  hbase&gt; get_splits &#39;t1&#39;<br>  hbase&gt; get_splits &#39;ns1:t1&#39;</p>
+<p>The same commands also can be run on a table reference. Suppose you had a reference<br>t to table &#39;t1&#39;, the corresponding command would be:</p>
+<p>  hbase&gt; t.get_splits</p>
+<h3 id="incr"><a href="#incr" class="headerlink" title="incr"></a>incr</h3><p>Increments a cell &#39;value&#39; at specified table/row/column coordinates.<br>To increment a cell value in table &#39;ns1:t1&#39; or &#39;t1&#39; at row &#39;r1&#39; under column<br>&#39;c1&#39; by 1 (can be omitted) or 10 do:</p>
+<p>  hbase&gt; incr &#39;ns1:t1&#39;, &#39;r1&#39;, &#39;c1&#39;<br>  hbase&gt; incr &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;<br>  hbase&gt; incr &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, 1<br>  hbase&gt; incr &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, 10<br>  hbase&gt; incr &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, 10, {ATTRIBUTES=&gt;{&#39;mykey&#39;=&gt;&#39;myvalue&#39;}}<br>  hbase&gt; incr &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, {ATTRIBUTES=&gt;{&#39;mykey&#39;=&gt;&#39;myvalue&#39;}}<br>  hbase&gt; incr &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, 10, {VISIBILITY=&gt;&#39;PRIVATE|SECRET&#39;}</p>
+<p>The same commands also can be run on a table reference. Suppose you had a reference<br>t to table &#39;t1&#39;, the corresponding command would be:</p>
+<p>  hbase&gt; t.incr &#39;r1&#39;, &#39;c1&#39;<br>  hbase&gt; t.incr &#39;r1&#39;, &#39;c1&#39;, 1<br>  hbase&gt; t.incr &#39;r1&#39;, &#39;c1&#39;, 10, {ATTRIBUTES=&gt;{&#39;mykey&#39;=&gt;&#39;myvalue&#39;}}<br>  hbase&gt; t.incr &#39;r1&#39;, &#39;c1&#39;, 10, {VISIBILITY=&gt;&#39;PRIVATE|SECRET&#39;}</p>
+<h3 id="put"><a href="#put" class="headerlink" title="put"></a>put</h3><p>Put a cell &#39;value&#39; at specified table/row/column and optionally<br>timestamp coordinates.  To put a cell value into table &#39;ns1:t1&#39; or &#39;t1&#39;<br>at row &#39;r1&#39; under column &#39;c1&#39; marked with the time &#39;ts1&#39;, do:</p>
+<p>  hbase&gt; put &#39;ns1:t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;<br>  hbase&gt; put &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;<br>  hbase&gt; put &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;, ts1<br>  hbase&gt; put &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;, {ATTRIBUTES=&gt;{&#39;mykey&#39;=&gt;&#39;myvalue&#39;}}<br>  hbase&gt; put &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;, ts1, {ATTRIBUTES=&gt;{&#39;mykey&#39;=&gt;&#39;myvalue&#39;}}<br>  hbase&gt; put &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;, ts1, {VISIBILITY=&gt;&#39;PRIVATE|SECRET&#39;}</p>
+<p>The same commands also can be run on a table reference. Suppose you had a reference<br>t to table &#39;t1&#39;, the corresponding command would be:</p>
+<p>  hbase&gt; t.put &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;, ts1, {ATTRIBUTES=&gt;{&#39;mykey&#39;=&gt;&#39;myvalue&#39;}}</p>
+<h3 id="scan"><a href="#scan" class="headerlink" title="scan"></a>scan</h3><p>Scan a table; pass table name and optionally a dictionary of scanner<br>specifications.  Scanner specifications may include one or more of:<br>TIMERANGE, FILTER, LIMIT, STARTROW, STOPROW, ROWPREFIXFILTER, TIMESTAMP,<br>MAXLENGTH or COLUMNS, CACHE or RAW, VERSIONS, ALL_METRICS or METRICS</p>
+<p>If no columns are specified, all columns will be scanned.<br>To scan all members of a column family, leave the qualifier empty as in<br>&#39;col_family&#39;.</p>
+<p>The filter can be specified in two ways:</p>
+<ol>
+<li>Using a filterString - more information on this is available in the<br>Filter Language document attached to the HBASE-4176 JIRA</li>
+<li>Using the entire package name of the filter.</li>
+</ol>
+<p>If you wish to see metrics regarding the execution of the scan, the<br>ALL_METRICS boolean should be set to true. Alternatively, if you would<br>prefer to see only a subset of the metrics, the METRICS array can be<br>defined to include the names of only the metrics you care about.</p>
+<p>Some examples:</p>
+<p>  hbase&gt; scan &#39;hbase:meta&#39;<br>  hbase&gt; scan &#39;hbase:meta&#39;, {COLUMNS =&gt; &#39;info:regioninfo&#39;}<br>  hbase&gt; scan &#39;ns1:t1&#39;, {COLUMNS =&gt; [&#39;c1&#39;, &#39;c2&#39;], LIMIT =&gt; 10, STARTROW =&gt; &#39;xyz&#39;}<br>  hbase&gt; scan &#39;t1&#39;, {COLUMNS =&gt; [&#39;c1&#39;, &#39;c2&#39;], LIMIT =&gt; 10, STARTROW =&gt; &#39;xyz&#39;}<br>  hbase&gt; scan &#39;t1&#39;, {COLUMNS =&gt; &#39;c1&#39;, TIMERANGE =&gt; [1303668804, 1303668904]}<br>  hbase&gt; scan &#39;t1&#39;, {REVERSED =&gt; true}<br>  hbase&gt; scan &#39;t1&#39;, {ALL_METRICS =&gt; true}<br>  hbase&gt; scan &#39;t1&#39;, {METRICS =&gt; [&#39;RPC_RETRIES&#39;, &#39;ROWS_FILTERED&#39;]}<br>  hbase&gt; scan &#39;t1&#39;, {ROWPREFIXFILTER =&gt; &#39;row2&#39;, FILTER =&gt; &quot;<br>    (QualifierFilter (&gt;=, &#39;binary:xyz&#39;)) AND (TimestampsFilter ( 123, 456))&quot;}<br>  hbase&gt; scan &#39;t1&#39;, {FILTER =&gt;<br>    org.apache.hadoop.hbase.filter.ColumnPaginationFilter.new(1, 0)}<br>  hbase&gt; scan &#39;t1&#39;, {CONSISTENCY =&gt; &#39;TIMELINE&#39;}<br>For setting the Operation Attributes<br>  hbase&gt; scan &#39;t1&#39;, { COLUMNS =&gt; [&#39;c1&#39;, &#39;c2&#39;], ATTRIBUTES =&gt; {&#39;mykey&#39; =&gt; &#39;myvalue&#39;}}<br>  hbase&gt; scan &#39;t1&#39;, { COLUMNS =&gt; [&#39;c1&#39;, &#39;c2&#39;], AUTHORIZATIONS =&gt; [&#39;PRIVATE&#39;,&#39;SECRET&#39;]}<br>For experts, there is an additional option -- CACHE_BLOCKS -- which<br>switches block caching for the scanner on (true) or off (false).  By<br>default it is enabled.  Examples:</p>
+<p>  hbase&gt; scan &#39;t1&#39;, {COLUMNS =&gt; [&#39;c1&#39;, &#39;c2&#39;], CACHE_BLOCKS =&gt; false}</p>
+<p>Also for experts, there is an advanced option -- RAW -- which instructs the<br>scanner to return all cells (including delete markers and uncollected deleted<br>cells). This option cannot be combined with requesting specific COLUMNS.<br>Disabled by default.  Example:</p>
+<p>  hbase&gt; scan &#39;t1&#39;, {RAW =&gt; true, VERSIONS =&gt; 10}</p>
+<p>Besides the default &#39;toStringBinary&#39; format, &#39;scan&#39; supports custom formatting<br>by column.  A user can define a FORMATTER by adding it to the column name in<br>the scan specification.  The FORMATTER can be stipulated: </p>
+<ol>
+<li>either as a org.apache.hadoop.hbase.util.Bytes method name (e.g, toInt, toString)</li>
+<li>or as a custom class followed by method name: e.g. &#39;c(MyFormatterClass).format&#39;.</li>
+</ol>
+<p>Example formatting cf:qualifier1 and cf:qualifier2 both as Integers:<br>  hbase&gt; scan &#39;t1&#39;, {COLUMNS =&gt; [&#39;cf:qualifier1:toInt&#39;,<br>    &#39;cf:qualifier2:c(org.apache.hadoop.hbase.util.Bytes).toInt&#39;] } </p>
+<p>Note that you can specify a FORMATTER by column only (cf:qualifier).  You cannot<br>specify a FORMATTER for all columns of a column family.</p>
+<p>Scan can also be used directly from a table, by first getting a reference to a<br>table, like such:</p>
+<p>  hbase&gt; t = get_table &#39;t&#39;<br>  hbase&gt; t.scan</p>
+<p>Note in the above situation, you can still provide all the filtering, columns,<br>options, etc as described above.</p>
+<h3 id="truncate"><a href="#truncate" class="headerlink" title="truncate"></a>truncate</h3><p>  Disables, drops and recreates the specified table.</p>
+<h3 id="truncate-preserve"><a href="#truncate-preserve" class="headerlink" title="truncate_preserve"></a>truncate_preserve</h3><p>  Disables, drops and recreates the specified table while still maintaing the previous region boundaries.</p>
+<h3 id="assign"><a href="#assign" class="headerlink" title="assign"></a>assign</h3><p>Assign a region. Use with caution. If region already assigned,<br>this command will do a force reassign. For experts only.<br>Examples:</p>
+<p>  hbase&gt; assign &#39;REGIONNAME&#39;<br>  hbase&gt; assign &#39;ENCODED_REGIONNAME&#39;</p>
+<h3 id="balance-switch"><a href="#balance-switch" class="headerlink" title="balance_switch"></a>balance_switch</h3><p>Enable/Disable balancer. Returns previous balancer state.<br>Examples:</p>
+<p>  hbase&gt; balance_switch true<br>  hbase&gt; balance_switch false</p>
+<h3 id="balancer"><a href="#balancer" class="headerlink" title="balancer"></a>balancer</h3><p>Trigger the cluster balancer. Returns true if balancer ran and was able to<br>tell the region servers to unassign all the regions to balance  (the re-assignment itself is async).<br>Otherwise false (Will not run if regions in transition).</p>
+<h3 id="balancer-enabled"><a href="#balancer-enabled" class="headerlink" title="balancer_enabled"></a>balancer_enabled</h3><p>Query the balancer&#39;s state.<br>Examples:</p>
+<p>  hbase&gt; balancer_enabled</p>
+<h3 id="catalogjanitor-enabled"><a href="#catalogjanitor-enabled" class="headerlink" title="catalogjanitor_enabled"></a>catalogjanitor_enabled</h3><p>Query for the CatalogJanitor state (enabled/disabled?)<br>Examples:</p>
+<p>  hbase&gt; catalogjanitor_enabled</p>
+<h3 id="catalogjanitor-run"><a href="#catalogjanitor-run" class="headerlink" title="catalogjanitor_run"></a>catalogjanitor_run</h3><p>Catalog janitor command to run the (garbage collection) scan from command line.</p>
+<p>  hbase&gt; catalogjanitor_run</p>
+<h3 id="catalogjanitor-switch"><a href="#catalogjanitor-switch" class="headerlink" title="catalogjanitor_switch"></a>catalogjanitor_switch</h3><p>Enable/Disable CatalogJanitor. Returns previous CatalogJanitor state.<br>Examples:</p>
+<p>  hbase&gt; catalogjanitor_switch true<br>  hbase&gt; catalogjanitor_switch false</p>
+<h3 id="close-region"><a href="#close-region" class="headerlink" title="close_region"></a>close_region</h3><p>Close a single region.  Ask the master to close a region out on the cluster<br>or if &#39;SERVER_NAME&#39; is supplied, ask the designated hosting regionserver to<br>close the region directly.  Closing a region, the master expects &#39;REGIONNAME&#39;<br>to be a fully qualified region name.  When asking the hosting regionserver to<br>directly close a region, you pass the regions&#39; encoded name only. A region<br>name looks like this:</p>
+<p> TestTable,0094429456,1289497600452.527db22f95c8a9e0116f0cc13c680396.<br>or<br> Namespace:TestTable,0094429456,1289497600452.527db22f95c8a9e0116f0cc13c680396.</p>
+<p>The trailing period is part of the regionserver name. A region&#39;s encoded name<br>is the hash at the end of a region name; e.g. 527db22f95c8a9e0116f0cc13c680396<br>(without the period).  A &#39;SERVER_NAME&#39; is its host, port plus startcode. For<br>example: host187.example.com,60020,1289493121758 (find servername in master ui<br>or when you do detailed status in shell).  This command will end up running<br>close on the region hosting regionserver.  The close is done without the<br>master&#39;s involvement (It will not know of the close).  Once closed, region will<br>stay closed.  Use assign to reopen/reassign.  Use unassign or move to assign<br>the region elsewhere on cluster. Use with caution.  For experts only.<br>Examples:</p>
+<p>  hbase&gt; close_region &#39;REGIONNAME&#39;<br>  hbase&gt; close_region &#39;REGIONNAME&#39;, &#39;SERVER_NAME&#39;<br>  hbase&gt; close_region &#39;ENCODED_REGIONNAME&#39;<br>  hbase&gt; close_region &#39;ENCODED_REGIONNAME&#39;, &#39;SERVER_NAME&#39;</p>
+<h3 id="compact"><a href="#compact" class="headerlink" title="compact"></a>compact</h3><pre><code>      Compact all regions in passed table or pass a region row
+      to compact an individual region. You can also compact a single column
+      family within a region.
+      Examples:
+      Compact all regions in a table:
+      hbase&gt; compact &#39;ns1:t1&#39;
+      hbase&gt; compact &#39;t1&#39;
+      Compact an entire region:
+      hbase&gt; compact &#39;r1&#39;
+      Compact only a column family within a region:
+      hbase&gt; compact &#39;r1&#39;, &#39;c1&#39;
+      Compact a column family within a table:
+      hbase&gt; compact &#39;t1&#39;, &#39;c1&#39;
+</code></pre>
+<h3 id="compact-rs"><a href="#compact-rs" class="headerlink" title="compact_rs"></a>compact_rs</h3><pre><code>      Compact all regions on passed regionserver.
+      Examples:
+      Compact all regions on a regionserver:
+      hbase&gt; compact_rs &#39;host187.example.com,60020&#39;
+      or
+      hbase&gt; compact_rs &#39;host187.example.com,60020,1289493121758&#39;
+      Major compact all regions on a regionserver:
+      hbase&gt; compact_rs &#39;host187.example.com,60020,1289493121758&#39;, true
+</code></pre>
+<h3 id="flush"><a href="#flush" class="headerlink" title="flush"></a>flush</h3><p>Flush all regions in passed table or pass a region row to<br>flush an individual region.  For example:</p>
+<p>  hbase&gt; flush &#39;TABLENAME&#39;<br>  hbase&gt; flush &#39;REGIONNAME&#39;<br>  hbase&gt; flush &#39;ENCODED_REGIONNAME&#39;</p>
+<h3 id="major-compact"><a href="#major-compact" class="headerlink" title="major_compact"></a>major_compact</h3><pre><code>      Run major compaction on passed table or pass a region row
+      to major compact an individual region. To compact a single
+      column family within a region specify the region name
+      followed by the column family name.
+      Examples:
+      Compact all regions in a table:
+      hbase&gt; major_compact &#39;t1&#39;
+      hbase&gt; major_compact &#39;ns1:t1&#39;
+      Compact an entire region:
+      hbase&gt; major_compact &#39;r1&#39;
+      Compact a single column family within a region:
+      hbase&gt; major_compact &#39;r1&#39;, &#39;c1&#39;
+      Compact a single column family within a table:
+      hbase&gt; major_compact &#39;t1&#39;, &#39;c1&#39;
+</code></pre>
+<h3 id="merge-region"><a href="#merge-region" class="headerlink" title="merge_region"></a>merge_region</h3><p>Merge two regions. Passing &#39;true&#39; as the optional third parameter will force<br>a merge (&#39;force&#39; merges regardless else merge will fail unless passed<br>adjacent regions. &#39;force&#39; is for expert use only).</p>
+<p>NOTE: You must pass the encoded region name, not the full region name so<br>this command is a little different from other region operations.  The encoded<br>region name is the hash suffix on region names: e.g. if the region name were<br>TestTable,0094429456,1289497600452.527db22f95c8a9e0116f0cc13c680396. then<br>the encoded region name portion is 527db22f95c8a9e0116f0cc13c680396</p>
+<p>Examples:</p>
+<p>  hbase&gt; merge_region &#39;ENCODED_REGIONNAME&#39;, &#39;ENCODED_REGIONNAME&#39;<br>  hbase&gt; merge_region &#39;ENCODED_REGIONNAME&#39;, &#39;ENCODED_REGIONNAME&#39;, true</p>
+<h3 id="move"><a href="#move" class="headerlink" title="move"></a>move</h3><p>Move a region.  Optionally specify target regionserver else we choose one<br>at random.  NOTE: You pass the encoded region name, not the region name so<br>this command is a little different to the others.  The encoded region name<br>is the hash suffix on region names: e.g. if the region name were<br>TestTable,0094429456,1289497600452.527db22f95c8a9e0116f0cc13c680396. then<br>the encoded region name portion is 527db22f95c8a9e0116f0cc13c680396<br>A server name is its host, port plus startcode. For example:<br>host187.example.com,60020,1289493121758<br>Examples:</p>
+<p>  hbase&gt; move &#39;ENCODED_REGIONNAME&#39;<br>  hbase&gt; move &#39;ENCODED_REGIONNAME&#39;, &#39;SERVER_NAME&#39;</p>
+<h3 id="normalize"><a href="#normalize" class="headerlink" title="normalize"></a>normalize</h3><p>Trigger region normalizer for all tables which have NORMALIZATION_ENABLED flag set. Returns true<br> if normalizer ran successfully, false otherwise. Note that this command has no effect<br> if region normalizer is disabled (make sure it&#39;s turned on using &#39;normalizer_switch&#39; command).</p>
+<p> Examples:</p>
+<p>   hbase&gt; normalize</p>
+<h3 id="normalizer-enabled"><a href="#normalizer-enabled" class="headerlink" title="normalizer_enabled"></a>normalizer_enabled</h3><p>Query the state of region normalizer.<br>Examples:</p>
+<p>  hbase&gt; normalizer_enabled</p>
+<h3 id="normalizer-switch"><a href="#normalizer-switch" class="headerlink" title="normalizer_switch"></a>normalizer_switch</h3><p>Enable/Disable region normalizer. Returns previous normalizer state.<br>When normalizer is enabled, it handles all tables with &#39;NORMALIZATION_ENABLED&#39; =&gt; true.<br>Examples:</p>
+<p>  hbase&gt; normalizer_switch true<br>  hbase&gt; normalizer_switch false</p>
+<h3 id="split"><a href="#split" class="headerlink" title="split"></a>split</h3><p>Split entire table or pass a region to split individual region.  With the<br>second parameter, you can specify an explicit split key for the region.<br>Examples:<br>    split &#39;tableName&#39;<br>    split &#39;namespace:tableName&#39;<br>    split &#39;regionName&#39; # format: &#39;tableName,startKey,id&#39;<br>    split &#39;tableName&#39;, &#39;splitKey&#39;<br>    split &#39;regionName&#39;, &#39;splitKey&#39;</p>
+<h3 id="trace"><a href="#trace" class="headerlink" title="trace"></a>trace</h3><p>Start or Stop tracing using HTrace.<br>Always returns true if tracing is running, otherwise false.<br>If the first argument is &#39;start&#39;, new span is started.<br>If the first argument is &#39;stop&#39;, current running span is stopped.<br>(&#39;stop&#39; returns false on success.)<br>If the first argument is &#39;status&#39;, just returns if or not tracing is running.<br>On &#39;start&#39;-ing, you can optionally pass the name of span as the second argument.<br>The default name of span is &#39;HBaseShell&#39;.<br>Repeating &#39;start&#39; does not start nested span.</p>
+<p>Examples:</p>
+<p>  hbase&gt; trace &#39;start&#39;<br>  hbase&gt; trace &#39;status&#39;<br>  hbase&gt; trace &#39;stop&#39;</p>
+<p>  hbase&gt; trace &#39;start&#39;, &#39;MySpanName&#39;<br>  hbase&gt; trace &#39;stop&#39;</p>
+<h3 id="unassign"><a href="#unassign" class="headerlink" title="unassign"></a>unassign</h3><p>Unassign a region. Unassign will close region in current location and then<br>reopen it again.  Pass &#39;true&#39; to force the unassignment (&#39;force&#39; will clear<br>all in-memory state in master before the reassign. If results in<br>double assignment use hbck -fix to resolve. To be used by experts).<br>Use with caution.  For expert use only.  Examples:</p>
+<p>  hbase&gt; unassign &#39;REGIONNAME&#39;<br>  hbase&gt; unassign &#39;REGIONNAME&#39;, true<br>  hbase&gt; unassign &#39;ENCODED_REGIONNAME&#39;<br>  hbase&gt; unassign &#39;ENCODED_REGIONNAME&#39;, true</p>
+<h3 id="wal-roll"><a href="#wal-roll" class="headerlink" title="wal_roll"></a>wal_roll</h3><p>Roll the log writer. That is, start writing log messages to a new file.<br>The name of the regionserver should be given as the parameter.  A<br>&#39;server_name&#39; is the host, port plus startcode of a regionserver. For<br>example: host187.example.com,60020,1289493121758 (find servername in<br>master ui or when you do detailed status in shell)</p>
+<h3 id="zk-dump"><a href="#zk-dump" class="headerlink" title="zk_dump"></a>zk_dump</h3><p>Dump status of HBase cluster as seen by ZooKeeper.</p>
+<hr>
+<p>WARNING: Above commands are for &#39;experts&#39;-only as misuse can damage an install</p>
+<h3 id="add-peer"><a href="#add-peer" class="headerlink" title="add_peer"></a>add_peer</h3><p>A peer can either be another HBase cluster or a custom replication endpoint. In either case an id<br>must be specified to identify the peer.</p>
+<p>For a HBase cluster peer, a cluster key must be provided and is composed like this:<br>hbase.zookeeper.quorum:hbase.zookeeper.property.clientPort:zookeeper.znode.parent<br>This gives a full path for HBase to connect to another HBase cluster. An optional parameter for<br>table column families identifies which column families will be replicated to the peer cluster.<br>Examples:</p>
+<p>  hbase&gt; add_peer &#39;1&#39;, &quot;server1.cie.com:2181:/hbase&quot;<br>  hbase&gt; add_peer &#39;2&#39;, &quot;zk1,zk2,zk3:2182:/hbase-prod&quot;<br>  hbase&gt; add_peer &#39;3&#39;, &quot;zk4,zk5,zk6:11000:/hbase-test&quot;, &quot;table1; table2:cf1; table3:cf1,cf2&quot;<br>  hbase&gt; add_peer &#39;4&#39;, CLUSTER_KEY =&gt; &quot;server1.cie.com:2181:/hbase&quot;<br>  hbase&gt; add_peer &#39;5&#39;, CLUSTER_KEY =&gt; &quot;server1.cie.com:2181:/hbase&quot;,<br>    TABLE_CFS =&gt; { &quot;table1&quot; =&gt; [], &quot;table2&quot; =&gt; [&quot;cf1&quot;], &quot;table3&quot; =&gt; [&quot;cf1&quot;, &quot;cf2&quot;] }</p>
+<p>For a custom replication endpoint, the ENDPOINT_CLASSNAME can be provided. Two optional arguments<br>are DATA and CONFIG which can be specified to set different either the peer_data or configuration<br>for the custom replication endpoint. Table column families is optional and can be specified with<br>the key TABLE_CFS.</p>
+<p>  hbase&gt; add_peer &#39;6&#39;, ENDPOINT_CLASSNAME =&gt; &#39;org.apache.hadoop.hbase.MyReplicationEndpoint&#39;<br>  hbase&gt; add_peer &#39;7&#39;, ENDPOINT_CLASSNAME =&gt; &#39;org.apache.hadoop.hbase.MyReplicationEndpoint&#39;,<br>    DATA =&gt; { &quot;key1&quot; =&gt; 1 }<br>  hbase&gt; add_peer &#39;8&#39;, ENDPOINT_CLASSNAME =&gt; &#39;org.apache.hadoop.hbase.MyReplicationEndpoint&#39;,<br>    CONFIG =&gt; { &quot;config1&quot; =&gt; &quot;value1&quot;, &quot;config2&quot; =&gt; &quot;value2&quot; }<br>  hbase&gt; add_peer &#39;9&#39;, ENDPOINT_CLASSNAME =&gt; &#39;org.apache.hadoop.hbase.MyReplicationEndpoint&#39;,<br>    DATA =&gt; { &quot;key1&quot; =&gt; 1 }, CONFIG =&gt; { &quot;config1&quot; =&gt; &quot;value1&quot;, &quot;config2&quot; =&gt; &quot;value2&quot; },<br>  hbase&gt; add_peer &#39;10&#39;, ENDPOINT_CLASSNAME =&gt; &#39;org.apache.hadoop.hbase.MyReplicationEndpoint&#39;,<br>    TABLE_CFS =&gt; { &quot;table1&quot; =&gt; [], &quot;table2&quot; =&gt; [&quot;cf1&quot;], &quot;table3&quot; =&gt; [&quot;cf1&quot;, &quot;cf2&quot;] }<br>  hbase&gt; add_peer &#39;11&#39;, ENDPOINT_CLASSNAME =&gt; &#39;org.apache.hadoop.hbase.MyReplicationEndpoint&#39;,<br>    DATA =&gt; { &quot;key1&quot; =&gt; 1 }, CONFIG =&gt; { &quot;config1&quot; =&gt; &quot;value1&quot;, &quot;config2&quot; =&gt; &quot;value2&quot; },<br>    TABLE_CFS =&gt; { &quot;table1&quot; =&gt; [], &quot;table2&quot; =&gt; [&quot;cf1&quot;], &quot;table3&quot; =&gt; [&quot;cf1&quot;, &quot;cf2&quot;] }</p>
+<p>Note: Either CLUSTER_KEY or ENDPOINT_CLASSNAME must be specified but not both.</p>
+<h3 id="append-peer-tableCFs"><a href="#append-peer-tableCFs" class="headerlink" title="append_peer_tableCFs"></a>append_peer_tableCFs</h3><p>Append a replicable table-cf config for the specified peer<br>Examples:</p>
+<p>  // append a table / table-cf to be replicable for a peer<br>  hbase&gt; append_peer_tableCFs &#39;2&#39;, &quot;table4:cfA,cfB&quot;</p>
+<h3 id="disable-peer"><a href="#disable-peer" class="headerlink" title="disable_peer"></a>disable_peer</h3><p>Stops the replication stream to the specified cluster, but still<br>keeps track of new edits to replicate.</p>
+<p>Examples:</p>
+<p>  hbase&gt; disable_peer &#39;1&#39;</p>
+<h3 id="disable-table-replication"><a href="#disable-table-replication" class="headerlink" title="disable_table_replication"></a>disable_table_replication</h3><p>Disable a table&#39;s replication switch.</p>
+<p>Examples:</p>
+<p>  hbase&gt; disable_table_replication &#39;table_name&#39;</p>
+<h3 id="enable-peer"><a href="#enable-peer" class="headerlink" title="enable_peer"></a>enable_peer</h3><p>Restarts the replication to the specified peer cluster,<br>continuing from where it was disabled.</p>
+<p>Examples:</p>
+<p>  hbase&gt; enable_peer &#39;1&#39;</p>
+<h3 id="enable-table-replication"><a href="#enable-table-replication" class="headerlink" title="enable_table_replication"></a>enable_table_replication</h3><p>Enable a table&#39;s replication switch.</p>
+<p>Examples:</p>
+<p>  hbase&gt; enable_table_replication &#39;table_name&#39;</p>
+<h3 id="list-peers"><a href="#list-peers" class="headerlink" title="list_peers"></a>list_peers</h3><p>List all replication peer clusters.</p>
+<p>  hbase&gt; list_peers</p>
+<h3 id="list-replicated-tables"><a href="#list-replicated-tables" class="headerlink" title="list_replicated_tables"></a>list_replicated_tables</h3><p>List all the tables and column families replicated from this cluster</p>
+<p>  hbase&gt; list_replicated_tables<br>  hbase&gt; list_replicated_tables &#39;abc.*&#39;</p>
+<h3 id="remove-peer"><a href="#remove-peer" class="headerlink" title="remove_peer"></a>remove_peer</h3><p>Stops the specified replication stream and deletes all the meta<br>information kept about it. Examples:</p>
+<p>  hbase&gt; remove_peer &#39;1&#39;</p>
+<h3 id="remove-peer-tableCFs"><a href="#remove-peer-tableCFs" class="headerlink" title="remove_peer_tableCFs"></a>remove_peer_tableCFs</h3><p>Remove a table / table-cf from the table-cfs config for the specified peer<br>Examples:</p>
+<p>  // Remove a table / table-cf from the replicable table-cfs for a peer<br>  hbase&gt; remove_peer_tableCFs &#39;2&#39;, &quot;table1&quot;<br>  hbase&gt; remove_peer_tableCFs &#39;2&#39;, &quot;table1:cf1&quot;</p>
+<h3 id="set-peer-tableCFs"><a href="#set-peer-tableCFs" class="headerlink" title="set_peer_tableCFs"></a>set_peer_tableCFs</h3><p>  Set the replicable table-cf config for the specified peer<br>  Examples:</p>
+<pre><code>// set all tables to be replicable for a peer
+hbase&gt; set_peer_tableCFs &#39;1&#39;, &quot;&quot;
+hbase&gt; set_peer_tableCFs &#39;1&#39;
+// set table / table-cf to be replicable for a peer, for a table without
+// an explicit column-family list, all replicable column-families (with
+// replication_scope == 1) will be replicated
+hbase&gt; set_peer_tableCFs &#39;2&#39;, &quot;table1; table2:cf1,cf2; table3:cfA,cfB&quot;
+</code></pre>
+<h3 id="show-peer-tableCFs"><a href="#show-peer-tableCFs" class="headerlink" title="show_peer_tableCFs"></a>show_peer_tableCFs</h3><p>  Show replicable table-cf config for the specified peer.</p>
+<pre><code>hbase&gt; show_peer_tableCFs
+</code></pre>
+<hr>
+<p>In order to use these tools, hbase.replication must be true.</p>
+<h3 id="clone-snapshot"><a href="#clone-snapshot" class="headerlink" title="clone_snapshot"></a>clone_snapshot</h3><p>Create a new table by cloning the snapshot content.<br>There&#39;re no copies of data involved.<br>And writing on the newly created table will not influence the snapshot data.</p>
+<p>Examples:<br>  hbase&gt; clone_snapshot &#39;snapshotName&#39;, &#39;tableName&#39;<br>  hbase&gt; clone_snapshot &#39;snapshotName&#39;, &#39;namespace:tableName&#39;</p>
+<h3 id="delete-all-snapshot"><a href="#delete-all-snapshot" class="headerlink" title="delete_all_snapshot"></a>delete_all_snapshot</h3><p>Delete all of the snapshots matching the given regex. Examples:</p>
+<p>  hbase&gt; delete_all_snapshot &#39;s.*&#39;</p>
+<h3 id="delete-snapshot"><a href="#delete-snapshot" class="headerlink" title="delete_snapshot"></a>delete_snapshot</h3><p>Delete a specified snapshot. Examples:</p>
+<p>  hbase&gt; delete_snapshot &#39;snapshotName&#39;,</p>
+<h3 id="list-snapshots"><a href="#list-snapshots" class="headerlink" title="list_snapshots"></a>list_snapshots</h3><p>List all snapshots taken (by printing the names and relative information).<br>Optional regular expression parameter could be used to filter the output<br>by snapshot name.</p>
+<p>Examples:<br>  hbase&gt; list_snapshots<br>  hbase&gt; list_snapshots &#39;abc.*&#39;</p>
+<h3 id="restore-snapshot"><a href="#restore-snapshot" class="headerlink" title="restore_snapshot"></a>restore_snapshot</h3><p>Restore a specified snapshot.<br>The restore will replace the content of the original table,<br>bringing back the content to the snapshot state.<br>The table must be disabled.</p>
+<p>Examples:<br>  hbase&gt; restore_snapshot &#39;snapshotName&#39;</p>
+<h3 id="snapshot"><a href="#snapshot" class="headerlink" title="snapshot"></a>snapshot</h3><p>Take a snapshot of specified table. Examples:</p>
+<p>  hbase&gt; snapshot &#39;sourceTable&#39;, &#39;snapshotName&#39;<br>  hbase&gt; snapshot &#39;namespace:sourceTable&#39;, &#39;snapshotName&#39;, {SKIP_FLUSH =&gt; true}</p>
+<h3 id="update-all-config"><a href="#update-all-config" class="headerlink" title="update_all_config"></a>update_all_config</h3><p>Reload a subset of configuration on all servers in the cluster.  See<br><a target="_blank" rel="noopener" href="http://hbase.apache.org/book.html?dyn_config">http://hbase.apache.org/book.html?dyn_config</a> for more details. Here is how<br>you would run the command in the hbase shell:<br>  hbase&gt; update_all_config</p>
+<h3 id="update-config"><a href="#update-config" class="headerlink" title="update_config"></a>update_config</h3><p>Reload a subset of configuration on server &#39;servername&#39; where servername is<br>host, port plus startcode. For example: host187.example.com,60020,1289493121758<br>See <a target="_blank" rel="noopener" href="http://hbase.apache.org/book.html?dyn_config">http://hbase.apache.org/book.html?dyn_config</a> for more details. Here is how<br>you would run the command in the hbase shell:<br>  hbase&gt; update_config &#39;servername&#39;</p>
+<h3 id="list-quotas"><a href="#list-quotas" class="headerlink" title="list_quotas"></a>list_quotas</h3><p>List the quota settings added to the system.<br>You can filter the result based on USER, TABLE, or NAMESPACE.</p>
+<p>For example:</p>
+<pre><code>hbase&gt; list_quotas
+hbase&gt; list_quotas USER =&gt; &#39;bob.*&#39;
+hbase&gt; list_quotas USER =&gt; &#39;bob.*&#39;, TABLE =&gt; &#39;t1&#39;
+hbase&gt; list_quotas USER =&gt; &#39;bob.*&#39;, NAMESPACE =&gt; &#39;ns.*&#39;
+hbase&gt; list_quotas TABLE =&gt; &#39;myTable&#39;
+hbase&gt; list_quotas NAMESPACE =&gt; &#39;ns.*&#39;
+</code></pre>
+<h3 id="set-quota"><a href="#set-quota" class="headerlink" title="set_quota"></a>set_quota</h3><p>Set a quota for a user, table, or namespace.<br>Syntax : set_quota TYPE =&gt; <type>, <args></p>
+<p>TYPE =&gt; THROTTLE<br>User can either set quota on read, write or on both the requests together(i.e., read+write)<br>The read, write, or read+write(default throttle type) request limit can be expressed using<br>the form 100req/sec, 100req/min and the read, write, read+write(default throttle type) limit<br>can be expressed using the form 100k/sec, 100M/min with (B, K, M, G, T, P) as valid size unit<br>and (sec, min, hour, day) as valid time unit.<br>Currently the throttle limit is per machine - a limit of 100req/min<br>means that each machine can execute 100req/min.</p>
+<p>For example:</p>
+<pre><code>hbase&gt; set_quota TYPE =&gt; THROTTLE, USER =&gt; &#39;u1&#39;, LIMIT =&gt; &#39;10req/sec&#39;
+hbase&gt; set_quota TYPE =&gt; THROTTLE, THROTTLE_TYPE =&gt; READ, USER =&gt; &#39;u1&#39;, LIMIT =&gt; &#39;10req/sec&#39;
+
+hbase&gt; set_quota TYPE =&gt; THROTTLE, USER =&gt; &#39;u1&#39;, LIMIT =&gt; &#39;10M/sec&#39;
+hbase&gt; set_quota TYPE =&gt; THROTTLE, THROTTLE_TYPE =&gt; WRITE, USER =&gt; &#39;u1&#39;, LIMIT =&gt; &#39;10M/sec&#39;
+
+hbase&gt; set_quota TYPE =&gt; THROTTLE, USER =&gt; &#39;u1&#39;, TABLE =&gt; &#39;t2&#39;, LIMIT =&gt; &#39;5K/min&#39;
+hbase&gt; set_quota TYPE =&gt; THROTTLE, USER =&gt; &#39;u1&#39;, NAMESPACE =&gt; &#39;ns2&#39;, LIMIT =&gt; NONE
+
+hbase&gt; set_quota TYPE =&gt; THROTTLE, NAMESPACE =&gt; &#39;ns1&#39;, LIMIT =&gt; &#39;10req/sec&#39;
+hbase&gt; set_quota TYPE =&gt; THROTTLE, TABLE =&gt; &#39;t1&#39;, LIMIT =&gt; &#39;10M/sec&#39;
+hbase&gt; set_quota TYPE =&gt; THROTTLE, THROTTLE_TYPE =&gt; WRITE, TABLE =&gt; &#39;t1&#39;, LIMIT =&gt; &#39;10M/sec&#39;
+hbase&gt; set_quota TYPE =&gt; THROTTLE, USER =&gt; &#39;u1&#39;, LIMIT =&gt; NONE
+hbase&gt; set_quota TYPE =&gt; THROTTLE, THROTTLE_TYPE =&gt; WRITE, USER =&gt; &#39;u1&#39;, LIMIT =&gt; NONE
+
+hbase&gt; set_quota USER =&gt; &#39;u1&#39;, GLOBAL_BYPASS =&gt; true
+</code></pre>
+<h3 id="grant"><a href="#grant" class="headerlink" title="grant"></a>grant</h3><p>Grant users specific rights.<br>Syntax : <code>grant &lt;user&gt;, &lt;permissions&gt; [, &lt;@namespace&gt; [, &lt;table&gt; [, &lt;column family&gt; [, &lt;column qualifier&gt;]]]</code></p>
+<p>permissions is either zero or more letters from the set &quot;RWXCA&quot;.<br>READ(&#39;R&#39;), WRITE(&#39;W&#39;), EXEC(&#39;X&#39;), CREATE(&#39;C&#39;), ADMIN(&#39;A&#39;)</p>
+<p>Note: Groups and users are granted access in the same way, but groups are prefixed with an &#39;@&#39;<br>      character. In the same way, tables and namespaces are specified, but namespaces are<br>      prefixed with an &#39;@&#39; character.</p>
+<p>For example:</p>
+<pre><code>hbase&gt; grant &#39;bobsmith&#39;, &#39;RWXCA&#39;
+hbase&gt; grant &#39;@admins&#39;, &#39;RWXCA&#39;
+hbase&gt; grant &#39;bobsmith&#39;, &#39;RWXCA&#39;, &#39;@ns1&#39;
+hbase&gt; grant &#39;bobsmith&#39;, &#39;RW&#39;, &#39;t1&#39;, &#39;f1&#39;, &#39;col1&#39;
+hbase&gt; grant &#39;bobsmith&#39;, &#39;RW&#39;, &#39;ns1:t1&#39;, &#39;f1&#39;, &#39;col1&#39;
+</code></pre>
+<h3 id="list-security-capabilities"><a href="#list-security-capabilities" class="headerlink" title="list_security_capabilities"></a>list_security_capabilities</h3><p>List supported security capabilities</p>
+<p>Example:<br>    hbase&gt; list_security_capabilities</p>
+<h3 id="revoke"><a href="#revoke" class="headerlink" title="revoke"></a>revoke</h3><p>Revoke a user&#39;s access rights.<br>Syntax : <code>revoke &lt;user&gt; [, &lt;@namespace&gt; [, &lt;table&gt; [, &lt;column family&gt; [, &lt;column qualifier&gt;]]]]</code></p>
+<p>Note: Groups and users access are revoked in the same way, but groups are prefixed with an &#39;@&#39;<br>      character. In the same way, tables and namespaces are specified, but namespaces are<br>      prefixed with an &#39;@&#39; character.</p>
+<p>For example:</p>
+<pre><code>hbase&gt; revoke &#39;bobsmith&#39;
+hbase&gt; revoke &#39;@admins&#39;
+hbase&gt; revoke &#39;bobsmith&#39;, &#39;@ns1&#39;
+hbase&gt; revoke &#39;bobsmith&#39;, &#39;t1&#39;, &#39;f1&#39;, &#39;col1&#39;
+hbase&gt; revoke &#39;bobsmith&#39;, &#39;ns1:t1&#39;, &#39;f1&#39;, &#39;col1&#39;
+</code></pre>
+<h3 id="user-permission"><a href="#user-permission" class="headerlink" title="user_permission"></a>user_permission</h3><p>Show all permissions for the particular user.<br>Syntax : <code>user_permission &lt;table&gt;</code></p>
+<p>Note: A namespace must always precede with &#39;@&#39; character.</p>
+<p>For example:</p>
+<pre><code>hbase&gt; user_permission
+hbase&gt; user_permission &#39;@ns1&#39;
+hbase&gt; user_permission &#39;@.*&#39;
+hbase&gt; user_permission &#39;@^[a-c].*&#39;
+hbase&gt; user_permission &#39;table1&#39;
+hbase&gt; user_permission &#39;namespace1:table1&#39;
+hbase&gt; user_permission &#39;.*&#39;
+hbase&gt; user_permission &#39;^[A-C].*&#39;
+</code></pre>
+<hr>
+<p>NOTE: Above commands are only applicable if running with the AccessController coprocessor</p>
+<h3 id="abort-procedure"><a href="#abort-procedure" class="headerlink" title="abort_procedure"></a>abort_procedure</h3><p>Given a procedure Id (and optional boolean may_interrupt_if_running parameter,<br>default is true), abort a procedure in hbase. Use with caution. Some procedures<br>might not be abortable. For experts only.</p>
+<p>If this command is accepted and the procedure is in the process of aborting,<br>it will return true; if the procedure could not be aborted (eg. procedure<br>does not exist, or procedure already completed or abort will cause corruption),<br>this command will return false.</p>
+<p>Examples:</p>
+<p>  hbase&gt; abort_procedure proc_id<br>  hbase&gt; abort_procedure proc_id, true<br>  hbase&gt; abort_procedure proc_id, false</p>
+<h3 id="list-procedures"><a href="#list-procedures" class="headerlink" title="list_procedures"></a>list_procedures</h3><p>List all procedures in hbase. Examples:</p>
+<p>  hbase&gt; list_procedures</p>
+<h3 id="add-labels"><a href="#add-labels" class="headerlink" title="add_labels"></a>add_labels</h3><p>Add a set of visibility labels.<br>Syntax : add_labels [label1, label2]</p>
+<p>For example:</p>
+<pre><code>hbase&gt; add_labels [&#39;SECRET&#39;,&#39;PRIVATE&#39;]
+</code></pre>
+<h3 id="clear-auths"><a href="#clear-auths" class="headerlink" title="clear_auths"></a>clear_auths</h3><p>Clear visibility labels from a user or group<br>Syntax : clear_auths &#39;user&#39;,[label1, label2]</p>
+<p>For example:</p>
+<pre><code>hbase&gt; clear_auths &#39;user1&#39;, [&#39;SECRET&#39;,&#39;PRIVATE&#39;]
+hbase&gt; clear_auths &#39;@group1&#39;, [&#39;SECRET&#39;,&#39;PRIVATE&#39;]
+</code></pre>
+<h3 id="get-auths"><a href="#get-auths" class="headerlink" title="get_auths"></a>get_auths</h3><p>Get the visibility labels set for a particular user or group<br>Syntax : get_auths &#39;user&#39;</p>
+<p>For example:</p>
+<pre><code>hbase&gt; get_auths &#39;user1&#39;
+hbase&gt; get_auths &#39;@group1&#39;
+</code></pre>
+<h3 id="list-labels"><a href="#list-labels" class="headerlink" title="list_labels"></a>list_labels</h3><p>List the visibility labels defined in the system.<br>Optional regular expression parameter could be used to filter the labels being returned.<br>Syntax : list_labels</p>
+<p>For example:</p>
+<pre><code>hbase&gt; list_labels &#39;secret.*&#39;
+hbase&gt; list_labels
+</code></pre>
+<h3 id="set-auths"><a href="#set-auths" class="headerlink" title="set_auths"></a>set_auths</h3><p>Add a set of visibility labels for a user or group<br>Syntax : set_auths &#39;user&#39;,[label1, label2]</p>
+<p>For example:</p>
+<pre><code>hbase&gt; set_auths &#39;user1&#39;, [&#39;SECRET&#39;,&#39;PRIVATE&#39;]
+hbase&gt; set_auths &#39;@group1&#39;, [&#39;SECRET&#39;,&#39;PRIVATE&#39;]
+</code></pre>
+<h3 id="set-visibility"><a href="#set-visibility" class="headerlink" title="set_visibility"></a>set_visibility</h3><p>Set the visibility expression on one or more existing cells.</p>
+<p>Pass table name, visibility expression, and a dictionary containing<br>scanner specifications.  Scanner specifications may include one or more<br>of: TIMERANGE, FILTER, STARTROW, STOPROW, ROWPREFIXFILTER, TIMESTAMP, or COLUMNS</p>
+<p>If no columns are specified, all columns will be included.<br>To include all members of a column family, leave the qualifier empty as in<br>&#39;col_family:&#39;.</p>
+<p>The filter can be specified in two ways:</p>
+<ol>
+<li>Using a filterString - more information on this is available in the<br>Filter Language document attached to the HBASE-4176 JIRA</li>
+<li>Using the entire package name of the filter.</li>
+</ol>
+<p>Examples:</p>
+<pre><code>hbase&gt; set_visibility &#39;t1&#39;, &#39;A|B&#39;, &#123;COLUMNS =&gt; [&#39;c1&#39;, &#39;c2&#39;]&#125;
+hbase&gt; set_visibility &#39;t1&#39;, &#39;(A&amp;B)|C&#39;, &#123;COLUMNS =&gt; &#39;c1&#39;,TIMERANGE =&gt; [1303668804, 1303668904]&#125;
+hbase&gt; set_visibility &#39;t1&#39;, &#39;A&amp;B&amp;C&#39;, &#123;ROWPREFIXFILTER =&gt; &#39;row2&#39;,FILTER =&gt; &quot;(QualifierFilter (&gt;=, &#39;binary:xyz&#39;)) AND (TimestampsFilter ( 123, 456))&quot;&#125;
+</code></pre>
+<p>This command will only affect existing cells and is expected to be mainly<br>useful for feature testing and functional verification.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hbase/" rel="tag"># hbase</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/03/03/hbase%E5%B7%A5%E5%85%B7%E5%91%BD%E4%BB%A4/" rel="prev" title="hbase工具命令">
+                  <i class="fa fa-chevron-left"></i> hbase工具命令
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/03/03/hbase%E5%AE%89%E8%A3%85/" rel="next" title="hbase安装">
+                  hbase安装 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/mist/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+<script>
+NexT.utils.loadComments('#valine-comments', () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
+    new Valine(Object.assign({"enable":true,"appId":"MReDMTqKpcLEQVg2IQ2XTdvz-gzGzoHsz","appKey":"YQEiqNfKWJKOozdjCb2O9hGt","serverURLs":"https://avoscloud.com","placeholder":"Just go go","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"lang":null,"visitor":false,"comment_count":true,"recordIP":false,"enableQQ":false,"requiredFields":[]}, {
+      el: '#valine-comments',
+      path: "/2022/03/03/hbase%20shell%E5%91%BD%E4%BB%A4/",
+      serverURLs: "https://avoscloud.com"
+    }));
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
