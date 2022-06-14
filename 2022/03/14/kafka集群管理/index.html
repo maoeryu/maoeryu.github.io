@@ -41,7 +41,7 @@
 <meta property="og:image" content="https://maoeryu.github.io/images/kafka_manager11.png">
 <meta property="og:image" content="https://maoeryu.github.io/images/kafka_manager12.png">
 <meta property="article:published_time" content="2022-03-13T16:00:00.000Z">
-<meta property="article:modified_time" content="2022-03-18T02:48:41.525Z">
+<meta property="article:modified_time" content="2022-06-09T02:11:41.816Z">
 <meta property="article:author" content="maoeryu">
 <meta property="article:tag" content="kafka">
 <meta name="twitter:card" content="summary">
@@ -184,7 +184,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">83</span>
+          <span class="site-state-item-count">84</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -269,7 +269,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">Edited on</span>
-        <time title="Modified: 2022-03-18 10:48:41" itemprop="dateModified" datetime="2022-03-18T10:48:41+08:00">2022-03-18</time>
+        <time title="Modified: 2022-06-09 10:11:41" itemprop="dateModified" datetime="2022-06-09T10:11:41+08:00">2022-06-09</time>
       </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -324,7 +324,7 @@
 <h2 id="topic动态配置"><a href="#topic动态配置" class="headerlink" title="topic动态配置"></a>topic动态配置</h2><h3 id="增加配置"><a href="#增加配置" class="headerlink" title="增加配置"></a>增加配置</h3><p>以下这些topic级别的参数可以动态修改而无须重启broker.</p>
 <img src="/images/kafka_manager3.png" style="margin-left: 0px; padding-bottom: 10px;">
 
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-topics.sh --create --zookeeper localhost:2181 --partitions 1 --replication-factor 1 --topic <span class="built_in">test</span></span><br><span class="line">bin/kafka-configs.sh --zookeeper localhost:2181 --alter --entity-type topics --entity-name <span class="built_in">test</span> --add-config preallocate = <span class="literal">true</span>,segment.bytes = 104857600</span><br><span class="line"></span><br><span class="line">bin/kafka-configs.sh --describe --zookeeper localhost:2181 --entity-type topics --entity-name <span class="built_in">test</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-topics.sh --create --zookeeper localhost:2181 --partitions 1 --replication-factor 1 --topic <span class="built_in">test</span></span><br><span class="line">bin/kafka-configs.sh --zookeeper localhost:2181 --alter --entity-type topics --entity-name <span class="built_in">test</span> --add-config preallocate = <span class="literal">true</span>,segment.bytes = 104857600</span><br><span class="line">bin/kafka-configs.sh --zookeeper localhost:2181 --alter --entity-type topics --entity-name xx1 --add-config max.message.bytes=104857600</span><br><span class="line"></span><br><span class="line">bin/kafka-configs.sh --describe --zookeeper localhost:2181 --entity-type topics --entity-name <span class="built_in">test</span></span><br></pre></td></tr></table></figure>
 
 <h3 id="删除配置"><a href="#删除配置" class="headerlink" title="删除配置"></a>删除配置</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-configs.sh --zookeeper localhost:2181 --alter --entity-type topics --entity-name <span class="built_in">test</span> --delete-config preallocate</span><br></pre></td></tr></table></figure>
 
@@ -376,11 +376,17 @@
 <h2 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h2><h3 id="UnknownTopicOrPartitionException"><a href="#UnknownTopicOrPartitionException" class="headerlink" title="UnknownTopicOrPartitionException"></a>UnknownTopicOrPartitionException</h3><p>表示请求的分区数据不在抛出该异常的broker上,属于可重试异常,通常是能够自动修复的.</p>
 <h3 id="LEADER-NOT-AVAILABLE"><a href="#LEADER-NOT-AVAILABLE" class="headerlink" title="LEADER_NOT_AVAILABLE"></a>LEADER_NOT_AVAILABLE</h3><p>对应分区当前没有leader,没有leader的原因可能有很多,比如正在进行新leader的选举,抑或是该topic正在被删除.</p>
 <h3 id="NotLeaderForPartitionException"><a href="#NotLeaderForPartitionException" class="headerlink" title="NotLeaderForPartitionException"></a>NotLeaderForPartitionException</h3><p>指当前broker已不是对应分区的leader broker,这通常发生在leader变更的情况下,瞬时的.</p>
-<h3 id="TimeoutException"><a href="#TimeoutException" class="headerlink" title="TimeoutException"></a>TimeoutException</h3><h3 id="RecordTooLargeException"><a href="#RecordTooLargeException" class="headerlink" title="RecordTooLargeException"></a>RecordTooLargeException</h3><p>broker端参数<code>message.max.bytes</code><br>设置broker端能处理的最大消息长度.</p>
+<h3 id="TimeoutException"><a href="#TimeoutException" class="headerlink" title="TimeoutException"></a>TimeoutException</h3><h3 id="RecordTooLargeException"><a href="#RecordTooLargeException" class="headerlink" title="RecordTooLargeException"></a>RecordTooLargeException</h3><p>broker端参数<code>message.max.bytes</code><br>设置broker端能处理的最大消息长度.可动态修改某个topic的消息长度,不用重启broker.</p>
+<p><code>replica.fetch.max.bytes</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">org.apache.kafka.common.errors.RecordTooLargeException: The request included a message larger than the max message size the server will accept.</span><br></pre></td></tr></table></figure>
+
 <p>producer端参数<code>max.request.size</code><br>设置producer端能处理的最大消息长度.</p>
-<p>consumer端参数<code>fetch.max.bytes</code>(新版本)、<code>fetch.message.max.bytes</code>(旧版本)<br>设置consumer端能处理的最大消息长度.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">org.apache.kafka.common.errors.RecordTooLargeException: The message is 1082003 bytes when serialized which is larger than the maximum request size you have configured with the max.request.size configuration.</span><br></pre></td></tr></table></figure>
+
+<p>consumer端参数<code>fetch.max.bytes</code>(新版本)、<code>fetch.message.max.bytes</code>(旧版本)<br>设置consumer端能处理的最大消息长度.<br><code>max.partition.fetch.bytes</code></p>
 <p>broker端参数<code>socket.request.max.bytes</code><br>设置broker端Socket请求的最大字节数.通常用户不需要额外配置该参数,但如果向Kafka发送超过100MB的超大消息,则必须要调整该参数的值.</p>
 <p>当前,这些参数的默认值(<code>socket.request.max.bytes</code>的默认值是100MB)大约都在1MB左右,对于有些生产环境的大消息而言,需要同时调整上面这些参数.</p>
+<p><code>max.request.size &lt; message.max.bytes &lt; fetch.max.bytes</code></p>
 <h3 id="NetworkException"><a href="#NetworkException" class="headerlink" title="NetworkException"></a>NetworkException</h3><p>可重试的异常,瞬时出现.</p>
 <h3 id="ILLEGAL-GENERATION"><a href="#ILLEGAL-GENERATION" class="headerlink" title="ILLEGAL_GENERATION"></a>ILLEGAL_GENERATION</h3><h2 id="JMX监控"><a href="#JMX监控" class="headerlink" title="JMX监控"></a>JMX监控</h2><h3 id="broker端"><a href="#broker端" class="headerlink" title="broker端"></a>broker端</h3><h4 id="消息入站-出站速率"><a href="#消息入站-出站速率" class="headerlink" title="消息入站/出站速率"></a>消息入站/出站速率</h4><p>单位字节/秒,分别表示Kafka broker每秒接收/发送的消息字节数.<br>所谓接收消息,即broker接收来自producer端发送的消息或follower broker接收来自leader broker发送的消息,而发送消息则是指leader broker需要将消息备份到follower broker.</p>
 <img src="/images/kafka_manager7.png" style="margin-left: 0px; padding-bottom: 10px;">
@@ -448,8 +454,8 @@
 
           <div class="post-nav">
             <div class="post-nav-item">
-                <a href="/2022/03/14/kafka%20producer/" rel="prev" title="kafka producer">
-                  <i class="fa fa-chevron-left"></i> kafka producer
+                <a href="/2022/03/14/kafka%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/" rel="prev" title="kafka集群部署">
+                  <i class="fa fa-chevron-left"></i> kafka集群部署
                 </a>
             </div>
             <div class="post-nav-item">
