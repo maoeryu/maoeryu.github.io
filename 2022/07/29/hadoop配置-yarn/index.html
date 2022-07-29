@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Mist","version":"8.2.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="hadoop.registry.jaas.contextClient定义 JAAS 上下文的键.在安全模式下使用 hadoop.registry.kerberos.realm未配置kerberos领域:用于设置系统主体不声明其领域的领域,以及任何其他需要该值的帐户.如果为空,则使用正在运行的进程的默认域.如果两者都不知道并且需要领域,那么注册服务&#x2F;客户端将失败. hadoop.registry.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hadoop配置-yarn">
+<meta property="og:url" content="https://maoeryu.github.io/2022/07/29/hadoop%E9%85%8D%E7%BD%AE-yarn/index.html">
+<meta property="og:site_name" content="Flying Pig">
+<meta property="og:description" content="hadoop.registry.jaas.contextClient定义 JAAS 上下文的键.在安全模式下使用 hadoop.registry.kerberos.realm未配置kerberos领域:用于设置系统主体不声明其领域的领域,以及任何其他需要该值的帐户.如果为空,则使用正在运行的进程的默认域.如果两者都不知道并且需要领域,那么注册服务&#x2F;客户端将失败. hadoop.registry.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-07-28T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-07-29T07:16:37.071Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hadoop">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/07/29/hadoop%E9%85%8D%E7%BD%AE-yarn/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hadoop配置-yarn | Flying Pig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Flying Pig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-overview-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">113</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/07/29/hadoop%E9%85%8D%E7%BD%AE-yarn/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Flying Pig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hadoop配置-yarn
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2022-07-29 00:00:00 / Modified: 15:16:37" itemprop="dateCreated datePublished" datetime="2022-07-29T00:00:00+08:00">2022-07-29</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <span id="more"></span>
+<p>hadoop.registry.jaas.context<br>Client<br>定义 JAAS 上下文的键.在安全模式下使用</p>
+<p>hadoop.registry.kerberos.realm<br>未配置<br>kerberos领域:用于设置系统主体不声明其领域的领域,以及任何其他需要该值的帐户.如果为空,则使用正在运行的进程的默认域.如果两者都不知道并且需要领域,那么注册服务/客户端将失败.</p>
+<p>hadoop.registry.rm.enabled<br>FALSE<br>是否启用注册表:RM 是否启动它,创建用户和系统路径,并在容器、应用程序尝试和应用程序完成时清除服务记录</p>
+<p>hadoop.registry.secure<br>FALSE<br>注册表是否安全时要设置的键.打开它会将权限策略从&quot;开放访问&quot;更改为对 kerberos 的限制,用户可以选择在自己的树中添加一个或多个身份验证密钥对.</p>
+<p>hadoop.registry.system.acls<br>sasl:yarn@, sasl:mapred@, sasl:mapred@hdfs@<br>Zookeeper ACL 标识符的逗号分隔列表,具有对安全集群中注册表的系统访问权限.这些被授予对所有条目的完全访问权限.如果 SASL 条目的末尾有一个&quot;@&quot;,它会指示注册表客户端附加默认的 kerberos 域.</p>
+<p>hadoop.registry.zk.connection.timeout.ms<br>15000<br>Zookeeper 会话超时(以毫秒为单位)</p>
+<p>hadoop.registry.zk.quorum<br>localhost:2181<br>为注册表定义 Zookeeper 仲裁绑定的主机名:端口对列表</p>
+<p>hadoop.registry.zk.retry.ceiling.ms<br>60000<br>Zookeeper 重试限制,以毫秒为单位,在指数退避期间:{@value} 即使重试次数和间隔限制与退避策略相结合,也会设置一个限制,导致重试周期较长</p>
+<p>hadoop.registry.zk.retry.interval.ms<br>1000</p>
+<p>hadoop.registry.zk.retry.times<br>5<br>失败前的 Zookeeper 连接重试次数</p>
+<p>hadoop.registry.zk.root<br>/registry</p>
+<p>hadoop.registry.zk.session.timeout.ms<br>60000<br>Zookeeper 会话超时(以毫秒为单位)</p>
+<p>mapreduce.job.hdfs-servers<br>${fs.defaultFS}</p>
+<p>mapreduce.job.jar<br>未配置</p>
+<p>yarn.acl.enable<br>FALSE<br>是否启用了 acls.</p>
+<p>yarn.admin.acl<br><code>*</code><br>谁可以成为 YARN 集群的管理员的 ACL.</p>
+<p>yarn.am.liveness-monitor.expiry-interval-ms<br>600000<br>应用程序主报告的到期间隔.</p>
+<p><font color="#dd0000">yarn.application.classpath</font><br>未配置<br>YARN 应用程序的 CLASSPATH.以逗号分隔的 CLASSPATH 条目列表.当此值为空时,将使用 YARN 应用程序的以下默认 CLASSPATH.对于 <code>Linux:$HADOOP_CONF_DIR、$HADOOP_COMMON_HOME/share/hadoop/common/*、$HADOOP_COMMON_HOME/share/hadoop/common/lib/*、$HADOOP_HDFS_HOME/share/hadoop/hdfs/*、$HADOOP_HDFS_HOME/share/hadoop/hdfs/ lib/*、$HADOOP_YARN_HOME/share/hadoop/yarn/*、$HADOOP_YARN_HOME/share/hadoop/yarn/lib/* 对于 Windows:%HADOOP_CONF_DIR%、%HADOOP_COMMON_HOME%/share/hadoop/common/*、%HADOOP_COMMON_HOME%/共享/hadoop/common/lib/*, %HADOOP_HDFS_HOME%/share/hadoop/hdfs/*, %HADOOP_HDFS_HOME%/share/hadoop/hdfs/lib/*, %HADOOP_YARN_HOME%/share/hadoop/yarn/*</code>,</p>
+<p>yarn.client.application-client-protocol.poll-interval-ms<br>200<br>yarn 客户端库用于轮询应用程序客户端协议异步 API 完成状态的时间间隔.</p>
+<p>yarn.client.failover-max-attempts<br>未配置<br>启用 HA 时,FailoverProxyProvider 应尝试故障转移的最大次数.设置后,它会覆盖 yarn.resourcemanager.connect.max-wait.ms.如果未设置,则从 yarn.resourcemanager.connect.max-wait.ms 推断.</p>
+<p><font color="#dd0000">yarn.client.failover-proxy-provider</font><br>org.apache.hadoop.yarn.client.ConfiguredRMFailoverProxyProvider<br>启用 HA 时,客户端、AM 和 NM 用于故障转移到活动 RM 的类.它应该扩展 org.apache.hadoop.yarn.client.RMFailoverProxyProvider</p>
+<p>yarn.client.failover-retries<br>0<br>启用 HA 时,每次尝试连接到 ResourceManager 的重试次数.换句话说,它是在故障转移尝试期间使用的 ipc.client.connect.max.retries</p>
+<p>yarn.client.failover-retries-on-socket-timeouts<br>0<br>启用 HA 时,在套接字超时时每次尝试连接到 ResourceManager 的重试次数.换句话说,它是在故障转移尝试期间使用的 ipc.client.connect.max.retries.on.timeouts</p>
+<p>yarn.client.failover-sleep-base-ms<br>未配置<br>启用 HA 时,用于计算故障转移之间的指数延迟的睡眠基准(以毫秒为单位).设置后,这会覆盖 yarn.resourcemanager.connect.* 设置.如果未设置,则使用 yarn.resourcemanager.connect.retry-interval.ms 代替.</p>
+<p>yarn.client.failover-sleep-max-ms<br>未配置<br>启用 HA 时,故障转移之间的最大睡眠时间(以毫秒为单位).设置后,这会覆盖 yarn.resourcemanager.connect.* 设置.如果未设置,则使用 yarn.resourcemanager.connect.retry-interval.ms 代替.</p>
+<p>yarn.client.max-cached-nodemanagers-proxies<br>0<br>为节点管理器缓存的最大代理连接数.如果设置为大于零的值,则启用缓存,NMClient 和 MRAppMaster 将缓存指定数量的节点管理器代理.每个节点管理器最多有一个代理.前任.将其配置为 5 将确保客户端最多有 5 个代理缓存与 5 个不同的节点管理器.如果空闲时间超过系统范围的空闲超时期限,这些代理的这些连接将超时.请注意,这可能会导致大型集群出现问题,因为许多连接可能同时存在并导致大量连接线程.用于身份验证的令牌将仅在连接创建时使用.如果收到新令牌,则应关闭较早的连接以使用新令牌.这和 (yarn.client.nodemanager-client-async.thread-pool-max-size) 是相关的并且应该是同步的(不需要它们相等).如果此属性的值为零,则禁用连接缓存,并且连接将使用零空闲超时来防止大型集群上的连接线程过多.</p>
+<p>yarn.client.nodemanager-client-async.thread-pool-max-size<br>500<br>NMClientAsync 中处理容器管理事件的最大线程数</p>
+<p>yarn.client.nodemanager-connect.max-wait-ms<br>180000<br>等待与 NM 建立连接的最长时间</p>
+<p>yarn.client.nodemanager-connect.retry-interval-ms<br>10000<br>每次尝试连接到 NM 之间的时间间隔</p>
+<p>yarn.dispatcher.drain-events.timeout<br>300000<br>YARN 调度程序尝试耗尽事件时的超时时间(以毫秒为单位).通常,这发生在服务停止时.例如,RM 在停止时会耗尽 ATS 事件调度程序.</p>
+<p>yarn.fail-fast<br>FALSE<br>如果 YARN 遇到任何错误,它是否应该快速失败.这是所有其他组件的全局配置,包括 RM、NM 等.如果没有为组件特定的配置设置值(例如 yarn.resourcemanager.fail-fast),则该值将是默认值.</p>
+<p>yarn.http.policy<br>HTTP_ONLY<br>这将为 Yarn Daemons 配置 HTTP 端点.支持以下值: - HTTP_ONLY :仅在 http 上提供服务 - HTTPS_ONLY :仅在 https 上提供服务</p>
+<p>yarn.ipc.client.factory.class<br>未配置<br>工厂创建客户端 IPC 类.</p>
+<p>yarn.ipc.record.factory.class<br>未配置<br>工厂创建可序列化的记录.</p>
+<p>yarn.ipc.rpc.class<br>org.apache.hadoop.yarn.ipc.HadoopYarnProtoRPC<br>RPC 类实现</p>
+<p>yarn.ipc.server.factory.class<br>未配置<br>工厂创建服务器 IPC 类.</p>
+<p>yarn.log-aggregation.retain-check-interval-seconds<br>-1<br>汇总日志保留检查之间的等待时间.如果设置为 0 或负值,则该值被计算为聚合日志保留时间的十分之一.小心将其设置得太小,您将向名称节点发送垃圾邮件.</p>
+<p><font color="#dd0000">yarn.log-aggregation.retain-seconds</font><br>-1<br>在删除聚合日志之前保留多长时间.-1 禁用.小心将其设置得太小,您将向名称节点发送垃圾邮件.</p>
+<p><font color="#dd0000">yarn.log-aggregation-enable</font><br>FALSE<br>是否开启日志聚合.日志聚合收集每个容器的日志,并在应用程序完成后将这些日志移动到文件系统,例如 HDFS.用户可以配置&quot;yarn.nodemanager.remote-app-log-dir&quot;和&quot;yarn.nodemanager.remote-app-log-dir-suffix&quot;属性来确定这些日志的移动位置.用户可以通过 Application Timeline Server 访问日志.</p>
+<p>yarn.nm.liveness-monitor.expiry-interval-ms<br>600000<br>等待节点管理器被认为死了多长时间.</p>
+<p>yarn.nodemanager.address<br>${yarn.nodemanager.hostname}:0<br>NM中容器管理器的地址.</p>
+<p>yarn.nodemanager.admin-env<br>MALLOC_ARENA_MAX=$MALLOC_ARENA_MAX<br>应该从 NodeManager 的环境转发到容器的环境变量.</p>
+<p><font color="#dd0000">yarn.nodemanager.aux-services</font><br>未配置<br>有效的服务名称只能包含 a-zA-Z0-9_ 并且不能以数字开头</p>
+<p><font color="#dd0000">yarn.nodemanager.aux-services.mapreduce_shuffle.class</font><br>org.apache.hadoop.mapred.ShuffleHandler</p>
+<p>yarn.nodemanager.bind-host<br>未配置<br>服务器将绑定到的实际地址.如果设置了这个可选地址,RPC 和 webapp 服务器将分别绑定到这个地址和 yarn.nodemanager.address 和 yarn.nodemanager.webapp.address 中指定的端口.这对于通过设置为 0.0.0.0 使 NM 侦听所有接口非常有用.</p>
+<p>yarn.nodemanager.container-executor.class<br>org.apache.hadoop.yarn.server.nodemanager.DefaultContainerExecutor<br>谁将执行(启动)容器.</p>
+<p>yarn.nodemanager.container-manager.thread-count<br>20<br>容器管理器使用的线程数.</p>
+<p>yarn.nodemanager.container-monitor.interval-ms<br>3000<br>多久监控一次容器.</p>
+<p>yarn.nodemanager.container-monitor.procfs-tree.smaps-based-rss.enabled<br>FALSE<br>通过 /proc/pid/stat 计算的进程的 RSS 使用不是很准确,因为它包括进程的共享页面./proc/pid/smaps 提供有用的信息,如 Private_Dirty、Private_Clean、Shared_Dirty、Shared_Clean,可用于计算更准确的 RSS.启用此标志时,RSS 计算为 Min(Shared_Dirty, Pss) + Private_Clean + Private_Dirty.它不包括 RSS 计算中的只读共享映射.</p>
+<p>yarn.nodemanager.container-monitor.resource-calculator.class<br>未配置<br>计算容器当前资源利用率的类.</p>
+<p>yarn.nodemanager.delete.debug-delay-sec<br>0<br>应用程序完成后节点管理器的 DeletionService 将删除应用程序的本地化文件目录和日志目录之前的秒数.要诊断 Yarn 应用程序问题,请将此属性的值设置得足够大(例如,设置为 600 = 10 分钟)以允许检查这些目录.更改属性值后,您必须重新启动节点管理器才能使其生效.Yarn 应用程序工作目录的根可通过 yarn.nodemanager.local-dirs 属性(见下文)进行配置,Yarn 应用程序日志目录的根可通过 yarn.nodemanager.log-dirs 属性(另见以下).</p>
+<p>yarn.nodemanager.delete.thread-count<br>4<br>清理中使用的线程数.</p>
+<p>yarn.nodemanager.disk-health-checker.interval-ms<br>120000<br>运行磁盘健康检查器代码的频率.</p>
+<p>yarn.nodemanager.disk-health-checker.max-disk-utilization-per-disk-percentage<br>90<br>磁盘被标记为坏时允许的最大磁盘空间利用率百分比.值的范围可以从 0.0 到 100.0.如果该值大于或等于 100,则节点管理器将检查磁盘是否已满.这适用于 yarn.nodemanager.local-dirs 和 yarn.nodemanager.log-dirs.</p>
+<p>yarn.nodemanager.disk-health-checker.min-free-space-per-disk-mb<br>0<br>磁盘上必须可用的最小空间才能使用它.这适用于 yarn.nodemanager.local-dirs 和 yarn.nodemanager.log-dirs.</p>
+<p>yarn.nodemanager.disk-health-checker.min-healthy-disks<br>0.25<br>节点管理器启动新容器时健康的磁盘数量的最小比例.这对应于 yarn.nodemanager.local-dirs 和 yarn.nodemanager.log-dirs.即,如果可用的健康本地目录(或日志目录)数量较少,则不会在此节点上启动新容器.</p>
+<p>yarn.nodemanager.docker-container-executor.exec-name<br>/usr/bin/docker<br>Docker 客户端的名称或路径.</p>
+<p>yarn.nodemanager.env-whitelist<br>JAVA_HOME,HADOOP_COMMON_HOME,HADOOP_HDFS_HOME,HADOOP_CONF_DIR,HADOOP_YARN_HOME<br>容器可能会覆盖而不是使用 NodeManager 的默认值的环境变量.</p>
+<p>yarn.nodemanager.health-checker.interval-ms<br>600000<br>运行节点健康脚本的频率.</p>
+<p>yarn.nodemanager.health-checker.script.opts<br>未配置<br>要传递给运行状况检查脚本的参数.</p>
+<p>yarn.nodemanager.health-checker.script.path<br>未配置<br>要运行的运行状况检查脚本.</p>
+<p>yarn.nodemanager.health-checker.script.timeout-ms<br>1200000<br>脚本超时时间.</p>
+<p>yarn.nodemanager.hostname<br>0.0.0.0<br>NM 的主机名.</p>
+<p>yarn.nodemanager.keytab<br>/etc/krb5.keytab<br>NM 的密钥表.</p>
+<p>yarn.nodemanager.linux-container-executor.cgroups.hierarchy<br>/hadoop-yarn<br>放置 YARN 进程的 cgroups 层次结构(不能包含逗号).如果 yarn.nodemanager.linux-container-executor.cgroups.mount 为 false(也就是说,如果 cgroups 已经预先配置),那么这个 cgroups 层次结构必须已经存在并且可以被 NodeManager 用户写入,否则 NodeManager 可能会失败.仅当 LCE 资源处理程序设置为 CgroupsLCEResourcesHandler 时使用.</p>
+<p>yarn.nodemanager.linux-container-executor.cgroups.mount<br>FALSE<br>如果没有找到,LCE 是否应该尝试挂载 cgroup.仅当 LCE 资源处理程序设置为 CgroupsLCEResourcesHandler 时使用.</p>
+<p>yarn.nodemanager.linux-container-executor.cgroups.mount-path<br>未配置<br>如果未找到 LCE 应尝试挂载 cgroups 的位置.常见位置包括 /sys/fs/cgroup 和 /cgroup；默认位置可能因使用的 Linux 发行版而异.在启动 NodeManager 之前,该路径必须存在.仅当 LCE 资源处理程序设置为 CgroupsLCEResourcesHandler 并且 yarn.nodemanager.linux-container-executor.cgroups.mount 为 true 时使用.</p>
+<p>yarn.nodemanager.linux-container-executor.cgroups.strict-resource-usage<br>FALSE<br>此标志确定应用程序是否应在严格的资源限制下运行,或者是否允许在需要时消耗备用资源.例如,打开标志将限制应用程序仅使用它们的 CPU 份额,即使节点有空闲 CPU 周期.默认值为假,即使用可用资源.请注意,打开此标志可能会降低集群上的作业吞吐量.</p>
+<p>yarn.nodemanager.linux-container-executor.nonsecure-mode.limit-users<br>TRUE<br>这决定了 LCE 应该在非安全集群上使用两种模式中的哪一种.如果此值设置为 true,则所有容器都将以 yarn.nodemanager.linux-container-executor.nonsecure-mode.local-user 中指定的用户身份启动.如果此值设置为 false,则容器将以提交应用程序的用户身份运行.</p>
+<p>yarn.nodemanager.linux-container-executor.nonsecure-mode.local-user<br>nobody<br>如果设置了 yarn.nodemanager.linux-container-executor.nonsecure-mode.limit-users,则容器将在非安全模式下使用 Linux-container-executor 时运行的 UNIX 用户(一个用例是使用 cgroups)为真.</p>
+<p>yarn.nodemanager.linux-container-executor.nonsecure-mode.user-pattern<br><code>^[_.A-Za-z0-9][-@_.A-Za-z0-9]&#123;0,255&#125;?[$]?$</code><br>在非安全模式下使用时由 Linux-container-executor 强制执行的 UNIX 用户名的允许模式(此用例是使用 cgroups).默认值取自 /usr/sbin/adduser</p>
+<p>yarn.nodemanager.linux-container-executor.path<br>未配置<br>Linux 容器执行器的路径.</p>
+<p>yarn.nodemanager.linux-container-executor.resources-handler.class<br>org.apache.hadoop.yarn.server.nodemanager.util.DefaultLCEResourcesHandler<br>应该帮助 LCE 处理资源的类.</p>
+<p>yarn.nodemanager.local-cache.max-files-per-directory<br>8192<br>它限制了将在单个本地目录中本地化的文件的最大数量.如果达到限制,则将创建子目录并在其中本地化新文件.如果将其设置为小于或等于 36 [这是子目录(0-9 和 az)] 的值,则 NodeManager 将无法启动.例如;[用于公共缓存] 如果配置为 40(4 个文件 + 36 个子目录)并且本地目录是&quot;/tmp/local-dir1&quot;,那么它将允许直接在&quot;/&quot;中创建 4 个文件tmp/local-dir1/filecache&quot;.对于进一步本地化的文件,它将在&quot;/tmp/local-dir1/filecache&quot;内创建一个子目录&quot;0&quot;,并将本地化其中的文件直到它变满.</p>
+<p><font color="#dd0000">yarn.nodemanager.local-dirs</font><br><code>$&#123;hadoop.tmp.dir&#125;</code>/nm-local-dir<br>存储本地化文件的目录列表.应用程序的本地化文件目录位于:<code>$&#123;yarn.nodemanager.local-dirs&#125;/usercache/$&#123;user&#125;/appcache/application_$&#123;appid&#125;</code>.各个容器的工作目录,称为 container_${contid},将是它的子目录.</p>
+<p>yarn.nodemanager.localizer.address<br>${yarn.nodemanager.hostname}:8040<br>定位器 IPC 所在的地址.</p>
+<p>yarn.nodemanager.localizer.cache.cleanup.interval-ms<br>600000<br>缓存清理之间的间隔.</p>
+<p>yarn.nodemanager.localizer.cache.target-size-mb<br>10240<br>每个节点管理器的定位器缓存目标大小(以 MB 为单位).它是一个目标保留大小,仅包括具有 PUBLIC 和 PRIVATE 可见性的资源,不包括具有 APPLICATION 可见性的资源</p>
+<p>yarn.nodemanager.localizer.client.thread-count<br>5<br>处理本地化请求的线程数.</p>
+<p>yarn.nodemanager.localizer.fetch.thread-count<br>4<br>用于本地化获取的线程数.</p>
+<p>yarn.nodemanager.log.retain-seconds<br>10800<br>保留用户日志的时间(以秒为单位).仅在禁用日志聚合时适用</p>
+<p>yarn.nodemanager.log-aggregation.compression-type<br>none<br>用于压缩聚合日志的 T 文件压缩类型.</p>
+<p>yarn.nodemanager.log-aggregation.roll-monitoring-interval-seconds<br>-1<br>定义 NM 唤醒上传日志文件的频率.默认值为 -1.默认情况下,日志将在应用程序完成后上传.通过设置此配置,可以在应用程序运行时定期上传日志.可以设置的最小滚动间隔秒数为 3600.</p>
+<p><font color="#dd0000">yarn.nodemanager.log-dirs</font><br>${yarn.log.dir}/userlogs<br>在哪里存储容器日志.应用程序的本地化日志目录将在 ${yarn.nodemanager.log-dirs}/application_${appid} 中找到.各个容器的日志目录将在此之下,在名为 container_{$contid} 的目录中.每个容器目录将包含该容器生成的文件 stderr、stdin 和 syslog.</p>
+<p><font color="#dd0000">yarn.nodemanager.pmem-check-enabled</font><br>TRUE<br>是否将对容器实施物理内存限制.</p>
+<p>yarn.nodemanager.principal<br>未配置<br>节点管理器的 kerberos 主体.</p>
+<p>yarn.nodemanager.process-kill-wait.ms<br>2000<br>尝试清理容器时等待进程启动的最长时间</p>
+<p>yarn.nodemanager.recovery.compaction-interval-secs<br>3600<br>NM 状态数据库完全压缩之间的时间(以秒为单位).将间隔设置为零会禁用完整的压缩周期.</p>
+<p>yarn.nodemanager.recovery.dir<br><code>$&#123;hadoop.tmp.dir&#125;</code>/yarn-nm-recovery<br>启用恢复时节点管理器将存储状态的本地文件系统目录.</p>
+<p>yarn.nodemanager.recovery.enabled<br>FALSE<br>使节点管理器启动后恢复</p>
+<p>yarn.nodemanager.remote-app-log-dir<br>/tmp/logs<br>将日志聚合到哪里.</p>
+<p>yarn.nodemanager.remote-app-log-dir-suffix<br>logs<br>远程日志目录将在 {yarn.nodemanager.remote-app-log-dir}/${user}/{thisParam} 创建</p>
+<p><font color="#dd0000">yarn.nodemanager.resource.cpu-vcores</font><br>8<br>可以为容器分配的 vcore 数量.这由 RM 调度程序在为容器分配资源时使用.这不是用来限制 YARN 容器使用的物理内核的数量.</p>
+<p><font color="#dd0000">yarn.nodemanager.resource.memory-mb</font><br>8192<br>可以为容器分配的物理内存量(以 MB 为单位).</p>
+<p>yarn.nodemanager.resource.percentage-physical-cpu-limit<br>100<br>可分配给容器的 CPU 百分比.此设置允许用户限制 YARN 容器使用的 CPU 量.目前仅在使用 cgroups 的 Linux 上起作用.默认是使用 100% 的 CPU.</p>
+<p>yarn.nodemanager.resourcemanager.minimum.version<br>NONE<br>节点管理器将连接到的资源管理器的最低允许版本.有效值为 NONE(无版本检查)、EqualToNM(资源管理器的版本等于或大于 NM 版本)或版本字符串.</p>
+<p>yarn.nodemanager.sleep-delay-before-sigkill.ms<br>250<br>在向容器发送 SIGTERM 和 SIGKILL 之间等待的毫秒数</p>
+<p><font color="#dd0000">yarn.nodemanager.vmem-check-enabled</font><br>TRUE<br>是否将对容器实施虚拟内存限制.</p>
+<p><font color="#dd0000">yarn.nodemanager.vmem-pmem-ratio</font><br>2.1<br>为容器设置内存限制时,虚拟内存与物理内存之间的比率.容器分配是用物理内存来表示的,虚拟内存的使用量是允许超过这个比例的.</p>
+<p>yarn.nodemanager.webapp.address<br>${yarn.nodemanager.hostname}:8042<br>NM Webapp 地址.</p>
+<p><font color="#dd0000">yarn.resourcemanager.address</font><br>${yarn.resourcemanager.hostname}:8032<br>RM 中应用程序管理器接口的地址.</p>
+<p><font color="#dd0000">yarn.resourcemanager.admin.address</font><br>${yarn.resourcemanager.hostname}:8033<br>RM 管理界面的地址.</p>
+<p>yarn.resourcemanager.admin.client.thread-count<br>1<br>用于处理 RM 管理界面的线程数.</p>
+<p>yarn.resourcemanager.am.max-attempts<br>2<br>应用程序尝试的最大次数.这是所有应用程序主机的全局设置.每个应用程序主机可以通过 API 指定其单独的最大应用尝试次数,但单独的次数不能超过全局上限.如果是,资源管理器将覆盖它.默认数字设置为 2,以允许 AM 至少重试一次.</p>
+<p>yarn.resourcemanager.am-rm-tokens.master-key-rolling-interval-secs<br>86400<br>用于生成应用程序令牌的主密钥的翻转间隔</p>
+<p>yarn.resourcemanager.bind-host<br>未配置<br>服务器将绑定到的实际地址.如果设置了这个可选地址,RPC 和 webapp 服务器将分别绑定到这个地址和 yarn.resourcemanager.address 和 yarn.resourcemanager.webapp.address 中指定的端口.这对于通过设置为 0.0.0.0 使 RM 侦听所有接口非常有用.</p>
+<p>yarn.resourcemanager.client.thread-count<br>50<br>用于处理应用程序管理器请求的线程数.</p>
+<p><font color="#dd0000">yarn.resourcemanager.cluster-id</font><br>未配置<br>集群的名称.在 HA 设置中,这用于确保 RM 参与此集群的领导者选举,并确保它不会影响其他集群</p>
+<p>yarn.resourcemanager.configuration.provider-class<br>org.apache.hadoop.yarn.LocalConfigurationProvider<br>用作配置提供程序的类.如果使用 org.apache.hadoop.yarn.LocalConfigurationProvider,则会加载本地配置.如果使用 org.apache.hadoop.yarn.FileSystemBasedConfigurationProvider,需要先将要加载的配置上传到远程文件系统.</p>
+<p>yarn.resourcemanager.connect.max-wait.ms<br>900000<br>等待建立与 ResourceManager 的连接的最长时间.</p>
+<p><font color="#dd0000">yarn.resourcemanager.connect.retry-interval.ms</font><br>30000<br>尝试连接到 ResourceManager 的频率.</p>
+<p>yarn.resourcemanager.container.liveness-monitor.interval-ms<br>600000<br>多久检查一次容器是否还活着.</p>
+<p>yarn.resourcemanager.container-tokens.master-key-rolling-interval-secs<br>86400<br>用于生成容器令牌的主密钥的翻转间隔.预计会比 yarn.nm.liveness-monitor.expiry-interval-ms 和 yarn.rm.container-allocation.expiry-interval-ms 大得多.否则行为未定义.</p>
+<p>yarn.resourcemanager.delayed.delegation-token.removal-interval-ms<br>30000<br>延迟令牌删除线程运行的时间间隔</p>
+<p>yarn.resourcemanager.fail-fast<br>${yarn.fail-fast}<br>如果 RM 遇到任何错误,它是否应该快速失败.默认情况下,它指向 ${yarn.fail-fast}.错误包括:1)状态存储写/读操作失败时的异常.</p>
+<p>yarn.resourcemanager.fs.state-store.retry-policy-spec<br>2000, 500<br>hdfs 客户端重试策略规范.hdfs 客户端重试始终处于启用状态.成对指定 sleep-time 和 number-of-retries 和 (t0, n0), (t1, n1), ...,前 n0 次重试平均睡眠 t0 毫秒,后面 n1 次重试平均睡眠 t1 毫秒,等等.</p>
+<p>yarn.resourcemanager.fs.state-store.uri<br><code>$&#123;hadoop.tmp.dir&#125;</code>/yarn/system/rmstore<br>指向将存储 RM 状态的文件系统路径位置的 URI.当使用 org.apache.hadoop.yarn.server.resourcemanager.recovery.FileSystemRMStateStore 作为 yarn.resourcemanager.store.class 的值时,必须提供此项</p>
+<p>yarn.resourcemanager.ha.automatic-failover.embedded<br>TRUE<br>启用嵌入式自动故障转移.默认情况下,仅在启用 HA 时才启用.嵌入式选举器依赖 RM 状态存储来处理围栏,主要用于与 ZKRMStateStore 结合使用.</p>
+<p><font color="#dd0000">yarn.resourcemanager.ha.automatic-failover.enabled</font><br>TRUE<br>启用自动故障转移.默认情况下,仅在启用 HA 时才启用</p>
+<p><font color="#dd0000">yarn.resourcemanager.ha.automatic-failover.zk-base-path</font><br>/yarn-leader-election<br>使用基于 ZooKeeper 的领导者选举时,用于存储领导者信息的基本 znode 路径.</p>
+<p><font color="#dd0000">yarn.resourcemanager.ha.enabled</font><br>FALSE<br>启用 RM 高可用性.启用后,(1) RM 默认在待机模式下启动,并在提示时转换到活动模式.(2) RM ensemble 中的节点在 yarn.resourcemanager.ha.rm-ids 中列出 (3) 如果明确指定了 yarn.resourcemanager.ha.id,每个 RM 的 id 要么来自 yarn.resourcemanager.ha.id或者可以通过匹配 yarn.resourcemanager.address.{id} 和本地地址来计算 (4) 实际的物理地址来自模式的配置 - {rpc-config}.{id}</p>
+<p><font color="#">yarn.resourcemanager.ha.id</font><br>未配置<br>当前 RM 的 id(字符串).启用 HA 时,这是一个可选配置.当前 RM 的 id 可以通过显式指定 yarn.resourcemanager.ha.id 来设置,或者通过将 yarn.resourcemanager.address.{id} 与本地地址匹配来确定有关如何使用的完整详细信息,请参阅 yarn.resourcemanager.ha.enabled 的描述这是使用的.</p>
+<p><font color="#dd0000">yarn.resourcemanager.ha.rm-ids</font><br>未配置<br>启用 HA 时集群中的 RM 节点列表.有关如何使用它的完整详细信息,请参阅 yarn.resourcemanager.ha .enabled 的描述.</p>
+<p><font color="#dd0000">yarn.resourcemanager.hostname</font><br>0.0.0.0<br>RM 的主机名.</p>
+<p>yarn.resourcemanager.keytab<br>/etc/krb5.keytab<br>资源管理器的密钥表.</p>
+<p>yarn.resourcemanager.max-completed-applications<br>10000<br>RM 保留的已完成应用程序的最大数量.</p>
+<p>yarn.resourcemanager.nodemanager.minimum.version<br>NONE<br>连接节点管理器的最低允许版本.有效值为 NONE(无版本检查)、EqualToRM(节点管理器的版本等于或大于 RM 版本)或版本字符串.</p>
+<p>yarn.resourcemanager.nodemanagers.heartbeat-interval-ms<br>1000<br>集群中每个 NodeManager 的心跳间隔(以毫秒为单位).</p>
+<p><font color="#dd0000">yarn.resourcemanager.nodes.exclude-path</font><br>未配置<br>包含要排除的节点的文件路径.</p>
+<p><font color="#dd0000">yarn.resourcemanager.nodes.include-path</font><br>未配置<br>包含要包含的节点的文件路径.</p>
+<p>yarn.resourcemanager.principal<br>未配置<br>资源管理器的 Kerberos 主体.</p>
+<p>yarn.resourcemanager.proxy-user-privileges.enabled<br>FALSE<br>如果为 true,ResourceManager 将拥有代理用户权限.用例:在安全集群中,YARN 要求用户 hdfs 委托令牌代表用户进行本地化和日志聚合.如果设置为 true,ResourceManager 能够代表用户请求新的 hdfs 委托令牌.长时间运行的服务需要这样做,因为 hdfs 令牌最终会过期,而 YARN 需要新的有效令牌来进行本地化和日志聚合.请注意,要启用此用例,相应的 HDFS NameNode 必须将 ResourceManager 配置为代理用户,以便 ResourceManager 可以在令牌超过其最大生命周期时代表用户请求新令牌.</p>
+<p><font color="#dd0000">yarn.resourcemanager.recovery.enabled</font><br>FALSE<br>启用 RM 以在启动后恢复状态.如果为 true,则必须指定 yarn.resourcemanager.store.class.</p>
+<p><font color="#dd0000">yarn.resourcemanager.resource-tracker.address</font><br>${yarn.resourcemanager.hostname}:8031</p>
+<p>yarn.resourcemanager.resource-tracker.client.thread-count<br>50<br>处理资源跟踪器调用的线程数.</p>
+<p><font color="#dd0000">yarn.resourcemanager.scheduler.address</font><br>${yarn.resourcemanager.hostname}:8030<br>调度程序接口的地址.</p>
+<p>yarn.resourcemanager.scheduler.class<br>org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler<br>用作资源调度程序的类.</p>
+<p>yarn.resourcemanager.scheduler.client.thread-count<br>50<br>处理调度程序接口的线程数.</p>
+<p>yarn.resourcemanager.scheduler.monitor.enable<br>FALSE<br>启用一组影响调度程序的定期监视器(在 yarn.resourcemanager.scheduler.monitor.policies 中指定).</p>
+<p>yarn.resourcemanager.scheduler.monitor.policies<br>org.apache.hadoop.yarn.server.resourcemanager.monitor.capacity.ProportionalCapacityPreemptionPolicy<br>与调度程序交互的 SchedulingEditPolicy 类的列表.特定模块可能与调度程序、其他策略或两者的配置不兼容.</p>
+<p>yarn.resourcemanager.state-store.max-completed-applications<br>${yarn.resourcemanager.max-completed-applications}<br>RM state store 保留的已完成应用程序的最大数量,小于或等于 ${yarn.resourcemanager.max-completed-applications}.默认情况下,它等于 ${yarn.resourcemanager.max-completed-applications}.这确保了保存在状态存储中的应用程序与记忆在 RM 内存中的应用程序是一致的.任何大于 ${yarn.resourcemanager.max-completed-applications} 的值都将重置为 ${yarn.resourcemanager.max-completed-applications}.请注意,此值会影响 RM 恢复性能.通常,较小的值表示 RM 恢复的性能更好.</p>
+<p><font color="#dd0000">yarn.resourcemanager.store.class</font><br>org.apache.hadoop.yarn.server.resourcemanager.recovery.FileSystemRMStateStore<br>用作持久存储的类.如果使用了 org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore,则存储是隐式隔离的；这意味着单个 ResourceManager 可以在任何时间点使用存储.有关此隐式防护以及设置适当 ACL 的更多详细信息,请参阅 yarn.resourcemanager.zk-state-store.root-node.acl.</p>
+<p>yarn.resourcemanager.system-metrics-publisher.dispatcher.pool-size<br>10<br>发送纱线系统指标数据的工作线程数.</p>
+<p><font color="#dd0000">yarn.resourcemanager.system-metrics-publisher.enabled</font><br>FALSE<br>控制纱线系统指标是否由 RM 发布在时间线服务器上的设置.</p>
+<p><font color="#dd0000">yarn.resourcemanager.webapp.address</font><br>${yarn.resourcemanager.hostname}:8088<br>RM Web 应用程序的 http 地址.</p>
+<p>yarn.resourcemanager.webapp.delegation-token-auth-filter.enabled<br>TRUE<br>标记以启用使用 RM 身份验证过滤器覆盖默认 kerberos 身份验证过滤器,以允许使用委托令牌进行身份验证(如果缺少令牌,则回退到 kerberos).仅在 http 身份验证类型为 kerberos 时适用.</p>
+<p>yarn.resourcemanager.webapp.https.address<br>${yarn.resourcemanager.hostname}:8090<br>RM Web 应用程序的 https 地址.</p>
+<p>yarn.resourcemanager.work-preserving-recovery.enabled<br>FALSE<br>启用 RM 工作保留恢复.此配置是 YARN 专用的,用于试验该功能.</p>
+<p>yarn.resourcemanager.work-preserving-recovery.scheduling-wait-ms<br>10000<br>设置 RM 在分配新容器之前等待的时间量.这样的等待期使 RM 有机会在恢复时与集群中的 NM 重新同步,然后再将新容器分配给应用程序.</p>
+<p>yarn.resourcemanager.zk-acl<br>world:anyone:rwcda<br>用于 ZooKeeper znode 的 ACL.</p>
+<p><font color="#dd0000">yarn.resourcemanager.zk-address</font><br>未配置<br>Host:RM 使用的 ZooKeeper 服务器的端口.当使用基于 ZooKeeper 的 RM 状态存储实现和/或 HA 设置中的嵌入式自动故障转移时,必须提供此信息.</p>
+<p>yarn.resourcemanager.zk-auth<br>未配置<br>指定要用于在 yarn.resourcemanager.zk-acl 和 yarn.resourcemanager.zk-state-store.root-node.acl 属性中指定的 ACL 的身份验证.这需要一个以逗号分隔的身份验证机制列表,每个形式为&quot;scheme:auth&quot;(与 ZK CLI 中的&quot;addAuth&quot;命令使用的语法相同).</p>
+<p>yarn.resourcemanager.zk-num-retries<br>1000<br>RM 尝试连接到 ZooKeeper 的次数.</p>
+<p>yarn.resourcemanager.zk-retry-interval-ms<br>1000<br>连接到 ZooKeeper 时的重试间隔(以毫秒为单位).启用 HA 时,不使用此处的值.它是从 yarn.resourcemanager.zk-timeout-ms 和 yarn.resourcemanager.zk-num-retries 自动生成的.</p>
+<p>yarn.resourcemanager.zk-state-store.parent-path<br>/rmstore<br>将存储 RM 状态的 ZooKeeper znode 的完整路径.当使用 org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore 作为 yarn.resourcemanager.store.class 的值时,必须提供此项</p>
+<p>yarn.resourcemanager.zk-state-store.root-node.acl<br>未配置<br>在 HA 场景中使用 ZKRMStateStore 进行防护时用于根 znode 的 ACL.ZKRMStateStore 支持隐式防护以允许单个 ResourceManager 对存储进行写访问.对于 fencing,集群中的 ResourceManager 共享根节点上的读写管理员权限,但 Active ResourceManager 声称拥有独占的创建删除权限.默认情况下,如果未设置此属性,我们使用来自 yarn.resourcemanager.zk-acl 的 ACL 进行共享管理员访问,使用 rm-address:random-number 进行基于用户名的独占创建-删除访问.此属性允许用户设置他们选择的 ACL,而不是使用默认机制.为了击剑工作,</p>
+<p>yarn.resourcemanager.zk-timeout-ms<br>10000<br>ZooKeeper 会话超时(以毫秒为单位).会话过期由 ZooKeeper 集群本身管理,而不是由客户端管理.集群使用此值来确定客户端会话何时到期.当集群在指定的会话超时期限(即没有心跳)内没有收到客户端的消息时,就会发生过期.</p>
+<p><font color="#dd0000">yarn.scheduler.maximum-allocation-mb</font><br>8192<br>RM 上每个容器请求的最大分配,以 MB 为单位.高于此值的内存请求将不会生效,并将被限制为该值.</p>
+<p><font color="#dd0000">yarn.scheduler.maximum-allocation-vcores</font><br>32<br>RM 上每个容器请求的最大分配,以虚拟 CPU 内核计.高于此值的请求将不会生效,并将被限制为该值.</p>
+<p><font color="#dd0000">yarn.scheduler.minimum-allocation-mb</font><br>1024<br>RM 上每个容器请求的最小分配,以 MB 为单位.低于此值的内存请求将不会生效,并且将至少分配指定的值.</p>
+<p>yarn.scheduler.minimum-allocation-vcores<br>1<br>RM 中每个容器请求的最小分配,以虚拟 CPU 内核计.低于此值的请求将不会生效,并且指定的值将被分配到最小值.</p>
+<p><font color="#dd0000">yarn.timeline-service.address</font><br>${yarn.timeline-service.hostname}:10200<br>这是时间线服务器启动 RPC 服务器的默认地址.</p>
+<p>yarn.timeline-service.bind-host<br>未配置<br>服务器将绑定到的实际地址.如果设置了这个可选地址,RPC 和 webapp 服务器将分别绑定到这个地址和 yarn.timeline-service.address 和 yarn.timeline-service.webapp.address 中指定的端口.这对于通过设置为 0.0.0.0 使服务侦听所有接口非常有用.</p>
+<p>yarn.timeline-service.client.max-retries<br>30<br>时间线服务客户端的默认最大退休次数.</p>
+<p>yarn.timeline-service.client.retry-interval-ms<br>1000<br>时间线服务客户端的默认重试时间间隔.</p>
+<p><font color="#dd0000">yarn.timeline-service.enabled</font><br>FALSE<br>向客户端指示是否启用了时间线服务.如果启用,客户端会将实体和事件放入时间线服务器.</p>
+<p>yarn.timeline-service.generic-application-history.max-applications<br>10000<br>定义可以使用 REST API 或应用程序历史协议获取并显示在时间线服务器 Web ui 中的最大应用程序数量.</p>
+<p><font color="#dd0000">yarn.timeline-service.handler-thread-count</font><br>10<br>处理客户端 RPC 请求的处理程序线程计数.</p>
+<p><font color="#dd0000">yarn.timeline-service.hostname</font><br>0.0.0.0<br>时间线服务 Web 应用程序的主机名.</p>
+<p>yarn.timeline-service.http-authentication.simple.anonymous.allowed<br>TRUE<br>指示在使用&quot;简单&quot;身份验证时时间线服务器是否允许匿名请求.</p>
+<p>yarn.timeline-service.http-authentication.type<br>simple<br>定义用于时间线服务器 HTTP 端点的身份验证.支持的值是:simple |kerberos |#AUTHENTICATION_HANDLER_CLASSNAME#</p>
+<p>yarn.timeline-service.keytab<br>/etc/krb5.keytab<br>时间线服务器的 Kerberos 密钥表.</p>
+<p><font color="#dd0000">yarn.timeline-service.leveldb-timeline-store.path</font><br><code>$&#123;hadoop.tmp.dir&#125;</code>/yarn/timeline<br>leveldb 时间线存储的存储文件名.</p>
+<p>yarn.timeline-service.leveldb-timeline-store.read-cache-size<br>104857600<br>leveldb 时间线存储的未压缩块的读取缓存大小(以字节为单位).</p>
+<p>yarn.timeline-service.leveldb-timeline-store.start-time-read-cache-size<br>10000<br>leveldb 时间线存储的最近读取实体开始时间的缓存大小,以实体数表示.</p>
+<p>yarn.timeline-service.leveldb-timeline-store.start-time-write-cache-size<br>10000<br>leveldb 时间线存储的最近写入实体开始时间的缓存大小,以实体数量表示.</p>
+<p>yarn.timeline-service.leveldb-timeline-store.ttl-interval-ms<br>300000<br>在 leveldb 时间线存储的删除周期之间等待的时间长度(以毫秒为单位).</p>
+<p>yarn.timeline-service.principal<br>未配置<br>时间线服务器的 Kerberos 主体.</p>
+<p>yarn.timeline-service.store-class<br>org.apache.hadoop.yarn.server.timeline.LeveldbTimelineStore<br>时间线存储的存储类名称.</p>
+<p>yarn.timeline-service.ttl-enable<br>TRUE<br>启用时间线存储数据的年龄.</p>
+<p><font color="#dd0000">yarn.timeline-service.ttl-ms</font><br>604800000<br>时间线存储数据的生存时间(以毫秒为单位).</p>
+<p><font color="#dd0000">yarn.timeline-service.webapp.address</font><br>${yarn.timeline-service.hostname}:8188<br>时间线服务 Web 应用程序的 http 地址.</p>
+<p><font color="#dd0000">yarn.timeline-service.webapp.https.address</font><br>${yarn.timeline-service.hostname}:8190<br>时间线服务 Web 应用程序的 https 地址.</p>
+<p>yarn.web-proxy.address<br>未配置<br>Web 代理的地址为 HOST:PORT,如果未给出,则代理将作为 RM 的一部分运行</p>
+<p>yarn.web-proxy.keytab<br>未配置<br>WebAppProxy 的 Keytab(如果代理未作为 RM 的一部分运行).</p>
+<p>yarn.web-proxy.principal<br>未配置<br>代理的 kerberos 主体(如果代理未作为 RM 的一部分运行).</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hadoop/" rel="tag"># hadoop</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/07/29/hadoop%E9%85%8D%E7%BD%AE-mapred/" rel="prev" title="hadoop配置-mapred">
+                  <i class="fa fa-chevron-left"></i> hadoop配置-mapred
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/07/29/hadoop%E9%85%8D%E7%BD%AE-hdfs/" rel="next" title="hadoop配置-hdfs">
+                  hadoop配置-hdfs <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/mist/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
