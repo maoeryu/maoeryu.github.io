@@ -167,7 +167,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">113</span>
+          <span class="site-state-item-count">115</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -220,6 +220,601 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/01/hadoop-%E5%BF%AB%E7%85%A7-%E9%85%8D%E9%A2%9D-%E5%9B%9E%E6%94%B6%E7%AB%99/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Flying Pig">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2022/08/01/hadoop-%E5%BF%AB%E7%85%A7-%E9%85%8D%E9%A2%9D-%E5%9B%9E%E6%94%B6%E7%AB%99/" class="post-title-link" itemprop="url">hadoop-快照-配额-回收站</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2022-08-01 00:00:00 / Modified: 11:08:04" itemprop="dateCreated datePublished" datetime="2022-08-01T00:00:00+08:00">2022-08-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <span id="more"></span>
+
+<h3 id="回收站"><a href="#回收站" class="headerlink" title="回收站"></a>回收站</h3><p>HDFS具有回收站的功能,该功能默认是关闭状态.<br>可通过在<code>core-site.xml</code>中配置一个<code>fs.trash.interval</code>参数来开启.<br>该参数的值为一个阈值,单位为分钟,存放时间超过该值的文件将从回收站删除.</p>
+<p>未开启前,删除数据后,提示如下,<br>INFO fs.TrashPolicyDefault: Namenode trash configuration: Deletion interval = 0 minutes, Emptier interval = 0 minutes.</p>
+<p>添加以下配置,重启hdfs,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;fs.trash.interval&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;1440&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line"></span><br><span class="line">&lt;!-- 两次检查回收站的分钟数 --&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;fs.trash.checkpoint.interval&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;0&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
+
+<p>INFO fs.TrashPolicyDefault: Namenode trash configuration: Deletion interval = 1440 minutes, Emptier interval = 0 minutes.<br>Moved: &#39;hdfs://xxx/user/xxx/20220719/part-00000-1e02ca2e-c7d9-4df1-a12c-32b0493061f4-c000&#39; to trash at: hdfs://xxx/user/root/.Trash/Current</p>
+<p>可以看到文件并没有被删除,而是执行了移动命令.<br>通过日志可知道回收文件存放路径为/xxx/.Trash/Current,可以通过移动或复制命令将文件恢复.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">hdfs dfs -cp &#x2F;user&#x2F;root&#x2F;.Trash&#x2F;Current&#x2F;文件名 hdfs目录</span><br><span class="line"></span><br><span class="line">#清空回收站</span><br><span class="line">hadoop fs -expunge</span><br></pre></td></tr></table></figure>
+
+<h3 id="快照"><a href="#快照" class="headerlink" title="快照"></a>快照</h3><p>HDFS的快照功能,可以将某一个__目录__的当前状态保存成一个镜像,可应用于如下场景,<br>防止用户误操作/备份数据/测试功能/灾难恢复.</p>
+<p>快照是一种备份,HDFS默认是关闭的,快照的本质是将需要备份的数据发在一个隐藏目录下.<br>针对目录进行操作,默认目录是不可快照的.<br>快照比普通复制快,占用空间少,采用增量方式存储.<br>将指定目录的当下状态进行复制下来进行保存.<br>快照了的目录如果有快照不能删除.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">#开启快照</span><br><span class="line">hdfs dfsadmin -allowSnapshot hdfs目录</span><br><span class="line">#关闭快照</span><br><span class="line">hdfs dfsadmin -disallowSnapshot hdfs目录</span><br><span class="line"></span><br><span class="line">#创建快照</span><br><span class="line">hdfs dfs -createSnapshot hdfs目录 快照名称</span><br><span class="line">#删除快照</span><br><span class="line">hdfs dfs -deleteSnapshot hdfs目录 快照名</span><br><span class="line">#重命名快照</span><br><span class="line">hdfs dfs -renameSnapshot hdfs目录 旧快照名 新快照名</span><br><span class="line">#查看快照</span><br><span class="line">hdfs dfs -lsr hdfs目录&#x2F;.snapshot</span><br><span class="line"></span><br><span class="line">#可以看到开启了快照功能的目录有哪些</span><br><span class="line">#或者通过hdfs页面查看</span><br><span class="line">hdfs lsSnapshottableDir</span><br><span class="line">#对比两个快照的差别</span><br><span class="line">hdfs snapshotDiff hdfs目录 快照1 快照2</span><br><span class="line"></span><br><span class="line">#恢复快照</span><br><span class="line">hdfs dfs -cp hdfs目录&#x2F;.snapshot&#x2F;快照名&#x2F;文件名 hdfs目录</span><br></pre></td></tr></table></figure>
+
+<h3 id="配额"><a href="#配额" class="headerlink" title="配额"></a>配额</h3><h4 id="名称配额"><a href="#名称配额" class="headerlink" title="名称配额"></a>名称配额</h4><p>限定HDFS目录下存放文件(目录的个数),最多存放N-1个.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hdfs dfsadmin -setQuota 个数 hdfs目录</span><br><span class="line">hdfs dfsadmin -clrQuota hdfs目录</span><br></pre></td></tr></table></figure>
+
+<h4 id="空间配额"><a href="#空间配额" class="headerlink" title="空间配额"></a>空间配额</h4><p>必须要大于默认数据块大小.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hdfs dfsadmin -setSpaceQuota 大小(单位byte) [-storageType &lt;storagetype&gt;] hdfs目录</span><br><span class="line">hdfs dfsadmin -clrSpaceQuota [-storageType &lt;storagetype&gt;] hdfs目录</span><br></pre></td></tr></table></figure>
+
+<h3 id="安全模式"><a href="#安全模式" class="headerlink" title="安全模式"></a>安全模式</h3><p>检查副本率是否满足配置要求.<br>副本率不够时,会复制,副本率超出会删除多余的.</p>
+<p>冗余度:每个数据块复制多少个副本.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;dfs.replication&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;1&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
+
+<p>副本率:实际冗余度/配置的应有冗余度 * 100%</p>
+<p>在安全模式下,无法操作HDFS,因为正在进行副本率检查工作.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">#获取安全模式状态</span><br><span class="line">hdfs dfsadmin -safemode get</span><br><span class="line">#进入安全模式</span><br><span class="line">hdfs dfsadmin -safemode enter</span><br><span class="line">#退出安全模式</span><br><span class="line">hdfs dfsadmin -safemode leave</span><br><span class="line">#等待安全模式结束</span><br><span class="line">hdfs dfsadmin -safemode wait</span><br></pre></td></tr></table></figure>
+
+<h3 id="归档-解归档"><a href="#归档-解归档" class="headerlink" title="归档/解归档"></a>归档/解归档</h3><p>每个文件均按块存储,每个块的元数据存储在namenode的内存中,因此hadoop存储小文件会非常低效.<br>因为大量的小文件会耗尽namenode中的大部分内存.<br>但注意,存储小文件所需要的磁盘容量和存储这些文件原始内容所需要的磁盘空间相比也不会增多.<br>例如,一个 1MB 的文件以大小为 128MB 的块存储,使用的是 1MB 的磁盘空间,而不是 128MB .</p>
+<p>Hadoop 存档文件或 HAR 文件 ,是一个更高效的文件存档工具,它将文件存入 HDFS 块,在减少 namenode 内存使用的同时,允许对文件进行透明的访问.<br>具体说来, Hadoop 存档文件可以用作 MapReduce 的输入.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#把xx2目录里面的所有文件归档成一个叫myhar.har的归档文件,并把归档后文件存储到xx3路径下</span><br><span class="line">archive -archiveName myhar.har -p &#x2F;user&#x2F;xxx&#x2F;xx2 &#x2F;user&#x2F;xxx&#x2F;xx3</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">drwxr-xr-x   - root supergroup          0 2022-08-01 10:56 &#x2F;user&#x2F;xxx&#x2F;xx3</span><br><span class="line">drwxr-xr-x   - root supergroup          0 2022-08-01 10:56 &#x2F;user&#x2F;xxx&#x2F;xx3&#x2F;myhar.har</span><br><span class="line">-rw-r--r--   3 root supergroup          0 2022-08-01 10:56 &#x2F;user&#x2F;xxx&#x2F;xx3&#x2F;myhar.har&#x2F;_SUCCESS</span><br><span class="line">-rw-r--r--   5 root supergroup        605 2022-08-01 10:56 &#x2F;user&#x2F;xxx&#x2F;xx3&#x2F;myhar.har&#x2F;_index</span><br><span class="line">-rw-r--r--   5 root supergroup         23 2022-08-01 10:56 &#x2F;user&#x2F;xxx&#x2F;xx3&#x2F;myhar.har&#x2F;_masterindex</span><br><span class="line">-rw-r--r--   3 root supergroup        170 2022-08-01 10:56 &#x2F;user&#x2F;xxx&#x2F;xx3&#x2F;myhar.har&#x2F;part-0</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">#查看归档</span><br><span class="line">hadoop fs -lsr &#x2F;user&#x2F;xxx&#x2F;xx3&#x2F;myhar.har</span><br><span class="line"></span><br><span class="line">#查看归档</span><br><span class="line">hadoop fs -lsr har:&#x2F;&#x2F;&#x2F;user&#x2F;xxx&#x2F;xx3&#x2F;myhar.har</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">-rw-r--r--   3 root supergroup          0 2022-08-01 10:56 &#x2F;user&#x2F;xxx&#x2F;xx3&#x2F;myhar.har&#x2F;_SUCCESS</span><br><span class="line">-rw-r--r--   5 root supergroup        605 2022-08-01 10:56 &#x2F;user&#x2F;xxx&#x2F;xx3&#x2F;myhar.har&#x2F;_index</span><br><span class="line">-rw-r--r--   5 root supergroup         23 2022-08-01 10:56 &#x2F;user&#x2F;xxx&#x2F;xx3&#x2F;myhar.har&#x2F;_masterindex</span><br><span class="line">-rw-r--r--   3 root supergroup        170 2022-08-01 10:56 &#x2F;user&#x2F;xxx&#x2F;xx3&#x2F;myhar.har&#x2F;part-0</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">-rw-r--r--   3 root supergroup          0 2022-07-11 16:59 har:&#x2F;&#x2F;&#x2F;user&#x2F;xxx&#x2F;xx3&#x2F;myhar.har&#x2F;_SUCCESS</span><br><span class="line">-rw-r--r--   3 root supergroup         51 2022-07-11 16:59 har:&#x2F;&#x2F;&#x2F;user&#x2F;xxx&#x2F;xx3&#x2F;myhar.har&#x2F;part-00000-498bcf57-a957-46dc-a5bb-47932a11276c-c000</span><br><span class="line">-rw-r--r--   3 root supergroup         85 2022-07-11 16:59 har:&#x2F;&#x2F;&#x2F;user&#x2F;xxx&#x2F;xx3&#x2F;myhar.har&#x2F;part-00001-498bcf57-a957-46dc-a5bb-47932a11276c-c000</span><br><span class="line">-rw-r--r--   3 root supergroup         34 2022-07-11 16:59 har:&#x2F;&#x2F;&#x2F;user&#x2F;xxx&#x2F;xx3&#x2F;myhar.har&#x2F;part-00002-498bcf57-a957-46dc-a5bb-47932a11276c-c000</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#解归档</span><br><span class="line">hdfs dfs -cp har:&#x2F;&#x2F;&#x2F;user&#x2F;xxx&#x2F;xx3&#x2F;myhar.har&#x2F;* &#x2F;user&#x2F;xxx&#x2F;20220719&#x2F;</span><br></pre></td></tr></table></figure>
+
+<h3 id="块最小值限制"><a href="#块最小值限制" class="headerlink" title="块最小值限制"></a>块最小值限制</h3><p>必须是512的整倍数,默认1m,修改hdfs-site.xml配置,重启hdfs.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;dfs.namenode.fs-limits.min-block-size&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;512&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="均衡器balancer"><a href="#均衡器balancer" class="headerlink" title="均衡器balancer"></a>均衡器balancer</h3><p><code>start-balancer.sh</code></p>
+<p>hadoop守护进程,重新分配块,达到均匀使用集群资源的目的.<br>修改hdfs-site.xml配置.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- 设置均衡器移动数据块每秒传输数据的上限,默认1m&#x2F;s --&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;dfs.datanode.balance.bandwidthPerSec&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;1048576&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/01/hadoop%E5%91%BD%E4%BB%A4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Flying Pig">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2022/08/01/hadoop%E5%91%BD%E4%BB%A4/" class="post-title-link" itemprop="url">hadoop命令</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2022-08-01 00:00:00 / Modified: 10:19:47" itemprop="dateCreated datePublished" datetime="2022-08-01T00:00:00+08:00">2022-08-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <span id="more"></span>
+<h3 id="hdfs-dfsadmin"><a href="#hdfs-dfsadmin" class="headerlink" title="hdfs dfsadmin"></a>hdfs dfsadmin</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">Usage: hdfs dfsadmin</span><br><span class="line">Note: Administrative commands can only be run as the HDFS superuser.</span><br><span class="line">	[-report [-live] [-dead] [-decommissioning]]</span><br><span class="line">	[-safemode &lt;enter | leave | get | wait&gt;]</span><br><span class="line">	[-saveNamespace]</span><br><span class="line">	[-rollEdits]</span><br><span class="line">	[-restoreFailedStorage true|false|check]</span><br><span class="line">	[-refreshNodes]</span><br><span class="line">	[-setQuota &lt;quota&gt; &lt;dirname&gt;...&lt;dirname&gt;]</span><br><span class="line">	[-clrQuota &lt;dirname&gt;...&lt;dirname&gt;]</span><br><span class="line">	[-setSpaceQuota &lt;quota&gt; &lt;dirname&gt;...&lt;dirname&gt;]</span><br><span class="line">	[-clrSpaceQuota &lt;dirname&gt;...&lt;dirname&gt;]</span><br><span class="line">	[-finalizeUpgrade]</span><br><span class="line">	[-rollingUpgrade [&lt;query|prepare|finalize&gt;]]</span><br><span class="line">	[-refreshServiceAcl]</span><br><span class="line">	[-refreshUserToGroupsMappings]</span><br><span class="line">	[-refreshSuperUserGroupsConfiguration]</span><br><span class="line">	[-refreshCallQueue]</span><br><span class="line">	[-refresh &lt;host:ipc_port&gt; &lt;key&gt; [arg1..argn]</span><br><span class="line">	[-reconfig &lt;datanode|...&gt; &lt;host:ipc_port&gt; &lt;start|status&gt;]</span><br><span class="line">	[-printTopology]</span><br><span class="line">	[-refreshNamenodes datanode_host:ipc_port]</span><br><span class="line">	[-deleteBlockPool datanode_host:ipc_port blockpoolId [force]]</span><br><span class="line">	[-setBalancerBandwidth &lt;bandwidth in bytes per second&gt;]</span><br><span class="line">	[-fetchImage &lt;local directory&gt;]</span><br><span class="line">	[-allowSnapshot &lt;snapshotDir&gt;]</span><br><span class="line">	[-disallowSnapshot &lt;snapshotDir&gt;]</span><br><span class="line">	[-shutdownDatanode &lt;datanode_host:ipc_port&gt; [upgrade]]</span><br><span class="line">	[-getDatanodeInfo &lt;datanode_host:ipc_port&gt;]</span><br><span class="line">	[-metasave filename]</span><br><span class="line">	[-setStoragePolicy path policyName]</span><br><span class="line">	[-getStoragePolicy path]</span><br><span class="line">	[-triggerBlockReport [-incremental] &lt;datanode_host:ipc_port&gt;]</span><br><span class="line">	[-help [cmd]]</span><br><span class="line"></span><br><span class="line">Generic options supported are</span><br><span class="line">-conf &lt;configuration file&gt;     specify an application configuration file</span><br><span class="line">-D &lt;property&#x3D;value&gt;            use value for given property</span><br><span class="line">-fs &lt;local|namenode:port&gt;      specify a namenode</span><br><span class="line">-jt &lt;local|resourcemanager:port&gt;    specify a ResourceManager</span><br><span class="line">-files &lt;comma separated list of files&gt;    specify comma separated files to be copied to the map reduce cluster</span><br><span class="line">-libjars &lt;comma separated list of jars&gt;    specify comma separated jar files to include in the classpath.</span><br><span class="line">-archives &lt;comma separated list of archives&gt;    specify comma separated archives to be unarchived on the compute machines.</span><br><span class="line"></span><br><span class="line">The general command line syntax is</span><br><span class="line">bin&#x2F;hadoop command [genericOptions] [commandOptions]</span><br></pre></td></tr></table></figure>
+
+<h3 id="hdfs"><a href="#hdfs" class="headerlink" title="hdfs"></a>hdfs</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">Usage: hdfs [--config confdir] COMMAND</span><br><span class="line">       where COMMAND is one of:</span><br><span class="line">  dfs                  run a filesystem command on the file systems supported in Hadoop.</span><br><span class="line">  namenode -format     format the DFS filesystem</span><br><span class="line">  secondarynamenode    run the DFS secondary namenode</span><br><span class="line">  namenode             run the DFS namenode</span><br><span class="line">  journalnode          run the DFS journalnode</span><br><span class="line">  zkfc                 run the ZK Failover Controller daemon</span><br><span class="line">  datanode             run a DFS datanode</span><br><span class="line">  dfsadmin             run a DFS admin client</span><br><span class="line">  haadmin              run a DFS HA admin client</span><br><span class="line">  fsck                 run a DFS filesystem checking utility</span><br><span class="line">  balancer             run a cluster balancing utility</span><br><span class="line">  jmxget               get JMX exported values from NameNode or DataNode.</span><br><span class="line">  mover                run a utility to move block replicas across</span><br><span class="line">                       storage types</span><br><span class="line">  oiv                  apply the offline fsimage viewer to an fsimage</span><br><span class="line">  oiv_legacy           apply the offline fsimage viewer to an legacy fsimage</span><br><span class="line">  oev                  apply the offline edits viewer to an edits file</span><br><span class="line">  fetchdt              fetch a delegation token from the NameNode</span><br><span class="line">  getconf              get config values from configuration</span><br><span class="line">  groups               get the groups which users belong to</span><br><span class="line">  snapshotDiff         diff two snapshots of a directory or diff the</span><br><span class="line">                       current directory contents with a snapshot</span><br><span class="line">  lsSnapshottableDir   list all snapshottable dirs owned by the current user</span><br><span class="line">            Use -help to see options</span><br><span class="line">  portmap              run a portmap service</span><br><span class="line">  nfs3                 run an NFS version 3 gateway</span><br><span class="line">  cacheadmin           configure the HDFS cache</span><br><span class="line">  crypto               configure HDFS encryption zones</span><br><span class="line">  storagepolicies      get all the existing block storage policies</span><br><span class="line">  version              print the version</span><br><span class="line"></span><br><span class="line">Most commands print help when invoked w&#x2F;o parameters.</span><br></pre></td></tr></table></figure>
+
+<h3 id="hdfs-dfs"><a href="#hdfs-dfs" class="headerlink" title="hdfs dfs"></a>hdfs dfs</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">Usage: hadoop fs [generic options]</span><br><span class="line">  [-appendToFile &lt;localsrc&gt; ... &lt;dst&gt;]</span><br><span class="line">  [-cat [-ignoreCrc] &lt;src&gt; ...]</span><br><span class="line">  [-checksum &lt;src&gt; ...]</span><br><span class="line">  [-chgrp [-R] GROUP PATH...]</span><br><span class="line">  [-chmod [-R] &lt;MODE[,MODE]... | OCTALMODE&gt; PATH...]</span><br><span class="line">  [-chown [-R] [OWNER][:[GROUP]] PATH...]</span><br><span class="line">  [-copyFromLocal [-f] [-p] [-l] &lt;localsrc&gt; ... &lt;dst&gt;]</span><br><span class="line">  [-copyToLocal [-p] [-ignoreCrc] [-crc] &lt;src&gt; ... &lt;localdst&gt;]</span><br><span class="line">  [-count [-q] [-h] &lt;path&gt; ...]</span><br><span class="line">  [-cp [-f] [-p | -p[topax]] &lt;src&gt; ... &lt;dst&gt;]</span><br><span class="line">  [-createSnapshot &lt;snapshotDir&gt; [&lt;snapshotName&gt;]]</span><br><span class="line">  [-deleteSnapshot &lt;snapshotDir&gt; &lt;snapshotName&gt;]</span><br><span class="line">  [-df [-h] [&lt;path&gt; ...]]</span><br><span class="line">  [-du [-s] [-h] &lt;path&gt; ...]</span><br><span class="line">  [-expunge]</span><br><span class="line">  [-get [-p] [-ignoreCrc] [-crc] &lt;src&gt; ... &lt;localdst&gt;]</span><br><span class="line">  [-getfacl [-R] &lt;path&gt;]</span><br><span class="line">  [-getfattr [-R] &#123;-n name | -d&#125; [-e en] &lt;path&gt;]</span><br><span class="line">  [-getmerge [-nl] &lt;src&gt; &lt;localdst&gt;]</span><br><span class="line">  [-help [cmd ...]]</span><br><span class="line">  [-ls [-d] [-h] [-R] [&lt;path&gt; ...]]</span><br><span class="line">  [-mkdir [-p] &lt;path&gt; ...]</span><br><span class="line">  [-moveFromLocal &lt;localsrc&gt; ... &lt;dst&gt;]</span><br><span class="line">  [-moveToLocal &lt;src&gt; &lt;localdst&gt;]</span><br><span class="line">  [-mv &lt;src&gt; ... &lt;dst&gt;]</span><br><span class="line">  [-put [-f] [-p] [-l] &lt;localsrc&gt; ... &lt;dst&gt;]</span><br><span class="line">  [-renameSnapshot &lt;snapshotDir&gt; &lt;oldName&gt; &lt;newName&gt;]</span><br><span class="line">  [-rm [-f] [-r|-R] [-skipTrash] &lt;src&gt; ...]</span><br><span class="line">  [-rmdir [--ignore-fail-on-non-empty] &lt;dir&gt; ...]</span><br><span class="line">  [-setfacl [-R] [&#123;-b|-k&#125; &#123;-m|-x &lt;acl_spec&gt;&#125; &lt;path&gt;]|[--set &lt;acl_spec&gt; &lt;path&gt;]]</span><br><span class="line">  [-setfattr &#123;-n name [-v value] | -x name&#125; &lt;path&gt;]</span><br><span class="line">  [-setrep [-R] [-w] &lt;rep&gt; &lt;path&gt; ...]</span><br><span class="line">  [-stat [format] &lt;path&gt; ...]</span><br><span class="line">  [-tail [-f] &lt;file&gt;]</span><br><span class="line">  [-test -[defsz] &lt;path&gt;]</span><br><span class="line">  [-text [-ignoreCrc] &lt;src&gt; ...]</span><br><span class="line">  [-touchz &lt;path&gt; ...]</span><br><span class="line">  [-usage [cmd ...]]</span><br><span class="line"></span><br><span class="line">Generic options supported are</span><br><span class="line">-conf &lt;configuration file&gt;     specify an application configuration file</span><br><span class="line">-D &lt;property&#x3D;value&gt;            use value for given property</span><br><span class="line">-fs &lt;local|namenode:port&gt;      specify a namenode</span><br><span class="line">-jt &lt;local|resourcemanager:port&gt;    specify a ResourceManager</span><br><span class="line">-files &lt;comma separated list of files&gt;    specify comma separated files to be copied to the map reduce cluster</span><br><span class="line">-libjars &lt;comma separated list of jars&gt;    specify comma separated jar files to include in the classpath.</span><br><span class="line">-archives &lt;comma separated list of archives&gt;    specify comma separated archives to be unarchived on the compute machines.</span><br><span class="line"></span><br><span class="line">The general command line syntax is</span><br><span class="line">bin&#x2F;hadoop command [genericOptions] [commandOptions]</span><br></pre></td></tr></table></figure>
+
+<h3 id="hadoop"><a href="#hadoop" class="headerlink" title="hadoop"></a>hadoop</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">Usage: hadoop [--config confdir] COMMAND</span><br><span class="line">       where COMMAND is one of:</span><br><span class="line">  fs                   run a generic filesystem user client</span><br><span class="line">  version              print the version</span><br><span class="line">  jar &lt;jar&gt;            run a jar file</span><br><span class="line">  checknative [-a|-h]  check native hadoop and compression libraries availability</span><br><span class="line">  distcp &lt;srcurl&gt; &lt;desturl&gt; copy file or directories recursively</span><br><span class="line">  archive -archiveName NAME -p &lt;parent path&gt; &lt;src&gt;* &lt;dest&gt; create a hadoop archive</span><br><span class="line">  classpath            prints the class path needed to get the</span><br><span class="line">  credential           interact with credential providers</span><br><span class="line">                       Hadoop jar and the required libraries</span><br><span class="line">  daemonlog            get&#x2F;set the log level for each daemon</span><br><span class="line">  trace                view and modify Hadoop tracing settings</span><br><span class="line"> or</span><br><span class="line">  CLASSNAME            run the class named CLASSNAME</span><br><span class="line"></span><br><span class="line">Most commands print help when invoked w&#x2F;o parameters.</span><br></pre></td></tr></table></figure>
+
+<h3 id="yarn"><a href="#yarn" class="headerlink" title="yarn"></a>yarn</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">Usage: yarn [--config confdir] COMMAND</span><br><span class="line">where COMMAND is one of:</span><br><span class="line">  resourcemanager -format-state-store   deletes the RMStateStore</span><br><span class="line">  resourcemanager                       run the ResourceManager</span><br><span class="line">  nodemanager                           run a nodemanager on each slave</span><br><span class="line">  timelineserver                        run the timeline server</span><br><span class="line">  rmadmin                               admin tools</span><br><span class="line">  version                               print the version</span><br><span class="line">  jar &lt;jar&gt;                             run a jar file</span><br><span class="line">  application                           prints application(s)</span><br><span class="line">                                        report&#x2F;kill application</span><br><span class="line">  applicationattempt                    prints applicationattempt(s)</span><br><span class="line">                                        report</span><br><span class="line">  container                             prints container(s) report</span><br><span class="line">  node                                  prints node report(s)</span><br><span class="line">  queue                                 prints queue information</span><br><span class="line">  logs                                  dump container logs</span><br><span class="line">  classpath                             prints the class path needed to</span><br><span class="line">                                        get the Hadoop jar and the</span><br><span class="line">                                        required libraries</span><br><span class="line">  daemonlog                             get&#x2F;set the log level for each</span><br><span class="line">                                        daemon</span><br><span class="line"> or</span><br><span class="line">  CLASSNAME                             run the class named CLASSNAME</span><br><span class="line">Most commands print help when invoked w&#x2F;o parameters.</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/01/namenode%E7%9A%84%E9%95%9C%E5%83%8F%E6%96%87%E4%BB%B6%E5%92%8C%E7%BC%96%E8%BE%91%E6%97%A5%E5%BF%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Flying Pig">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2022/08/01/namenode%E7%9A%84%E9%95%9C%E5%83%8F%E6%96%87%E4%BB%B6%E5%92%8C%E7%BC%96%E8%BE%91%E6%97%A5%E5%BF%97/" class="post-title-link" itemprop="url">namenode的镜像文件和编辑日志</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2022-08-01 00:00:00 / Modified: 11:40:36" itemprop="dateCreated datePublished" datetime="2022-08-01T00:00:00+08:00">2022-08-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <span id="more"></span>
+<h3 id="存储地址"><a href="#存储地址" class="headerlink" title="存储地址"></a>存储地址</h3><p><code>/opt/hadoop/namedir/current</code>.</p>
+<img src="/images/nn1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>namenode被格式化之后,将在/xxx/current目录中产生文件名为edits/fsimage/seen_txid/VERSIOn.</p>
+<p>fsimage文件:<br>HDFS文件系统元数据的一个永久性检查点,包含HDFS文件系统的所有目录和文件idnode的序列化信息.</p>
+<p>edits文件:<br>存放HDFS文件系统的所有更新操作的路径,文件系统客户端所有的写操作首先会被记录到edits文件中.</p>
+<p>seen_txid文件:<br>保存的是一个数字,即最后一个edits的数字.</p>
+<p>每次NameNode启动时都会将fsimage文件读入内存,并从0001开始到seen_txid中记录的数字,依次执行每个edits里面更新操作,保证内存中的元数据信息是最新的,同步的,可以看成namenode启动时,将fsimage和edits文件进行合并.</p>
+<img src="/images/nn2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>clusterID:集群id,唯一标识.<br>cTime=0:创建时间,基本无意义.<br>storageType=NAME_NODE,存储类型.</p>
+<h3 id="oiv查看fsimage文件"><a href="#oiv查看fsimage文件" class="headerlink" title="oiv查看fsimage文件"></a>oiv查看fsimage文件</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">hdfs oiv -p 文件类型 -i 镜像文件 -o 转换后文件输出路径</span><br><span class="line"></span><br><span class="line">#将序列化的文件反序列化为xml文件</span><br><span class="line">hdfs oiv -p XML -i fsimage_0000000000000065578 -o .&#x2F;fsimage1.xml</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">fsimage</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">NameSection</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">genstampV1</span>&gt;</span>1000<span class="tag">&lt;/<span class="name">genstampV1</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">genstampV2</span>&gt;</span>3089<span class="tag">&lt;/<span class="name">genstampV2</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">genstampV1Limit</span>&gt;</span>0<span class="tag">&lt;/<span class="name">genstampV1Limit</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">lastAllocatedBlockId</span>&gt;</span>1073743911<span class="tag">&lt;/<span class="name">lastAllocatedBlockId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">txid</span>&gt;</span>65578<span class="tag">&lt;/<span class="name">txid</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">NameSection</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">INodeSection</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">lastInodeId</span>&gt;</span>25529<span class="tag">&lt;/<span class="name">lastInodeId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">inode</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">id</span>&gt;</span>16385<span class="tag">&lt;/<span class="name">id</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">type</span>&gt;</span>DIRECTORY<span class="tag">&lt;/<span class="name">type</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">name</span>&gt;</span><span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">mtime</span>&gt;</span>1657616248162<span class="tag">&lt;/<span class="name">mtime</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">permission</span>&gt;</span>root:supergroup:rwxr-xr-x<span class="tag">&lt;/<span class="name">permission</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">nsquota</span>&gt;</span>9223372036854775807<span class="tag">&lt;/<span class="name">nsquota</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">dsquota</span>&gt;</span>-1<span class="tag">&lt;/<span class="name">dsquota</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">inode</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">directory</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">parent</span>&gt;</span>25526<span class="tag">&lt;/<span class="name">parent</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">inode</span>&gt;</span>25527<span class="tag">&lt;/<span class="name">inode</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">directory</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">directory</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">parent</span>&gt;</span>25527<span class="tag">&lt;/<span class="name">parent</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">inode</span>&gt;</span>25528<span class="tag">&lt;/<span class="name">inode</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">inode</span>&gt;</span>25529<span class="tag">&lt;/<span class="name">inode</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">directory</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">directory</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">parent</span>&gt;</span>25528<span class="tag">&lt;/<span class="name">parent</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">inode</span>&gt;</span>24619<span class="tag">&lt;/<span class="name">inode</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">directory</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">directory</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">parent</span>&gt;</span>25529<span class="tag">&lt;/<span class="name">parent</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">inodereference-index</span>&gt;</span>0<span class="tag">&lt;/<span class="name">inodereference-index</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">directory</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">INodeDirectorySection</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">FileUnderConstructionSection</span>&gt;</span><span class="tag">&lt;/<span class="name">FileUnderConstructionSection</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">SnapshotDiffSection</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">diff</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">inodeid</span>&gt;</span>16385<span class="tag">&lt;/<span class="name">inodeid</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">diff</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">diff</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">inodeid</span>&gt;</span>16388<span class="tag">&lt;/<span class="name">inodeid</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">dirdiff</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">snapshotId</span>&gt;</span>1<span class="tag">&lt;/<span class="name">snapshotId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">isSnapshotroot</span>&gt;</span>true<span class="tag">&lt;/<span class="name">isSnapshotroot</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">childrenSize</span>&gt;</span>1<span class="tag">&lt;/<span class="name">childrenSize</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span><span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">deleted</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">inodereference-index</span>&gt;</span>1<span class="tag">&lt;/<span class="name">inodereference-index</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">deleted</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">dirdiff</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">diff</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">diff</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">inodeid</span>&gt;</span>16389<span class="tag">&lt;/<span class="name">inodeid</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">filediff</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">snapshotId</span>&gt;</span>1<span class="tag">&lt;/<span class="name">snapshotId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">size</span>&gt;</span>4<span class="tag">&lt;/<span class="name">size</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>a.txt<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">filediff</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">diff</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">SnapshotDiffSection</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">SecretManagerSection</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">currentId</span>&gt;</span>0<span class="tag">&lt;/<span class="name">currentId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">tokenSequenceNumber</span>&gt;</span>0<span class="tag">&lt;/<span class="name">tokenSequenceNumber</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">SecretManagerSection</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">CacheManagerSection</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">nextDirectiveId</span>&gt;</span>1<span class="tag">&lt;/<span class="name">nextDirectiveId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">CacheManagerSection</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">fsimage</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>datanode将信息给namenode,fsimage没有存放数据存放的位置.</p>
+<blockquote>
+<p>镜像文件fsimage<br>dn启动时,向nn报告各自的block列表,nn在内存中进行blockid &gt; machine映射.<br>镜像文件中存放的元数据/目录/权限/时间/副本数/块大小/上下级关系,每个目录或文件都对应一个节.</p>
+</blockquote>
+<h3 id="oev查看edits文件"><a href="#oev查看edits文件" class="headerlink" title="oev查看edits文件"></a>oev查看edits文件</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hdfs oev -p 文件类型 -i 编辑日志 -o 转换后文件输出路径</span><br><span class="line"></span><br><span class="line">hdfs oev -p xml -i edits_0000000000000000666-0000000000000000667 -o .&#x2F;edi.xml</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">EDITS</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">EDITS_VERSION</span>&gt;</span>-60<span class="tag">&lt;/<span class="name">EDITS_VERSION</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">RECORD</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">OPCODE</span>&gt;</span>OP_START_LOG_SEGMENT<span class="tag">&lt;/<span class="name">OPCODE</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">DATA</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">TXID</span>&gt;</span>666<span class="tag">&lt;/<span class="name">TXID</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">DATA</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">RECORD</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">RECORD</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">OPCODE</span>&gt;</span>OP_END_LOG_SEGMENT<span class="tag">&lt;/<span class="name">OPCODE</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">DATA</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">TXID</span>&gt;</span>667<span class="tag">&lt;/<span class="name">TXID</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">DATA</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">RECORD</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">EDITS</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="滚动编辑日志"><a href="#滚动编辑日志" class="headerlink" title="滚动编辑日志"></a>滚动编辑日志</h3><p>正常情况下HDFS文件系统有更新操作时,就会滚动编辑日志,也会用命令强制滚动编辑日志.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hdfs dfsadmin -rollEdits</span><br></pre></td></tr></table></figure>
+
+<p>Successfully rolled edit logs.<br>New segment starts at txid 65776</p>
+<p>镜像文件产生,namenode启动时加载镜像文件和编辑日志.</p>
+<img src="/images/nn3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="创建检查点流程"><a href="#创建检查点流程" class="headerlink" title="创建检查点流程"></a>创建检查点流程</h3><p>1.请求nn roll edit<br>2.copy fsimage + edit(s)<br>3.本地合并<br>4.回传<br>5.重命名<br>6.删除old</p>
+<p>1.2nn请求nn滚动日志,nn会创建新的edit(/edits_inprogress_0000000000000000003)<br>2.2nn复制nn的fsimag_x + edit_x + 1)<br>3.2nn在本地进行merge(合并),产生新的检查点文件(镜像文件)<br>4.2nn回传检查点文件给nn<br>5.nn上对检查点文件进行重命名,fsimage_xxx<br>6.2nn每隔一小时(fs.checkpoint.period)创建检查点,如果编辑日志大小达到64M,也可以创建检查点.</p>
+<p>hdfs-site.xml配置,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;dfs.namenode.checkpoint.period&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;3600&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line"></span><br><span class="line">&lt;!-- 如果操作的动作达到了1000000,不论是否到达一小时,都会创建检查点. --&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;dfs.namenode.checkpoint.txns&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;1000000&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line"></span><br><span class="line">&lt;!-- 2nn每隔60秒检查动作次数. --&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;dfs.namenode.checkpoint.check.period&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;60&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line"></span><br><span class="line">&lt;!-- 控制保留检查点文件的个数. --&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;dfs.namenode.num.checkpoints.retained&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;2&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/07/29/hadoop%E9%85%8D%E7%BD%AE-mapred/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Flying Pig">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2022/07/29/hadoop%E9%85%8D%E7%BD%AE-mapred/" class="post-title-link" itemprop="url">hadoop配置-mapred</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2022-07-29 00:00:00 / Modified: 15:16:33" itemprop="dateCreated datePublished" datetime="2022-07-29T00:00:00+08:00">2022-07-29</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <span id="more"></span>
+<p>map.sort.class<br>org.apache.hadoop.util.QuickSort<br>排序键的默认排序类.</p>
+<p>mapred.child.env<br>未配置<br>用户为任务进程添加了环境变量.示例:<br>1)A=foo 这会将环境变量 A 设置为 foo.<br>2)B=$B:c 这是在 Unix 上继承 nodemanager 的 B 环境变量.<br>3)B=%B%;c 这是在 Windows 上继承 nodemanager 的 B 环境变量.</p>
+<p><font color="#dd0000">mapred.child.java.opts</font><br>-Xmx200m<br>Java 选择任务进程.以下符号(如果存在)将被插入:@taskid@ 被当前 TaskID 替换.任何其他出现的&quot;@&quot;都将保持不变.例如,要启用详细 gc 日志记录到以 /tmp 中的 taskid 命名的文件并将堆最大值设置为千兆字节,请传递以下&quot;值&quot;:-Xmx1024m -verbose:gc -Xloggc:/tmp/@taskid @.gc 使用 -Djava.library.path 可能会导致程序在使用 hadoop 本机库时不再运行.应该使用 mapreduce.map.env 和 mapreduce.reduce.env 配置设置将这些值设置为 map/reduce JVM env 中 LD_LIBRARY_PATH 的一部分.</p>
+<p>mapreduce.admin.user.env<br>未配置<br>专家:map 和 reduce 任务流程的附加执行环境条目.这不是附加属性.如果您希望 map 和 reduce 任务能够访问本机库(压缩等),则必须保留原始值.当此值为空时,设置执行环境的命令将取决于操作系统:对于 linux,使用 LD_LIBRARY_PATH=$HADOOP_COMMON_HOME/lib/native.对于 Windows,使用 PATH = <code>%PATH%;%HADOOP_COMMON_HOME%\\bin</code>.</p>
+<p>mapreduce.am.max-attempts<br>2<br>应用程序尝试的最大次数.这是特定于应用程序的设置.它不应大于资源管理器设置的全局数.否则,它将被覆盖.默认数字设置为 2,以允许 AM 至少重试一次.</p>
+<p>mapreduce.application.classpath<br>未配置<br>MR 应用程序的 CLASSPATH.以逗号分隔的 CLASSPATH 条目列表.如果设置了 mapreduce.application.framework,那么它必须为该归档指定适当的类路径,并且归档的名称必须存在于类路径中.如果 mapreduce.app-submission.cross-platform 为 false,将使用特定于平台的环境变量扩展语法来构造默认的 CLASSPATH 条目.对于 <code>Linux:$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/*、$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/lib/*.对于 Windows:%HADOOP_MAPRED_HOME%/share/hadoop/mapreduce/*、%HADOOP_MAPRED_HOME%/share/hadoop/mapreduce/lib/*</code>.如果 mapreduce.app-submission.cross-platform 为 true,则将使用 MR 应用程序的与平台无关的默认 CLASSPATH:/share/hadoop/mapreduce/*,</p>
+<p>mapreduce.application.framework.path<br>未配置<br>MapReduce 框架存档的路径.如果设置,框架存档将与作业一起自动分发,并且此路径通常位于 HDFS 文件系统中的公共位置.与分布式缓存文件一样,这可以是带有片段的 URL,该片段指定用于存档名称的别名.例如,hdfs:/mapred/framework/hadoop-mapreduce-2.1.1.tar.gz#mrframework 会将本地化存档别名为&quot;mrframework&quot;.请注意,mapreduce.application.classpath 必须包含指定框架的适当类路径.存档的基本名称或存档的别名(如果使用别名)必须出现在指定的类路径中.</p>
+<p>mapreduce.app-submission.cross-platform<br>FALSE<br>如果启用,用户可以跨平台提交应用程序,即将应用程序从 Windows 客户端提交到 Linux/Unix 服务器,反之亦然.</p>
+<p>mapreduce.client.completion.pollinterval<br>5000<br>JobClient 轮询 JobTracker 以获取有关作业状态的更新的间隔(以毫秒为单位).您可能希望将其设置为较低的值,以使测试在单节点系统上运行得更快.在生产中调整此值可能会导致不需要的客户端-服务器流量.</p>
+<p>mapreduce.client.output.filter<br>FAILED<br>用于控制发送到 JobClient 控制台的任务用户日志输出的过滤器.允许的选项是:NONE、KILLED、FAILED、SUCCEEDED 和 ALL.</p>
+<p>mapreduce.client.progressmonitor.pollinterval<br>1000<br>JobClient 向控制台报告状态并检查作业完成的时间间隔(以毫秒为单位).您可能希望将其设置为较低的值,以使测试在单节点系统上运行得更快.在生产中调整此值可能会导致不需要的客户端-服务器流量.</p>
+<p>mapreduce.client.submit.file.replication<br>10<br>提交的作业文件的复制级别.这应该在节点数的平方根附近.</p>
+<p>mapreduce.cluster.acls.enabled<br>FALSE<br>指定是否应检查 ACL 以获取用户执行各种队列和作业级别操作的授权.默认情况下禁用 ACL.如果启用,当用户请求队列操作(例如将作业提交到队列并终止队列中的作业)和作业操作(例如查看作业详细信息)时,JobTracker 和 TaskTracker 会进行访问控制检查(请参阅 mapreduce.job.acl -view-job)或用于使用 Map/Reduce API、RPC 或通过控制台和 Web 用户界面修改作业(参见 mapreduce.job.acl-modify-job).为了启用这个标志(mapreduce.cluster.acls.enabled),这将在 JobTracker 节点和所有 TaskTracker 节点上的 mapred-site.xml 中设置为 true.</p>
+<p>mapreduce.cluster.local.dir<br><code>$&#123;hadoop.tmp.dir&#125;</code>/mapred/local<br>MapReduce 存储中间数据文件的本地目录.可能是不同设备上以逗号分隔的目录列表,以便分散磁盘 i/o.不存在的目录将被忽略.</p>
+<p>mapreduce.cluster.temp.dir<br><code>$&#123;hadoop.tmp.dir&#125;</code>/mapred/temp<br>临时文件的共享目录.</p>
+<p><font color="#dd0000">mapreduce.framework.name</font><br>local<br>用于执行 MapReduce 作业的运行时框架.可以是本地、经典或纱线之一.</p>
+<p>mapreduce.ifile.readahead<br>TRUE<br>用于启用/禁用 IFile 预读的配置键.</p>
+<p>mapreduce.ifile.readahead.bytes<br>4194304<br>用于设置 IFile 预读长度(以字节为单位)的配置键.</p>
+<p>mapreduce.input.fileinputformat.list-status.num-threads<br>1<br>用于列出和获取指定输入路径的块位置的线程数.注意:如果使用自定义的非线程安全路径过滤器,则不应使用多线程.</p>
+<p>mapreduce.input.fileinputformat.split.minsize<br>0<br>映射输入应该被分成的最小大小的块.请注意,某些文件格式可能具有优先于此设置的最小拆分大小.</p>
+<p>mapreduce.input.lineinputformat.linespermap<br>1<br>使用 NLineInputFormat 时,要包含在每个拆分中的输入数据的行数.</p>
+<p>mapreduce.job.acl-modify-job<br>未配置<br>用于&quot;修改&quot;作业的作业特定访问控制列表.它仅在通过将配置属性 mapreduce.cluster.acls.enabled 设置为 true 在 Map/Reduce 中启用授权时使用.这指定了可以对作业进行修改操作的用户和/或组的列表.要指定用户和组的列表,使用的格式是&quot;user1,user2 group1,group&quot;.如果设置为&quot;<code>*</code>&quot;,则允许所有用户/组修改此作业.如果设置为&#39; &#39;(即空格),则不允许.此配置用于保护与此作业有关的所有修改并处理以下所有操作: o 终止此作业 o 终止此作业的任务,此作业的任务失败 o 设置此作业的优先级 这些操作中的每一个也受通过 mapred-queues.xml 配置的每个队列级别 ACL&quot;acl-administer-jobs&quot;的保护.因此,调用者应该有权满足队列级 ACL 或作业级 ACL.无论此 ACL 配置如何,(a) 作业所有者,(b) 启动集群的用户,(c) 通过 mapreduce.cluster.permissions.supergroup 配置的管理员配置的超级组的成员和 (d) 队列的队列管理员通过 acl-administer-jobs 为 mapred-queues.xml 中的特定队列配置的此作业可以对作业执行所有修改操作.默认情况下,除了启动集群的用户 job-owner 之外,没有其他人,</p>
+<p>mapreduce.job.acl-view-job<br>未配置<br>用于&quot;查看&quot;作业的作业特定访问控制列表.它仅在通过将配置属性 mapreduce.cluster.acls.enabled 设置为 true 在 Map/Reduce 中启用授权时使用.这指定了可以查看有关作业的私人详细信息的用户和/或组的列表.要指定用户和组的列表,使用的格式是&quot;user1,user2 group1,group&quot;.如果设置为&quot;<code>*</code>&quot;,则允许所有用户/组修改此作业.如果设置为&#39; &#39;(即空格),则不允许.此配置用于保护一些作业视图,目前仅保护可能返回作业所有者的敏感信息的 API,例如 o 作业级计数器 o 任务级计数器 o 任务&#39;诊断信息 o Task-logs 显示在 TaskTracker web-UI 和 o JobTracker 的 web-UI 显示的 job.xml 任何其他用户仍然可以访问其他作业信息,例如 JobStatus、JobProfile、作业列表在队列中等.无论此 ACL 配置如何,(a) 作业所有者,(b) 启动集群的用户,(c) 通过 mapreduce.cluster.permissions.supergroup 配置的管理员配置的超级组的成员和 (d ) 提交此作业的队列的队列管理员通过 acl-administer-jobs 为 mapred-queues.xml 中的特定队列配置,可以对作业执行所有查看操作.默认情况下,除了启动集群的用户 job-owner 之外,没有其他人,</p>
+<p>mapreduce.job.classloader<br>FALSE<br>是否为任务 JVM 中的用户类使用单独的(隔离的)类加载器.</p>
+<p>mapreduce.job.classloader.system.classes<br>未配置<br>用于覆盖作业类加载器的系统类的默认定义.当启用 mapreduce.job.classloader 时,系统类是应从系统类路径加载的类的逗号分隔列表,而不是用户提供的 JAR.以&quot;.&quot;结尾的名字(句点)被视为包名称,以&quot;-&quot;开头的名称被视为否定匹配.</p>
+<p>mapreduce.job.committer.setup.cleanup.needed<br>TRUE<br>如果作业需要作业设置和作业清理,则为 true.假的,否则</p>
+<p>mapreduce.job.complete.cancel.delegation.tokens<br>TRUE<br>如果为 false - 不要从续订中取消注册/取消委托令牌,因为生成的作业可能会使用相同的令牌</p>
+<p>mapreduce.job.counters.limit<br>120<br>限制每个作业允许的用户计数器数量.</p>
+<p>mapreduce.job.emit-timeline-data<br>FALSE<br>指定 Application Master 是否应将时间线数据发送到时间线服务器.单个作业可以覆盖此值.</p>
+<p>mapreduce.job.end-notification.max.attempts<br>5<br>为提供作业结束通知而读取 URL 的最大次数.集群管理员可以设置它来限制作业结束后的多长时间,Application Master 在退出之前等待.必须标记为 final 以防止用户覆盖它.</p>
+<p>mapreduce.job.end-notification.max.retry.interval<br>5000<br>在重试作业结束通知之前等待的最长时间(以毫秒为单位).集群管理员可以设置它来限制 Application Master 在退出之前等待的时间.必须标记为 final 以防止用户覆盖它.</p>
+<p>mapreduce.job.end-notification.retry.attempts<br>0<br>如果作业失败,作业的提交者想要重试作业结束通知的次数.这由 mapreduce.job.end-notification.max.attempts 限制</p>
+<p>mapreduce.job.end-notification.retry.interval<br>1000<br>如果作业结束通知失败,作业提交者希望在重试作业结束通知之前等待的毫秒数.这由 mapreduce.job.end-notification.max.retry.interval 限制</p>
+<p>mapreduce.job.end-notification.url<br>未配置<br>指示将在作业完成时调用以通知作业结束状态的 url.用户最多可以使用 URI 提供 2 个变量:$jobId 和 $jobStatus.如果它们存在于 URI 中,那么它们将被它们各自的值替换.</p>
+<p>mapreduce.job.jvm.numtasks<br>1<br>每个 jvm 运行多少个任务.如果设置为 -1,则没有限制.</p>
+<p>mapreduce.job.map.output.collector.class<br>org.apache.hadoop.mapred.MapTask$MapOutputBuffer<br>要使用的 MapOutputCollector 实现.这可能是一个以逗号分隔的类名列表,在这种情况下,map 任务将尝试依次初始化每个收集器.将使用第一个成功初始化的.</p>
+<p>mapreduce.job.maps<br>2<br>每个作业的默认地图任务数.当 mapreduce.jobtracker.address 为&quot;本地&quot;时忽略.</p>
+<p>mapreduce.job.max.split.locations<br>10<br>用于位置计算的每个分割存储的最大块位置数.</p>
+<p>mapreduce.job.maxtaskfailures.per.tracker<br>3<br>给定作业的 tasktracker 上的任务失败次数,之后该作业的新任务未分配给它.它必须小于 mapreduce.map.maxattempts 和 mapreduce.reduce.maxattempts 否则失败的任务将永远不会在不同的节点上尝试.</p>
+<p>mapreduce.job.queuename<br>default<br>作业提交到的队列.这必须与系统的 mapred-queues.xml 中定义的队列之一匹配.此外,队列的 ACL 设置必须允许当前用户向队列提交作业.在指定队列之前,请确保系统已配置队列,并且允许访问以将作业提交到队列.</p>
+<p>mapreduce.job.reduce.shuffle.consumer.plugin.class<br>org.apache.hadoop.mapreduce.task.reduce.Shuffle<br>该作业的reducetasks将使用其实例发送shuffle请求的类的名称.该类必须是 org.apache.hadoop.mapred.ShuffleConsumerPlugin 的实例.</p>
+<p>mapreduce.job.reduce.slowstart.completedmaps<br>0.05<br>在为作业安排 reduce 之前,作业中应完成的地图数量的一部分.</p>
+<p>mapreduce.job.reducer.preempt.delay.sec<br>0<br>当没有预期的净空时,未满足的映射器请求触发reducer抢占的阈值(以秒为单位).如果设置为 0 或负值,则一旦检测到余量不足,reducer 就会被抢占.默认值为 0.</p>
+<p>mapreduce.job.reducer.unconditional-preempt.delay.sec<br>300<br>不满足的映射器请求触发强制减速器抢占的阈值(以秒为单位),而与预期的净空无关.默认情况下,它设置为 5 分钟.将其设置为 0 会导致 reducer 立即抢占.设置为 -1 将完全禁用此抢占.</p>
+<p>mapreduce.job.reduces<br>1<br>每个作业的默认减少任务数.通常设置为集群的 reduce 容量的 99%,这样如果一个节点发生故障,reduce 仍然可以在单个 wave 中执行.当 mapreduce.jobtracker.address 为&quot;本地&quot;时忽略.</p>
+<p>mapreduce.job.skip.outdir<br>未配置<br>如果此处未指定任何值,则跳过的记录将写入位于<code> _logs</code>/skip 的输出目录.用户可以通过给出值&quot;none&quot;来停止写入跳过的记录.</p>
+<p>mapreduce.job.speculative.slownodethreshold<br>1<br>Task Tracker 的 ave map 和 reduce 进度率 (finishTime-dispatchTime) 的标准偏差数必须低于所有成功的 map/reduce 任务的平均值,因为 TT 被认为太慢而无法提供推测性任务.</p>
+<p>mapreduce.job.speculative.slowtaskthreshold<br>1<br>一个任务的平均进度率必须低于所有正在运行的任务的平均值的标准偏差数,该任务被认为太慢.</p>
+<p>mapreduce.job.speculative.speculativecap<br>0.1<br>可以在任何时候以推测方式重新执行的正在运行任务的最大百分比 (0-1).</p>
+<p>mapreduce.job.split.metainfo.maxsize<br>10000000<br>拆分元信息文件的最大允许大小.JobTracker 不会尝试读取大于配置值的拆分元信息文件.如果设置为 -1,则没有限制.</p>
+<p>mapreduce.job.tags<br>未配置<br>在提交时将传递给 YARN 的作业标签.对应用程序的 YARN 查询可以过滤这些标签.</p>
+<p>mapreduce.job.token.tracking.ids<br>未配置<br>当 mapreduce.job.token.tracking.ids.enabled 设置为 true 时,框架将其设置为作业使用的 token-tracking-ids.</p>
+<p>mapreduce.job.token.tracking.ids.enabled<br>FALSE<br>是否将令牌的跟踪 ID 写入作业配置.当为 true 时,配置属性&quot;mapreduce.job.token.tracking.ids&quot;设置为作业的 token-tracking-ids</p>
+<p>mapreduce.job.ubertask.enable<br>FALSE<br>是否启用小型作业&quot;ubertask&quot;优化,它在单个 JVM 中按顺序运行&quot;足够小的&quot;作业.&quot;Small&quot;由以下 maxmaps、maxreduces 和 maxbytes 设置定义.请注意,应用程序主控的配置也会影响&quot;小&quot;定义 - yarn.app.mapreduce.am.resource.mb 必须大于 mapreduce.map.memory.mb 和 mapreduce.reduce.memory.mb,以及 yarn.app .mapreduce.am.resource.cpu-vcores 必须大于 mapreduce.map.cpu.vcores 和 mapreduce.reduce.cpu.vcores 才能启用 ubertask.用户可以覆盖此值.</p>
+<p>mapreduce.job.ubertask.maxbytes<br>未配置<br>输入字节数的阈值,超过该阈值的作业被认为对于 ubertasking 优化来说太大了.如果未指定任何值,则使用 dfs.block.size 作为默认值.如果底层文件系统不是 HDFS,请务必在 mapred-site.xml 中指定默认值.用户可以覆盖这个值,但只能向下.</p>
+<p>mapreduce.job.ubertask.maxmaps<br>9<br>地图数量的阈值,超过该阈值的作业被认为对于 ubertasking 优化来说太大了.用户可以覆盖这个值,但只能向下.</p>
+<p>mapreduce.job.ubertask.maxreduces<br>1<br>减少数量的阈值,超过该阈值的作业被认为对于 ubertasking 优化来说太大了.目前该代码不能支持多个 REDUCE 并将忽略更大的值.(然而,零是一个有效的最大值.)用户可以覆盖这个值,但只能向下.</p>
+<p>mapreduce.job.userhistorylocation<br>未配置<br>用户可以指定一个位置来存储特定作业的历史文件.如果未指定任何内容,则日志存储在输出目录中.这些文件存储在目录中的&quot;<code>_logs</code>/history/&quot;中.用户可以通过提供值&quot;none&quot;来停止记录.</p>
+<p>mapreduce.job.userlog.retain.hours<br>24<br>作业完成后保留用户日志的最长时间(以小时为单位).</p>
+<p><font color="#dd0000">mapreduce.jobhistory.address</font><br>0.0.0.0:10020<br>MapReduce JobHistory Server IPC 主机:端口</p>
+<p>mapreduce.jobhistory.admin.acl<br>*<br>可以成为历史服务器管理员的 ACL.</p>
+<p>mapreduce.jobhistory.admin.address<br>0.0.0.0:10033<br>历史服务器管理界面的地址.</p>
+<p>mapreduce.jobhistory.cleaner.enable<br>TRUE</p>
+<p>mapreduce.jobhistory.cleaner.interval-ms<br>86400000<br>作业历史记录清理器检查要删除的文件的频率(以毫秒为单位).默认为 86400000(一天).仅当文件早于 mapreduce.jobhistory.max-age-ms 时才会删除文件.</p>
+<p>mapreduce.jobhistory.client.thread-count<br>10<br>处理客户端 API 请求的线程数</p>
+<p>mapreduce.jobhistory.datestring.cache.size<br>200000<br>日期字符串缓存的大小.影响将被扫描以查找作业的目录数量.</p>
+<p>mapreduce.jobhistory.done-dir<br>${yarn.app.mapreduce.am.staging-dir}/history/done</p>
+<p>mapreduce.jobhistory.http.policy<br>HTTP_ONLY<br>这将为 JobHistoryServer Web UI 配置 HTTP 端点.支持以下值: - HTTP_ONLY :仅在 http 上提供服务 - HTTPS_ONLY :仅在 https 上提供服务</p>
+<p>mapreduce.jobhistory.intermediate-done-dir<br>${yarn.app.mapreduce.am.staging-dir}/history/done_intermediate</p>
+<p>mapreduce.jobhistory.joblist.cache.size<br>20000<br>作业列表缓存的大小</p>
+<p>mapreduce.jobhistory.keytab<br>/etc/security/keytab/jhs.service.keytab<br>MapReduce JobHistory Server 的 kerberos 密钥表文件的位置.</p>
+<p>mapreduce.jobhistory.loadedjobs.cache.size<br>5<br>加载的作业缓存的大小.如果属性 mapreduce.jobhistory.loadedtasks.cache.size 设置为正值,则忽略此属性.</p>
+<p>mapreduce.jobhistory.loadedtasks.cache.size<br>未配置<br>更改要根据总任务计数设置的作业历史缓存限制.如果加载的任务总数超过此值,则作业缓存将缩小,直到低于此限制(缓存中至少 1 个作业).如果此值为空或非正数,则缓存将恢复为使用属性 mapreduce.jobhistory.loadedjobs.cache.size 作为作业缓存大小.对于 mapreduce.jobhistory.loadedtasks.cache.size 属性的两个建议: 1) 对于每 100k 的缓存大小,将 Job History Server 的堆大小设置为 1.2GB.例如,mapreduce.jobhistory.loadedtasks.cache.size=500000,堆大小=6GB.2) 确保缓存大小大于集群上运行的最大作业所需的任务数.将值设置得稍高可能是个好主意(例如,</p>
+<p>mapreduce.jobhistory.max-age-ms<br>604800000<br>历史清理器运行时,将删除超过此毫秒数的作业历史文件.默认为 604800000(1 周).</p>
+<p>mapreduce.jobhistory.minicluster.fixed.ports<br>FALSE<br>是否对 minicluster 使用固定端口</p>
+<p>mapreduce.jobhistory.move.interval-ms<br>180000<br>以这个频率从中间完成目录扫描历史文件到完成目录.</p>
+<p>mapreduce.jobhistory.move.thread-count<br>3<br>用于移动文件的线程数.</p>
+<p>mapreduce.jobhistory.principal<br><code>jhs/_HOST@REALM.TLD</code><br>MapReduce JobHistory Server 的 Kerberos 主体名称.</p>
+<p>mapreduce.jobhistory.recovery.enable<br>FALSE<br>启用历史服务器来存储服务器状态并在启动时恢复服务器状态.如果启用,则必须指定 mapreduce.jobhistory.recovery.store.class.</p>
+<p>mapreduce.jobhistory.recovery.store.class<br>org.apache.hadoop.mapreduce.v2.hs.HistoryServerFileSystemStateStoreService<br>HistoryServerStateStoreService 类用于存储历史服务器状态以供恢复.</p>
+<p>mapreduce.jobhistory.recovery.store.fs.uri<br><code>$&#123;hadoop.tmp.dir&#125;</code>/mapred/history/recoverystore<br>如果将 HistoryServerFileSystemStateStoreService 配置为恢复存储类,则将存储历史服务器状态的 URI.</p>
+<p>mapreduce.jobhistory.store.class<br>未配置<br>用于缓存历史数据的 HistoryStorage 类.</p>
+<p><font color="#dd0000">mapreduce.jobhistory.webapp.address</font><br>0.0.0.0:19888<br>MapReduce JobHistory Server Web UI 主机:端口</p>
+<p>mapreduce.jobtracker.address<br>local<br>MapReduce 作业跟踪器运行的主机和端口.如果是&quot;本地&quot;,则作业将作为单个 map 和 reduce 任务在进程内运行.</p>
+<p>mapreduce.jobtracker.expire.trackers.interval<br>600000<br>专家:时间间隔,以毫秒为单位,如果任务跟踪器不发送心跳,则在该时间间隔之后它被宣布为&quot;丢失&quot;.</p>
+<p>mapreduce.jobtracker.handler.count<br>10<br>JobTracker 的服务器线程数.这应该是 tasktracker 节点数量的大约 4%.</p>
+<p>mapreduce.jobtracker.heartbeats.in.second<br>100<br>专家:一秒钟内可以到达 JobTracker 的近似心跳数.假设每个 RPC 可以在 10 毫秒内处理,默认值是每秒 100 个 RPC.</p>
+<p>mapreduce.jobtracker.hosts.exclude.filename<br>未配置<br>命名一个文件,其中包含应被作业跟踪器排除的主机列表.如果该值为空,则不排除任何主机.</p>
+<p>mapreduce.jobtracker.hosts.filename<br>未配置<br>命名一个文件,该文件包含可能连接到 jobtracker 的节点列表.如果该值为空,则允许所有主机.</p>
+<p>mapreduce.jobtracker.http.address<br>0.0.0.0:50030<br>作业跟踪器 http 服务器地址和服务器将侦听的端口.如果端口为 0,则服务器将在空闲端口上启动.</p>
+<p>mapreduce.jobtracker.instrumentation<br>org.apache.hadoop.mapred.JobTrackerMetricsInst<br>专家:与每个 JobTracker 关联的检测类.</p>
+<p>mapreduce.jobtracker.jobhistory.block.size<br>3145728<br>作业历史文件的块大小.由于作业恢复使用作业历史记录,因此尽快将作业历史记录转储到磁盘非常重要.请注意,这是专家级参数.默认值设置为 3 MB.</p>
+<p>mapreduce.jobtracker.jobhistory.completed.location<br>未配置<br>完成的作业历史文件存储在这个众所周知的位置.如果未指定任何内容,则文件存储在 ${mapreduce.jobtracker.jobhistory.location}/done.</p>
+<p>mapreduce.jobtracker.jobhistory.location<br>未配置<br>如果作业跟踪器是静态的,则历史文件存储在这个众所周知的地方.如果这里没有设置值,默认在本地文件系统${hadoop.log.dir}/history.</p>
+<p>mapreduce.jobtracker.jobhistory.lru.cache.size<br>5<br>内存中加载的作业历史文件的数量.作业在首次访问时被加载.基于 LRU 清除缓存.</p>
+<p>mapreduce.jobtracker.jobhistory.task.numberprogresssplits<br>12<br>每个任务尝试从 0.0 进展到 1.0 [除非它失败或被杀死].对于每次任务尝试,我们都会记录每十二分之一进度范围内的某些统计数据.您可以通过设置此属性来更改我们将整个进度范围划分为的间隔数.值越高,记录的数据就越精确,但在运行时会占用作业跟踪器中的更多内存.此属性中的每个增量每个正在运行的任务花费 16 个字节.</p>
+<p>mapreduce.jobtracker.maxtasks.perjob<br>-1<br>单个作业的最大任务数.值 -1 表示没有最大值.</p>
+<p>mapreduce.jobtracker.persist.jobstatus.active<br>TRUE<br>指示作业状态信息的持久性是否处于活动状态.</p>
+<p>mapreduce.jobtracker.persist.jobstatus.dir<br>/jobtracker/jobsInfo<br>作业状态信息保存在文件系统中的目录,以便在它删除内存队列后以及在 jobtracker 重新启动之间可用.</p>
+<p>mapreduce.jobtracker.persist.jobstatus.hours<br>1<br>工作状态信息在 DFS 中保留的小时数.作业状态信息将在它丢弃内存队列后以及在 jobtracker 重新启动之间可用.对于零值,作业状态信息根本不会保存在 DFS 中.</p>
+<p>mapreduce.jobtracker.restart.recover<br>FALSE<br>&quot;true&quot; 重新启动时启用(作业)恢复,&quot;false&quot; 重新开始</p>
+<p>mapreduce.jobtracker.retiredjobs.cache.size<br>1000<br>要保留在缓存中的退休作业状态的数量.</p>
+<p>mapreduce.jobtracker.staging.root.dir<br><code>$&#123;hadoop.tmp.dir&#125;</code>/mapred/staging<br>用户作业文件暂存区的根目录 实际上,这应该是用户主目录所在的目录(通常是 /user)</p>
+<p>mapreduce.jobtracker.system.dir<br><code>$&#123;hadoop.tmp.dir&#125;</code>/mapred/system<br>MapReduce 存储控制文件的目录.</p>
+<p>mapreduce.jobtracker.taskcache.levels<br>2<br>这是任务缓存的最高级别.例如,如果级别为 2,则缓存的任务在主机级别和机架级别.</p>
+<p>mapreduce.jobtracker.taskscheduler<br>org.apache.hadoop.mapred.JobQueueTaskScheduler<br>负责调度任务的类.</p>
+<p>mapreduce.jobtracker.taskscheduler.maxrunningtasks.perjob<br>未配置<br>作业被抢占之前的最大运行任务数.如果未定义,则没有限制.</p>
+<p>mapreduce.jobtracker.tasktracker.maxblacklists<br>4<br>任务跟踪器按各种作业列入黑名单的数量,之后任务跟踪器可以在所有作业中列入黑名单.跟踪器将在稍后(一天后)获得任务.重新启动后,跟踪器将成为健康的跟踪器.</p>
+<p>mapreduce.local.clientfactory.class.name<br>org.apache.hadoop.mapred.LocalClientFactory<br>这是负责创建本地作业运行器客户端的客户端工厂</p>
+<p>mapreduce.map.cpu.vcores<br>1<br>为每个映射任务从调度程序请求的虚拟核心数.</p>
+<p>mapreduce.map.cpu.vcores<br>1<br>每个映射任务所需的虚拟核心数.</p>
+<p>mapreduce.map.log.level<br>INFO<br>地图任务的日志记录级别.允许的级别为:OFF、FATAL、ERROR、WARN、INFO、DEBUG、TRACE 和 ALL.</p>
+<p>mapreduce.map.maxattempts<br>4<br>专家:每个地图任务的最大尝试次数.换句话说,框架会在放弃之前尝试多次执行地图任务.</p>
+<p>mapreduce.map.memory.mb<br>1024<br>为每个映射任务从调度程序请求的内存量.</p>
+<p>mapreduce.map.output.compress<br>FALSE<br>映射的输出是否应该在通过网络发送之前进行压缩.使用 SequenceFile 压缩.</p>
+<p>mapreduce.map.output.compress.codec<br>org.apache.hadoop.io.compress.DefaultCodec<br>如果地图输出被压缩,它们应该如何压缩?</p>
+<p>mapreduce.map.skip.maxrecords<br>0<br>mapper 中每个坏记录周围的可接受跳过记录的数量.该数字还包括不良记录.要关闭检测/跳过不良记录的功能,请将值设置为 0.框架尝试通过重试来缩小跳过的范围,直到达到此阈值或所有尝试都用尽此任务.将值设置为 Long.MAX_VALUE 以指示框架不需要尝试缩小范围.跳过任何记录(取决于应用程序)都是可以接受的.</p>
+<p>mapreduce.map.skip.proc.count.autoincr<br>TRUE<br>如果设置为 true,则 SkipBadRecords.COUNTER_MAP_PROCESSED_RECORDS 的标志在调用 map 函数后由 MapRunner 递增.对于异步处理记录或缓冲输入记录的应用程序,此值必须设置为 false.例如流媒体.在这种情况下,应用程序应自行增加此计数器.</p>
+<p>mapreduce.map.sort.spill.percent<br>0.8<br>序列化缓冲区中的软限制.一旦达到,一个线程将开始在后台将内容溢出到磁盘.请注意,如果在溢出过程中超过此阈值,则收集不会阻塞,因此当设置为小于 0.5 时,溢出可能大于此阈值</p>
+<p>mapreduce.map.speculative<br>TRUE<br>如果为真,则某些地图任务的多个实例可能会并行执行.</p>
+<p>mapreduce.output.fileoutputformat.compress<br>FALSE<br>是否应该压缩作业输出?</p>
+<p>mapreduce.output.fileoutputformat.compress.codec<br>org.apache.hadoop.io.compress.DefaultCodec<br>如果作业输出被压缩,它们应该如何被压缩?</p>
+<p>mapreduce.output.fileoutputformat.compress.type<br>RECORD<br>如果将作业输出压缩为 SequenceFiles,应该如何压缩它们?应该是 NONE、RECORD 或 BLOCK 之一.</p>
+<p>mapreduce.reduce.cpu.vcores<br>1<br>每个reduce任务从调度器请求的虚拟核心数.</p>
+<p>mapreduce.reduce.cpu.vcores<br>1<br>每个reduce任务所需的虚拟核心数.</p>
+<p>mapreduce.reduce.input.buffer.percent<br>0<br>在减少期间保留映射输出的内存百分比(相对于最大堆大小).当 shuffle 结束时,内存中任何剩余的 map 输出必须消耗少于这个阈值,然后才能开始 reduce.</p>
+<p>mapreduce.reduce.log.level<br>INFO<br>reduce 任务的日志记录级别.允许的级别为:OFF、FATAL、ERROR、WARN、INFO、DEBUG、TRACE 和 ALL.</p>
+<p>mapreduce.reduce.markreset.buffer.percent<br>0<br>使用标记重置功能时用于缓存值的内存百分比(相对于最大堆大小).</p>
+<p>mapreduce.reduce.maxattempts<br>4<br>Expert:每个reduce任务的最大尝试次数.换句话说,框架会在放弃之前尝试多次执行reduce任务.</p>
+<p>mapreduce.reduce.memory.mb<br>1024<br>每个reduce任务从调度器请求的内存量.</p>
+<p>mapreduce.reduce.merge.inmem.threshold<br>1000<br>阈值,以内存中合并过程的文件数表示.当我们累积阈值文件数时,我们会启动内存合并并溢出到磁盘.值 0 或小于 0 表示我们不希望有任何阈值,而是仅依赖 ramfs 的内存消耗来触发合并.</p>
+<p>mapreduce.reduce.shuffle.connect.timeout<br>180000<br>专家:reduce 任务尝试连接到 tasktracker 以获取地图输出所花费的最大时间量(以毫秒为单位).</p>
+<p>mapreduce.reduce.shuffle.fetch.retry.enabled<br>${yarn.nodemanager.recovery.enabled}<br>设置为在主机重新启动期间启用提取重试.</p>
+<p>mapreduce.reduce.shuffle.fetch.retry.interval-ms<br>1000<br>由于某些事件(例如 NM 重启)而发生某些非致命故障时,fetcher 重试再次获取的间隔时间.</p>
+<p>mapreduce.reduce.shuffle.fetch.retry.timeout-ms<br>30000<br>由于某些事件(例如 NM 重启)而发生某些非致命故障时,fetcher 重试再次获取的超时值.</p>
+<p>mapreduce.reduce.shuffle.input.buffer.percent<br>0.7<br>在 shuffle 期间从最大堆大小分配到存储映射输出的内存百分比.</p>
+<p><font color="#dd0000">mapreduce.reduce.shuffle.memory.limit.percent</font><br>0.25<br>专家:单个 shuffle 可以消耗的内存限制的最大百分比</p>
+<p>mapreduce.reduce.shuffle.merge.percent<br>0.66<br>将启动内存合并的使用阈值,表示为分配给存储内存映射输出的总内存的百分比,由 mapreduce.reduce.shuffle.input.buffer.percent 定义.</p>
+<p>mapreduce.reduce.shuffle.parallelcopies<br>5<br>在复制(洗牌)阶段,reduce 运行的默认并行传输数.</p>
+<p>mapreduce.reduce.shuffle.read.timeout<br>180000<br>专家:reduce 任务在获得连接后等待 map 输出数据可供读取的最长时间(以毫秒为单位).</p>
+<p>mapreduce.reduce.shuffle.retry-delay.max.ms<br>60000<br>在重试下载地图数据之前,reducer 将延迟的最大毫秒数.</p>
+<p>mapreduce.reduce.skip.maxgroups<br>0<br>reducer 中每个坏组周围的可接受跳过组的数量.该数字也包括不良组.要关闭检测/跳过坏组的功能,请将值设置为 0.框架尝试通过重试来缩小跳过的范围,直到达到此阈值或所有尝试都用尽此任务.将值设置为 Long.MAX_VALUE 以指示框架不需要尝试缩小范围.跳过任何组(取决于应用程序)都是可以接受的.</p>
+<p>mapreduce.reduce.skip.proc.count.autoincr<br>TRUE<br>如果设置为 true,则 SkipBadRecords.COUNTER_REDUCE_PROCESSED_GROUPS 的标志在调用 reduce 函数后由框架递增.对于异步处理记录或缓冲输入记录的应用程序,此值必须设置为 false.例如流媒体.在这种情况下,应用程序应自行增加此计数器.</p>
+<p>mapreduce.reduce.speculative<br>TRUE<br>如果为 true,则某些 reduce 任务的多个实例可能会并行执行.</p>
+<p>mapreduce.shuffle.connection-keep-alive.enable<br>FALSE<br>设置为 true 以支持保持连接.</p>
+<p>mapreduce.shuffle.connection-keep-alive.timeout<br>5<br>shuffle 客户端尝试保留 http 连接的秒数.请参阅 Http 规范中的&quot;Keep-Alive: timeout=&quot;标头</p>
+<p>mapreduce.shuffle.max.connections<br>0<br>洗牌的最大允许连接数.设置为 0(零)表示对连接数没有限制.</p>
+<p>mapreduce.shuffle.max.threads<br>0<br>用于服务随机连接的最大允许线程数.设置为零表示默认为可用处理器数量的 2 倍(由 Runtime.availableProcessors() 报告).Netty 用于服务请求,因此每个连接都不需要一个线程.</p>
+<p><font color="#dd0000">mapreduce.shuffle.port</font><br>13562<br>ShuffleHandler 将在其上运行的默认端口.ShuffleHandler 是在 NodeManager 上运行的服务,用于促进将中间 Map 输出传输到请求的 Reducer.</p>
+<p>mapreduce.shuffle.ssl.enabled<br>FALSE<br>是否对 Shuffle HTTP 端点使用 SSL.</p>
+<p>mapreduce.shuffle.ssl.file.buffer.size<br>65536<br>使用 SSL 时从文件中读取溢出的缓冲区大小.</p>
+<p>mapreduce.shuffle.transfer.buffer.size<br>131072<br>仅当 mapreduce.shuffle.transferTo.allowed 设置为 false 时才使用此属性.在这种情况下,此属性定义了在 shuffle 阶段的缓冲区复制代码中使用的缓冲区大小.这个缓冲区的大小决定了 IO 请求的大小.</p>
+<p>mapreduce.shuffle.transferTo.allowed<br>未配置<br>此选项可以在 shuffle 阶段使用 nio transferTo 方法启用/禁用.NIO transferTo 在 shuffle 阶段的 windows 上表现不佳.因此,使用此配置属性可以禁用它,在这种情况下将使用自定义传输方法.在 Windows 上运行 Hadoop 时,推荐值为 false.对于 Linux,建议将其设置为 true.如果未设置任何内容,则 Windows 的默认值为 false,Linux 的默认值为 true.</p>
+<p>mapreduce.task.combine.progress.records<br>10000<br>在发送进度通知之前在组合输出收集期间要处理的记录数.</p>
+<p>mapreduce.task.files.preserve.failedtasks<br>FALSE<br>是否应保留失败任务的文件.这应该只用于失败的作业,因为存储永远不会被回收.它还可以防止 map 输出在使用时从 reduce 目录中删除.</p>
+<p>mapreduce.task.io.sort.factor<br>10<br>排序文件时一次合并的流数.这决定了打开文件句柄的数量.</p>
+<p><font color="#dd0000">mapreduce.task.io.sort.mb</font><br>100<br>排序文件时使用的缓冲内存总量,以兆字节为单位.默认情况下,给每个合并流 1MB,这应该最大限度地减少搜索.</p>
+<p>mapreduce.task.merge.progress.records<br>10000<br>在向 TaskTracker 发送进度通知之前要在合并期间处理的记录数.</p>
+<p>mapreduce.task.profile<br>FALSE<br>设置系统是否应该为该作业中的某些任务收集探查器信息?信息存储在用户日志目录中.如果启用了任务分析,则值为&quot;true&quot;.</p>
+<p>mapreduce.task.profile.map.params<br>${mapreduce.task.profile.params}<br>映射任务特定的 JVM 分析器参数.见 mapreduce.task.profile.params</p>
+<p>mapreduce.task.profile.maps<br>0-2<br>将地图任务的范围设置为配置文件.mapreduce.task.profile 必须设置为 true 才能计算该值.</p>
+<p>mapreduce.task.profile.params<br>-agentlib:hprof=cpu=samples,heap=sites,force=n,thread=y,verbose=n,file=%s<br>用于分析映射和减少任务尝试的 JVM 分析器参数.此字符串可能包含单个格式说明符 %s,它将被任务尝试日志目录中 profile.out 的路径替换.要为 map 任务和 reduce 任务指定不同的分析选项,应该使用更具体的参数 mapreduce.task.profile.map.params 和 mapreduce.task.profile.reduce.params.</p>
+<p>mapreduce.task.profile.reduce.params<br>${mapreduce.task.profile.params}<br>减少任务特定的 JVM 分析器参数.见 mapreduce.task.profile.params</p>
+<p>mapreduce.task.profile.reduces<br>0-2<br>将reduce任务的范围设置为profile.mapreduce.task.profile 必须设置为 true 才能计算该值.</p>
+<p>mapreduce.task.skip.start.attempts<br>2<br>将启动哪个跳过模式后的任务尝试次数.当跳过模式启动时,任务将接下来将处理的记录范围报告给 TaskTracker.因此,在失败时,TT 知道哪些可能是不良记录.在进一步的执行中,这些被跳过.</p>
+<p>mapreduce.task.timeout<br>600000<br>如果任务既不读取输入,也不写入输出,也不更新其状态字符串,则任务终止前的毫秒数.值 0 禁用超时.</p>
+<p>mapreduce.task.tmp.dir<br>./tmp<br>为 map 和 reduce 任务设置 tmp 目录的值.如果值为绝对路径,则直接赋值.否则,它会附加任务的工作目录.使用选项 -Djava.io.tmpdir=&#39;tmp dir 的绝对路径&#39;执行 java 任务.使用环境变量设置管道和流式传输,TMPDIR=&#39;tmp dir 的绝对路径&#39;</p>
+<p>mapreduce.task.userlog.limit.kb<br>0<br>每个任务的用户日志的最大大小,以 KB 为单位.0 禁用上限.</p>
+<p>mapreduce.tasktracker.dns.interface<br>default<br>任务跟踪器应报告其 IP 地址的网络接口的名称.</p>
+<p>mapreduce.tasktracker.dns.nameserver<br>default<br>TaskTracker 应使用名称服务器 (DNS) 的主机名或 IP 地址来确定 JobTracker 用于通信和显示目的的主机名.</p>
+<p>mapreduce.tasktracker.group<br>未配置<br>专家:TaskTracker 所属的组.如果 LinuxTaskController 是通过 mapreduce.tasktracker.taskcontroller 配置的,则任务控制器二进制文件的组所有者应该与该组相同.</p>
+<p>mapreduce.tasktracker.healthchecker.interval<br>60000<br>要运行的节点健康脚本的频率,以毫秒为单位</p>
+<p>mapreduce.tasktracker.healthchecker.script.args<br>未配置<br>启动时要传递给节点健康脚本的参数列表,以逗号分隔.</p>
+<p>mapreduce.tasktracker.healthchecker.script.path<br>未配置<br>脚本的绝对路径,由节点健康监控服务定期运行以确定节点是否健康.如果该key的值为空或者此处配置的位置不存在该文件,则不启动节点健康监控服务.</p>
+<p>mapreduce.tasktracker.healthchecker.script.timeout<br>600000<br>如果无响应并认为脚本失败,则应终止节点运行状况脚本之后的时间.</p>
+<p>mapreduce.tasktracker.http.address<br>0.0.0.0:50060<br>任务跟踪器 http 服务器地址和端口.如果端口为 0,则服务器将在空闲端口上启动.</p>
+<p>mapreduce.tasktracker.http.threads<br>40<br>http 服务器的工作线程数.这用于地图输出获取</p>
+<p>mapreduce.tasktracker.indexcache.mb<br>10<br>任务跟踪器允许的最大内存,用于将映射输出提供给减速器时使用的索引缓存.</p>
+<p>mapreduce.tasktracker.instrumentation<br>org.apache.hadoop.mapred.TaskTrackerMetricsInst<br>Expert:与每个 TaskTracker 关联的检测类.</p>
+<p>mapreduce.tasktracker.local.dir.minspacekill<br>0<br>如果 mapreduce.cluster.local.dir 中的空间低于此值,则在所有当前任务完成并清理之前不要询问更多任务.另外,为了保存我们正在运行的其余任务,杀死其中一个,清理一些空间.从 reduce 任务开始,然后继续完成最少的任务.以字节为单位的值.</p>
+<p>mapreduce.tasktracker.local.dir.minspacestart<br>0<br>如果 mapreduce.cluster.local.dir 中的空间低于此值,请不要要求更多任务.以字节为单位的值.</p>
+<p>mapreduce.tasktracker.map.tasks.maximum<br>2<br>任务跟踪器将同时运行的最大地图任务数.</p>
+<p>mapreduce.tasktracker.outofband.heartbeat<br>FALSE<br>专家:将此设置为 true 以让 tasktracker 在任务完成时发送带外心跳以获得更好的延迟.</p>
+<p>mapreduce.tasktracker.reduce.tasks.maximum<br>2<br>任务跟踪器将同时运行的最大减少任务数.</p>
+<p>mapreduce.tasktracker.report.address<br>127.0.0.1:0<br>任务跟踪服务器侦听的接口和端口.由于它仅由任务连接,因此它使用本地接口.仅限专家.仅当您的主机没有环回接口时才应更改.</p>
+<p>mapreduce.tasktracker.resourcecalculatorplugin<br>未配置<br>类的名称,其实例将用于查询 tasktracker 上的资源信息.该类必须是 org.apache.hadoop.util.ResourceCalculatorPlugin 的实例.如果值为 null,则 tasktracker 会尝试使用适合平台的类.目前,唯一支持的平台是 Linux.</p>
+<p>mapreduce.tasktracker.taskcontroller<br>org.apache.hadoop.mapred.DefaultTaskController<br>TaskController 用于启动和管理任务执行</p>
+<p>mapreduce.tasktracker.taskmemorymanager.monitoringinterval<br>5000<br>tasktracker 在监视其任务的内存使用的两个周期之间等待的时间间隔,以毫秒为单位.仅在通过 mapred.tasktracker.tasks.maxmemory 启用任务的内存管理时使用.</p>
+<p>mapreduce.tasktracker.tasks.sleeptimebeforesigkill<br>5000<br>在发送 SIGTERM 后,tasktracker 等待向任务发送 SIGKILL 的时间(以毫秒为单位).这目前不用于仅向任务发送 SIGTERM 的 WINDOWS.</p>
+<p>yarn.app.mapreduce.am.admin.user.env<br>未配置<br>用于管理目的的 MR App Master 进程的环境变量.这些值首先设置并且可以被用户 env (yarn.app.mapreduce.am.env) 覆盖 示例:1) A=foo 这会将 env 变量 A 设置为 foo 2) B=$B:c 这是继承 app master 的 B 环境变量.</p>
+<p>yarn.app.mapreduce.am.admin-command-opts<br>未配置<br>Java 出于管理目的选择了 MR App Master 进程.它会出现在由 yarn.app.mapreduce.am.command-opts 设置的选项之前,因此它的选项可以被用户覆盖.如果使用 hadoop 本机库,使用 -Djava.library.path 可能会导致程序不再运行.应该使用 mapreduce.map.env 和 mapreduce.reduce.env 配置设置将这些值设置为 map/reduce JVM env 中 LD_LIBRARY_PATH 的一部分.</p>
+<p>yarn.app.mapreduce.am.command-opts<br>-Xmx1024m<br>Java 选择 MR App Master 进程.以下符号(如果存在)将被插入:@taskid@ 被当前 TaskID 替换.任何其他出现的&quot;@&quot;都将保持不变.例如,要启用详细 gc 日志记录到以 /tmp 中的 taskid 命名的文件并将堆最大值设置为千兆字节,请传递以下&quot;值&quot;:-Xmx1024m -verbose:gc -Xloggc:/tmp/@taskid @.gc 使用 -Djava.library.path 可能会导致程序在使用 hadoop 本机库时不再运行.应该使用 mapreduce.map.env 和 mapreduce.reduce.env 配置设置将这些值设置为 map/reduce JVM env 中 LD_LIBRARY_PATH 的一部分.</p>
+<p>yarn.app.mapreduce.am.container.log.backups<br>0<br>使用 ContainerRollingLogAppender (CRLA) 时 ApplicationMaster 日志的备份文件数.请参阅 org.apache.log4j.RollingFileAppender.maxBackupIndex.默认使用 ContainerLogAppender (CLA),不滚动容器日志.当 mapreduce.task.userlog.limit.kb 和 yarn.app.mapreduce.am.container.log.backups 都大于零时,为 ApplicationMaster 启用 CRLA.</p>
+<p>yarn.app.mapreduce.am.container.log.limit.kb<br>0<br>MRAppMaster 尝试容器日志的最大大小以 KB 为单位.0 禁用上限.</p>
+<p>yarn.app.mapreduce.am.env<br>未配置<br>用户为 MR App Master 进程添加了环境变量.示例: 1) A=foo 这会将环境变量 A 设置为 foo 2) B=$B:c 这是继承 tasktracker 的 B 环境变量.</p>
+<p>yarn.app.mapreduce.am.job.client.port-range<br>未配置<br>MapReduce AM 绑定时可以使用的端口范围.如果您想要所有可能的端口,请留空.例如 50000-50050,50100-50200</p>
+<p>yarn.app.mapreduce.am.job.committer.cancel-timeout<br>60000<br>如果作业被杀死,等待输出提交者取消操作的时间(以毫秒为单位)</p>
+<p>yarn.app.mapreduce.am.job.committer.commit-window<br>10000<br>定义输出提交操作的时间窗口(以毫秒为单位).如果在此窗口内发生了与 RM 的联系,则允许提交,否则 AM 将不允许输出提交,直到重新建立与 RM 的联系.</p>
+<p>yarn.app.mapreduce.am.job.task.listener.thread-count<br>30<br>用于处理 MR AppMaster 中来自远程任务的 RPC 调用的线程数</p>
+<p>yarn.app.mapreduce.am.resource.cpu-vcores<br>1<br>MR AppMaster 需要的虚拟 CPU 内核数.</p>
+<p>yarn.app.mapreduce.am.resource.mb<br>1536<br>MR AppMaster 需要的内存量.</p>
+<p>yarn.app.mapreduce.am.scheduler.heartbeat.interval-ms<br>1000<br>MR AppMaster 向 ResourceManager 发送心跳的时间间隔(毫秒)</p>
+<p>yarn.app.mapreduce.am.staging-dir<br>/tmp/hadoop-yarn/staging<br>提交作业时使用的暂存目录.</p>
+<p>yarn.app.mapreduce.client.max-retries<br>3<br>在抛出异常之前客户端重试 RM/HS 的次数.这是ipc之上的一层.</p>
+<p>yarn.app.mapreduce.client-am.ipc.max-retries<br>3<br>客户端重试到 AM 的次数 - 在重新连接到 RM 以获取应用程序状态之前.</p>
+<p>yarn.app.mapreduce.client-am.ipc.max-retries-on-timeouts<br>3<br>在重新连接到 RM 以获取应用程序状态之前,客户端对 AM 的套接字超时重试次数.</p>
+<p>yarn.app.mapreduce.task.container.log.backups<br>0<br>使用 ContainerRollingLogAppender (CRLA) 时任务日志的备份文件数.请参阅 org.apache.log4j.RollingFileAppender.maxBackupIndex.默认使用 ContainerLogAppender (CLA),不滚动容器日志.当 mapreduce.task.userlog.limit.kb 和 yarn.app.mapreduce.task.container.log.backups 都大于零时,为任务启用 CRLA.</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
     <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/07/29/hadoop%E9%85%8D%E7%BD%AE-hdfs/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -243,10 +838,16 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">Posted on</span>
-      
 
-      <time title="Created: 2022-07-29 00:00:00 / Modified: 14:16:44" itemprop="dateCreated datePublished" datetime="2022-07-29T00:00:00+08:00">2022-07-29</time>
+      <time title="Created: 2022-07-29 00:00:00" itemprop="dateCreated datePublished" datetime="2022-07-29T00:00:00+08:00">2022-07-29</time>
     </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-08-01 11:41:36" itemprop="dateModified" datetime="2022-08-01T11:41:36+08:00">2022-08-01</time>
+      </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
         <i class="far fa-folder"></i>
@@ -385,12 +986,12 @@
 <p>dfs.namenode.avoid.write.stale.datanode<br>FALSE<br>指示是否避免写入名称节点超过指定时间间隔未收到心跳消息的&quot;陈旧&quot;数据节点.写入将避免使用陈旧的数据节点,除非超过配置的数据节点比率 (dfs.namenode.write.stale.datanode.ratio) 被标记为陈旧.有关读取的类似设置,请参见 dfs.namenode.avoid.read.stale.datanode.</p>
 <p>dfs.namenode.backup.address<br>0.0.0.0:50100<br>备份节点服务器地址和端口.如果端口为 0,则服务器将在空闲端口上启动.</p>
 <p>dfs.namenode.backup.http-address<br>0.0.0.0:50105<br>备份节点http服务器地址和端口.如果端口为 0,则服务器将在空闲端口上启动.</p>
-<p>dfs.namenode.checkpoint.check.period<br>60<br>SecondaryNameNode 和 CheckpointNode 将每隔 &#39;dfs.namenode.checkpoint.check.period&#39; 秒轮询 NameNode 以查询未检查点事务的数量.</p>
+<p><font color="#dd0000">dfs.namenode.checkpoint.check.period</font><br>60<br>SecondaryNameNode 和 CheckpointNode 将每隔 &#39;dfs.namenode.checkpoint.check.period&#39; 秒轮询 NameNode 以查询未检查点事务的数量.</p>
 <p><font color="#dd0000">dfs.namenode.checkpoint.dir</font><br>file://<code>$&#123;hadoop.tmp.dir&#125;</code>/dfs/namesecondary<br>确定 DFS 辅助名称节点应在本地文件系统上存储要合并的临时图像的位置.如果这是一个以逗号分隔的目录列表,则该映像将复制到所有目录中以实现冗余.</p>
 <p>dfs.namenode.checkpoint.edits.dir<br>${dfs.namenode.checkpoint.dir}<br>确定 DFS 辅助名称节点应在本地文件系统上存储临时编辑以合并的位置.如果这是一个以逗号分隔的目录列表,则编辑将复制到所有目录中以实现冗余.默认值与 dfs.namenode.checkpoint.dir 相同</p>
 <p>dfs.namenode.checkpoint.max-retries<br>3<br>SecondaryNameNode 重试失败的检查点.如果在加载 fsimage 或重播编辑时发生故障,则重试次数受此变量限制.</p>
-<p>dfs.namenode.checkpoint.period<br>3600<br>两个定期检查点之间的秒数.</p>
-<p>dfs.namenode.checkpoint.txns<br>1000000<br>辅助 NameNode 或 CheckpointNode 将在每个 &#39;dfs.namenode.checkpoint.txns&#39; 事务中创建一个命名空间的检查点,无论 &#39;dfs.namenode.checkpoint.period&#39; 是否已过期.</p>
+<p><font color="#dd0000">dfs.namenode.checkpoint.period</font><br>3600<br>两个定期检查点之间的秒数.</p>
+<p><font color="#dd0000">dfs.namenode.checkpoint.txns</font><br>1000000<br>辅助 NameNode 或 CheckpointNode 将在每个 &#39;dfs.namenode.checkpoint.txns&#39; 事务中创建一个命名空间的检查点,无论 &#39;dfs.namenode.checkpoint.period&#39; 是否已过期.</p>
 <p>dfs.namenode.datanode.registration.ip-hostname-check<br>TRUE<br>如果为真(默认值),则名称节点要求连接数据节点的地址必须解析为主机名.如有必要,将执行反向 DNS 查找.所有从无法解析的地址注册数据节点的尝试都被拒绝.建议保留此设置,以防止在 DNS 中断期间意外注册排除文件中的主机名列出的数据节点.仅在没有支持反向 DNS 查找的基础设施的环境中将此设置为 false.</p>
 <p>dfs.namenode.decommission.interval<br>30<br>Namenode 以秒为单位的周期检查是否完成退役.</p>
 <p>dfs.namenode.decommission.nodes.per.interval<br>5<br>节点数namenode检查是否在每个dfs.namenode.decommission.interval中完成了退役.</p>
@@ -408,7 +1009,7 @@
 <p>dfs.namenode.fs-limits.max-directory-items<br>1048576<br>定义目录可能包含的最大项目数.值 0 将禁用检查.</p>
 <p>dfs.namenode.fs-limits.max-xattr-size<br>16384<br>扩展属性的名称和值的最大组合大小(以字节为单位).</p>
 <p>dfs.namenode.fs-limits.max-xattrs-per-inode<br>32<br>每个 inode 的最大扩展属性数.</p>
-<p>dfs.namenode.fs-limits.min-block-size<br>1048576<br>Namenode 在创建时强制执行的最小块大小(以字节为单位).这可以防止意外创建具有小块大小(因此有很多块)的文件,这会降低性能.</p>
+<p><font color="#dd0000">dfs.namenode.fs-limits.min-block-size</font><br>1048576<br>Namenode 在创建时强制执行的最小块大小(以字节为单位).这可以防止意外创建具有小块大小(因此有很多块)的文件,这会降低性能.</p>
 <p><font color="#dd0000">dfs.namenode.handler.count</font><br>10<br>namenode 的服务器线程数.</p>
 <p><font color="#dd0000">dfs.namenode.http-address</font><br>0.0.0.0:50070<br>dfs namenode web ui 将侦听的地址和基本端口.</p>
 <p>dfs.namenode.http-bind-host<br>未配置<br>HTTP 服务器将绑定到的实际地址.如果设置了这个可选地址,它只会覆盖 dfs.namenode.http-address 的主机名部分.它也可以为 HA/Federation 的每个名称节点或名称服务指定.这对于通过将名称节点 HTTP 服务器设置为 0.0.0.0 来侦听所有接口非常有用.</p>
@@ -427,7 +1028,7 @@
 <p>dfs.namenode.max.objects<br>0<br>dfs 支持的文件/目录和块的最大数量.零值表示 dfs 支持的对象数量没有限制.</p>
 <p><font color="#dd0000">dfs.namenode.name.dir</font><br>file://<code>$&#123;hadoop.tmp.dir&#125;</code>/dfs/name<br>确定 DFS 名称节点应在本地文件系统上存储名称表 (fsimage) 的位置.如果这是一个以逗号分隔的目录列表,则名称表将复制到所有目录中,以实现冗余.</p>
 <p>dfs.namenode.name.dir.restore<br>FALSE<br>设置为 true 以启用 NameNode 尝试恢复以前失败的 dfs.namenode.name.dir.启用后,将在检查点期间尝试恢复任何失败的目录.</p>
-<p>dfs.namenode.num.checkpoints.retained<br>2<br>NameNode 和Secondary NameNode 将在其存储目录中保留的图像检查点文件的数量.从最早保留的检查点恢复最新命名空间所需的所有编辑日志也将被保留.</p>
+<p><font color="#dd0000">dfs.namenode.num.checkpoints.retained</font><br>2<br>NameNode 和Secondary NameNode 将在其存储目录中保留的图像检查点文件的数量.从最早保留的检查点恢复最新命名空间所需的所有编辑日志也将被保留.</p>
 <p>dfs.namenode.num.extra.edits.retained<br>1000000<br>应该保留的额外事务的数量超出了 NN 重新启动所需的最低限度.这对于审计目的或 HA 设置很有用,其中远程备用节点可能已经离线一段时间并且需要保留更长的保留编辑积压才能重新开始.通常,每次编辑大约为几百字节,因此默认的 100 万次编辑应该大约为数百 MB 或低 GB.注意:如果这样做意味着保留的段数多于 dfs.namenode.max.extra.edits.segments.retained 配置的数量,则保留的额外编辑可能少于为此设置指定的值.</p>
 <p>dfs.namenode.path.based.cache.block.map.allocation.percent<br>0.25<br>我们将分配给缓存块映射的 Java 堆百分比.缓存块映射是使用链式哈希的哈希映射.如果缓存块的数量很大,则访问较小的地图可能会更慢；更大的地图会消耗更多的内存.</p>
 <p>dfs.namenode.path.based.cache.refresh.interval.ms<br>30000<br>后续路径缓存重新扫描之间的毫秒数.路径缓存重新扫描是我们计算应该缓存哪些块以及在哪些数据节点上.默认情况下,此参数设置为 30 秒.</p>
@@ -772,287 +1373,6 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/07/29/hadoop%E9%85%8D%E7%BD%AE-mapred/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="maoeryu">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Flying Pig">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2022/07/29/hadoop%E9%85%8D%E7%BD%AE-mapred/" class="post-title-link" itemprop="url">hadoop配置-mapred</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-      
-
-      <time title="Created: 2022-07-29 00:00:00 / Modified: 15:16:33" itemprop="dateCreated datePublished" datetime="2022-07-29T00:00:00+08:00">2022-07-29</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">In</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <span id="more"></span>
-<p>map.sort.class<br>org.apache.hadoop.util.QuickSort<br>排序键的默认排序类.</p>
-<p>mapred.child.env<br>未配置<br>用户为任务进程添加了环境变量.示例:<br>1)A=foo 这会将环境变量 A 设置为 foo.<br>2)B=$B:c 这是在 Unix 上继承 nodemanager 的 B 环境变量.<br>3)B=%B%;c 这是在 Windows 上继承 nodemanager 的 B 环境变量.</p>
-<p><font color="#dd0000">mapred.child.java.opts</font><br>-Xmx200m<br>Java 选择任务进程.以下符号(如果存在)将被插入:@taskid@ 被当前 TaskID 替换.任何其他出现的&quot;@&quot;都将保持不变.例如,要启用详细 gc 日志记录到以 /tmp 中的 taskid 命名的文件并将堆最大值设置为千兆字节,请传递以下&quot;值&quot;:-Xmx1024m -verbose:gc -Xloggc:/tmp/@taskid @.gc 使用 -Djava.library.path 可能会导致程序在使用 hadoop 本机库时不再运行.应该使用 mapreduce.map.env 和 mapreduce.reduce.env 配置设置将这些值设置为 map/reduce JVM env 中 LD_LIBRARY_PATH 的一部分.</p>
-<p>mapreduce.admin.user.env<br>未配置<br>专家:map 和 reduce 任务流程的附加执行环境条目.这不是附加属性.如果您希望 map 和 reduce 任务能够访问本机库(压缩等),则必须保留原始值.当此值为空时,设置执行环境的命令将取决于操作系统:对于 linux,使用 LD_LIBRARY_PATH=$HADOOP_COMMON_HOME/lib/native.对于 Windows,使用 PATH = <code>%PATH%;%HADOOP_COMMON_HOME%\\bin</code>.</p>
-<p>mapreduce.am.max-attempts<br>2<br>应用程序尝试的最大次数.这是特定于应用程序的设置.它不应大于资源管理器设置的全局数.否则,它将被覆盖.默认数字设置为 2,以允许 AM 至少重试一次.</p>
-<p>mapreduce.application.classpath<br>未配置<br>MR 应用程序的 CLASSPATH.以逗号分隔的 CLASSPATH 条目列表.如果设置了 mapreduce.application.framework,那么它必须为该归档指定适当的类路径,并且归档的名称必须存在于类路径中.如果 mapreduce.app-submission.cross-platform 为 false,将使用特定于平台的环境变量扩展语法来构造默认的 CLASSPATH 条目.对于 <code>Linux:$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/*、$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/lib/*.对于 Windows:%HADOOP_MAPRED_HOME%/share/hadoop/mapreduce/*、%HADOOP_MAPRED_HOME%/share/hadoop/mapreduce/lib/*</code>.如果 mapreduce.app-submission.cross-platform 为 true,则将使用 MR 应用程序的与平台无关的默认 CLASSPATH:/share/hadoop/mapreduce/*,</p>
-<p>mapreduce.application.framework.path<br>未配置<br>MapReduce 框架存档的路径.如果设置,框架存档将与作业一起自动分发,并且此路径通常位于 HDFS 文件系统中的公共位置.与分布式缓存文件一样,这可以是带有片段的 URL,该片段指定用于存档名称的别名.例如,hdfs:/mapred/framework/hadoop-mapreduce-2.1.1.tar.gz#mrframework 会将本地化存档别名为&quot;mrframework&quot;.请注意,mapreduce.application.classpath 必须包含指定框架的适当类路径.存档的基本名称或存档的别名(如果使用别名)必须出现在指定的类路径中.</p>
-<p>mapreduce.app-submission.cross-platform<br>FALSE<br>如果启用,用户可以跨平台提交应用程序,即将应用程序从 Windows 客户端提交到 Linux/Unix 服务器,反之亦然.</p>
-<p>mapreduce.client.completion.pollinterval<br>5000<br>JobClient 轮询 JobTracker 以获取有关作业状态的更新的间隔(以毫秒为单位).您可能希望将其设置为较低的值,以使测试在单节点系统上运行得更快.在生产中调整此值可能会导致不需要的客户端-服务器流量.</p>
-<p>mapreduce.client.output.filter<br>FAILED<br>用于控制发送到 JobClient 控制台的任务用户日志输出的过滤器.允许的选项是:NONE、KILLED、FAILED、SUCCEEDED 和 ALL.</p>
-<p>mapreduce.client.progressmonitor.pollinterval<br>1000<br>JobClient 向控制台报告状态并检查作业完成的时间间隔(以毫秒为单位).您可能希望将其设置为较低的值,以使测试在单节点系统上运行得更快.在生产中调整此值可能会导致不需要的客户端-服务器流量.</p>
-<p>mapreduce.client.submit.file.replication<br>10<br>提交的作业文件的复制级别.这应该在节点数的平方根附近.</p>
-<p>mapreduce.cluster.acls.enabled<br>FALSE<br>指定是否应检查 ACL 以获取用户执行各种队列和作业级别操作的授权.默认情况下禁用 ACL.如果启用,当用户请求队列操作(例如将作业提交到队列并终止队列中的作业)和作业操作(例如查看作业详细信息)时,JobTracker 和 TaskTracker 会进行访问控制检查(请参阅 mapreduce.job.acl -view-job)或用于使用 Map/Reduce API、RPC 或通过控制台和 Web 用户界面修改作业(参见 mapreduce.job.acl-modify-job).为了启用这个标志(mapreduce.cluster.acls.enabled),这将在 JobTracker 节点和所有 TaskTracker 节点上的 mapred-site.xml 中设置为 true.</p>
-<p>mapreduce.cluster.local.dir<br><code>$&#123;hadoop.tmp.dir&#125;</code>/mapred/local<br>MapReduce 存储中间数据文件的本地目录.可能是不同设备上以逗号分隔的目录列表,以便分散磁盘 i/o.不存在的目录将被忽略.</p>
-<p>mapreduce.cluster.temp.dir<br><code>$&#123;hadoop.tmp.dir&#125;</code>/mapred/temp<br>临时文件的共享目录.</p>
-<p><font color="#dd0000">mapreduce.framework.name</font><br>local<br>用于执行 MapReduce 作业的运行时框架.可以是本地、经典或纱线之一.</p>
-<p>mapreduce.ifile.readahead<br>TRUE<br>用于启用/禁用 IFile 预读的配置键.</p>
-<p>mapreduce.ifile.readahead.bytes<br>4194304<br>用于设置 IFile 预读长度(以字节为单位)的配置键.</p>
-<p>mapreduce.input.fileinputformat.list-status.num-threads<br>1<br>用于列出和获取指定输入路径的块位置的线程数.注意:如果使用自定义的非线程安全路径过滤器,则不应使用多线程.</p>
-<p>mapreduce.input.fileinputformat.split.minsize<br>0<br>映射输入应该被分成的最小大小的块.请注意,某些文件格式可能具有优先于此设置的最小拆分大小.</p>
-<p>mapreduce.input.lineinputformat.linespermap<br>1<br>使用 NLineInputFormat 时,要包含在每个拆分中的输入数据的行数.</p>
-<p>mapreduce.job.acl-modify-job<br>未配置<br>用于&quot;修改&quot;作业的作业特定访问控制列表.它仅在通过将配置属性 mapreduce.cluster.acls.enabled 设置为 true 在 Map/Reduce 中启用授权时使用.这指定了可以对作业进行修改操作的用户和/或组的列表.要指定用户和组的列表,使用的格式是&quot;user1,user2 group1,group&quot;.如果设置为&quot;<code>*</code>&quot;,则允许所有用户/组修改此作业.如果设置为&#39; &#39;(即空格),则不允许.此配置用于保护与此作业有关的所有修改并处理以下所有操作: o 终止此作业 o 终止此作业的任务,此作业的任务失败 o 设置此作业的优先级 这些操作中的每一个也受通过 mapred-queues.xml 配置的每个队列级别 ACL&quot;acl-administer-jobs&quot;的保护.因此,调用者应该有权满足队列级 ACL 或作业级 ACL.无论此 ACL 配置如何,(a) 作业所有者,(b) 启动集群的用户,(c) 通过 mapreduce.cluster.permissions.supergroup 配置的管理员配置的超级组的成员和 (d) 队列的队列管理员通过 acl-administer-jobs 为 mapred-queues.xml 中的特定队列配置的此作业可以对作业执行所有修改操作.默认情况下,除了启动集群的用户 job-owner 之外,没有其他人,</p>
-<p>mapreduce.job.acl-view-job<br>未配置<br>用于&quot;查看&quot;作业的作业特定访问控制列表.它仅在通过将配置属性 mapreduce.cluster.acls.enabled 设置为 true 在 Map/Reduce 中启用授权时使用.这指定了可以查看有关作业的私人详细信息的用户和/或组的列表.要指定用户和组的列表,使用的格式是&quot;user1,user2 group1,group&quot;.如果设置为&quot;<code>*</code>&quot;,则允许所有用户/组修改此作业.如果设置为&#39; &#39;(即空格),则不允许.此配置用于保护一些作业视图,目前仅保护可能返回作业所有者的敏感信息的 API,例如 o 作业级计数器 o 任务级计数器 o 任务&#39;诊断信息 o Task-logs 显示在 TaskTracker web-UI 和 o JobTracker 的 web-UI 显示的 job.xml 任何其他用户仍然可以访问其他作业信息,例如 JobStatus、JobProfile、作业列表在队列中等.无论此 ACL 配置如何,(a) 作业所有者,(b) 启动集群的用户,(c) 通过 mapreduce.cluster.permissions.supergroup 配置的管理员配置的超级组的成员和 (d ) 提交此作业的队列的队列管理员通过 acl-administer-jobs 为 mapred-queues.xml 中的特定队列配置,可以对作业执行所有查看操作.默认情况下,除了启动集群的用户 job-owner 之外,没有其他人,</p>
-<p>mapreduce.job.classloader<br>FALSE<br>是否为任务 JVM 中的用户类使用单独的(隔离的)类加载器.</p>
-<p>mapreduce.job.classloader.system.classes<br>未配置<br>用于覆盖作业类加载器的系统类的默认定义.当启用 mapreduce.job.classloader 时,系统类是应从系统类路径加载的类的逗号分隔列表,而不是用户提供的 JAR.以&quot;.&quot;结尾的名字(句点)被视为包名称,以&quot;-&quot;开头的名称被视为否定匹配.</p>
-<p>mapreduce.job.committer.setup.cleanup.needed<br>TRUE<br>如果作业需要作业设置和作业清理,则为 true.假的,否则</p>
-<p>mapreduce.job.complete.cancel.delegation.tokens<br>TRUE<br>如果为 false - 不要从续订中取消注册/取消委托令牌,因为生成的作业可能会使用相同的令牌</p>
-<p>mapreduce.job.counters.limit<br>120<br>限制每个作业允许的用户计数器数量.</p>
-<p>mapreduce.job.emit-timeline-data<br>FALSE<br>指定 Application Master 是否应将时间线数据发送到时间线服务器.单个作业可以覆盖此值.</p>
-<p>mapreduce.job.end-notification.max.attempts<br>5<br>为提供作业结束通知而读取 URL 的最大次数.集群管理员可以设置它来限制作业结束后的多长时间,Application Master 在退出之前等待.必须标记为 final 以防止用户覆盖它.</p>
-<p>mapreduce.job.end-notification.max.retry.interval<br>5000<br>在重试作业结束通知之前等待的最长时间(以毫秒为单位).集群管理员可以设置它来限制 Application Master 在退出之前等待的时间.必须标记为 final 以防止用户覆盖它.</p>
-<p>mapreduce.job.end-notification.retry.attempts<br>0<br>如果作业失败,作业的提交者想要重试作业结束通知的次数.这由 mapreduce.job.end-notification.max.attempts 限制</p>
-<p>mapreduce.job.end-notification.retry.interval<br>1000<br>如果作业结束通知失败,作业提交者希望在重试作业结束通知之前等待的毫秒数.这由 mapreduce.job.end-notification.max.retry.interval 限制</p>
-<p>mapreduce.job.end-notification.url<br>未配置<br>指示将在作业完成时调用以通知作业结束状态的 url.用户最多可以使用 URI 提供 2 个变量:$jobId 和 $jobStatus.如果它们存在于 URI 中,那么它们将被它们各自的值替换.</p>
-<p>mapreduce.job.jvm.numtasks<br>1<br>每个 jvm 运行多少个任务.如果设置为 -1,则没有限制.</p>
-<p>mapreduce.job.map.output.collector.class<br>org.apache.hadoop.mapred.MapTask$MapOutputBuffer<br>要使用的 MapOutputCollector 实现.这可能是一个以逗号分隔的类名列表,在这种情况下,map 任务将尝试依次初始化每个收集器.将使用第一个成功初始化的.</p>
-<p>mapreduce.job.maps<br>2<br>每个作业的默认地图任务数.当 mapreduce.jobtracker.address 为&quot;本地&quot;时忽略.</p>
-<p>mapreduce.job.max.split.locations<br>10<br>用于位置计算的每个分割存储的最大块位置数.</p>
-<p>mapreduce.job.maxtaskfailures.per.tracker<br>3<br>给定作业的 tasktracker 上的任务失败次数,之后该作业的新任务未分配给它.它必须小于 mapreduce.map.maxattempts 和 mapreduce.reduce.maxattempts 否则失败的任务将永远不会在不同的节点上尝试.</p>
-<p>mapreduce.job.queuename<br>default<br>作业提交到的队列.这必须与系统的 mapred-queues.xml 中定义的队列之一匹配.此外,队列的 ACL 设置必须允许当前用户向队列提交作业.在指定队列之前,请确保系统已配置队列,并且允许访问以将作业提交到队列.</p>
-<p>mapreduce.job.reduce.shuffle.consumer.plugin.class<br>org.apache.hadoop.mapreduce.task.reduce.Shuffle<br>该作业的reducetasks将使用其实例发送shuffle请求的类的名称.该类必须是 org.apache.hadoop.mapred.ShuffleConsumerPlugin 的实例.</p>
-<p>mapreduce.job.reduce.slowstart.completedmaps<br>0.05<br>在为作业安排 reduce 之前,作业中应完成的地图数量的一部分.</p>
-<p>mapreduce.job.reducer.preempt.delay.sec<br>0<br>当没有预期的净空时,未满足的映射器请求触发reducer抢占的阈值(以秒为单位).如果设置为 0 或负值,则一旦检测到余量不足,reducer 就会被抢占.默认值为 0.</p>
-<p>mapreduce.job.reducer.unconditional-preempt.delay.sec<br>300<br>不满足的映射器请求触发强制减速器抢占的阈值(以秒为单位),而与预期的净空无关.默认情况下,它设置为 5 分钟.将其设置为 0 会导致 reducer 立即抢占.设置为 -1 将完全禁用此抢占.</p>
-<p>mapreduce.job.reduces<br>1<br>每个作业的默认减少任务数.通常设置为集群的 reduce 容量的 99%,这样如果一个节点发生故障,reduce 仍然可以在单个 wave 中执行.当 mapreduce.jobtracker.address 为&quot;本地&quot;时忽略.</p>
-<p>mapreduce.job.skip.outdir<br>未配置<br>如果此处未指定任何值,则跳过的记录将写入位于<code> _logs</code>/skip 的输出目录.用户可以通过给出值&quot;none&quot;来停止写入跳过的记录.</p>
-<p>mapreduce.job.speculative.slownodethreshold<br>1<br>Task Tracker 的 ave map 和 reduce 进度率 (finishTime-dispatchTime) 的标准偏差数必须低于所有成功的 map/reduce 任务的平均值,因为 TT 被认为太慢而无法提供推测性任务.</p>
-<p>mapreduce.job.speculative.slowtaskthreshold<br>1<br>一个任务的平均进度率必须低于所有正在运行的任务的平均值的标准偏差数,该任务被认为太慢.</p>
-<p>mapreduce.job.speculative.speculativecap<br>0.1<br>可以在任何时候以推测方式重新执行的正在运行任务的最大百分比 (0-1).</p>
-<p>mapreduce.job.split.metainfo.maxsize<br>10000000<br>拆分元信息文件的最大允许大小.JobTracker 不会尝试读取大于配置值的拆分元信息文件.如果设置为 -1,则没有限制.</p>
-<p>mapreduce.job.tags<br>未配置<br>在提交时将传递给 YARN 的作业标签.对应用程序的 YARN 查询可以过滤这些标签.</p>
-<p>mapreduce.job.token.tracking.ids<br>未配置<br>当 mapreduce.job.token.tracking.ids.enabled 设置为 true 时,框架将其设置为作业使用的 token-tracking-ids.</p>
-<p>mapreduce.job.token.tracking.ids.enabled<br>FALSE<br>是否将令牌的跟踪 ID 写入作业配置.当为 true 时,配置属性&quot;mapreduce.job.token.tracking.ids&quot;设置为作业的 token-tracking-ids</p>
-<p>mapreduce.job.ubertask.enable<br>FALSE<br>是否启用小型作业&quot;ubertask&quot;优化,它在单个 JVM 中按顺序运行&quot;足够小的&quot;作业.&quot;Small&quot;由以下 maxmaps、maxreduces 和 maxbytes 设置定义.请注意,应用程序主控的配置也会影响&quot;小&quot;定义 - yarn.app.mapreduce.am.resource.mb 必须大于 mapreduce.map.memory.mb 和 mapreduce.reduce.memory.mb,以及 yarn.app .mapreduce.am.resource.cpu-vcores 必须大于 mapreduce.map.cpu.vcores 和 mapreduce.reduce.cpu.vcores 才能启用 ubertask.用户可以覆盖此值.</p>
-<p>mapreduce.job.ubertask.maxbytes<br>未配置<br>输入字节数的阈值,超过该阈值的作业被认为对于 ubertasking 优化来说太大了.如果未指定任何值,则使用 dfs.block.size 作为默认值.如果底层文件系统不是 HDFS,请务必在 mapred-site.xml 中指定默认值.用户可以覆盖这个值,但只能向下.</p>
-<p>mapreduce.job.ubertask.maxmaps<br>9<br>地图数量的阈值,超过该阈值的作业被认为对于 ubertasking 优化来说太大了.用户可以覆盖这个值,但只能向下.</p>
-<p>mapreduce.job.ubertask.maxreduces<br>1<br>减少数量的阈值,超过该阈值的作业被认为对于 ubertasking 优化来说太大了.目前该代码不能支持多个 REDUCE 并将忽略更大的值.(然而,零是一个有效的最大值.)用户可以覆盖这个值,但只能向下.</p>
-<p>mapreduce.job.userhistorylocation<br>未配置<br>用户可以指定一个位置来存储特定作业的历史文件.如果未指定任何内容,则日志存储在输出目录中.这些文件存储在目录中的&quot;<code>_logs</code>/history/&quot;中.用户可以通过提供值&quot;none&quot;来停止记录.</p>
-<p>mapreduce.job.userlog.retain.hours<br>24<br>作业完成后保留用户日志的最长时间(以小时为单位).</p>
-<p><font color="#dd0000">mapreduce.jobhistory.address</font><br>0.0.0.0:10020<br>MapReduce JobHistory Server IPC 主机:端口</p>
-<p>mapreduce.jobhistory.admin.acl<br>*<br>可以成为历史服务器管理员的 ACL.</p>
-<p>mapreduce.jobhistory.admin.address<br>0.0.0.0:10033<br>历史服务器管理界面的地址.</p>
-<p>mapreduce.jobhistory.cleaner.enable<br>TRUE</p>
-<p>mapreduce.jobhistory.cleaner.interval-ms<br>86400000<br>作业历史记录清理器检查要删除的文件的频率(以毫秒为单位).默认为 86400000(一天).仅当文件早于 mapreduce.jobhistory.max-age-ms 时才会删除文件.</p>
-<p>mapreduce.jobhistory.client.thread-count<br>10<br>处理客户端 API 请求的线程数</p>
-<p>mapreduce.jobhistory.datestring.cache.size<br>200000<br>日期字符串缓存的大小.影响将被扫描以查找作业的目录数量.</p>
-<p>mapreduce.jobhistory.done-dir<br>${yarn.app.mapreduce.am.staging-dir}/history/done</p>
-<p>mapreduce.jobhistory.http.policy<br>HTTP_ONLY<br>这将为 JobHistoryServer Web UI 配置 HTTP 端点.支持以下值: - HTTP_ONLY :仅在 http 上提供服务 - HTTPS_ONLY :仅在 https 上提供服务</p>
-<p>mapreduce.jobhistory.intermediate-done-dir<br>${yarn.app.mapreduce.am.staging-dir}/history/done_intermediate</p>
-<p>mapreduce.jobhistory.joblist.cache.size<br>20000<br>作业列表缓存的大小</p>
-<p>mapreduce.jobhistory.keytab<br>/etc/security/keytab/jhs.service.keytab<br>MapReduce JobHistory Server 的 kerberos 密钥表文件的位置.</p>
-<p>mapreduce.jobhistory.loadedjobs.cache.size<br>5<br>加载的作业缓存的大小.如果属性 mapreduce.jobhistory.loadedtasks.cache.size 设置为正值,则忽略此属性.</p>
-<p>mapreduce.jobhistory.loadedtasks.cache.size<br>未配置<br>更改要根据总任务计数设置的作业历史缓存限制.如果加载的任务总数超过此值,则作业缓存将缩小,直到低于此限制(缓存中至少 1 个作业).如果此值为空或非正数,则缓存将恢复为使用属性 mapreduce.jobhistory.loadedjobs.cache.size 作为作业缓存大小.对于 mapreduce.jobhistory.loadedtasks.cache.size 属性的两个建议: 1) 对于每 100k 的缓存大小,将 Job History Server 的堆大小设置为 1.2GB.例如,mapreduce.jobhistory.loadedtasks.cache.size=500000,堆大小=6GB.2) 确保缓存大小大于集群上运行的最大作业所需的任务数.将值设置得稍高可能是个好主意(例如,</p>
-<p>mapreduce.jobhistory.max-age-ms<br>604800000<br>历史清理器运行时,将删除超过此毫秒数的作业历史文件.默认为 604800000(1 周).</p>
-<p>mapreduce.jobhistory.minicluster.fixed.ports<br>FALSE<br>是否对 minicluster 使用固定端口</p>
-<p>mapreduce.jobhistory.move.interval-ms<br>180000<br>以这个频率从中间完成目录扫描历史文件到完成目录.</p>
-<p>mapreduce.jobhistory.move.thread-count<br>3<br>用于移动文件的线程数.</p>
-<p>mapreduce.jobhistory.principal<br><code>jhs/_HOST@REALM.TLD</code><br>MapReduce JobHistory Server 的 Kerberos 主体名称.</p>
-<p>mapreduce.jobhistory.recovery.enable<br>FALSE<br>启用历史服务器来存储服务器状态并在启动时恢复服务器状态.如果启用,则必须指定 mapreduce.jobhistory.recovery.store.class.</p>
-<p>mapreduce.jobhistory.recovery.store.class<br>org.apache.hadoop.mapreduce.v2.hs.HistoryServerFileSystemStateStoreService<br>HistoryServerStateStoreService 类用于存储历史服务器状态以供恢复.</p>
-<p>mapreduce.jobhistory.recovery.store.fs.uri<br><code>$&#123;hadoop.tmp.dir&#125;</code>/mapred/history/recoverystore<br>如果将 HistoryServerFileSystemStateStoreService 配置为恢复存储类,则将存储历史服务器状态的 URI.</p>
-<p>mapreduce.jobhistory.store.class<br>未配置<br>用于缓存历史数据的 HistoryStorage 类.</p>
-<p><font color="#dd0000">mapreduce.jobhistory.webapp.address</font><br>0.0.0.0:19888<br>MapReduce JobHistory Server Web UI 主机:端口</p>
-<p>mapreduce.jobtracker.address<br>local<br>MapReduce 作业跟踪器运行的主机和端口.如果是&quot;本地&quot;,则作业将作为单个 map 和 reduce 任务在进程内运行.</p>
-<p>mapreduce.jobtracker.expire.trackers.interval<br>600000<br>专家:时间间隔,以毫秒为单位,如果任务跟踪器不发送心跳,则在该时间间隔之后它被宣布为&quot;丢失&quot;.</p>
-<p>mapreduce.jobtracker.handler.count<br>10<br>JobTracker 的服务器线程数.这应该是 tasktracker 节点数量的大约 4%.</p>
-<p>mapreduce.jobtracker.heartbeats.in.second<br>100<br>专家:一秒钟内可以到达 JobTracker 的近似心跳数.假设每个 RPC 可以在 10 毫秒内处理,默认值是每秒 100 个 RPC.</p>
-<p>mapreduce.jobtracker.hosts.exclude.filename<br>未配置<br>命名一个文件,其中包含应被作业跟踪器排除的主机列表.如果该值为空,则不排除任何主机.</p>
-<p>mapreduce.jobtracker.hosts.filename<br>未配置<br>命名一个文件,该文件包含可能连接到 jobtracker 的节点列表.如果该值为空,则允许所有主机.</p>
-<p>mapreduce.jobtracker.http.address<br>0.0.0.0:50030<br>作业跟踪器 http 服务器地址和服务器将侦听的端口.如果端口为 0,则服务器将在空闲端口上启动.</p>
-<p>mapreduce.jobtracker.instrumentation<br>org.apache.hadoop.mapred.JobTrackerMetricsInst<br>专家:与每个 JobTracker 关联的检测类.</p>
-<p>mapreduce.jobtracker.jobhistory.block.size<br>3145728<br>作业历史文件的块大小.由于作业恢复使用作业历史记录,因此尽快将作业历史记录转储到磁盘非常重要.请注意,这是专家级参数.默认值设置为 3 MB.</p>
-<p>mapreduce.jobtracker.jobhistory.completed.location<br>未配置<br>完成的作业历史文件存储在这个众所周知的位置.如果未指定任何内容,则文件存储在 ${mapreduce.jobtracker.jobhistory.location}/done.</p>
-<p>mapreduce.jobtracker.jobhistory.location<br>未配置<br>如果作业跟踪器是静态的,则历史文件存储在这个众所周知的地方.如果这里没有设置值,默认在本地文件系统${hadoop.log.dir}/history.</p>
-<p>mapreduce.jobtracker.jobhistory.lru.cache.size<br>5<br>内存中加载的作业历史文件的数量.作业在首次访问时被加载.基于 LRU 清除缓存.</p>
-<p>mapreduce.jobtracker.jobhistory.task.numberprogresssplits<br>12<br>每个任务尝试从 0.0 进展到 1.0 [除非它失败或被杀死].对于每次任务尝试,我们都会记录每十二分之一进度范围内的某些统计数据.您可以通过设置此属性来更改我们将整个进度范围划分为的间隔数.值越高,记录的数据就越精确,但在运行时会占用作业跟踪器中的更多内存.此属性中的每个增量每个正在运行的任务花费 16 个字节.</p>
-<p>mapreduce.jobtracker.maxtasks.perjob<br>-1<br>单个作业的最大任务数.值 -1 表示没有最大值.</p>
-<p>mapreduce.jobtracker.persist.jobstatus.active<br>TRUE<br>指示作业状态信息的持久性是否处于活动状态.</p>
-<p>mapreduce.jobtracker.persist.jobstatus.dir<br>/jobtracker/jobsInfo<br>作业状态信息保存在文件系统中的目录,以便在它删除内存队列后以及在 jobtracker 重新启动之间可用.</p>
-<p>mapreduce.jobtracker.persist.jobstatus.hours<br>1<br>工作状态信息在 DFS 中保留的小时数.作业状态信息将在它丢弃内存队列后以及在 jobtracker 重新启动之间可用.对于零值,作业状态信息根本不会保存在 DFS 中.</p>
-<p>mapreduce.jobtracker.restart.recover<br>FALSE<br>&quot;true&quot; 重新启动时启用(作业)恢复,&quot;false&quot; 重新开始</p>
-<p>mapreduce.jobtracker.retiredjobs.cache.size<br>1000<br>要保留在缓存中的退休作业状态的数量.</p>
-<p>mapreduce.jobtracker.staging.root.dir<br><code>$&#123;hadoop.tmp.dir&#125;</code>/mapred/staging<br>用户作业文件暂存区的根目录 实际上,这应该是用户主目录所在的目录(通常是 /user)</p>
-<p>mapreduce.jobtracker.system.dir<br><code>$&#123;hadoop.tmp.dir&#125;</code>/mapred/system<br>MapReduce 存储控制文件的目录.</p>
-<p>mapreduce.jobtracker.taskcache.levels<br>2<br>这是任务缓存的最高级别.例如,如果级别为 2,则缓存的任务在主机级别和机架级别.</p>
-<p>mapreduce.jobtracker.taskscheduler<br>org.apache.hadoop.mapred.JobQueueTaskScheduler<br>负责调度任务的类.</p>
-<p>mapreduce.jobtracker.taskscheduler.maxrunningtasks.perjob<br>未配置<br>作业被抢占之前的最大运行任务数.如果未定义,则没有限制.</p>
-<p>mapreduce.jobtracker.tasktracker.maxblacklists<br>4<br>任务跟踪器按各种作业列入黑名单的数量,之后任务跟踪器可以在所有作业中列入黑名单.跟踪器将在稍后(一天后)获得任务.重新启动后,跟踪器将成为健康的跟踪器.</p>
-<p>mapreduce.local.clientfactory.class.name<br>org.apache.hadoop.mapred.LocalClientFactory<br>这是负责创建本地作业运行器客户端的客户端工厂</p>
-<p>mapreduce.map.cpu.vcores<br>1<br>为每个映射任务从调度程序请求的虚拟核心数.</p>
-<p>mapreduce.map.cpu.vcores<br>1<br>每个映射任务所需的虚拟核心数.</p>
-<p>mapreduce.map.log.level<br>INFO<br>地图任务的日志记录级别.允许的级别为:OFF、FATAL、ERROR、WARN、INFO、DEBUG、TRACE 和 ALL.</p>
-<p>mapreduce.map.maxattempts<br>4<br>专家:每个地图任务的最大尝试次数.换句话说,框架会在放弃之前尝试多次执行地图任务.</p>
-<p>mapreduce.map.memory.mb<br>1024<br>为每个映射任务从调度程序请求的内存量.</p>
-<p>mapreduce.map.output.compress<br>FALSE<br>映射的输出是否应该在通过网络发送之前进行压缩.使用 SequenceFile 压缩.</p>
-<p>mapreduce.map.output.compress.codec<br>org.apache.hadoop.io.compress.DefaultCodec<br>如果地图输出被压缩,它们应该如何压缩?</p>
-<p>mapreduce.map.skip.maxrecords<br>0<br>mapper 中每个坏记录周围的可接受跳过记录的数量.该数字还包括不良记录.要关闭检测/跳过不良记录的功能,请将值设置为 0.框架尝试通过重试来缩小跳过的范围,直到达到此阈值或所有尝试都用尽此任务.将值设置为 Long.MAX_VALUE 以指示框架不需要尝试缩小范围.跳过任何记录(取决于应用程序)都是可以接受的.</p>
-<p>mapreduce.map.skip.proc.count.autoincr<br>TRUE<br>如果设置为 true,则 SkipBadRecords.COUNTER_MAP_PROCESSED_RECORDS 的标志在调用 map 函数后由 MapRunner 递增.对于异步处理记录或缓冲输入记录的应用程序,此值必须设置为 false.例如流媒体.在这种情况下,应用程序应自行增加此计数器.</p>
-<p>mapreduce.map.sort.spill.percent<br>0.8<br>序列化缓冲区中的软限制.一旦达到,一个线程将开始在后台将内容溢出到磁盘.请注意,如果在溢出过程中超过此阈值,则收集不会阻塞,因此当设置为小于 0.5 时,溢出可能大于此阈值</p>
-<p>mapreduce.map.speculative<br>TRUE<br>如果为真,则某些地图任务的多个实例可能会并行执行.</p>
-<p>mapreduce.output.fileoutputformat.compress<br>FALSE<br>是否应该压缩作业输出?</p>
-<p>mapreduce.output.fileoutputformat.compress.codec<br>org.apache.hadoop.io.compress.DefaultCodec<br>如果作业输出被压缩,它们应该如何被压缩?</p>
-<p>mapreduce.output.fileoutputformat.compress.type<br>RECORD<br>如果将作业输出压缩为 SequenceFiles,应该如何压缩它们?应该是 NONE、RECORD 或 BLOCK 之一.</p>
-<p>mapreduce.reduce.cpu.vcores<br>1<br>每个reduce任务从调度器请求的虚拟核心数.</p>
-<p>mapreduce.reduce.cpu.vcores<br>1<br>每个reduce任务所需的虚拟核心数.</p>
-<p>mapreduce.reduce.input.buffer.percent<br>0<br>在减少期间保留映射输出的内存百分比(相对于最大堆大小).当 shuffle 结束时,内存中任何剩余的 map 输出必须消耗少于这个阈值,然后才能开始 reduce.</p>
-<p>mapreduce.reduce.log.level<br>INFO<br>reduce 任务的日志记录级别.允许的级别为:OFF、FATAL、ERROR、WARN、INFO、DEBUG、TRACE 和 ALL.</p>
-<p>mapreduce.reduce.markreset.buffer.percent<br>0<br>使用标记重置功能时用于缓存值的内存百分比(相对于最大堆大小).</p>
-<p>mapreduce.reduce.maxattempts<br>4<br>Expert:每个reduce任务的最大尝试次数.换句话说,框架会在放弃之前尝试多次执行reduce任务.</p>
-<p>mapreduce.reduce.memory.mb<br>1024<br>每个reduce任务从调度器请求的内存量.</p>
-<p>mapreduce.reduce.merge.inmem.threshold<br>1000<br>阈值,以内存中合并过程的文件数表示.当我们累积阈值文件数时,我们会启动内存合并并溢出到磁盘.值 0 或小于 0 表示我们不希望有任何阈值,而是仅依赖 ramfs 的内存消耗来触发合并.</p>
-<p>mapreduce.reduce.shuffle.connect.timeout<br>180000<br>专家:reduce 任务尝试连接到 tasktracker 以获取地图输出所花费的最大时间量(以毫秒为单位).</p>
-<p>mapreduce.reduce.shuffle.fetch.retry.enabled<br>${yarn.nodemanager.recovery.enabled}<br>设置为在主机重新启动期间启用提取重试.</p>
-<p>mapreduce.reduce.shuffle.fetch.retry.interval-ms<br>1000<br>由于某些事件(例如 NM 重启)而发生某些非致命故障时,fetcher 重试再次获取的间隔时间.</p>
-<p>mapreduce.reduce.shuffle.fetch.retry.timeout-ms<br>30000<br>由于某些事件(例如 NM 重启)而发生某些非致命故障时,fetcher 重试再次获取的超时值.</p>
-<p>mapreduce.reduce.shuffle.input.buffer.percent<br>0.7<br>在 shuffle 期间从最大堆大小分配到存储映射输出的内存百分比.</p>
-<p><font color="#dd0000">mapreduce.reduce.shuffle.memory.limit.percent</font><br>0.25<br>专家:单个 shuffle 可以消耗的内存限制的最大百分比</p>
-<p>mapreduce.reduce.shuffle.merge.percent<br>0.66<br>将启动内存合并的使用阈值,表示为分配给存储内存映射输出的总内存的百分比,由 mapreduce.reduce.shuffle.input.buffer.percent 定义.</p>
-<p>mapreduce.reduce.shuffle.parallelcopies<br>5<br>在复制(洗牌)阶段,reduce 运行的默认并行传输数.</p>
-<p>mapreduce.reduce.shuffle.read.timeout<br>180000<br>专家:reduce 任务在获得连接后等待 map 输出数据可供读取的最长时间(以毫秒为单位).</p>
-<p>mapreduce.reduce.shuffle.retry-delay.max.ms<br>60000<br>在重试下载地图数据之前,reducer 将延迟的最大毫秒数.</p>
-<p>mapreduce.reduce.skip.maxgroups<br>0<br>reducer 中每个坏组周围的可接受跳过组的数量.该数字也包括不良组.要关闭检测/跳过坏组的功能,请将值设置为 0.框架尝试通过重试来缩小跳过的范围,直到达到此阈值或所有尝试都用尽此任务.将值设置为 Long.MAX_VALUE 以指示框架不需要尝试缩小范围.跳过任何组(取决于应用程序)都是可以接受的.</p>
-<p>mapreduce.reduce.skip.proc.count.autoincr<br>TRUE<br>如果设置为 true,则 SkipBadRecords.COUNTER_REDUCE_PROCESSED_GROUPS 的标志在调用 reduce 函数后由框架递增.对于异步处理记录或缓冲输入记录的应用程序,此值必须设置为 false.例如流媒体.在这种情况下,应用程序应自行增加此计数器.</p>
-<p>mapreduce.reduce.speculative<br>TRUE<br>如果为 true,则某些 reduce 任务的多个实例可能会并行执行.</p>
-<p>mapreduce.shuffle.connection-keep-alive.enable<br>FALSE<br>设置为 true 以支持保持连接.</p>
-<p>mapreduce.shuffle.connection-keep-alive.timeout<br>5<br>shuffle 客户端尝试保留 http 连接的秒数.请参阅 Http 规范中的&quot;Keep-Alive: timeout=&quot;标头</p>
-<p>mapreduce.shuffle.max.connections<br>0<br>洗牌的最大允许连接数.设置为 0(零)表示对连接数没有限制.</p>
-<p>mapreduce.shuffle.max.threads<br>0<br>用于服务随机连接的最大允许线程数.设置为零表示默认为可用处理器数量的 2 倍(由 Runtime.availableProcessors() 报告).Netty 用于服务请求,因此每个连接都不需要一个线程.</p>
-<p><font color="#dd0000">mapreduce.shuffle.port</font><br>13562<br>ShuffleHandler 将在其上运行的默认端口.ShuffleHandler 是在 NodeManager 上运行的服务,用于促进将中间 Map 输出传输到请求的 Reducer.</p>
-<p>mapreduce.shuffle.ssl.enabled<br>FALSE<br>是否对 Shuffle HTTP 端点使用 SSL.</p>
-<p>mapreduce.shuffle.ssl.file.buffer.size<br>65536<br>使用 SSL 时从文件中读取溢出的缓冲区大小.</p>
-<p>mapreduce.shuffle.transfer.buffer.size<br>131072<br>仅当 mapreduce.shuffle.transferTo.allowed 设置为 false 时才使用此属性.在这种情况下,此属性定义了在 shuffle 阶段的缓冲区复制代码中使用的缓冲区大小.这个缓冲区的大小决定了 IO 请求的大小.</p>
-<p>mapreduce.shuffle.transferTo.allowed<br>未配置<br>此选项可以在 shuffle 阶段使用 nio transferTo 方法启用/禁用.NIO transferTo 在 shuffle 阶段的 windows 上表现不佳.因此,使用此配置属性可以禁用它,在这种情况下将使用自定义传输方法.在 Windows 上运行 Hadoop 时,推荐值为 false.对于 Linux,建议将其设置为 true.如果未设置任何内容,则 Windows 的默认值为 false,Linux 的默认值为 true.</p>
-<p>mapreduce.task.combine.progress.records<br>10000<br>在发送进度通知之前在组合输出收集期间要处理的记录数.</p>
-<p>mapreduce.task.files.preserve.failedtasks<br>FALSE<br>是否应保留失败任务的文件.这应该只用于失败的作业,因为存储永远不会被回收.它还可以防止 map 输出在使用时从 reduce 目录中删除.</p>
-<p>mapreduce.task.io.sort.factor<br>10<br>排序文件时一次合并的流数.这决定了打开文件句柄的数量.</p>
-<p><font color="#dd0000">mapreduce.task.io.sort.mb</font><br>100<br>排序文件时使用的缓冲内存总量,以兆字节为单位.默认情况下,给每个合并流 1MB,这应该最大限度地减少搜索.</p>
-<p>mapreduce.task.merge.progress.records<br>10000<br>在向 TaskTracker 发送进度通知之前要在合并期间处理的记录数.</p>
-<p>mapreduce.task.profile<br>FALSE<br>设置系统是否应该为该作业中的某些任务收集探查器信息?信息存储在用户日志目录中.如果启用了任务分析,则值为&quot;true&quot;.</p>
-<p>mapreduce.task.profile.map.params<br>${mapreduce.task.profile.params}<br>映射任务特定的 JVM 分析器参数.见 mapreduce.task.profile.params</p>
-<p>mapreduce.task.profile.maps<br>0-2<br>将地图任务的范围设置为配置文件.mapreduce.task.profile 必须设置为 true 才能计算该值.</p>
-<p>mapreduce.task.profile.params<br>-agentlib:hprof=cpu=samples,heap=sites,force=n,thread=y,verbose=n,file=%s<br>用于分析映射和减少任务尝试的 JVM 分析器参数.此字符串可能包含单个格式说明符 %s,它将被任务尝试日志目录中 profile.out 的路径替换.要为 map 任务和 reduce 任务指定不同的分析选项,应该使用更具体的参数 mapreduce.task.profile.map.params 和 mapreduce.task.profile.reduce.params.</p>
-<p>mapreduce.task.profile.reduce.params<br>${mapreduce.task.profile.params}<br>减少任务特定的 JVM 分析器参数.见 mapreduce.task.profile.params</p>
-<p>mapreduce.task.profile.reduces<br>0-2<br>将reduce任务的范围设置为profile.mapreduce.task.profile 必须设置为 true 才能计算该值.</p>
-<p>mapreduce.task.skip.start.attempts<br>2<br>将启动哪个跳过模式后的任务尝试次数.当跳过模式启动时,任务将接下来将处理的记录范围报告给 TaskTracker.因此,在失败时,TT 知道哪些可能是不良记录.在进一步的执行中,这些被跳过.</p>
-<p>mapreduce.task.timeout<br>600000<br>如果任务既不读取输入,也不写入输出,也不更新其状态字符串,则任务终止前的毫秒数.值 0 禁用超时.</p>
-<p>mapreduce.task.tmp.dir<br>./tmp<br>为 map 和 reduce 任务设置 tmp 目录的值.如果值为绝对路径,则直接赋值.否则,它会附加任务的工作目录.使用选项 -Djava.io.tmpdir=&#39;tmp dir 的绝对路径&#39;执行 java 任务.使用环境变量设置管道和流式传输,TMPDIR=&#39;tmp dir 的绝对路径&#39;</p>
-<p>mapreduce.task.userlog.limit.kb<br>0<br>每个任务的用户日志的最大大小,以 KB 为单位.0 禁用上限.</p>
-<p>mapreduce.tasktracker.dns.interface<br>default<br>任务跟踪器应报告其 IP 地址的网络接口的名称.</p>
-<p>mapreduce.tasktracker.dns.nameserver<br>default<br>TaskTracker 应使用名称服务器 (DNS) 的主机名或 IP 地址来确定 JobTracker 用于通信和显示目的的主机名.</p>
-<p>mapreduce.tasktracker.group<br>未配置<br>专家:TaskTracker 所属的组.如果 LinuxTaskController 是通过 mapreduce.tasktracker.taskcontroller 配置的,则任务控制器二进制文件的组所有者应该与该组相同.</p>
-<p>mapreduce.tasktracker.healthchecker.interval<br>60000<br>要运行的节点健康脚本的频率,以毫秒为单位</p>
-<p>mapreduce.tasktracker.healthchecker.script.args<br>未配置<br>启动时要传递给节点健康脚本的参数列表,以逗号分隔.</p>
-<p>mapreduce.tasktracker.healthchecker.script.path<br>未配置<br>脚本的绝对路径,由节点健康监控服务定期运行以确定节点是否健康.如果该key的值为空或者此处配置的位置不存在该文件,则不启动节点健康监控服务.</p>
-<p>mapreduce.tasktracker.healthchecker.script.timeout<br>600000<br>如果无响应并认为脚本失败,则应终止节点运行状况脚本之后的时间.</p>
-<p>mapreduce.tasktracker.http.address<br>0.0.0.0:50060<br>任务跟踪器 http 服务器地址和端口.如果端口为 0,则服务器将在空闲端口上启动.</p>
-<p>mapreduce.tasktracker.http.threads<br>40<br>http 服务器的工作线程数.这用于地图输出获取</p>
-<p>mapreduce.tasktracker.indexcache.mb<br>10<br>任务跟踪器允许的最大内存,用于将映射输出提供给减速器时使用的索引缓存.</p>
-<p>mapreduce.tasktracker.instrumentation<br>org.apache.hadoop.mapred.TaskTrackerMetricsInst<br>Expert:与每个 TaskTracker 关联的检测类.</p>
-<p>mapreduce.tasktracker.local.dir.minspacekill<br>0<br>如果 mapreduce.cluster.local.dir 中的空间低于此值,则在所有当前任务完成并清理之前不要询问更多任务.另外,为了保存我们正在运行的其余任务,杀死其中一个,清理一些空间.从 reduce 任务开始,然后继续完成最少的任务.以字节为单位的值.</p>
-<p>mapreduce.tasktracker.local.dir.minspacestart<br>0<br>如果 mapreduce.cluster.local.dir 中的空间低于此值,请不要要求更多任务.以字节为单位的值.</p>
-<p>mapreduce.tasktracker.map.tasks.maximum<br>2<br>任务跟踪器将同时运行的最大地图任务数.</p>
-<p>mapreduce.tasktracker.outofband.heartbeat<br>FALSE<br>专家:将此设置为 true 以让 tasktracker 在任务完成时发送带外心跳以获得更好的延迟.</p>
-<p>mapreduce.tasktracker.reduce.tasks.maximum<br>2<br>任务跟踪器将同时运行的最大减少任务数.</p>
-<p>mapreduce.tasktracker.report.address<br>127.0.0.1:0<br>任务跟踪服务器侦听的接口和端口.由于它仅由任务连接,因此它使用本地接口.仅限专家.仅当您的主机没有环回接口时才应更改.</p>
-<p>mapreduce.tasktracker.resourcecalculatorplugin<br>未配置<br>类的名称,其实例将用于查询 tasktracker 上的资源信息.该类必须是 org.apache.hadoop.util.ResourceCalculatorPlugin 的实例.如果值为 null,则 tasktracker 会尝试使用适合平台的类.目前,唯一支持的平台是 Linux.</p>
-<p>mapreduce.tasktracker.taskcontroller<br>org.apache.hadoop.mapred.DefaultTaskController<br>TaskController 用于启动和管理任务执行</p>
-<p>mapreduce.tasktracker.taskmemorymanager.monitoringinterval<br>5000<br>tasktracker 在监视其任务的内存使用的两个周期之间等待的时间间隔,以毫秒为单位.仅在通过 mapred.tasktracker.tasks.maxmemory 启用任务的内存管理时使用.</p>
-<p>mapreduce.tasktracker.tasks.sleeptimebeforesigkill<br>5000<br>在发送 SIGTERM 后,tasktracker 等待向任务发送 SIGKILL 的时间(以毫秒为单位).这目前不用于仅向任务发送 SIGTERM 的 WINDOWS.</p>
-<p>yarn.app.mapreduce.am.admin.user.env<br>未配置<br>用于管理目的的 MR App Master 进程的环境变量.这些值首先设置并且可以被用户 env (yarn.app.mapreduce.am.env) 覆盖 示例:1) A=foo 这会将 env 变量 A 设置为 foo 2) B=$B:c 这是继承 app master 的 B 环境变量.</p>
-<p>yarn.app.mapreduce.am.admin-command-opts<br>未配置<br>Java 出于管理目的选择了 MR App Master 进程.它会出现在由 yarn.app.mapreduce.am.command-opts 设置的选项之前,因此它的选项可以被用户覆盖.如果使用 hadoop 本机库,使用 -Djava.library.path 可能会导致程序不再运行.应该使用 mapreduce.map.env 和 mapreduce.reduce.env 配置设置将这些值设置为 map/reduce JVM env 中 LD_LIBRARY_PATH 的一部分.</p>
-<p>yarn.app.mapreduce.am.command-opts<br>-Xmx1024m<br>Java 选择 MR App Master 进程.以下符号(如果存在)将被插入:@taskid@ 被当前 TaskID 替换.任何其他出现的&quot;@&quot;都将保持不变.例如,要启用详细 gc 日志记录到以 /tmp 中的 taskid 命名的文件并将堆最大值设置为千兆字节,请传递以下&quot;值&quot;:-Xmx1024m -verbose:gc -Xloggc:/tmp/@taskid @.gc 使用 -Djava.library.path 可能会导致程序在使用 hadoop 本机库时不再运行.应该使用 mapreduce.map.env 和 mapreduce.reduce.env 配置设置将这些值设置为 map/reduce JVM env 中 LD_LIBRARY_PATH 的一部分.</p>
-<p>yarn.app.mapreduce.am.container.log.backups<br>0<br>使用 ContainerRollingLogAppender (CRLA) 时 ApplicationMaster 日志的备份文件数.请参阅 org.apache.log4j.RollingFileAppender.maxBackupIndex.默认使用 ContainerLogAppender (CLA),不滚动容器日志.当 mapreduce.task.userlog.limit.kb 和 yarn.app.mapreduce.am.container.log.backups 都大于零时,为 ApplicationMaster 启用 CRLA.</p>
-<p>yarn.app.mapreduce.am.container.log.limit.kb<br>0<br>MRAppMaster 尝试容器日志的最大大小以 KB 为单位.0 禁用上限.</p>
-<p>yarn.app.mapreduce.am.env<br>未配置<br>用户为 MR App Master 进程添加了环境变量.示例: 1) A=foo 这会将环境变量 A 设置为 foo 2) B=$B:c 这是继承 tasktracker 的 B 环境变量.</p>
-<p>yarn.app.mapreduce.am.job.client.port-range<br>未配置<br>MapReduce AM 绑定时可以使用的端口范围.如果您想要所有可能的端口,请留空.例如 50000-50050,50100-50200</p>
-<p>yarn.app.mapreduce.am.job.committer.cancel-timeout<br>60000<br>如果作业被杀死,等待输出提交者取消操作的时间(以毫秒为单位)</p>
-<p>yarn.app.mapreduce.am.job.committer.commit-window<br>10000<br>定义输出提交操作的时间窗口(以毫秒为单位).如果在此窗口内发生了与 RM 的联系,则允许提交,否则 AM 将不允许输出提交,直到重新建立与 RM 的联系.</p>
-<p>yarn.app.mapreduce.am.job.task.listener.thread-count<br>30<br>用于处理 MR AppMaster 中来自远程任务的 RPC 调用的线程数</p>
-<p>yarn.app.mapreduce.am.resource.cpu-vcores<br>1<br>MR AppMaster 需要的虚拟 CPU 内核数.</p>
-<p>yarn.app.mapreduce.am.resource.mb<br>1536<br>MR AppMaster 需要的内存量.</p>
-<p>yarn.app.mapreduce.am.scheduler.heartbeat.interval-ms<br>1000<br>MR AppMaster 向 ResourceManager 发送心跳的时间间隔(毫秒)</p>
-<p>yarn.app.mapreduce.am.staging-dir<br>/tmp/hadoop-yarn/staging<br>提交作业时使用的暂存目录.</p>
-<p>yarn.app.mapreduce.client.max-retries<br>3<br>在抛出异常之前客户端重试 RM/HS 的次数.这是ipc之上的一层.</p>
-<p>yarn.app.mapreduce.client-am.ipc.max-retries<br>3<br>客户端重试到 AM 的次数 - 在重新连接到 RM 以获取应用程序状态之前.</p>
-<p>yarn.app.mapreduce.client-am.ipc.max-retries-on-timeouts<br>3<br>在重新连接到 RM 以获取应用程序状态之前,客户端对 AM 的套接字超时重试次数.</p>
-<p>yarn.app.mapreduce.task.container.log.backups<br>0<br>使用 ContainerRollingLogAppender (CRLA) 时任务日志的备份文件数.请参阅 org.apache.log4j.RollingFileAppender.maxBackupIndex.默认使用 ContainerLogAppender (CLA),不滚动容器日志.当 mapreduce.task.userlog.limit.kb 和 yarn.app.mapreduce.task.container.log.backups 都大于零时,为任务启用 CRLA.</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
     <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/07/29/hive%20on%20spark%E9%85%8D%E7%BD%AE/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1113,6 +1433,99 @@
             </div>
           <!--/noindex-->
         
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/07/28/hadoop%E8%8A%82%E7%82%B9%E7%9A%84%E6%9C%8D%E5%BD%B9%E4%B8%8E%E9%80%80%E5%BD%B9/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Flying Pig">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2022/07/28/hadoop%E8%8A%82%E7%82%B9%E7%9A%84%E6%9C%8D%E5%BD%B9%E4%B8%8E%E9%80%80%E5%BD%B9/" class="post-title-link" itemprop="url">节点的服役与退役</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2022-07-28 00:00:00 / Modified: 16:27:20" itemprop="dateCreated datePublished" datetime="2022-07-28T00:00:00+08:00">2022-07-28</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <span id="more"></span>
+
+<h2 id="配置文件"><a href="#配置文件" class="headerlink" title="配置文件"></a>配置文件</h2><p>配置文件路径不存在时,需要手动创建.</p>
+<h3 id="hdfs-site-xml"><a href="#hdfs-site-xml" class="headerlink" title="hdfs-site.xml"></a>hdfs-site.xml</h3><p>该属性配置的文件路径,白名单.<br>如果该属性为空(没设置),所有主机都可连接.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;dfs.hosts&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
+
+<p>同上,黑名单<br>如果该属性为空(没设置),所有主机都可连接,没有主机被排除.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;dfs.hosts.exclude&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="yarn-site-xml"><a href="#yarn-site-xml" class="headerlink" title="yarn-site.xml"></a>yarn-site.xml</h3><p>同上,针对nodemanager.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;yarn.resourcemanager.nodes.include-path&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line"></span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;yarn.resourcemanager.nodes.exclude-path&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
+
+<h2 id="添加新节点"><a href="#添加新节点" class="headerlink" title="添加新节点"></a>添加新节点</h2><p>1.配置运行环境<br>安装与之前节点相同的hadoop/java等环境,配置ssh免密登录.</p>
+<p>2.修改配置<br>修改集群所有节点(master和所有slave)的slaves文件,增加新节点ip或hostname.<br>同时,集群所有节点上修改系统的/etc/hosts配置文件,增加ip与hostname的映射.</p>
+<p>3.刷新节点<br>hdfs dfsadmin -refreshNodes<br>yarn rmadmin -refreshNodes</p>
+<p>4.启动新节点<br>sbin/hadoop-daemon.sh start datanode<br>sbin/yarn-daemon.sh start nodemanager</p>
+<p>5.检查webui.</p>
+<h2 id="退役节点"><a href="#退役节点" class="headerlink" title="退役节点"></a>退役节点</h2><p>1.添加地址到exclude,但不要更新include.<br>2.刷新节点,<br>hdfs dfsadmin -refreshNodes<br>yarn rmadmin -refreshNodes</p>
+<p>3.进入webui,查看节点状态是否为&quot;Decommission In Progress&quot;,开始复制数据块到其他节点.<br>4.当所有退役中的节点报告为&quot;Decommissioned&quot;,说明所有块已经复制完成,退役节点即可停机.<br>5.从include中删除节点地址.<br>6.刷新节点<br>hdfs dfsadmin -refreshNodes<br>yarn rmadmin -refreshNodes</p>
+<p>7.从slaves文件删除节点.</p>
+
       
     </div>
 
@@ -1499,356 +1912,6 @@
 <h3 id="PART-COL-PRIVS"><a href="#PART-COL-PRIVS" class="headerlink" title="PART_COL_PRIVS"></a>PART_COL_PRIVS</h3><p>分区字段的权限信息.</p>
 <h3 id="FUNCS"><a href="#FUNCS" class="headerlink" title="FUNCS"></a>FUNCS</h3><p>用户注册的函数信息.</p>
 <h3 id="FUNC-RU"><a href="#FUNC-RU" class="headerlink" title="FUNC_RU"></a>FUNC_RU</h3><p>用户注册函数的资源信息.</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/07/28/hive%E6%A1%B6%E8%A1%A8/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="maoeryu">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Flying Pig">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2022/07/28/hive%E6%A1%B6%E8%A1%A8/" class="post-title-link" itemprop="url">hive桶表</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-07-28 00:00:00" itemprop="dateCreated datePublished" datetime="2022-07-28T00:00:00+08:00">2022-07-28</time>
-    </span>
-      <span class="post-meta-item">
-        <span class="post-meta-item-icon">
-          <i class="far fa-calendar-check"></i>
-        </span>
-        <span class="post-meta-item-text">Edited on</span>
-        <time title="Modified: 2022-07-29 16:48:04" itemprop="dateModified" datetime="2022-07-29T16:48:04+08:00">2022-07-29</time>
-      </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">In</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>对于每一个表或者分区,Hive可以进一步组织成桶,也就是说桶是更为细粒度的数据范围划分.<br>Hive也是针对某一列进行桶的组织.<br>Hive采用对列值哈希,然后除以桶的个数求余的方式决定该条记录存放在哪个桶当中.<br>所谓Hive中的分桶,实际就是指的MapReduce中的分区.<br>根据Reduce的数量,分成不同个数的文件.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/07/28/hive%E6%A1%B6%E8%A1%A8/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/07/28/mapreduce%E4%B9%8Bshuffle/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="maoeryu">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Flying Pig">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2022/07/28/mapreduce%E4%B9%8Bshuffle/" class="post-title-link" itemprop="url">MapReduce之Shuffle</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-      
-
-      <time title="Created: 2022-07-28 00:00:00 / Modified: 15:51:39" itemprop="dateCreated datePublished" datetime="2022-07-28T00:00:00+08:00">2022-07-28</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">In</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>Map:数据输入,做初步的处理,输出形式的中间结果;<br>Shuffle:按照partition、key对中间结果进行排序合并,输出给reduce线程;<br>Reduce:对相同key的输入进行最终的处理,并将结果写入到文件中;</p>
-<img src="/images/hadoop1.png" style="margin-left: 0px; padding-bottom: 10px;">
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/07/28/mapreduce%E4%B9%8Bshuffle/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/07/28/%E8%8A%82%E7%82%B9%E7%9A%84%E6%9C%8D%E5%BD%B9%E4%B8%8E%E9%80%80%E5%BD%B9/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="maoeryu">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Flying Pig">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2022/07/28/%E8%8A%82%E7%82%B9%E7%9A%84%E6%9C%8D%E5%BD%B9%E4%B8%8E%E9%80%80%E5%BD%B9/" class="post-title-link" itemprop="url">节点的服役与退役</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-      
-
-      <time title="Created: 2022-07-28 00:00:00 / Modified: 16:27:20" itemprop="dateCreated datePublished" datetime="2022-07-28T00:00:00+08:00">2022-07-28</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">In</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <span id="more"></span>
-
-<h2 id="配置文件"><a href="#配置文件" class="headerlink" title="配置文件"></a>配置文件</h2><p>配置文件路径不存在时,需要手动创建.</p>
-<h3 id="hdfs-site-xml"><a href="#hdfs-site-xml" class="headerlink" title="hdfs-site.xml"></a>hdfs-site.xml</h3><p>该属性配置的文件路径,白名单.<br>如果该属性为空(没设置),所有主机都可连接.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;dfs.hosts&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
-
-<p>同上,黑名单<br>如果该属性为空(没设置),所有主机都可连接,没有主机被排除.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;dfs.hosts.exclude&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
-
-<h3 id="yarn-site-xml"><a href="#yarn-site-xml" class="headerlink" title="yarn-site.xml"></a>yarn-site.xml</h3><p>同上,针对nodemanager.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;yarn.resourcemanager.nodes.include-path&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line"></span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;yarn.resourcemanager.nodes.exclude-path&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
-
-<h2 id="添加新节点"><a href="#添加新节点" class="headerlink" title="添加新节点"></a>添加新节点</h2><p>1.配置运行环境<br>安装与之前节点相同的hadoop/java等环境,配置ssh免密登录.</p>
-<p>2.修改配置<br>修改集群所有节点(master和所有slave)的slaves文件,增加新节点ip或hostname.<br>同时,集群所有节点上修改系统的/etc/hosts配置文件,增加ip与hostname的映射.</p>
-<p>3.刷新节点<br>hdfs dfsadmin -refreshNodes<br>yarn rmadmin -refreshNodes</p>
-<p>4.启动新节点<br>sbin/hadoop-daemon.sh start datanode<br>sbin/yarn-daemon.sh start nodemanager</p>
-<p>5.检查webui.</p>
-<h2 id="退役节点"><a href="#退役节点" class="headerlink" title="退役节点"></a>退役节点</h2><p>1.添加地址到exclude,但不要更新include.<br>2.刷新节点,<br>hdfs dfsadmin -refreshNodes<br>yarn rmadmin -refreshNodes</p>
-<p>3.进入webui,查看节点状态是否为&quot;Decommission In Progress&quot;,开始复制数据块到其他节点.<br>4.当所有退役中的节点报告为&quot;Decommissioned&quot;,说明所有块已经复制完成,退役节点即可停机.<br>5.从include中删除节点地址.<br>6.刷新节点<br>hdfs dfsadmin -refreshNodes<br>yarn rmadmin -refreshNodes</p>
-<p>7.从slaves文件删除节点.</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/07/27/hive%20join%E4%BC%98%E5%8C%96/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="maoeryu">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Flying Pig">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2022/07/27/hive%20join%E4%BC%98%E5%8C%96/" class="post-title-link" itemprop="url">hive join优化</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-      
-
-      <time title="Created: 2022-07-27 00:00:00 / Modified: 15:52:19" itemprop="dateCreated datePublished" datetime="2022-07-27T00:00:00+08:00">2022-07-27</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">In</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <span id="more"></span>
-
-<h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>用户轨迹工程的性能瓶颈一直是etract_track_info,其中耗时大户主要在于trackinfo与pm_info进行左关联的环节,trackinfo与pm_info两张表均为GB级别,左关联代码块如下:</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> trackinfo a</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">outer</span> <span class="keyword">join</span> pm_info b</span><br><span class="line"><span class="keyword">on</span> (a.ext_field7 <span class="operator">=</span> b.id);</span><br></pre></td></tr></table></figure>
-
-<h3 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h3><h4 id="第一次优化"><a href="#第一次优化" class="headerlink" title="第一次优化"></a>第一次优化</h4><p>考虑到pm_info表的id是bigint类型,trackinfo表的ext_field7是string类型,其关联时数据类型不一致.<br>默认的hash操作会按bigint型的id进行分配,这样会导致所有string类型的ext_field7集中到一个reduce里面,因此改为如下:</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> trackinfo a</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">outer</span> <span class="keyword">join</span> pm_info b</span><br><span class="line"><span class="keyword">on</span> (<span class="built_in">cast</span>(a.ext_field7 <span class="keyword">as</span> <span class="type">bigint</span>) <span class="operator">=</span> b.id);</span><br></pre></td></tr></table></figure>
-
-<h4 id="第二次优化"><a href="#第二次优化" class="headerlink" title="第二次优化"></a>第二次优化</h4><p>考虑到trackinfo表的ext_field7字段缺失率很高(为空/字段长度为零/字段填充了非整数)情况,<br>做进行左关联时空字段的关联操作实际上没有意义,如果左表关联字段ext_field7为无效字段,则不需要关联,因此改为如下:</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> trackinfo a</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">outer</span> <span class="keyword">join</span> pm_info b</span><br><span class="line"><span class="keyword">on</span> (a.ext_field7 <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">null</span></span><br><span class="line"><span class="keyword">and</span> length(a.ext_field7) <span class="operator">&gt;</span> <span class="number">0</span></span><br><span class="line"><span class="keyword">and</span> a.ext_field7 rlike <span class="string">&#x27;^[0-9]+$&#x27;</span></span><br><span class="line"><span class="keyword">and</span> a.ext_field7 <span class="operator">=</span> b.id);</span><br></pre></td></tr></table></figure>
-
-<p>如果左表关联字段ext_field7为无效字段时(为空/字段长度为零/字段填充了非整数),<br>不去关联右表,由于空字段左关联以后取到的右表字段仍然为null,所以不会影响结果.</p>
-<h4 id="第三次优化"><a href="#第三次优化" class="headerlink" title="第三次优化"></a>第三次优化</h4><p>第二次优化效果效果不理想的原因,其实是在左关联中,虽然设置了左表关联字段为空不去关联右表,但是这样做,左表中未关联的记录(ext_field7为空)将会全部聚集在一个reduce中进行处理,体现为reduce进度长时间处在99%.</p>
-<p>解决办法的突破点就在于如何把左表的未关联记录的key尽可能打散,因此可以这么做:<br>若左表关联字段无效(为空/字段长度为零/字段填充了非整数),则在关联前将左表关联字段设置为一个随机数,再去关联右表.<br>这么做的目的是即使是左表的未关联记录,它的key也分布得十分均匀.</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> trackinfo a</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">outer</span> <span class="keyword">join</span> pm_info b</span><br><span class="line"><span class="keyword">on</span> (</span><br><span class="line">  <span class="keyword">case</span> <span class="keyword">when</span> (a.ext_field7 <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">null</span></span><br><span class="line">    <span class="keyword">and</span> length(a.ext_field7) <span class="operator">&gt;</span> <span class="number">0</span></span><br><span class="line">    <span class="keyword">and</span> a.ext_field7 rlike <span class="string">&#x27;^[0-9]+$&#x27;</span>)</span><br><span class="line">  <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">cast</span>(a.ext_field7 <span class="keyword">as</span> <span class="type">bigint</span>)</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    <span class="built_in">cast</span>(<span class="built_in">ceiling</span>(rand() <span class="operator">*</span> <span class="number">-65535</span>) <span class="keyword">as</span> <span class="type">bigint</span>)</span><br><span class="line">  <span class="keyword">end</span> <span class="operator">=</span> b.id</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
 
       
     </div>
