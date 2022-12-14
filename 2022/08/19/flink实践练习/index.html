@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="DataStream API 将你的应用构建为一个 job graph,并附加到 StreamExecutionEnvironment .当调用 env.execute() 时此 graph 就被打包并发送到 JobManager 上,后者对作业并行处理并将其子任务分发给 Task Manager 来执行.每个作业的并行子任务将在 task slot 中执行.注意,如果没有调用 execute()">
+<meta property="og:type" content="article">
+<meta property="og:title" content="flink实践练习">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/19/flink%E5%AE%9E%E8%B7%B5%E7%BB%83%E4%B9%A0/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="DataStream API 将你的应用构建为一个 job graph,并附加到 StreamExecutionEnvironment .当调用 env.execute() 时此 graph 就被打包并发送到 JobManager 上,后者对作业并行处理并将其子任务分发给 Task Manager 来执行.每个作业的并行子任务将在 task slot 中执行.注意,如果没有调用 execute()">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl17.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl18.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl19.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl20.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl21.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl22.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl23.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl24.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl25.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl26.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl27.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl28.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl29.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl30.svg">
+<meta property="article:published_time" content="2022-08-18T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-08-25T03:20:51.163Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="flink">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/flgl17.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/19/flink%E5%AE%9E%E8%B7%B5%E7%BB%83%E4%B9%A0/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>flink实践练习 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%81%E5%A4%84%E7%90%86"><span class="nav-number">1.1.</span> <span class="nav-text">流处理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B9%B6%E8%A1%8C-Dataflows"><span class="nav-number">1.1.1.</span> <span class="nav-text">并行 Dataflows</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%97%B6%E9%97%B4%E6%B5%81%E5%A4%84%E7%90%86"><span class="nav-number">1.2.</span> <span class="nav-text">自定义时间流处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%89%E7%8A%B6%E6%80%81%E6%B5%81%E5%A4%84%E7%90%86"><span class="nav-number">1.3.</span> <span class="nav-text">有状态流处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%9A%E8%BF%87%E7%8A%B6%E6%80%81%E5%BF%AB%E7%85%A7%E5%AE%9E%E7%8E%B0%E7%9A%84%E5%AE%B9%E9%94%99"><span class="nav-number">1.4.</span> <span class="nav-text">通过状态快照实现的容错</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DataStream-API%E7%AE%80%E4%BB%8B"><span class="nav-number">2.</span> <span class="nav-text">DataStream API简介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E8%83%BD%E8%A2%AB%E8%BD%AC%E5%8C%96%E6%88%90%E6%B5%81"><span class="nav-number">2.1.</span> <span class="nav-text">什么能被转化成流</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Java-tuples-%E5%92%8C-POJOs"><span class="nav-number">2.1.1.</span> <span class="nav-text">Java tuples 和 POJOs</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Tuples"><span class="nav-number">2.1.1.1.</span> <span class="nav-text">Tuples</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#POJOs"><span class="nav-number">2.1.1.2.</span> <span class="nav-text">POJOs</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Scala-tuples-%E5%92%8C-case-classes"><span class="nav-number">2.1.2.</span> <span class="nav-text">Scala tuples 和 case classes</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E5%AE%8C%E6%95%B4%E7%9A%84%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.2.</span> <span class="nav-text">一个完整的示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Stream-%E6%89%A7%E8%A1%8C%E7%8E%AF%E5%A2%83"><span class="nav-number">2.3.</span> <span class="nav-text">Stream 执行环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E7%9A%84-stream-source"><span class="nav-number">2.4.</span> <span class="nav-text">基本的 stream source</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E7%9A%84-stream-sink"><span class="nav-number">2.5.</span> <span class="nav-text">基本的 stream sink</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%AE%A1%E9%81%93-amp-ETL"><span class="nav-number">3.</span> <span class="nav-text">数据管道 &amp; ETL</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%A0%E7%8A%B6%E6%80%81%E7%9A%84%E8%BD%AC%E6%8D%A2"><span class="nav-number">3.1.</span> <span class="nav-text">无状态的转换</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#map"><span class="nav-number">3.1.1.</span> <span class="nav-text">map()</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#flatmap"><span class="nav-number">3.1.2.</span> <span class="nav-text">flatmap()</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Keyed-Streams"><span class="nav-number">3.2.</span> <span class="nav-text">Keyed Streams</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#keyBy"><span class="nav-number">3.2.1.</span> <span class="nav-text">keyBy()</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%9A%E8%BF%87%E8%AE%A1%E7%AE%97%E5%BE%97%E5%88%B0%E9%94%AE"><span class="nav-number">3.2.2.</span> <span class="nav-text">通过计算得到键</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Keyed-Stream-%E7%9A%84%E8%81%9A%E5%90%88"><span class="nav-number">3.2.3.</span> <span class="nav-text">Keyed Stream 的聚合</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9A%90%E5%BC%8F%E7%9A%84-%E7%8A%B6%E6%80%81"><span class="nav-number">3.2.4.</span> <span class="nav-text">(隐式的)状态</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#reduce-%E5%92%8C%E5%85%B6%E4%BB%96%E8%81%9A%E5%90%88%E7%AE%97%E5%AD%90"><span class="nav-number">3.2.5.</span> <span class="nav-text">reduce() 和其他聚合算子</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%89%E7%8A%B6%E6%80%81%E7%9A%84%E8%BD%AC%E6%8D%A2"><span class="nav-number">3.3.</span> <span class="nav-text">有状态的转换</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Flink-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%8F%82%E4%B8%8E%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86"><span class="nav-number">3.3.1.</span> <span class="nav-text">Flink 为什么要参与状态管理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Rich-Functions"><span class="nav-number">3.3.2.</span> <span class="nav-text">Rich Functions</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E4%BD%BF%E7%94%A8-Keyed-State-%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">3.3.3.</span> <span class="nav-text">一个使用 Keyed State 的例子</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B8%85%E7%90%86%E7%8A%B6%E6%80%81"><span class="nav-number">3.3.4.</span> <span class="nav-text">清理状态</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Non-keyed-State"><span class="nav-number">3.3.5.</span> <span class="nav-text">Non-keyed State</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Connected-Streams"><span class="nav-number">3.4.</span> <span class="nav-text">Connected Streams</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-number">3.4.1.</span> <span class="nav-text">示例</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E5%88%86%E6%9E%90"><span class="nav-number">4.</span> <span class="nav-text">流式分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Event-Time-and-Watermarks"><span class="nav-number">4.1.</span> <span class="nav-text">Event Time and Watermarks</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-Event-Time"><span class="nav-number">4.1.1.</span> <span class="nav-text">使用 Event Time</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Watermarks"><span class="nav-number">4.1.2.</span> <span class="nav-text">Watermarks</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BB%B6%E8%BF%9F-VS-%E6%AD%A3%E7%A1%AE%E6%80%A7"><span class="nav-number">4.2.</span> <span class="nav-text">延迟 VS 正确性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BB%B6%E8%BF%9F"><span class="nav-number">4.2.1.</span> <span class="nav-text">延迟</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-Watermarks"><span class="nav-number">4.2.2.</span> <span class="nav-text">使用 Watermarks</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Windows"><span class="nav-number">4.3.</span> <span class="nav-text">Windows</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AA%97%E5%8F%A3%E5%88%86%E9%85%8D%E5%99%A8"><span class="nav-number">4.3.1.</span> <span class="nav-text">窗口分配器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AA%97%E5%8F%A3%E5%BA%94%E7%94%A8%E5%87%BD%E6%95%B0"><span class="nav-number">4.3.2.</span> <span class="nav-text">窗口应用函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%99%9A%E5%88%B0%E7%9A%84%E4%BA%8B%E4%BB%B6"><span class="nav-number">4.3.3.</span> <span class="nav-text">晚到的事件</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%B1%E5%85%A5%E4%BA%86%E8%A7%A3%E7%AA%97%E5%8F%A3%E6%93%8D%E4%BD%9C"><span class="nav-number">4.4.</span> <span class="nav-text">深入了解窗口操作</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3%E6%98%AF%E9%80%9A%E8%BF%87%E5%A4%8D%E5%88%B6%E6%9D%A5%E5%AE%9E%E7%8E%B0%E7%9A%84"><span class="nav-number">4.4.1.</span> <span class="nav-text">滑动窗口是通过复制来实现的</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E7%AA%97%E5%8F%A3%E4%BC%9A%E5%92%8C%E6%97%B6%E9%97%B4%E5%AF%B9%E9%BD%90"><span class="nav-number">4.4.2.</span> <span class="nav-text">时间窗口会和时间对齐</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#window-%E5%90%8E%E9%9D%A2%E5%8F%AF%E4%BB%A5%E6%8E%A5-window"><span class="nav-number">4.4.3.</span> <span class="nav-text">window 后面可以接 window</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A9%BA%E7%9A%84%E6%97%B6%E9%97%B4%E7%AA%97%E5%8F%A3%E4%B8%8D%E4%BC%9A%E8%BE%93%E5%87%BA%E7%BB%93%E6%9E%9C"><span class="nav-number">4.4.4.</span> <span class="nav-text">空的时间窗口不会输出结果</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Late-Events-Can-Cause-Late-Merges"><span class="nav-number">4.4.5.</span> <span class="nav-text">Late Events Can Cause Late Merges</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8%E5%BA%94%E7%94%A8"><span class="nav-number">5.</span> <span class="nav-text">事件驱动应用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E5%87%BD%E6%95%B0-Process-Functions"><span class="nav-number">5.1.</span> <span class="nav-text">处理函数(Process Functions)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B-1"><span class="nav-number">5.2.</span> <span class="nav-text">示例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#open-%E6%96%B9%E6%B3%95"><span class="nav-number">5.2.1.</span> <span class="nav-text">open() 方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#processElement-%E6%96%B9%E6%B3%95"><span class="nav-number">5.2.2.</span> <span class="nav-text">processElement() 方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#onTimer-%E6%96%B9%E6%B3%95"><span class="nav-number">5.2.3.</span> <span class="nav-text">onTimer() 方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E8%80%83%E8%99%91"><span class="nav-number">5.2.4.</span> <span class="nav-text">性能考虑</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%81%E8%B7%AF%E8%BE%93%E5%87%BA-Side-Outputs"><span class="nav-number">5.3.</span> <span class="nav-text">旁路输出(Side Outputs)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B-2"><span class="nav-number">5.3.1.</span> <span class="nav-text">示例</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%9A%E8%BF%87%E7%8A%B6%E6%80%81%E5%BF%AB%E7%85%A7%E5%AE%9E%E7%8E%B0%E5%AE%B9%E9%94%99%E5%A4%84%E7%90%86"><span class="nav-number">6.</span> <span class="nav-text">通过状态快照实现容错处理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#State-Backends"><span class="nav-number">6.1.</span> <span class="nav-text">State Backends</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8A%B6%E6%80%81%E5%BF%AB%E7%85%A7"><span class="nav-number">6.2.</span> <span class="nav-text">状态快照</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89"><span class="nav-number">6.2.1.</span> <span class="nav-text">定义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8A%B6%E6%80%81%E5%BF%AB%E7%85%A7%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C"><span class="nav-number">6.2.2.</span> <span class="nav-text">状态快照如何工作?</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A1%AE%E4%BF%9D%E7%B2%BE%E7%A1%AE%E4%B8%80%E6%AC%A1-exactly-once"><span class="nav-number">6.2.3.</span> <span class="nav-text">确保精确一次(exactly once)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AB%AF%E5%88%B0%E7%AB%AF%E7%B2%BE%E7%A1%AE%E4%B8%80%E6%AC%A1"><span class="nav-number">6.2.4.</span> <span class="nav-text">端到端精确一次</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/19/flink%E5%AE%9E%E8%B7%B5%E7%BB%83%E4%B9%A0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          flink实践练习
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-19 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-19T00:00:00+08:00">2022-08-19</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-08-25 11:20:51" itemprop="dateModified" datetime="2022-08-25T11:20:51+08:00">2022-08-25</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>DataStream API 将你的应用构建为一个 job graph,并附加到 StreamExecutionEnvironment .<br>当调用 env.execute() 时此 graph 就被打包并发送到 JobManager 上,后者对作业并行处理并将其子任务分发给 Task Manager 来执行.<br>每个作业的并行子任务将在 task slot 中执行.<br>注意,如果没有调用 execute(),应用就不会运行.</p>
+<span id="more"></span>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><h3 id="流处理"><a href="#流处理" class="headerlink" title="流处理"></a>流处理</h3><p>在自然环境中,数据的产生原本就是流式的.<br>无论是来自 Web 服务器的事件数据,证券交易所的交易数据,还是来自工厂车间机器上的传感器数据,其数据都是流式的.<br>但是当你分析数据时,可以围绕 有界流(bounded)或 无界流(unbounded)两种模型来组织处理数据,当然,选择不同的模型,程序的执行和处理方式也都会不同.</p>
+<img src="/images/flgl17.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p><strong>批处理</strong>是有界数据流处理的范例.<br>在这种模式下,你可以选择在计算结果输出之前输入整个数据集,这也就意味着你可以对整个数据集的数据进行排序/统计或汇总计算后再输出结果.</p>
+<p><strong>流处理</strong>正相反,其涉及无界数据流.<br>至少理论上来说,它的数据输入永远不会结束,因此程序必须持续不断地对到达的数据进行处理.</p>
+<p>在 Flink 中,应用程序由用户自定义<strong>算子</strong>转换而来的<strong>流式 dataflows</strong> 所组成.<br>这些流式 dataflows 形成了有向图,以一个或多个<strong>源</strong>(source)开始,并以一个或多个<strong>汇</strong>(sink)结束.</p>
+<img src="/images/flgl18.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>通常,程序代码中的 transformation 和 dataflow 中的算子(operator)之间是一一对应的.<br>但有时也会出现一个 transformation 包含多个算子的情况,如上图所示.</p>
+<p>Flink 应用程序可以消费来自消息队列或分布式日志这类流式数据源(例如 Apache Kafka 或 Kinesis)的实时数据,也可以从各种的数据源中消费有界的历史数据.<br>同样,Flink 应用程序生成的结果流也可以发送到各种数据汇中.</p>
+<img src="/images/flgl19.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="并行-Dataflows"><a href="#并行-Dataflows" class="headerlink" title="并行 Dataflows"></a>并行 Dataflows</h4><p>Flink 程序本质上是分布式并行程序.<br>在程序执行期间,一个流有一个或多个<strong>流分区</strong>(Stream Partition),每个算子有一个或多个<strong>算子子任务</strong>(Operator Subtask).<br>每个子任务彼此独立,并在不同的线程中运行,或在不同的计算机或容器中运行.</p>
+<p>算子子任务数就是其对应算子的<strong>并行度</strong>.<br>在同一程序中,不同算子也可能具有不同的并行度.</p>
+<img src="/images/flgl20.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>Flink 算子之间可以通过一对一(直传)模式或重新分发模式传输数据:<br>1)一对一模式<br>例如上图中的 Source 和 map() 算子之间.<br>可以保留元素的分区和顺序信息.<br>这意味着 map() 算子的 <code>subtask[1]</code> 输入的数据以及其顺序与 Source 算子的 <code>subtask[1] </code>输出的数据和顺序完全相同,即同一分区的数据只会进入到下游算子的同一分区.</p>
+<p>2)重新分发模式<br>例如上图中的 map() 和 keyBy/window 之间,以及 keyBy/window 和 Sink 之间.<br>则会更改数据所在的流分区.<br>当你在程序中选择使用不同的 transformation,每个算子子任务也会根据不同的 transformation 将数据发送到不同的目标子任务.<br>例如以下这几种 transformation 和其对应分发数据的模式:<br>keyBy()(通过散列键重新分区)/broadcast()(广播)或 rebalance()(随机重新分发).<br>在重新分发数据的过程中,元素只有在每对输出和输入子任务之间才能保留其之间的顺序信息(例如,keyBy/window 的 <code>subtask[2]</code> 接收到的 map() 的 <code>subtask[1]</code> 中的元素都是有序的).<br>因此,上图所示的 keyBy/window 和 Sink 算子之间数据的重新分发时,不同键(key)的聚合结果到达 Sink 的顺序是不确定的.</p>
+<h3 id="自定义时间流处理"><a href="#自定义时间流处理" class="headerlink" title="自定义时间流处理"></a>自定义时间流处理</h3><p>对于大多数流数据处理应用程序而言,能够使用处理实时数据的代码重新处理历史数据并产生确定并一致的结果非常有价值.<br>在处理流式数据时,我们通常更需要关注事件本身发生的顺序而不是事件被传输以及处理的顺序,因为这能够帮助我们推理出一组事件(事件集合)是何时发生以及结束的.<br>例如电子商务交易或金融交易中涉及到的事件集合.</p>
+<p>为了满足上述这类的实时流处理场景,我们通常会使用记录在数据流中的事件时间的时间戳,而不是处理数据的机器时钟的时间戳.</p>
+<h3 id="有状态流处理"><a href="#有状态流处理" class="headerlink" title="有状态流处理"></a>有状态流处理</h3><p>Flink 中的算子可以是有状态的.<br>这意味着如何处理一个事件可能取决于该事件之前所有事件数据的累积结果.<br>Flink 中的状态不仅可以用于简单的场景(例如统计仪表板上每分钟显示的数据),也可以用于复杂的场景(例如训练作弊检测模型).</p>
+<p>Flink 应用程序可以在分布式群集上并行运行,其中每个算子的各个并行实例会在单独的线程中独立运行,并且通常情况下是会在不同的机器上运行.</p>
+<p>有状态算子的并行实例组在存储其对应状态时通常是按照键(key)进行分片存储的.<br>每个并行实例算子负责处理一组特定键的事件数据,并且这组键对应的状态会保存在本地.</p>
+<p>如下图的 Flink 作业,其前三个算子的并行度为 2,最后一个 sink 算子的并行度为 1,其中第三个算子是有状态的,并且你可以看到第二个算子和第三个算子之间是全互联的(fully-connected),它们之间通过网络进行数据分发.<br>通常情况下,实现这种类型的 Flink 程序是为了通过某些键对数据流进行分区,以便将需要一起处理的事件进行汇合,然后做统一计算处理.</p>
+<img src="/images/flgl21.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>Flink 应用程序的状态访问都在本地进行,因为这有助于其提高吞吐量和降低延迟.<br>通常情况下 Flink 应用程序都是将状态存储在 JVM 堆上,但如果状态太大,我们也可以选择将其以结构化数据格式存储在高速磁盘中.</p>
+<img src="/images/flgl22.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="通过状态快照实现的容错"><a href="#通过状态快照实现的容错" class="headerlink" title="通过状态快照实现的容错"></a>通过状态快照实现的容错</h3><p>通过状态快照和流重放两种方式的组合,Flink 能够提供可容错的,精确一次计算的语义.<br>这些状态快照在执行时会获取并存储分布式 pipeline 中整体的状态,它会将数据源中消费数据的偏移量记录下来,并将整个 job graph 中算子获取到该数据(记录的偏移量对应的数据)时的状态记录并存储下来.<br>当发生故障时,Flink 作业会恢复上次存储的状态,重置数据源从状态中记录的上次消费的偏移量开始重新进行消费处理.<br>而且状态快照在执行时会异步获取状态并存储,并不会阻塞正在进行的数据处理逻辑.</p>
+<h2 id="DataStream-API简介"><a href="#DataStream-API简介" class="headerlink" title="DataStream API简介"></a>DataStream API简介</h2><h3 id="什么能被转化成流"><a href="#什么能被转化成流" class="headerlink" title="什么能被转化成流"></a>什么能被转化成流</h3><p>Flink 的 Java 和 Scala DataStream API 可以将任何可序列化的对象转化为流.<br>Flink 自带的序列化器有:</p>
+<ol>
+<li>基本类型,即 String/Long/Integer/Boolean/Array</li>
+<li>复合类型:Tuples/POJOs 和 Scala case classes</li>
+</ol>
+<p>而且 Flink 会交给 Kryo 序列化其他类型.<br>也可以将其他序列化器和 Flink 一起使用.<br>特别是有良好支持的 Avro.</p>
+<h4 id="Java-tuples-和-POJOs"><a href="#Java-tuples-和-POJOs" class="headerlink" title="Java tuples 和 POJOs"></a>Java tuples 和 POJOs</h4><p>Flink 的原生序列化器可以高效地操作 tuples 和 POJOs</p>
+<h5 id="Tuples"><a href="#Tuples" class="headerlink" title="Tuples"></a>Tuples</h5><p>对于 Java,Flink 自带有 Tuple0 到 Tuple25 类型.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Tuple2&lt;String, Integer&gt; person &#x3D; Tuple2.of(&quot;Fred&quot;, 35);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; zero based index!  </span><br><span class="line">String name &#x3D; person.f0;</span><br><span class="line">Integer age &#x3D; person.f1;</span><br></pre></td></tr></table></figure>
+
+<h5 id="POJOs"><a href="#POJOs" class="headerlink" title="POJOs"></a>POJOs</h5><p>如果满足以下条件,Flink 将数据类型识别为 POJO 类型(并允许&quot;按名称&quot;字段引用):</p>
+<ol>
+<li>该类是公有且独立的(没有非静态内部类)</li>
+<li>该类有公有的无参构造函数</li>
+<li>类(及父类)中所有的所有不被 static/transient 修饰的属性要么是公有的(且不被 final 修饰),要么是包含公有的 getter 和 setter 方法,这些方法遵循 Java bean 命名规范.</li>
+</ol>
+<blockquote>
+<p>示例:</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">public class Person &#123;</span><br><span class="line">    public String name;  </span><br><span class="line">    public Integer age;  </span><br><span class="line">    public Person() &#123;&#125;</span><br><span class="line">    public Person(String name, Integer age) &#123;  </span><br><span class="line">        . . .</span><br><span class="line">    &#125;</span><br><span class="line">&#125;  </span><br><span class="line"></span><br><span class="line">Person person &#x3D; new Person(&quot;Fred Flintstone&quot;, 35);</span><br></pre></td></tr></table></figure>
+
+<p>Flink 的序列化器支持的 POJO 类型数据结构升级.</p>
+<h4 id="Scala-tuples-和-case-classes"><a href="#Scala-tuples-和-case-classes" class="headerlink" title="Scala tuples 和 case classes"></a>Scala tuples 和 case classes</h4><h3 id="一个完整的示例"><a href="#一个完整的示例" class="headerlink" title="一个完整的示例"></a>一个完整的示例</h3><p>该示例将关于人的记录流作为输入,并且过滤后只包含成年人.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;</span><br><span class="line">import org.apache.flink.streaming.api.datastream.DataStream;</span><br><span class="line">import org.apache.flink.api.common.functions.FilterFunction;</span><br><span class="line"></span><br><span class="line">public class Example &#123;</span><br><span class="line"></span><br><span class="line">    public static void main(String[] args) throws Exception &#123;</span><br><span class="line">        final StreamExecutionEnvironment env &#x3D;</span><br><span class="line">                StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line"></span><br><span class="line">        DataStream&lt;Person&gt; flintstones &#x3D; env.fromElements(</span><br><span class="line">                new Person(&quot;Fred&quot;, 35),</span><br><span class="line">                new Person(&quot;Wilma&quot;, 35),</span><br><span class="line">                new Person(&quot;Pebbles&quot;, 2));</span><br><span class="line"></span><br><span class="line">        DataStream&lt;Person&gt; adults &#x3D; flintstones.filter(new FilterFunction&lt;Person&gt;() &#123;</span><br><span class="line">            @Override</span><br><span class="line">            public boolean filter(Person person) throws Exception &#123;</span><br><span class="line">                return person.age &gt;&#x3D; 18;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        adults.print();</span><br><span class="line"></span><br><span class="line">        env.execute();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public static class Person &#123;</span><br><span class="line">        public String name;</span><br><span class="line">        public Integer age;</span><br><span class="line">        public Person() &#123;&#125;</span><br><span class="line"></span><br><span class="line">        public Person(String name, Integer age) &#123;</span><br><span class="line">            this.name &#x3D; name;</span><br><span class="line">            this.age &#x3D; age;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        public String toString() &#123;</span><br><span class="line">            return this.name.toString() + &quot;: age &quot; + this.age.toString();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Stream-执行环境"><a href="#Stream-执行环境" class="headerlink" title="Stream 执行环境"></a>Stream 执行环境</h3><p>每个 Flink 应用都需要有执行环境,在该示例中为 env.<br>流式应用需要用到 StreamExecutionEnvironment.</p>
+<p>DataStream API 将你的应用构建为一个 job graph,并附加到 StreamExecutionEnvironment .<br>当调用 env.execute() 时此 graph 就被打包并发送到 JobManager 上,后者对作业并行处理并将其子任务分发给 Task Manager 来执行.<br>每个作业的并行子任务将在 task slot 中执行.<br>注意,如果没有调用 execute(),应用就不会运行.</p>
+<img src="/images/flgl23.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>此分布式运行时取决于你的应用是否是可序列化的.<br>它还要求所有依赖对集群中的每个节点均可用.</p>
+<h3 id="基本的-stream-source"><a href="#基本的-stream-source" class="headerlink" title="基本的 stream source"></a>基本的 stream source</h3><p>上述示例用 env.fromElements(...) 方法构造 <code>DataStream&lt;Person&gt;</code> .<br>这样将简单的流放在一起是为了方便用于原型或测试.<br>StreamExecutionEnvironment 上还有一个 fromCollection(Collection) 方法.<br>因此,你可以这样做:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Person&gt; people &#x3D; new ArrayList&lt;Person&gt;();</span><br><span class="line"></span><br><span class="line">people.add(new Person(&quot;Fred&quot;, 35));</span><br><span class="line">people.add(new Person(&quot;Wilma&quot;, 35));</span><br><span class="line">people.add(new Person(&quot;Pebbles&quot;, 2));</span><br><span class="line"></span><br><span class="line">DataStream&lt;Person&gt; flintstones &#x3D; env.fromCollection(people);</span><br></pre></td></tr></table></figure>
+
+<p>另一个获取数据到流中的便捷方法是用 socket</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DataStream&lt;String&gt; lines &#x3D; env.socketTextStream(&quot;localhost&quot;, 9999)</span><br></pre></td></tr></table></figure>
+
+<p>或读取文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DataStream&lt;String&gt; lines &#x3D; env.readTextFile(&quot;file:&#x2F;&#x2F;&#x2F;path&quot;);</span><br></pre></td></tr></table></figure>
+
+<p>在真实的应用中,最常用的数据源是那些支持低延迟,高吞吐并行读取以及重复(高性能和容错能力为先决条件)的数据源,例如 Apache Kafka,Kinesis 和各种文件系统.<br>REST API 和数据库也经常用于增强流处理的能力(stream enrichment).</p>
+<h3 id="基本的-stream-sink"><a href="#基本的-stream-sink" class="headerlink" title="基本的 stream sink"></a>基本的 stream sink</h3><p>上述示例用 adults.print() 打印其结果到 task manager 的日志中(如果运行在 IDE 中时,将追加到你的 IDE 控制台).<br>它会对流中的每个元素都调用 toString() 方法.<br>输出看起来类似于,<br>1&gt; Fred: age 35<br>2&gt; Wilma: age 35<br>1&gt; 和 2&gt; 指出输出来自哪个 sub-task(即 thread)</p>
+<h2 id="数据管道-amp-ETL"><a href="#数据管道-amp-ETL" class="headerlink" title="数据管道 &amp; ETL"></a>数据管道 &amp; ETL</h2><p>Apache Flink 的一种常见应用场景是 ETL(抽取/转换/加载)管道任务.<br>从一个或多个数据源获取数据,进行一些转换操作和信息补充,将结果存储起来.</p>
+<h3 id="无状态的转换"><a href="#无状态的转换" class="headerlink" title="无状态的转换"></a>无状态的转换</h3><h4 id="map"><a href="#map" class="headerlink" title="map()"></a>map()</h4><p>在同一代码仓库中,有一个 GeoUtils 类,提供了一个静态方法 GeoUtils.mapToGridCell(float lon, float lat),它可以将位置坐标(经度,维度)映射到 100x100 米的对应不同区域的网格单元.</p>
+<p>现在让我们为每个出租车行程时间的数据对象增加 startCell 和 endCell 字段.<br>你可以创建一个继承 TaxiRide 的 EnrichedRide 类,添加这些字段:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">public static class EnrichedRide extends TaxiRide &#123;</span><br><span class="line">    public int startCell;</span><br><span class="line">    public int endCell;</span><br><span class="line"></span><br><span class="line">    public EnrichedRide() &#123;&#125;</span><br><span class="line"></span><br><span class="line">    public EnrichedRide(TaxiRide ride) &#123;</span><br><span class="line">        this.rideId &#x3D; ride.rideId;</span><br><span class="line">        this.isStart &#x3D; ride.isStart;</span><br><span class="line">        ...</span><br><span class="line">        this.startCell &#x3D; GeoUtils.mapToGridCell(ride.startLon, ride.startLat);</span><br><span class="line">        this.endCell &#x3D; GeoUtils.mapToGridCell(ride.endLon, ride.endLat);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public String toString() &#123;</span><br><span class="line">        return super.toString() + &quot;,&quot; +</span><br><span class="line">            Integer.toString(this.startCell) + &quot;,&quot; +</span><br><span class="line">            Integer.toString(this.endCell);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后你可以创建一个应用来转换这个流</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">DataStream&lt;TaxiRide&gt; rides &#x3D; env.addSource(new TaxiRideSource(...));</span><br><span class="line"></span><br><span class="line">DataStream&lt;EnrichedRide&gt; enrichedNYCRides &#x3D; rides</span><br><span class="line">    .filter(new RideCleansingSolution.NYCFilter())</span><br><span class="line">    .map(new Enrichment());</span><br><span class="line"></span><br><span class="line">enrichedNYCRides.print();</span><br></pre></td></tr></table></figure>
+
+<p>使用这个 MapFunction:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">public static class Enrichment implements MapFunction&lt;TaxiRide, EnrichedRide&gt; &#123;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public EnrichedRide map(TaxiRide taxiRide) throws Exception &#123;</span><br><span class="line">        return new EnrichedRide(taxiRide);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="flatmap"><a href="#flatmap" class="headerlink" title="flatmap()"></a>flatmap()</h4><p>MapFunction 只适用于一对一的转换:对每个进入算子的流元素,map() 将仅输出一个转换后的元素.<br>对于除此以外的场景,你将要使用 flatmap().</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">DataStream&lt;TaxiRide&gt; rides &#x3D; env.addSource(new TaxiRideSource(...));</span><br><span class="line"></span><br><span class="line">DataStream&lt;EnrichedRide&gt; enrichedNYCRides &#x3D; rides</span><br><span class="line">    .flatMap(new NYCEnrichment());</span><br><span class="line"></span><br><span class="line">enrichedNYCRides.print();</span><br></pre></td></tr></table></figure>
+
+<p>其中用到的 FlatMapFunction :</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">public static class NYCEnrichment implements FlatMapFunction&lt;TaxiRide, EnrichedRide&gt; &#123;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void flatMap(TaxiRide taxiRide, Collector&lt;EnrichedRide&gt; out) throws Exception &#123;</span><br><span class="line">        FilterFunction&lt;TaxiRide&gt; valid &#x3D; new RideCleansing.NYCFilter();</span><br><span class="line">        if (valid.filter(taxiRide)) &#123;</span><br><span class="line">            out.collect(new EnrichedRide(taxiRide));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用接口中提供的 Collector ,flatmap() 可以输出你想要的任意数量的元素,也可以一个都不发.</p>
+<h3 id="Keyed-Streams"><a href="#Keyed-Streams" class="headerlink" title="Keyed Streams"></a>Keyed Streams</h3><h4 id="keyBy"><a href="#keyBy" class="headerlink" title="keyBy()"></a>keyBy()</h4><p>将一个流根据其中的一些属性来进行分区是十分有用的,这样我们可以使所有具有相同属性的事件分到相同的组里.<br>例如,如果你想找到从每个网格单元出发的最远的出租车行程.<br>按 SQL 查询的方式来考虑,这意味着要对 startCell 进行 GROUP BY 再排序,在 Flink 中这部分可以用 keyBy(KeySelector) 实现.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">rides</span><br><span class="line">    .flatMap(new NYCEnrichment())</span><br><span class="line">    .keyBy(enrichedRide -&gt; enrichedRide.startCell)</span><br></pre></td></tr></table></figure>
+
+<p>每个 keyBy 会通过 shuffle 来为数据流进行重新分区.<br>总体来说这个开销是很大的,它涉及网络通信/序列化和反序列化.</p>
+<img src="/images/flgl24.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="通过计算得到键"><a href="#通过计算得到键" class="headerlink" title="通过计算得到键"></a>通过计算得到键</h4><p>KeySelector 不仅限于从事件中抽取键.<br>你也可以按想要的方式计算得到键值,只要最终结果是确定的,并且实现了 hashCode() 和 equals().<br>这些限制条件不包括产生随机数或者返回 Arrays 或 Enums 的 KeySelector,但你可以用元组和 POJO 来组成键,只要他们的元素遵循上述条件.</p>
+<p>键必须按确定的方式产生,因为它们会在需要的时候被重新计算,而不是一直被带在流记录中.</p>
+<p>例如,比起创建一个新的带有 startCell 字段的 EnrichedRide 类,用这个字段作为 key:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keyBy(enrichedRide -&gt; enrichedRide.startCell)</span><br></pre></td></tr></table></figure>
+
+<p>我们更倾向于这样做:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keyBy(ride -&gt; GeoUtils.mapToGridCell(ride.startLon, ride.startLat))</span><br></pre></td></tr></table></figure>
+
+<h4 id="Keyed-Stream-的聚合"><a href="#Keyed-Stream-的聚合" class="headerlink" title="Keyed Stream 的聚合"></a>Keyed Stream 的聚合</h4><p>以下代码为每个行程结束事件创建了一个新的包含 startCell 和时长(分钟)的元组流:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">import org.joda.time.Interval;</span><br><span class="line"></span><br><span class="line">DataStream&lt;Tuple2&lt;Integer, Minutes&gt;&gt; minutesByStartCell &#x3D; enrichedNYCRides</span><br><span class="line">    .flatMap(new FlatMapFunction&lt;EnrichedRide, Tuple2&lt;Integer, Minutes&gt;&gt;() &#123;</span><br><span class="line"></span><br><span class="line">        @Override</span><br><span class="line">        public void flatMap(EnrichedRide ride,</span><br><span class="line">                            Collector&lt;Tuple2&lt;Integer, Minutes&gt;&gt; out) throws Exception &#123;</span><br><span class="line">            if (!ride.isStart) &#123;</span><br><span class="line">                Interval rideInterval &#x3D; new Interval(ride.startTime, ride.endTime);</span><br><span class="line">                Minutes duration &#x3D; rideInterval.toDuration().toStandardMinutes();</span><br><span class="line">                out.collect(new Tuple2&lt;&gt;(ride.startCell, duration));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br></pre></td></tr></table></figure>
+
+<p>现在就可以产生一个流,对每个 startCell 仅包含那些最长行程的数据.</p>
+<p>有很多种方法表示使用哪个字段作为键.<br>前面使用 EnrichedRide POJO 的例子,用字段名来指定键.<br>而这个使用 Tuple2 对象的例子中,用字段在元组中的序号(从0开始)来指定键.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">minutesByStartCell</span><br><span class="line">  .keyBy(value -&gt; value.f0) &#x2F;&#x2F; .keyBy(value -&gt; value.startCell)</span><br><span class="line">  .maxBy(1) &#x2F;&#x2F; duration</span><br><span class="line">  .print();</span><br></pre></td></tr></table></figure>
+
+<p>现在每次行程时长达到新的最大值,都会输出一条新记录,例如下面这个对应 50797 网格单元的数据:</p>
+<p>...<br>4&gt; (64549,5M)<br>4&gt; (46298,18M)<br>1&gt; (51549,14M)<br>1&gt; (53043,13M)<br>1&gt; (56031,22M)<br>1&gt; (50797,6M)<br>...<br>1&gt; (50797,8M)<br>...<br>1&gt; (50797,11M)<br>...<br>1&gt; (50797,12M)</p>
+<h4 id="隐式的-状态"><a href="#隐式的-状态" class="headerlink" title="(隐式的)状态"></a>(隐式的)状态</h4><p>这是培训中第一个涉及到有状态流的例子.<br>尽管状态的处理是透明的,Flink 必须跟踪每个不同的键的最大时长.</p>
+<p>只要应用中有状态,你就应该考虑状态的大小.<br>如果键值的数量是无限的,那 Flink 的状态需要的空间也同样是无限的.</p>
+<p>在流处理场景中,考虑有限窗口的聚合往往比整个流聚合更有意义.</p>
+<h4 id="reduce-和其他聚合算子"><a href="#reduce-和其他聚合算子" class="headerlink" title="reduce() 和其他聚合算子"></a>reduce() 和其他聚合算子</h4><p>上面用到的 maxBy() 只是 Flink 中 KeyedStream 上众多聚合函数中的一个.<br>还有一个更通用的 reduce() 函数可以用来实现你的自定义聚合.</p>
+<h3 id="有状态的转换"><a href="#有状态的转换" class="headerlink" title="有状态的转换"></a>有状态的转换</h3><h4 id="Flink-为什么要参与状态管理"><a href="#Flink-为什么要参与状态管理" class="headerlink" title="Flink 为什么要参与状态管理"></a>Flink 为什么要参与状态管理</h4><p>在 Flink 不参与管理状态的情况下,你的应用也可以使用状态,但 Flink 为其管理状态提供了一些引人注目的特性:</p>
+<ol>
+<li>本地性: Flink 状态是存储在使用它的机器本地的,并且可以以内存访问速度来获取</li>
+<li>持久性: Flink 状态是容错的,例如,它可以自动按一定的时间间隔产生 checkpoint,并且在任务失败后进行恢复</li>
+<li>纵向可扩展性: Flink 状态可以存储在集成的 RocksDB 实例中,这种方式下可以通过增加本地磁盘来扩展空间</li>
+<li>横向可扩展性: Flink 状态可以随着集群的扩缩容重新分布</li>
+<li>可查询性: Flink 状态可以通过使用 状态查询 API 从外部进行查询.</li>
+</ol>
+<h4 id="Rich-Functions"><a href="#Rich-Functions" class="headerlink" title="Rich Functions"></a>Rich Functions</h4><p>至此,你已经看到了 Flink 的几种函数接口,包括 FilterFunction, MapFunction,和 FlatMapFunction.<br>这些都是单一抽象方法模式.</p>
+<p>对其中的每一个接口,Flink 同样提供了一个所谓 &quot;rich&quot; 的变体,如 RichFlatMapFunction,其中增加了以下方法,包括:</p>
+<ol>
+<li>open(Configuration c)</li>
+<li>close()</li>
+<li>getRuntimeContext()</li>
+</ol>
+<p>open() 仅在算子初始化时调用一次.<br>可以用来加载一些静态数据,或者建立外部服务的链接等.</p>
+<p>getRuntimeContext() 为整套潜在有趣的东西提供了一个访问途径,最明显的,它是你创建和访问 Flink 状态的途径.</p>
+<h4 id="一个使用-Keyed-State-的例子"><a href="#一个使用-Keyed-State-的例子" class="headerlink" title="一个使用 Keyed State 的例子"></a>一个使用 Keyed State 的例子</h4><p>在这个例子里,想象你有一个要去重的事件数据流,对每个键只保留第一个事件.<br>下面是完成这个功能的应用,使用一个名为 Deduplicator 的 RichFlatMapFunction :</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">private static class Event &#123;</span><br><span class="line">    public final String key;</span><br><span class="line">    public final long timestamp;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public static void main(String[] args) throws Exception &#123;</span><br><span class="line">    StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">  </span><br><span class="line">    env.addSource(new EventSource())</span><br><span class="line">        .keyBy(e -&gt; e.key)</span><br><span class="line">        .flatMap(new Deduplicator())</span><br><span class="line">        .print();</span><br><span class="line">  </span><br><span class="line">    env.execute();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>为了实现这个功能,Deduplicator 需要记录每个键是否已经有了相应的记录.<br>它将通过使用 Flink 的 keyed state 接口来做这件事.</p>
+<p>当你使用像这样的 keyed stream 的时候,Flink 会为每个状态中管理的条目维护一个键值存储.</p>
+<p>Flink 支持几种不同方式的 keyed state,这个例子使用的是最简单的一个,叫做 ValueState.<br>意思是对于 每个键 ,Flink 将存储一个单一的对象.<br>在这个例子中,存储的是一个 Boolean 类型的对象.</p>
+<p>我们的 Deduplicator 类有两个方法:open() 和 flatMap().<br>open() 方法通过定义 <code>ValueStateDescriptor&lt;Boolean&gt;</code> 建立了管理状态的使用.<br>构造器的参数定义了这个状态的名字(&quot;keyHasBeenSeen&quot;),并且为如何序列化这些对象提供了信息(在这个例子中的 Types.BOOLEAN).</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">public static class Deduplicator extends RichFlatMapFunction&lt;Event, Event&gt; &#123;</span><br><span class="line">    ValueState&lt;Boolean&gt; keyHasBeenSeen;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void open(Configuration conf) &#123;</span><br><span class="line">        ValueStateDescriptor&lt;Boolean&gt; desc &#x3D; new ValueStateDescriptor&lt;&gt;(&quot;keyHasBeenSeen&quot;, Types.BOOLEAN);</span><br><span class="line">        keyHasBeenSeen &#x3D; getRuntimeContext().getState(desc);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void flatMap(Event event, Collector&lt;Event&gt; out) throws Exception &#123;</span><br><span class="line">        if (keyHasBeenSeen.value() &#x3D;&#x3D; null) &#123;</span><br><span class="line">            out.collect(event);</span><br><span class="line">            keyHasBeenSeen.update(true);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当 flatMap 方法调用 keyHasBeenSeen.value() 时,Flink 会在 当前键的上下文 中检索状态值,只有当状态为 null 时,才会输出当前事件.<br>这种情况下,它同时也将更新 keyHasBeenSeen 为 true.</p>
+<p>这种访问和更新按键分区的状态的机制也许看上去很神奇,因为在 Deduplicator 的实现中,键不是明确可见的.<br>当 Flink 运行时调用 RichFlatMapFunction 的 open 方法时, 是没有事件的,所以这个时候上下文中不含有任何键.<br>但当它调用 flatMap 方法,被处理的事件的键在运行时中就是可用的了,并且被用来确定操作哪个 Flink 状态后端的入口.</p>
+<p>部署在分布式集群时,将会有很多 Deduplicator 的实例,每一个实例将负责整个键空间的互斥子集中的一个.<br>所以,当你看到一个单独的 ValueState,比如</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ValueState&lt;Boolean&gt; keyHasBeenSeen;</span><br></pre></td></tr></table></figure>
+
+<p>要理解这个代表的不仅仅是一个单独的布尔类型变量,而是一个分布式的共享键值存储.</p>
+<h4 id="清理状态"><a href="#清理状态" class="headerlink" title="清理状态"></a>清理状态</h4><p>上面例子有一个潜在的问题:<br>当键空间是无界的时候将发生什么?<br>Flink 会对每个使用过的键都存储一个 Boolean 类型的实例.<br>如果是键是有限的集合还好,但在键无限增长的应用中,清除再也不会使用的状态是很必要的.<br>这通过在状态对象上调用 clear() 来实现,如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keyHasBeenSeen.clear()</span><br></pre></td></tr></table></figure>
+
+<p>对一个给定的键值,你也许想在它一段时间不使用后来做这件事.<br>也可以选择使用 状态的过期时间(TTL),为状态描述符配置你想要旧状态自动被清除的时间.</p>
+<h4 id="Non-keyed-State"><a href="#Non-keyed-State" class="headerlink" title="Non-keyed State"></a>Non-keyed State</h4><p>在没有键的上下文中我们也可以使用 Flink 管理的状态.<br>这也被称作 算子的状态.<br>它包含的接口是很不一样的,由于对用户定义的函数来说使用 non-keyed state 是不太常见的,所以这里就不多介绍了.<br>这个特性最常用于 source 和 sink 的实现.</p>
+<h3 id="Connected-Streams"><a href="#Connected-Streams" class="headerlink" title="Connected Streams"></a>Connected Streams</h3><p>相比于下面这种预先定义的转换:</p>
+<img src="/images/flgl25.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>有时你想要更灵活地调整转换的某些功能,比如数据流的阈值/规则或者其他参数.<br>Flink 支持这种需求的模式称为 connected streams ,一个单独的算子有两个输入流.</p>
+<img src="/images/flgl26.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>connected stream 也可以被用来实现流的关联.</p>
+<h4 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h4><p>在这个例子中,一个控制流是用来指定哪些词需要从 streamOfWords 里过滤掉的.<br>一个称为 ControlFunction 的 RichCoFlatMapFunction 作用于连接的流来实现这个功能.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">public static void main(String[] args) throws Exception &#123;</span><br><span class="line">    StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line"></span><br><span class="line">    DataStream&lt;String&gt; control &#x3D; env</span><br><span class="line">        .fromElements(&quot;DROP&quot;, &quot;IGNORE&quot;)</span><br><span class="line">        .keyBy(x -&gt; x);</span><br><span class="line"></span><br><span class="line">    DataStream&lt;String&gt; streamOfWords &#x3D; env</span><br><span class="line">        .fromElements(&quot;Apache&quot;, &quot;DROP&quot;, &quot;Flink&quot;, &quot;IGNORE&quot;)</span><br><span class="line">        .keyBy(x -&gt; x);</span><br><span class="line">  </span><br><span class="line">    control</span><br><span class="line">        .connect(streamOfWords)</span><br><span class="line">        .flatMap(new ControlFunction())</span><br><span class="line">        .print();</span><br><span class="line"></span><br><span class="line">    env.execute();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里注意两个流只有键一致的时候才能连接.<br>keyBy 的作用是将流数据分区,当 keyed stream 被连接时,他们必须按相同的方式分区.<br>这样保证了两个流中所有键相同的事件发到同一个实例上.<br>这样也使按键关联两个流成为可能.</p>
+<p>在这个例子中,两个流都是<code> DataStream&lt;String&gt;</code> 类型的,并且都将字符串作为键.<br>正如你将在下面看到的,RichCoFlatMapFunction 在状态中存了一个布尔类型的变量,这个变量被两个流共享.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">public static class ControlFunction extends RichCoFlatMapFunction&lt;String, String, String&gt; &#123;</span><br><span class="line">    private ValueState&lt;Boolean&gt; blocked;</span><br><span class="line">      </span><br><span class="line">    @Override</span><br><span class="line">    public void open(Configuration config) &#123;</span><br><span class="line">        blocked &#x3D; getRuntimeContext()</span><br><span class="line">            .getState(new ValueStateDescriptor&lt;&gt;(&quot;blocked&quot;, Boolean.class));</span><br><span class="line">    &#125;</span><br><span class="line">      </span><br><span class="line">    @Override</span><br><span class="line">    public void flatMap1(String control_value, Collector&lt;String&gt; out) throws Exception &#123;</span><br><span class="line">        blocked.update(Boolean.TRUE);</span><br><span class="line">    &#125;</span><br><span class="line">      </span><br><span class="line">    @Override</span><br><span class="line">    public void flatMap2(String data_value, Collector&lt;String&gt; out) throws Exception &#123;</span><br><span class="line">        if (blocked.value() &#x3D;&#x3D; null) &#123;</span><br><span class="line">            out.collect(data_value);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>RichCoFlatMapFunction 是一种可以被用于一对连接流的 FlatMapFunction,并且它可以调用 rich function 的接口.<br>这意味着它可以是有状态的.</p>
+<p>布尔变量 blocked 被用于记录在数据流 control 中出现过的键(在这个例子中是单词),并且这些单词从 streamOfWords 过滤掉.<br>这是 keyed state,并且它是被两个流共享的,这也是为什么两个流必须有相同的键值空间.</p>
+<p>在 Flink 运行时中,flatMap1 和 flatMap2 在连接流有新元素到来时被调用 —— 在我们的例子中,control 流中的元素会进入 flatMap1,streamOfWords 中的元素会进入 flatMap2.<br>这是由两个流连接的顺序决定的,本例中为 control.connect(streamOfWords).</p>
+<p>认识到你没法控制 flatMap1 和 flatMap2 的调用顺序是很重要的.<br>这两个输入流是相互竞争的关系,Flink 运行时将根据从一个流或另一个流中消费的事件做它要做的.<br>对于需要保证时间和/或顺序的场景,你会发现在 Flink 的管理状态中缓存事件一直到它们能够被处理是必须的.<br>可以使用自定义的算子实现 InputSelectable 接口,在两输入算子消费它的输入流时增加一些顺序上的限制.</p>
+<h2 id="流式分析"><a href="#流式分析" class="headerlink" title="流式分析"></a>流式分析</h2><h3 id="Event-Time-and-Watermarks"><a href="#Event-Time-and-Watermarks" class="headerlink" title="Event Time and Watermarks"></a>Event Time and Watermarks</h3><p>Flink 明确支持以下三种时间语义:</p>
+<ol>
+<li>事件时间(event time): 事件产生的时间,记录的是设备生产(或者存储)事件的时间</li>
+<li>摄取时间(ingestion time): Flink 读取事件时记录的时间</li>
+<li>处理时间(processing time): Flink pipeline 中具体算子处理事件的时间</li>
+</ol>
+<p>为了获得可重现的结果,例如在计算过去的特定一天里第一个小时股票的最高价格时,我们应该使用事件时间.<br>这样的话,无论什么时间去计算都不会影响输出结果.<br>然而如果使用处理时间的话,实时应用程序的结果是由程序运行的时间所决定.<br>多次运行基于处理时间的实时程序,可能得到的结果都不相同,也可能会导致再次分析历史数据或者测试新代码变得异常困难.</p>
+<h4 id="使用-Event-Time"><a href="#使用-Event-Time" class="headerlink" title="使用 Event Time"></a>使用 Event Time</h4><p>如果想要使用事件时间,需要额外给 Flink 提供一个时间戳提取器和 Watermark 生成器,Flink 将使用它们来跟踪事件时间的进度.</p>
+<h4 id="Watermarks"><a href="#Watermarks" class="headerlink" title="Watermarks"></a>Watermarks</h4><p>在此示例中,我们将看到带有混乱时间戳的事件流,如下所示.<br>显示的数字表达的是这些事件实际发生时间的时间戳.<br>到达的第一个事件发生在时间 4,随后发生的事件发生在更早的时间 2,依此类推:<br><code>··· 23 19 22 24 21 14 17 13 12 15 9 11 7 2 4 →</code></p>
+<p>假设我们要对数据流排序,我们想要达到的目的是:应用程序应该在数据流里的事件到达时就有一个算子(我们暂且称之为排序)开始处理事件,这个算子所输出的流是按照时间戳排序好的.</p>
+<p>让我们重新审视这些数据:<br>1)我们的排序器看到的第一个事件的时间戳是 4,但是我们不能立即将其作为已排序的流释放.<br>因为我们并不能确定它是有序的,并且较早的事件有可能并未到达.<br>事实上,如果站在上帝视角,我们知道,必须要等到时间戳为 2 的元素到来时,排序器才可以有事件输出.</p>
+<p>2)接下来的这一步,如果我们选择的是固执的等待,我们永远不会有结果.<br>首先,我们看到了时间戳为 4 的事件,然后看到了时间戳为 2 的事件.<br>可是,时间戳小于 2 的事件接下来会不会到来呢?可能会,也可能不会.<br>再次站在上帝视角,我们知道,我们永远不会看到时间戳 1.</p>
+<p>最终,我们必须勇于承担责任,并发出指令,把带有时间戳 2 的事件作为已排序的事件流的开始.</p>
+<p>3)然后,我们需要一种策略,该策略定义:对于任何给定时间戳的事件,Flink 何时停止等待较早事件的到来.<br>这正是 watermarks 的作用,它们定义何时停止等待较早的事件.<br>Flink 中事件时间的处理取决于 watermark 生成器,后者将带有时间戳的特殊元素插入流中形成 watermarks.<br>事件时间 t 的 watermark 代表 t 之前(很可能)都已经到达.<br>当 watermark 以 2 或更大的时间戳到达时,事件流的排序器应停止等待,并输出 2 作为已经排序好的流.</p>
+<p>4)我们可能会思考,如何决定 watermarks 的不同生成策略<br>每个事件都会延迟一段时间后到达,然而这些延迟有所不同,有些事件可能比其他事件延迟得更多.<br>一种简单的方法是假定这些延迟受某个最大延迟的限制.<br>Flink 将此策略称为 最大无序边界 (bounded-out-of-orderness) watermark.<br>当然,我们可以想像出更好的生成 watermark 的方法,但是对于大多数应用而言,固定延迟策略已经足够了.</p>
+<h3 id="延迟-VS-正确性"><a href="#延迟-VS-正确性" class="headerlink" title="延迟 VS 正确性"></a>延迟 VS 正确性</h3><p>watermarks 给了开发者流处理的一种选择,它们使开发人员在开发应用程序时可以控制延迟和完整性之间的权衡.<br>与批处理不同,批处理中的奢侈之处在于可以在产生任何结果之前完全了解输入,而使用流式传输,我们不被允许等待所有的时间都产生了,才输出排序好的数据,这与流相违背.</p>
+<p>我们可以把 watermarks 的边界时间配置的相对较短,从而冒着在输入了解不完全的情况下产生结果的风险-即可能会很快产生错误结果.<br>或者,你可以等待更长的时间,并利用对输入流的更全面的了解来产生结果.</p>
+<p>当然也可以实施混合解决方案,先快速产生初步结果,然后在处理其他(最新)数据时向这些结果提供更新.<br>对于有一些对延迟的容忍程度很低,但是又对结果有很严格的要求的场景下,或许是一个福音.</p>
+<h4 id="延迟"><a href="#延迟" class="headerlink" title="延迟"></a>延迟</h4><p>延迟是相对于 watermarks 定义的.<br>Watermark(t) 表示事件流的时间已经到达了 t; watermark 之后的时间戳 ≤ t 的任何事件都被称之为延迟事件.</p>
+<h4 id="使用-Watermarks"><a href="#使用-Watermarks" class="headerlink" title="使用 Watermarks"></a>使用 Watermarks</h4><p>如果想要使用基于带有事件时间戳的事件流,Flink 需要知道与每个事件相关的时间戳,而且流必须包含 watermark.</p>
+<p>动手练习中使用的出租车数据源已经为我们处理了这些详细信息.<br>但是,在您自己的应用程序中,您将必须自己进行处理,这通常是通过实现一个类来实现的,该类从事件中提取时间戳,并根据需要生成 watermarks.<br>最简单的方法是使用 WatermarkStrategy:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">DataStream&lt;Event&gt; stream &#x3D; ...;</span><br><span class="line"></span><br><span class="line">WatermarkStrategy&lt;Event&gt; strategy &#x3D; WatermarkStrategy</span><br><span class="line">        .&lt;Event&gt;forBoundedOutOfOrderness(Duration.ofSeconds(20))</span><br><span class="line">        .withTimestampAssigner((event, timestamp) -&gt; event.timestamp);</span><br><span class="line"></span><br><span class="line">DataStream&lt;Event&gt; withTimestampsAndWatermarks &#x3D;</span><br><span class="line">    stream.assignTimestampsAndWatermarks(strategy);</span><br></pre></td></tr></table></figure>
+
+<h3 id="Windows"><a href="#Windows" class="headerlink" title="Windows"></a>Windows</h3><p>我们在操作无界数据流时,经常需要应对以下问题,我们经常把无界数据流分解成有界数据流聚合分析:</p>
+<ol>
+<li>每分钟的浏览量</li>
+<li>每位用户每周的会话数</li>
+<li>每个传感器每分钟的最高温度</li>
+</ol>
+<p>用 Flink 计算窗口分析取决于两个主要的抽象操作:<strong>Window Assigners</strong>,将事件分配给窗口(根据需要创建新的窗口对象),以及 Window Functions,处理窗口内的数据.</p>
+<p><strong>Flink 的窗口API还具有 Triggers 和 Evictors 的概念,Triggers 确定何时调用窗口函数,而 Evictors 则可以删除在窗口中收集的元素</strong>.</p>
+<p>举一个简单的例子,我们一般这样使用键控事件流(基于 key 分组的输入事件流):</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">stream.</span><br><span class="line">    .keyBy(&lt;key selector&gt;)</span><br><span class="line">    .window(&lt;window assigner&gt;)</span><br><span class="line">    .reduce|aggregate|process(&lt;window function&gt;);</span><br></pre></td></tr></table></figure>
+
+<p>您不是必须使用键控事件流(keyed stream),但是值得注意的是,如果不使用键控事件流,我们的程序就不能 并行 处理.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">stream.</span><br><span class="line">    .windowAll(&lt;window assigner&gt;)</span><br><span class="line">    .reduce|aggregate|process(&lt;window function&gt;);</span><br></pre></td></tr></table></figure>
+
+<h4 id="窗口分配器"><a href="#窗口分配器" class="headerlink" title="窗口分配器"></a>窗口分配器</h4><p>Flink 有一些内置的窗口分配器,如下所示:</p>
+<img src="/images/flgl27.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>通过一些示例来展示关于这些窗口如何使用,或者如何区分它们:</p>
+<blockquote>
+<p>滚动时间窗口</p>
+<blockquote>
+<p>每分钟页面浏览量<br>TumblingEventTimeWindows.of(Time.minutes(1))</p>
+</blockquote>
+</blockquote>
+<blockquote>
+<p>滑动时间窗口</p>
+<blockquote>
+<p>每10秒钟计算前1分钟的页面浏览量<br>SlidingEventTimeWindows.of(Time.minutes(1), Time.seconds(10))</p>
+</blockquote>
+</blockquote>
+<blockquote>
+<p>会话窗口</p>
+<blockquote>
+<p>每个会话的网页浏览量,其中会话之间的间隔至少为30分钟<br>EventTimeSessionWindows.withGap(Time.minutes(30))</p>
+</blockquote>
+</blockquote>
+<p>以下都是一些可以使用的间隔时间 Time.milliseconds(n), Time.seconds(n), Time.minutes(n), Time.hours(n), 和 Time.days(n).</p>
+<p>基于时间的窗口分配器(包括会话时间)既可以处理 事件时间,也可以处理 处理时间.<br>这两种基于时间的处理没有哪一个更好,我们必须折衷.<br>使用 处理时间,我们必须接受以下限制:</p>
+<ol>
+<li>无法正确处理历史数据,</li>
+<li>无法正确处理超过最大无序边界的数据,</li>
+<li>结果将是不确定的,但是有自己的优势,较低的延迟.</li>
+</ol>
+<p>使用基于计数的窗口时,请记住,只有窗口内的事件数量到达窗口要求的数值时,这些窗口才会触发计算.<br>尽管可以使用自定义触发器自己实现该行为,但无法应对超时和处理部分窗口.</p>
+<p>我们可能在有些场景下,想使用全局 window assigner 将每个事件(相同的 key)都分配给某一个指定的全局窗口.<br>很多情况下,一个比较好的建议是使用 ProcessFunction.</p>
+<h4 id="窗口应用函数"><a href="#窗口应用函数" class="headerlink" title="窗口应用函数"></a>窗口应用函数</h4><p>我们有三种最基本的操作窗口内的事件的选项:</p>
+<ol>
+<li>像批量处理,ProcessWindowFunction 会缓存 Iterable 和窗口内容,供接下来全量计算.</li>
+<li>像流处理,每一次有事件被分配到窗口时,都会调用 ReduceFunction 或者 AggregateFunction 来增量计算.</li>
+<li>结合两者,通过 ReduceFunction 或者 AggregateFunction 预聚合的增量计算结果在触发窗口时, 提供给 ProcessWindowFunction 做全量计算.</li>
+</ol>
+<p>接下来展示一段 1 和 3 的示例,每一个实现都是计算传感器的最大值.<br>在每一个一分钟大小的事件时间窗口内, 生成一个包含 (key,end-of-window-timestamp, max_value) 的一组结果.</p>
+<blockquote>
+<p>ProcessWindowFunction 示例</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">DataStream&lt;SensorReading&gt; input &#x3D; ...;</span><br><span class="line"></span><br><span class="line">input</span><br><span class="line">    .keyBy(x -&gt; x.key)</span><br><span class="line">    .window(TumblingEventTimeWindows.of(Time.minutes(1)))</span><br><span class="line">    .process(new MyWastefulMax());</span><br><span class="line"></span><br><span class="line">public static class MyWastefulMax extends ProcessWindowFunction&lt;</span><br><span class="line">        SensorReading,                  &#x2F;&#x2F; 输入类型</span><br><span class="line">        Tuple3&lt;String, Long, Integer&gt;,  &#x2F;&#x2F; 输出类型</span><br><span class="line">        String,                         &#x2F;&#x2F; 键类型</span><br><span class="line">        TimeWindow&gt; &#123;                   &#x2F;&#x2F; 窗口类型</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void process(</span><br><span class="line">            String key,</span><br><span class="line">            Context context,</span><br><span class="line">            Iterable&lt;SensorReading&gt; events,</span><br><span class="line">            Collector&lt;Tuple3&lt;String, Long, Integer&gt;&gt; out) &#123;</span><br><span class="line"></span><br><span class="line">        int max &#x3D; 0;</span><br><span class="line">        for (SensorReading event : events) &#123;</span><br><span class="line">            max &#x3D; Math.max(event.value, max);</span><br><span class="line">        &#125;</span><br><span class="line">        out.collect(Tuple3.of(key, context.window().getEnd(), max));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在当前实现中有一些值得关注的地方:</p>
+<ol>
+<li>Flink 会缓存所有分配给窗口的事件流,直到触发窗口为止.这个操作可能是相当昂贵的.</li>
+<li>Flink 会传递给 ProcessWindowFunction 一个 Context 对象,这个对象内包含了一些窗口信息.<br>Context 接口 展示大致如下:</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">public abstract class Context implements java.io.Serializable &#123;</span><br><span class="line">    public abstract W window();</span><br><span class="line"></span><br><span class="line">    public abstract long currentProcessingTime();</span><br><span class="line">    public abstract long currentWatermark();</span><br><span class="line"></span><br><span class="line">    public abstract KeyedStateStore windowState();</span><br><span class="line">    public abstract KeyedStateStore globalState();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>windowState 和 globalState 可以用来存储当前的窗口的 key/窗口或者当前 key 的每一个窗口信息.<br>这在一些场景下会很有用,试想,我们在处理当前窗口的时候,可能会用到上一个窗口的信息.</p>
+<blockquote>
+<p>增量聚合示例</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">DataStream&lt;SensorReading&gt; input &#x3D; ...;</span><br><span class="line"></span><br><span class="line">input</span><br><span class="line">    .keyBy(x -&gt; x.key)</span><br><span class="line">    .window(TumblingEventTimeWindows.of(Time.minutes(1)))</span><br><span class="line">    .reduce(new MyReducingMax(), new MyWindowFunction());</span><br><span class="line"></span><br><span class="line">private static class MyReducingMax implements ReduceFunction&lt;SensorReading&gt; &#123;</span><br><span class="line">    public SensorReading reduce(SensorReading r1, SensorReading r2) &#123;</span><br><span class="line">        return r1.value() &gt; r2.value() ? r1 : r2;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">private static class MyWindowFunction extends ProcessWindowFunction&lt;</span><br><span class="line">    SensorReading, Tuple3&lt;String, Long, SensorReading&gt;, String, TimeWindow&gt; &#123;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void process(</span><br><span class="line">            String key,</span><br><span class="line">            Context context,</span><br><span class="line">            Iterable&lt;SensorReading&gt; maxReading,</span><br><span class="line">            Collector&lt;Tuple3&lt;String, Long, SensorReading&gt;&gt; out) &#123;</span><br><span class="line"></span><br><span class="line">        SensorReading max &#x3D; maxReading.iterator().next();</span><br><span class="line">        out.collect(Tuple3.of(key, context.window().getEnd(), max));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>请注意 <code>Iterable&lt;SensorReading&gt;</code> 将只包含一个读数,MyReducingMax 计算出的预先汇总的最大值.</p>
+<h4 id="晚到的事件"><a href="#晚到的事件" class="headerlink" title="晚到的事件"></a>晚到的事件</h4><p>默认场景下,超过最大无序边界的事件会被删除,但是 Flink 给了我们两个选择去控制这些事件.<br>您可以使用一种称为旁路输出 的机制来安排将要删除的事件收集到侧输出流中,这里是一个示例:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">OutputTag&lt;Event&gt; lateTag &#x3D; new OutputTag&lt;Event&gt;(&quot;late&quot;)&#123;&#125;;</span><br><span class="line"></span><br><span class="line">SingleOutputStreamOperator&lt;Event&gt; result &#x3D; stream.</span><br><span class="line">    .keyBy(...)</span><br><span class="line">    .window(...)</span><br><span class="line">    .sideOutputLateData(lateTag)</span><br><span class="line">    .process(...);</span><br><span class="line"></span><br><span class="line">DataStream&lt;Event&gt; lateStream &#x3D; result.getSideOutput(lateTag);</span><br></pre></td></tr></table></figure>
+
+<p>我们还可以指定 允许的延迟(allowed lateness) 的间隔,在这个间隔时间内,延迟的事件将会继续分配给窗口(同时状态会被保留),默认状态下,每个延迟事件都会导致窗口函数被再次调用(有时也称之为 late firing ).</p>
+<p>默认情况下,允许的延迟为 0.<br>换句话说,watermark 之后的元素将被丢弃(或发送到侧输出流).<br>举例说明:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">stream.</span><br><span class="line">    .keyBy(...)</span><br><span class="line">    .window(...)</span><br><span class="line">    .allowedLateness(Time.seconds(10))</span><br><span class="line">    .process(...);</span><br></pre></td></tr></table></figure>
+
+<p>当允许的延迟大于零时,只有那些超过最大无序边界以至于会被丢弃的事件才会被发送到侧输出流(如果已配置).</p>
+<h3 id="深入了解窗口操作"><a href="#深入了解窗口操作" class="headerlink" title="深入了解窗口操作"></a>深入了解窗口操作</h3><h4 id="滑动窗口是通过复制来实现的"><a href="#滑动窗口是通过复制来实现的" class="headerlink" title="滑动窗口是通过复制来实现的"></a>滑动窗口是通过复制来实现的</h4><p>滑动窗口分配器可以创建许多窗口对象,并将每个事件复制到每个相关的窗口中.<br>例如,如果您每隔 15 分钟就有 24 小时的滑动窗口,则每个事件将被复制到 4 * 24 = 96 个窗口中.</p>
+<h4 id="时间窗口会和时间对齐"><a href="#时间窗口会和时间对齐" class="headerlink" title="时间窗口会和时间对齐"></a>时间窗口会和时间对齐</h4><p>仅仅因为我们使用的是一个小时的处理时间窗口并在 12:05 开始运行您的应用程序,并不意味着第一个窗口将在 1:05 关闭.<br>第一个窗口将长 55 分钟,并在 1:00 关闭.</p>
+<p>请注意,滑动窗口和滚动窗口分配器所采用的 offset 参数可用于改变窗口的对齐方式.</p>
+<h4 id="window-后面可以接-window"><a href="#window-后面可以接-window" class="headerlink" title="window 后面可以接 window"></a>window 后面可以接 window</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">stream</span><br><span class="line">    .keyBy(t -&gt; t.key)</span><br><span class="line">    .window(&lt;window assigner&gt;)</span><br><span class="line">    .reduce(&lt;reduce function&gt;)</span><br><span class="line">    .windowAll(&lt;same window assigner&gt;)</span><br><span class="line">    .reduce(&lt;same reduce function&gt;);</span><br></pre></td></tr></table></figure>
+
+<p>可能我们会猜测以 Flink 的能力,想要做到这样看起来是可行的(前提是你使用的是 ReduceFunction 或 AggregateFunction ),但不是.</p>
+<p>之所以可行,是因为时间窗口产生的事件是根据窗口结束时的时间分配时间戳的.<br>例如,一个小时小时的窗口所产生的所有事件都将带有标记一个小时结束的时间戳.<br>后面的窗口内的数据消费和前面的流产生的数据是一致的.</p>
+<h4 id="空的时间窗口不会输出结果"><a href="#空的时间窗口不会输出结果" class="headerlink" title="空的时间窗口不会输出结果"></a>空的时间窗口不会输出结果</h4><p>事件会触发窗口的创建.<br>换句话说,如果在特定的窗口内没有事件,就不会有窗口,就不会有输出结果.</p>
+<h4 id="Late-Events-Can-Cause-Late-Merges"><a href="#Late-Events-Can-Cause-Late-Merges" class="headerlink" title="Late Events Can Cause Late Merges"></a>Late Events Can Cause Late Merges</h4><p>会话窗口的实现是基于窗口的一个抽象能力,窗口可以 聚合.<br>会话窗口中的每个数据在初始被消费时,都会被分配一个新的窗口,但是如果窗口之间的间隔足够小,多个窗口就会被聚合.<br>延迟事件可以弥合两个先前分开的会话间隔,从而产生一个虽然有延迟但是更加准确地结果.</p>
+<h2 id="事件驱动应用"><a href="#事件驱动应用" class="headerlink" title="事件驱动应用"></a>事件驱动应用</h2><h3 id="处理函数-Process-Functions"><a href="#处理函数-Process-Functions" class="headerlink" title="处理函数(Process Functions)"></a>处理函数(Process Functions)</h3><p>ProcessFunction 将事件处理与 Timer,State 结合在一起,使其成为流处理应用的强大构建模块.<br>这是使用 Flink 创建事件驱动应用程序的基础.<br>它和 RichFlatMapFunction 十分相似, 但是增加了 Timer.</p>
+<h3 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; 计算每个司机每小时的小费总和</span><br><span class="line">DataStream&lt;Tuple3&lt;Long, Long, Float&gt;&gt; hourlyTips &#x3D; fares</span><br><span class="line">        .keyBy((TaxiFare fare) -&gt; fare.driverId)</span><br><span class="line">        .window(TumblingEventTimeWindows.of(Time.hours(1)))</span><br><span class="line">        .process(new AddTips());</span><br></pre></td></tr></table></figure>
+
+<p>使用 KeyedProcessFunction 去实现相同的操作更加直接且更有学习意义.<br>让我们开始用以下代码替换上面的代码:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; 计算每个司机每小时的小费总和</span><br><span class="line">DataStream&lt;Tuple3&lt;Long, Long, Float&gt;&gt; hourlyTips &#x3D; fares</span><br><span class="line">        .keyBy((TaxiFare fare) -&gt; fare.driverId)</span><br><span class="line">        .process(new PseudoWindow(Time.hours(1)));</span><br></pre></td></tr></table></figure>
+
+<p>在这个代码片段中,一个名为 PseudoWindow 的 KeyedProcessFunction 被应用于 KeyedStream, 其结果是一个 <code>DataStream&lt;Tuple3&lt;Long, Long, Float&gt;&gt;</code> (与使用 Flink 内置时间窗口的实现生成的流相同).</p>
+<p>PseudoWindow 的总体轮廓示意如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; 在时长跨度为一小时的窗口中计算每个司机的小费总和.</span><br><span class="line">&#x2F;&#x2F; 司机ID作为 key.</span><br><span class="line"></span><br><span class="line">public static class PseudoWindow extends </span><br><span class="line">        KeyedProcessFunction&lt;Long, TaxiFare, Tuple3&lt;Long, Long, Float&gt;&gt; &#123;</span><br><span class="line"></span><br><span class="line">    private final long durationMsec;</span><br><span class="line"></span><br><span class="line">    public PseudoWindow(Time duration) &#123;</span><br><span class="line">        this.durationMsec &#x3D; duration.toMilliseconds();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    &#x2F;&#x2F; 在初始化期间调用一次.</span><br><span class="line"></span><br><span class="line">    public void open(Configuration conf) &#123;</span><br><span class="line">        . . .</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    &#x2F;&#x2F; 每个票价事件(TaxiFare-Event)输入(到达)时调用,以处理输入的票价事件.</span><br><span class="line"></span><br><span class="line">    public void processElement(</span><br><span class="line">            TaxiFare fare,</span><br><span class="line">            Context ctx,</span><br><span class="line">            Collector&lt;Tuple3&lt;Long, Long, Float&gt;&gt; out) throws Exception &#123;</span><br><span class="line"></span><br><span class="line">        . . .</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    &#x2F;&#x2F; 当当前水印(watermark)表明窗口现在需要完成的时候调用.</span><br><span class="line"></span><br><span class="line">    public void onTimer(long timestamp, </span><br><span class="line">            OnTimerContext context, </span><br><span class="line">            Collector&lt;Tuple3&lt;Long, Long, Float&gt;&gt; out) throws Exception &#123;</span><br><span class="line"></span><br><span class="line">        . . .</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意事项</p>
+</blockquote>
+<ol>
+<li><p>有几种类型的 ProcessFunctions,不仅包括 KeyedProcessFunction,还包括 CoProcessFunctions/BroadcastProcessFunctions 等.</p>
+</li>
+<li><p>KeyedProcessFunction 是一种 RichFunction.<br>作为 RichFunction,它可以访问使用 Managed Keyed State 所需的 open 和 getRuntimeContext 方法.</p>
+</li>
+<li><p>有两个回调方法须要实现: processElement 和 onTimer.<br>每个输入事件都会调用 processElement 方法.<br>当计时器触发时调用 onTimer.<br>它们可以是基于事件时间(event time)的 timer,也可以是基于处理时间(processing time)的 timer.<br>除此之外,processElement 和 onTimer 都提供了一个上下文对象,该对象可用于与 TimerService 交互.<br>这两个回调还传递了一个可用于发出结果的 Collector.</p>
+</li>
+</ol>
+<h4 id="open-方法"><a href="#open-方法" class="headerlink" title="open() 方法"></a>open() 方法</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; 每个窗口都持有托管的 Keyed state 的入口,并且根据窗口的结束时间执行 keyed 策略.</span><br><span class="line">&#x2F;&#x2F; 每个司机都有一个单独的MapState对象.</span><br><span class="line"></span><br><span class="line">private transient MapState&lt;Long, Float&gt; sumOfTips;</span><br><span class="line"></span><br><span class="line">@Override</span><br><span class="line">public void open(Configuration conf) &#123;</span><br><span class="line"></span><br><span class="line">    MapStateDescriptor&lt;Long, Float&gt; sumDesc &#x3D;</span><br><span class="line">            new MapStateDescriptor&lt;&gt;(&quot;sumOfTips&quot;, Long.class, Float.class);</span><br><span class="line">    sumOfTips &#x3D; getRuntimeContext().getMapState(sumDesc);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由于票价事件(fare-event)可能会乱序到达,有时需要在计算输出前一个小时结果前,处理下一个小时的事件.<br>这样能够保证&quot;乱序造成的延迟数据&quot;得到正确处理(放到前一个小时中).<br>实际上,如果 Watermark 延迟比窗口长度长得多,则可能有多个窗口同时打开,而不仅仅是两个.<br>此实现通过使用 MapState 来支持处理这一点,该 MapState 将每个窗口的结束时间戳映射到该窗口的小费总和.</p>
+<h4 id="processElement-方法"><a href="#processElement-方法" class="headerlink" title="processElement() 方法"></a>processElement() 方法</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">public void processElement(</span><br><span class="line">        TaxiFare fare,</span><br><span class="line">        Context ctx,</span><br><span class="line">        Collector&lt;Tuple3&lt;Long, Long, Float&gt;&gt; out) throws Exception &#123;</span><br><span class="line"></span><br><span class="line">    long eventTime &#x3D; fare.getEventTime();</span><br><span class="line">    TimerService timerService &#x3D; ctx.timerService();</span><br><span class="line"></span><br><span class="line">    if (eventTime &lt;&#x3D; timerService.currentWatermark()) &#123;</span><br><span class="line">        &#x2F;&#x2F; 事件延迟.</span><br><span class="line">        其对应的窗口已经触发.</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        &#x2F;&#x2F; 将 eventTime 向上取值并将结果赋值到包含当前事件的窗口的末尾时间点.</span><br><span class="line">        long endOfWindow &#x3D; (eventTime - (eventTime % durationMsec) + durationMsec - 1);</span><br><span class="line"></span><br><span class="line">        &#x2F;&#x2F; 在窗口完成时将启用回调</span><br><span class="line">        timerService.registerEventTimeTimer(endOfWindow);</span><br><span class="line"></span><br><span class="line">        &#x2F;&#x2F; 将此票价的小费添加到该窗口的总计中.</span><br><span class="line">        Float sum &#x3D; sumOfTips.get(endOfWindow);</span><br><span class="line">        if (sum &#x3D;&#x3D; null) &#123;</span><br><span class="line">            sum &#x3D; 0.0F;</span><br><span class="line">        &#125;</span><br><span class="line">        sum +&#x3D; fare.tip;</span><br><span class="line">        sumOfTips.put(endOfWindow, sum);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>需要考虑的事项</p>
+</blockquote>
+<ol>
+<li><p>延迟的事件怎么处理?watermark 后面的事件(即延迟的)正在被删除.<br>如果你想做一些比这更高级的操作,可以考虑使用旁路输出(Side outputs),这将在下一节中解释.</p>
+</li>
+<li><p>本例使用一个 MapState,其中 keys 是时间戳(timestamp),并为同一时间戳设置一个 Timer.<br>这是一种常见的模式.<br>它使得在 Timer 触发时查找相关信息变得简单高效.</p>
+</li>
+</ol>
+<h4 id="onTimer-方法"><a href="#onTimer-方法" class="headerlink" title="onTimer() 方法"></a>onTimer() 方法</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">public void onTimer(</span><br><span class="line">        long timestamp, </span><br><span class="line">        OnTimerContext context, </span><br><span class="line">        Collector&lt;Tuple3&lt;Long, Long, Float&gt;&gt; out) throws Exception &#123;</span><br><span class="line"></span><br><span class="line">    long driverId &#x3D; context.getCurrentKey();</span><br><span class="line">    &#x2F;&#x2F; 查找刚结束的一小时结果.</span><br><span class="line">    Float sumOfTips &#x3D; this.sumOfTips.get(timestamp);</span><br><span class="line"></span><br><span class="line">    Tuple3&lt;Long, Long, Float&gt; result &#x3D; Tuple3.of(driverId, timestamp, sumOfTips);</span><br><span class="line">    out.collect(result);</span><br><span class="line">    this.sumOfTips.remove(timestamp);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意</p>
+</blockquote>
+<ol>
+<li>传递给 onTimer 的 OnTimerContext context 可用于确定当前 key.</li>
+<li>我们的 pseudo-windows 在当前 Watermark 到达每小时结束时触发,此时调用 onTimer.<br>这个 onTimer 方法从 sumOfTips 中删除相关的条目,这样做的效果是不可能容纳延迟的事件.<br>这相当于在使用 Flink 的时间窗口时将 allowedLateness 设置为0.</li>
+</ol>
+<h4 id="性能考虑"><a href="#性能考虑" class="headerlink" title="性能考虑"></a>性能考虑</h4><p>Flink 提供了为 RocksDB 优化的 MapState 和 ListState 类型.<br>相对于 ValueState,更建议使用 MapState 和 ListState,因为使用 RocksDBStateBackend 的情况下, MapState 和 ListState 比 ValueState 性能更好.<br>RocksDBStateBackend 可以附加到 ListState,而无需进行(反)序列化, 对于 MapState,每个 key/value 都是一个单独的 RocksDB 对象,因此可以有效地访问和更新 MapState.</p>
+<h3 id="旁路输出-Side-Outputs"><a href="#旁路输出-Side-Outputs" class="headerlink" title="旁路输出(Side Outputs)"></a>旁路输出(Side Outputs)</h3><ol>
+<li>异常情况(exceptions)</li>
+<li>格式错误的事件(malformed events)</li>
+<li>延迟的事件(late events)</li>
+<li>operator 告警(operational alerts),如与外部服务的连接超时</li>
+</ol>
+<p>旁路输出(Side outputs)是一种方便的方法.<br>除了错误报告之外,旁路输出也是实现流的 n 路分割的好方法.</p>
+<h4 id="示例-2"><a href="#示例-2" class="headerlink" title="示例"></a>示例</h4><p>现在你可以对上一节中忽略的延迟事件执行某些操作.</p>
+<p>Side output channel 与 <code>OutputTag&lt;T&gt;</code> 相关联.<br>这些标记拥有自己的名称,并与对应 DataStream 类型一致.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">private static final OutputTag&lt;TaxiFare&gt; lateFares &#x3D; new OutputTag&lt;TaxiFare&gt;(&quot;lateFares&quot;) &#123;&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>上面显示的是一个静态 <code>OutputTag&lt;TaxiFare&gt;</code> ,当在 PseudoWindow 的 processElement 方法中发出延迟事件时,可以引用它:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">if (eventTime &lt;&#x3D; timerService.currentWatermark()) &#123;</span><br><span class="line">    &#x2F;&#x2F; 事件延迟,其对应的窗口已经触发.</span><br><span class="line">    ctx.output(lateFares, fare);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    . . .</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以及当在作业的 main 中从该旁路输出访问流时:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; 计算每个司机每小时的小费总和</span><br><span class="line">SingleOutputStreamOperator hourlyTips &#x3D; fares</span><br><span class="line">        .keyBy((TaxiFare fare) -&gt; fare.driverId)</span><br><span class="line">        .process(new PseudoWindow(Time.hours(1)));</span><br><span class="line"></span><br><span class="line">hourlyTips.getSideOutput(lateFares).print();</span><br></pre></td></tr></table></figure>
+
+<p>或者,可以使用两个同名的 OutputTag 来引用同一个旁路输出,但如果这样做,它们必须具有相同的类型.</p>
+<h2 id="通过状态快照实现容错处理"><a href="#通过状态快照实现容错处理" class="headerlink" title="通过状态快照实现容错处理"></a>通过状态快照实现容错处理</h2><h3 id="State-Backends"><a href="#State-Backends" class="headerlink" title="State Backends"></a>State Backends</h3><p>由 Flink 管理的 keyed state 是一种分片的键/值存储,每个 keyed state 的工作副本都保存在负责该键的 taskmanager 本地中.<br>另外,Operator state 也保存在机器节点本地.<br>Flink 定期获取所有状态的快照,并将这些快照复制到持久化的位置,例如分布式文件系统.</p>
+<p>如果发生故障,Flink 可以恢复应用程序的完整状态并继续处理,就如同没有出现过异常.</p>
+<p>Flink 管理的状态存储在 state backend 中.<br>Flink 有两种 state backend 的实现:<br>一种基于 RocksDB 内嵌 key/value 存储将其工作状态保存在磁盘上的,<br>另一种基于堆的 state backend,将其工作状态保存在 Java 的堆内存中.<br>这种基于堆的 state backend 有两种类型:<br><code>FsStateBackend</code>,将其状态快照持久化到分布式文件系统.<br><code>MemoryStateBackend</code>,它使用 JobManager 的堆保存状态快照.</p>
+<img src="/images/flgl28.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>当使用基于堆的 state backend 保存状态时,访问和更新涉及在堆上读写对象.<br>但是对于保存在 RocksDBStateBackend 中的对象,访问和更新涉及序列化和反序列化,所以会有更大的开销.<br>但 RocksDB 的状态量仅受本地磁盘大小的限制.<br>还要注意,只有 RocksDBStateBackend 能够进行增量快照,这对于具有大量变化缓慢状态的应用程序来说是大有裨益的.</p>
+<p>所有这些 state backends 都能够异步执行快照,这意味着它们可以在不妨碍正在进行的流处理的情况下执行快照.</p>
+<h3 id="状态快照"><a href="#状态快照" class="headerlink" title="状态快照"></a>状态快照</h3><h4 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h4><ol>
+<li><p>快照<br>是 Flink 作业状态全局一致镜像的通用术语.<br>快照包括指向每个数据源的指针(例如,到文件或 Kafka 分区的偏移量)以及每个作业的有状态运算符的状态副本,该状态副本是处理了 sources 偏移位置之前所有的事件后而生成的状态.</p>
+</li>
+<li><p>Checkpoint<br>一种由 Flink 自动执行的快照,其目的是能够从故障中恢复.<br>Checkpoints 可以是增量的,并为快速恢复进行了优化.</p>
+</li>
+<li><p>外部化的 Checkpoint<br>通常 checkpoints 不会被用户操纵.<br>Flink 只保留作业运行时的最近的 n 个 checkpoints(n 可配置),并在作业取消时删除它们.<br>但你可以将它们配置为保留,在这种情况下,你可以手动从中恢复.</p>
+</li>
+<li><p>Savepoint<br>用户出于某种操作目的(例如有状态的重新部署/升级/缩放操作)手动(或 API 调用)触发的快照.<br>Savepoints 始终是完整的,并且已针对操作灵活性进行了优化.</p>
+</li>
+</ol>
+<h4 id="状态快照如何工作"><a href="#状态快照如何工作" class="headerlink" title="状态快照如何工作?"></a>状态快照如何工作?</h4><p>Flink 使用 Chandy-Lamport algorithm 算法的一种变体,称为异步 barrier 快照(asynchronous barrier snapshotting).</p>
+<p>当 checkpoint coordinator(job manager 的一部分)指示 task manager 开始 checkpoint 时,它会让所有 sources 记录它们的偏移量,并将编号的 checkpoint barriers 插入到它们的流中.<br>这些 barriers 流经 job graph,标注每个 checkpoint 前后的流部分.</p>
+<img src="/images/flgl29.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>Checkpoint n 将包含每个 operator 的 state,这些 state 是对应的 operator 消费了严格在 checkpoint barrier n 之前的所有事件,并且不包含在此(checkpoint barrier n)后的任何事件后而生成的状态.</p>
+<p>当 job graph 中的每个 operator 接收到 barriers 时,它就会记录下其状态.<br>拥有两个输入流的 Operators(例如 CoProcessFunction)会执行 barrier 对齐(barrier alignment) 以便当前快照能够包含消费两个输入流 barrier 之前(但不超过)的所有 events 而产生的状态.</p>
+<img src="/images/flgl30.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>Flink 的 state backends 利用写时复制(copy-on-write)机制允许当异步生成旧版本的状态快照时,能够不受影响地继续流处理.<br>只有当快照被持久保存后,这些旧版本的状态才会被当做垃圾回收.</p>
+<h4 id="确保精确一次-exactly-once"><a href="#确保精确一次-exactly-once" class="headerlink" title="确保精确一次(exactly once)"></a>确保精确一次(exactly once)</h4><p>当流处理应用程序发生错误的时候,结果可能会产生丢失或者重复.<br>Flink 根据你为应用程序和集群的配置,可以产生以下结果:</p>
+<ol>
+<li>Flink 不会从快照中进行恢复(at most once)</li>
+<li>没有任何丢失,但是你可能会得到重复冗余的结果(at least once)</li>
+<li>没有丢失或冗余重复(exactly once)</li>
+</ol>
+<p>Flink 通过回退和重新发送 source 数据流从故障中恢复,当理想情况被描述为精确一次时,这并不意味着每个事件都将被精确一次处理.<br>相反,这意味着 每一个事件都会影响 Flink 管理的状态精确一次.</p>
+<p>Barrier 只有在需要提供精确一次的语义保证时需要进行对齐(Barrier alignment).<br>如果不需要这种语义,可以通过配置 CheckpointingMode.AT_LEAST_ONCE 关闭 Barrier 对齐来提高性能.</p>
+<h4 id="端到端精确一次"><a href="#端到端精确一次" class="headerlink" title="端到端精确一次"></a>端到端精确一次</h4><p>为了实现端到端的精确一次,以便 sources 中的每个事件都仅精确一次对 sinks 生效,必须满足以下条件:</p>
+<ol>
+<li>你的 sources 必须是可重放的</li>
+<li>你的 sinks 必须是事务性的(或幂等的)</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/flink/" rel="tag"># flink</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/19/flink%E6%A6%82%E5%BF%B5%E9%80%8F%E6%9E%90/" rel="prev" title="flink概念透析">
+                  <i class="fa fa-chevron-left"></i> flink概念透析
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/19/flink%20datastream%20api/" rel="next" title="flink datastream api">
+                  flink datastream api <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

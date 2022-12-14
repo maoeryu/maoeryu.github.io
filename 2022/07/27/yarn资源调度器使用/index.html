@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="应用对Yarn资源的请求应该立刻得到满足,但现实情况资源往往是有限的,特别是在一个很繁忙的集群,一个应用资源的请求经常需要等待一段时间才能的到相应的资源.在Yarn中,负责给应用分配资源的就是Scheduler. Yarn中有三种调度器可以选择:FIFO SchedulerCapacity SchedulerFair Scheduler">
+<meta property="og:type" content="article">
+<meta property="og:title" content="yarn资源调度器使用">
+<meta property="og:url" content="https://maoeryu.github.io/2022/07/27/yarn%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6%E5%99%A8%E4%BD%BF%E7%94%A8/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="应用对Yarn资源的请求应该立刻得到满足,但现实情况资源往往是有限的,特别是在一个很繁忙的集群,一个应用资源的请求经常需要等待一段时间才能的到相应的资源.在Yarn中,负责给应用分配资源的就是Scheduler. Yarn中有三种调度器可以选择:FIFO SchedulerCapacity SchedulerFair Scheduler">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/yarn1.png">
+<meta property="article:published_time" content="2022-07-26T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-08T02:15:10.655Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hadoop">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/yarn1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/07/27/yarn%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6%E5%99%A8%E4%BD%BF%E7%94%A8/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>yarn资源调度器使用 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#FIFO"><span class="nav-number">1.</span> <span class="nav-text">FIFO</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Fair-%E5%85%AC%E5%B9%B3%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="nav-number">2.</span> <span class="nav-text">Fair(公平调度器)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Capacity-%E5%AE%B9%E5%99%A8%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="nav-number">3.</span> <span class="nav-text">Capacity(容器调度器)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">3.1.</span> <span class="nav-text">配置</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/07/27/yarn%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6%E5%99%A8%E4%BD%BF%E7%94%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          yarn资源调度器使用
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-07-27 00:00:00" itemprop="dateCreated datePublished" datetime="2022-07-27T00:00:00+08:00">2022-07-27</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-08 10:15:10" itemprop="dateModified" datetime="2022-09-08T10:15:10+08:00">2022-09-08</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>应用对Yarn资源的请求应该立刻得到满足,但现实情况资源往往是有限的,特别是在一个很繁忙的集群,一个应用资源的请求经常需要等待一段时间才能的到相应的资源.<br>在Yarn中,负责给应用分配资源的就是Scheduler.</p>
+<p>Yarn中有三种调度器可以选择:<br>FIFO Scheduler<br>Capacity Scheduler<br>Fair Scheduler</p>
+<span id="more"></span>
+
+<h3 id="FIFO"><a href="#FIFO" class="headerlink" title="FIFO"></a>FIFO</h3><p>FIFO Scheduler把应用按提交的顺序排成一个队列,这是一个先进先出队列,在进行资源分配的时候,先给队列中最头上的应用进行分配资源,待最头上的应用需求满足后再给下一个分配,以此类推.</p>
+<p>FIFO Scheduler是最简单也是最容易理解的调度器,也不需要任何配置,但它并不适用于共享集群.<br>大的应用可能会占用所有集群资源,这就导致其它应用被阻塞.<br>在共享集群中,更适合采用Capacity Scheduler或Fair Scheduler,这两个调度器都允许大任务和小任务在提交的同时获得一定的系统资源.</p>
+<p>调度器的使用是通过yarn-site.xml配置文件中的<code>yarn.resourcemanager.scheduler.class</code>参数进行配置的,默认采用Capacity Scheduler调度器.<br>如果要使用Fair调度器,需要在这个参数上配置FairScheduler类的全限定名:<br><code>org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler</code></p>
+<p>配置文件位于类路径下的fair-scheduler.xml文件中,这个路径可以通过<code>yarn.scheduler.fair.allocation.file</code>属性进行修改.<br>若没有这个配置文件,调度器会在用户提交第一个应用时为其自动创建一个队列,队列的名字就是用户名,所有的应用都会被分配到相应的用户队列中.</p>
+<h3 id="Fair-公平调度器"><a href="#Fair-公平调度器" class="headerlink" title="Fair(公平调度器)"></a>Fair(公平调度器)</h3><p>不需要预先占用一定的系统资源,Fair调度器会为所有运行的job动态的调整系统资源.<br>当第一个大job提交时,只有这一个job在运行,此时它获得了所有集群资源.<br>当第二个小任务提交后,Fair调度器会分配一半资源给这个小任务,让这两个任务公平的共享集群资源.</p>
+<h3 id="Capacity-容器调度器"><a href="#Capacity-容器调度器" class="headerlink" title="Capacity(容器调度器)"></a>Capacity(容器调度器)</h3><p>默认调度器,通过为每个组织分配专门的队列,然后再为每个队列分配一定的集群资源,这样整个集群就可以通过设置多个队列的方式给多个组织提供服务了.<br>除此之外,队列内部又可以垂直划分,这样一个组织内部的多个成员就可以共享这个队列资源了,在一个队列内部,资源的调度是采用的是先进先出(FIFO)策略.</p>
+<p>在正常的操作中,Capacity调度器不会强制释放Container,当一个队列资源不够用时,这个队列只能获得其它队列释放后的Container资源.<br>可以为队列设置一个最大资源使用量,以免这个队列过多的占用空闲资源,导致其它队列无法使用这些空闲资源,这就是&quot;弹性队列&quot;需要权衡的地方.</p>
+<h4 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h4><p>Capacity调度器的配置文件,文件名为capacity-scheduler.xml.<br>在这个配置中,在root队列下面定义了两个子队列prod和dev,分别占40%和60%的容量.<br>一个队列的配置是通过属性yarn.sheduler.capacity..指定的,代表的是队列的继承树,如root.prod队列,一般指capacity和maximum-capacity.</p>
+<blockquote>
+<p>资源分配相关参数</p>
+</blockquote>
+<p>capacity:<br>队列的资源容量(百分比).<br>当系统非常繁忙时,应保证每个队列的容量得到满足,而如果每个队列应用程序较少,可将剩余资源共享给其他队列.<br>注意,所有队列的容量之和应小于100.</p>
+<p>maximum-capacity:<br>队列的资源使用上限(百分比).<br>由于存在资源共享,因此一个队列使用的资源量可能超过其容量,而最多使用资源量可通过该参数限制.</p>
+<p>minimum-user-limit-percent:<br>每个用户最低资源保障(百分比).<br>任何时刻,一个队列中每个用户可使用的资源量均有一定的限制.<br>当一个队列中同时运行多个用户的应用程序时中,每个用户的使用资源量在一个最小值和最大值之间浮动,其中,最小值取决于正在运行的应用程序数目,而最大值则由minimum-user-limit-percent决定.<br>比如,假设minimum-user-limit-percent为25,当两个用户向该队列提交应用程序时,每个用户可使用资源量不能超过50%,如果三个用户提交应用程序,则每个用户可使用资源量不能超多33%,如果四个或者更多用户提交应用程序,则每个用户可用资源量不能超过25%.</p>
+<p>user-limit-factor:<br>每个用户最多可使用的资源量(百分比).<br>比如,假设该值为30,则任何时刻,每个用户使用的资源量不能超过该队列容量的30%.</p>
+<blockquote>
+<p>限制应用程序数目相关参数</p>
+</blockquote>
+<p>maximum-applications:<br>集群或者队列中同时处于等待和运行状态的应用程序数目上限,这是一个强限制,一旦集群中应用程序数目超过该上限,后续提交的应用程序将被拒绝,默认值为10000.<br>所有队列的数目上限可通过参数yarn.scheduler.capacity.maximum-applications设置,而单个队列可通过参数<code>yarn.scheduler.capacity.&lt;queue-path&gt;.maximum-applications</code>设置适合自己的值.</p>
+<p>maximum-am-resource-percent:<br>集群中用于运行应用程序ApplicationMaster的资源比例上限,该参数通常用于限制处于活动状态的应用程序数目.<br>该参数类型为浮点型,默认是0.1,表示10%.<br>所有队列的ApplicationMaster资源比例上限可通过参数yarn.scheduler.capacity.maximum-am-resource-percent设置,而单个队列可通过参数<code>yarn.scheduler.capacity.&lt;queue-path&gt;.maximum-am-resource-percent</code>设置适合自己的值.</p>
+<blockquote>
+<p>队列访问和权限控制参数</p>
+</blockquote>
+<p>state:<br>队列状态可以为STOPPED或者RUNNING,如果一个队列处于STOPPED状态,用户不可以将应用程序提交到该队列或者它的子队列中,类似的,如果ROOT队列处于STOPPED状态,用户不可以向集群中提交应用程序,但正在运行的应用程序仍可以正常运行结束,以便队列可以优雅地退出.</p>
+<p>acl_submit_applications:<br>限定哪些Linux用户/用户组可向给定队列中提交应用程序.<br>需要注意的是,该属性具有继承性,即如果一个用户可以向某个队列中提交应用程序,则它可以向它的所有子队列中提交应用程序.配置该属性时,用户之间或用户组之间用&quot;,&quot;分割,用户和用户组之间用空格分割,比如&quot;user1,user2 group1,group2&quot;.</p>
+<p>acl_administer_queue:<br>为队列指定一个管理员,该管理员可控制该队列的所有应用程序,比如杀死任意一个应用程序等.<br>同样,该属性具有继承性,如果一个用户可以向某个队列中提交应用程序,则它可以向它的所有子队列中提交应用程序.</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span></span><br><span class="line"><span class="meta">&lt;?xml-stylesheet type=&quot;text/xsl&quot; href=&quot;configuration.xsl&quot;?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.scheduler.capacity.root.queues<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>prod,dev<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.scheduler.capacity.root.prod.capacity<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>40<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.scheduler.capacity.root.dev.capacity<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>60<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.scheduler.capacity.root.prod.maximum-capacity<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>80<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.scheduler.capacity.root.dev.maximum-capacity<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>75<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.scheduler.capacity.root.dev.queues<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>test1,test2<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.scheduler.capacity.root.dev.test1.capacity<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>50<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.scheduler.capacity.root.dev.test2.capacity<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>50<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.scheduler.capacity.maximum-am-resource-percent<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>0.80<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.scheduler.capacity.root.dev.user-limit-factor<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>1.0<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>dev队列又被分成了test1和test2两个相同容量的子队列.<br>dev的maximum-capacity属性被设置成了75%,所以即使prod队列完全空闲dev也不会占用全部集群资源,prod队列仍有25%的可用资源用来应急.<br>teset1和test2两个队列没有设置maximum-capacity属性,也就是说test1或test2队列中的job可能会用到整个dev队列的所有资源(最多为集群的75%).<br>而类似的,prod由于没有设置maximum-capacity属性,它有可能会占用集群全部资源.</p>
+<p>Capacity容器除了可以配置队列及其容量外,还可以配置一个用户或应用可以分配的最大资源数量/可以同时运行多少应用/队列的ACL认证等.</p>
+<p>可以通过<code>mapreduce.job.queuename</code>属性指定要用的队列.<br>如果队列不存在,在提交任务时就会收到错误.<br>如果没有定义任何队列,所有的应用将会放在一个default队列中.</p>
+<p>对于Capacity调度器,队列名必须是队列树中的最后一部分,如果使用队列树则不会被识别.<br>比如,在上面配置中,使用prod和test1作为队列名是可以的,但是如果用root.dev.test1或者dev.test1是无效的.</p>
+<img src="/images/yarn1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+
+
+
+
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hadoop/" rel="tag"># hadoop</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/07/26/datax%E8%B0%83%E8%AF%95/" rel="prev" title="datax调试">
+                  <i class="fa fa-chevron-left"></i> datax调试
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/07/27/yarn%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/" rel="next" title="yarn模块介绍">
+                  yarn模块介绍 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

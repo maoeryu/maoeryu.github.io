@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="概述Kafka是最初由Linkedin公司开发,是一个分布式&#x2F;分区的&#x2F;多副本的&#x2F;多订阅者,基于zookeeper协调的分布式日志系统(也可以当做MQ系统),常见可以用于web&#x2F;nginx日志&#x2F;访问日志,消息服务等. Broker:消息中间件处理结点,一个Kafka节点就是一个broker,多个broker可以组成一个Kafka集群. Topic:一类消息,例如page view日志&#x2F;click日志">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kafka文件存储机制">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/08/kafka%E6%96%87%E4%BB%B6%E5%AD%98%E5%82%A8%E6%9C%BA%E5%88%B6/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="概述Kafka是最初由Linkedin公司开发,是一个分布式&#x2F;分区的&#x2F;多副本的&#x2F;多订阅者,基于zookeeper协调的分布式日志系统(也可以当做MQ系统),常见可以用于web&#x2F;nginx日志&#x2F;访问日志,消息服务等. Broker:消息中间件处理结点,一个Kafka节点就是一个broker,多个broker可以组成一个Kafka集群. Topic:一类消息,例如page view日志&#x2F;click日志">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafkaf1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafkaf2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafkaf3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafkaf4.png">
+<meta property="article:published_time" content="2022-08-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-06T06:32:19.087Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="kafka">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/kafkaf1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/08/kafka%E6%96%87%E4%BB%B6%E5%AD%98%E5%82%A8%E6%9C%BA%E5%88%B6/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>kafka文件存储机制 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#topic%E4%B8%ADpartition%E5%AD%98%E5%82%A8%E5%88%86%E5%B8%83"><span class="nav-number">1.1.</span> <span class="nav-text">topic中partition存储分布</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#partiton%E4%B8%AD%E6%96%87%E4%BB%B6%E5%AD%98%E5%82%A8%E6%96%B9%E5%BC%8F"><span class="nav-number">1.2.</span> <span class="nav-text">partiton中文件存储方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#partiton%E4%B8%ADsegment%E6%96%87%E4%BB%B6%E5%AD%98%E5%82%A8%E7%BB%93%E6%9E%84"><span class="nav-number">1.3.</span> <span class="nav-text">partiton中segment文件存储结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%A8partition%E4%B8%AD%E5%A6%82%E4%BD%95%E9%80%9A%E8%BF%87offset%E6%9F%A5%E6%89%BEmessage"><span class="nav-number">1.4.</span> <span class="nav-text">在partition中如何通过offset查找message</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E5%AD%98%E5%82%A8%E6%9C%BA%E5%88%B6"><span class="nav-number">2.</span> <span class="nav-text">文件存储机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99message"><span class="nav-number">2.1.</span> <span class="nav-text">写message</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%BBmessage"><span class="nav-number">2.2.</span> <span class="nav-text">读message</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Kafka%E9%AB%98%E6%95%88%E6%96%87%E4%BB%B6%E5%AD%98%E5%82%A8%E8%AE%BE%E8%AE%A1%E7%89%B9%E7%82%B9"><span class="nav-number">2.3.</span> <span class="nav-text">Kafka高效文件存储设计特点</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/08/kafka%E6%96%87%E4%BB%B6%E5%AD%98%E5%82%A8%E6%9C%BA%E5%88%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          kafka文件存储机制
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-08 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-08T00:00:00+08:00">2022-08-08</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-06 14:32:19" itemprop="dateModified" datetime="2022-09-06T14:32:19+08:00">2022-09-06</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>Kafka是最初由Linkedin公司开发,是一个分布式/分区的/多副本的/多订阅者,基于zookeeper协调的分布式日志系统(也可以当做MQ系统),常见可以用于web/nginx日志/访问日志,消息服务等.</p>
+<p>Broker:<br>消息中间件处理结点,一个Kafka节点就是一个broker,多个broker可以组成一个Kafka集群.</p>
+<p>Topic:<br>一类消息,例如page view日志/click日志等都可以以topic的形式存在,Kafka集群能够同时负责多个topic的分发.</p>
+<p>Partition:<br>topic物理上的分组,一个topic可以分为多个partition,每个partition是一个有序的队列.</p>
+<p>Segment:<br>partition物理上由多个segment组成.</p>
+<p>offset:<br>每个partition都由一系列有序的/不可变的消息组成,这些消息被连续的追加到partition中.<br>partition中的每个消息都有一个连续的序列号叫做offset,用于partition唯一标识一条消息.</p>
+<span id="more"></span>
+<h3 id="topic中partition存储分布"><a href="#topic中partition存储分布" class="headerlink" title="topic中partition存储分布"></a>topic中partition存储分布</h3><p>假设Kafka集群只有一个broker,logs为数据文件存储根目录,在Kafka broker中server.properties文件配置(参数log.dirs=/opt/kafka/logs),创建1个topic名称test, partitions数量5,存储路径和目录规则为:logs</p>
+<img src="/images/kafkaf1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>在Kafka文件存储中,同一个topic下有多个不同partition,每个partition为一个目录,partiton命名规则为topic名称+有序序号,第一个partiton序号从0开始,序号最大值为partitions数量减1.</p>
+<h3 id="partiton中文件存储方式"><a href="#partiton中文件存储方式" class="headerlink" title="partiton中文件存储方式"></a>partiton中文件存储方式</h3><p>每个partion(目录)相当于一个巨型文件被平均分配到多个大小相等segment(段)数据文件中.<br>但每个段segment file消息数量不一定相等,这种特性方便old segment file快速被删除.<br>每个partiton只需要支持顺序读写就行了,segment文件生命周期由服务端配置参数决定.<br>这样做的好处就是能快速删除无用文件,有效提高磁盘利用率</p>
+<h3 id="partiton中segment文件存储结构"><a href="#partiton中segment文件存储结构" class="headerlink" title="partiton中segment文件存储结构"></a>partiton中segment文件存储结构</h3><p>segment file组成:<br>由2大部分组成,分别为index file和data file,此2个文件一一对应,成对出现,后缀&quot;.index&quot;和&quot;.log&quot;分别表示为segment索引文件/数据文件.</p>
+<p>segment文件命名规则:<br>partion全局的第一个segment从0开始,后续每个segment文件名为上一个segment文件最后一条消息的offset值.<br>数值最大为64位long大小,19位数字字符长度,没有数字用0填充.</p>
+<blockquote>
+<p>创建一个topic xx1包含1 partition,设置每个segment大小为500MB,并启动producer向Kafka broker写入大量数据,如下图所示segment文件列表形象说明了上述2个规则.</p>
+</blockquote>
+<img src="/images/kafkaf2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>以上述图中一对segment file文件为例,说明segment中index&lt;&gt;data file对应关系物理结构如下:</p>
+<img src="/images/kafkaf3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>上述图中索引文件存储大量元数据,数据文件存储大量消息,索引文件中元数据指向对应数据文件中message的物理偏移地址. 其中以索引文件中元数据3,497为例,依次在数据文件中表示第3个message(在全局partiton表示第368772个message)/以及该消息的物理偏移地址为497.</p>
+<p>从上述图了解到segment data file由许多message组成,下面详细说明message物理结构如下:</p>
+<img src="/images/kafkaf4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<table>
+<thead>
+<tr>
+<th>关键字</th>
+<th>解释说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>8 byte offset</td>
+<td>在parition(分区)内的每条消息都有一个有序的id号,这个id号被称为偏移(offset),</br>它可以唯一确定每条消息在parition(分区)内的位置.即offset表示partiion的第多少message</td>
+</tr>
+<tr>
+<td>4 byte message size</td>
+<td>message大小</td>
+</tr>
+<tr>
+<td>4 byte CRC32</td>
+<td>用crc32校验message</td>
+</tr>
+<tr>
+<td>1 byte &quot;magic&quot;</td>
+<td>表示本次发布Kafka服务程序协议版本号</td>
+</tr>
+<tr>
+<td>1 byte &quot;attributes&quot;</td>
+<td>表示为独立版本/或标识压缩类型/或编码类型.</td>
+</tr>
+<tr>
+<td>4 byte key length</td>
+<td>表示key的长度,当key为-1时,K byte key字段不填</td>
+</tr>
+<tr>
+<td>K byte key</td>
+<td>可选</td>
+</tr>
+<tr>
+<td>value bytes payload</td>
+<td>表示实际消息数据.</td>
+</tr>
+</tbody></table>
+<h3 id="在partition中如何通过offset查找message"><a href="#在partition中如何通过offset查找message" class="headerlink" title="在partition中如何通过offset查找message"></a>在partition中如何通过offset查找message</h3><p>例如读取offset=368776的message,需要通过下面2个步骤查找.</p>
+<p>1)查找segment file 上述图为例,其中00000000000000000000.index表示最开始的文件,起始偏移量(offset)为0.<br>第二个文件00000000000000368769.index的消息量起始偏移量为368770 = 368769 + 1.<br>同样,第三个文件00000000000000737337.index的起始偏移量为737338=737337 + 1,其他后续文件依次类推.<br>以起始偏移量命名并排序这些文件,只要根据offset <strong>二分查找</strong>文件列表,就可以快速定位到具体文件. 当offset=368776时定位到00000000000000368769.index|log</p>
+<p>2)通过segment file查找message通过第一步定位到segment file,当offset=368776时,依次定位到00000000000000368769.index的元数据物理位置和00000000000000368769.log的物理偏移地址,然后再通过00000000000000368769.log顺序查找直到offset=368776为止.</p>
+<p>从上述图可知这样做的优点,segment index file采取稀疏索引存储方式,它减少索引文件大小,通过map可以直接内存操作,稀疏索引为数据文件的每个对应message设置一个元数据指针,它比稠密索引节省了更多的存储空间,但查找起来需要消耗更多的时间.</p>
+<h2 id="文件存储机制"><a href="#文件存储机制" class="headerlink" title="文件存储机制"></a>文件存储机制</h2><p>Kafka运行时很少有大量读磁盘的操作,主要是定期批量写磁盘操作,因此操作磁盘很高效.这跟Kafka文件存储中读写message的设计是息息相关的.<br>Kafka中读写message有如下特点:</p>
+<h3 id="写message"><a href="#写message" class="headerlink" title="写message"></a>写message</h3><p>消息从java堆转入page cache(即物理内存).<br>由异步线程刷盘,消息从page cache刷入磁盘.</p>
+<h3 id="读message"><a href="#读message" class="headerlink" title="读message"></a>读message</h3><p>消息直接从page cache转入socket发送出去.<br>当从page cache没有找到相应数据时,此时会产生磁盘IO,从磁 盘Load消息到page cache,然后直接从socket发出去.</p>
+<h3 id="Kafka高效文件存储设计特点"><a href="#Kafka高效文件存储设计特点" class="headerlink" title="Kafka高效文件存储设计特点"></a>Kafka高效文件存储设计特点</h3><p>Kafka把topic中一个parition大文件分成多个小文件段,通过多个小文件段,就容易定期清除或删除已经消费完文件,减少磁盘占用.<br>通过索引信息可以快速定位message和确定response的最大大小.<br>通过index元数据全部映射到memory,可以避免segment file的IO磁盘操作.<br>通过索引文件稀疏存储,可以大幅降低index文件元数据占用空间大小.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/kafka/" rel="tag"># kafka</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/05/%E4%BB%8E%E5%88%86%E5%B8%83%E5%BC%8F%E4%B8%80%E8%87%B4%E6%80%A7%E8%B0%88%E5%88%B0cap-base%E7%90%86%E8%AE%BA/" rel="prev" title="从分布式一致性谈到cap-base理论">
+                  <i class="fa fa-chevron-left"></i> 从分布式一致性谈到cap-base理论
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/08/kafka%E7%9A%84%E9%9B%B6%E6%8B%B7%E8%B4%9D%E6%8A%80%E6%9C%AF/" rel="next" title="kafka的零拷贝技术">
+                  kafka的零拷贝技术 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

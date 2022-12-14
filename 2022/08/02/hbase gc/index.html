@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="Java GC概述JVM模块Java GC(Garbage Collection,垃圾收集,垃圾回收)机制主要负责3件事:1)确定哪些内存需要回收.2)确定什么时候需要执行GC.3)如何执行GC.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hbase gc">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/02/hbase%20gc/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="Java GC概述JVM模块Java GC(Garbage Collection,垃圾收集,垃圾回收)机制主要负责3件事:1)确定哪些内存需要回收.2)确定什么时候需要执行GC.3)如何执行GC.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbgc1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbgc2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbgc6.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbgc5.png">
+<meta property="article:published_time" content="2022-08-01T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-09T06:29:45.045Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hbase">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/hbgc1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/02/hbase%20gc/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hbase gc | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Java-GC%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">Java GC概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#JVM%E6%A8%A1%E5%9D%97"><span class="nav-number">1.1.</span> <span class="nav-text">JVM模块</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E4%BB%A3GC"><span class="nav-number">1.2.</span> <span class="nav-text">分代GC</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81GC%E7%AD%96%E7%95%A5"><span class="nav-number">1.3.</span> <span class="nav-text">常见GC策略</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B0%E7%94%9F%E4%BB%A3%E6%94%B6%E9%9B%86%E5%99%A8"><span class="nav-number">1.3.1.</span> <span class="nav-text">新生代收集器</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Serial%E6%94%B6%E9%9B%86%E5%99%A8"><span class="nav-number">1.3.1.1.</span> <span class="nav-text">Serial收集器</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#ParNew%E6%94%B6%E9%9B%86%E5%99%A8"><span class="nav-number">1.3.1.2.</span> <span class="nav-text">ParNew收集器</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#ParallelScavenge-%E6%94%B6%E9%9B%86%E5%99%A8"><span class="nav-number">1.3.1.3.</span> <span class="nav-text">ParallelScavenge 收集器</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%80%81%E5%B9%B4%E4%BB%A3%E6%94%B6%E9%9B%86%E5%99%A8"><span class="nav-number">1.3.2.</span> <span class="nav-text">老年代收集器</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Serial-Old%E6%94%B6%E9%9B%86%E5%99%A8"><span class="nav-number">1.3.2.1.</span> <span class="nav-text">Serial Old收集器</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Parallel-Old%E6%94%B6%E9%9B%86%E5%99%A8"><span class="nav-number">1.3.2.2.</span> <span class="nav-text">Parallel Old收集器</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#CMS-Concurrent-Mark-Sweep-%E6%94%B6%E9%9B%86%E5%99%A8"><span class="nav-number">1.3.2.3.</span> <span class="nav-text">CMS(Concurrent Mark Sweep)收集器</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#G1%E6%94%B6%E9%9B%86%E5%99%A8"><span class="nav-number">1.3.2.4.</span> <span class="nav-text">G1收集器</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CMS-GC%E5%BC%82%E5%B8%B8"><span class="nav-number">1.4.</span> <span class="nav-text">CMS GC异常</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Concurrent-Failure"><span class="nav-number">1.4.1.</span> <span class="nav-text">Concurrent Failure</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Promotion-Failure"><span class="nav-number">1.4.2.</span> <span class="nav-text">Promotion Failure</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81JVM%E5%8F%82%E6%95%B0"><span class="nav-number">1.5.</span> <span class="nav-text">常见JVM参数</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A0%87%E5%87%86%E5%8F%82%E6%95%B0"><span class="nav-number">1.5.1.</span> <span class="nav-text">标准参数(-)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9D%9E%E6%A0%87%E5%87%86%E5%8F%82%E6%95%B0-X"><span class="nav-number">1.5.2.</span> <span class="nav-text">非标准参数(-X)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9D%9EStable%E5%8F%82%E6%95%B0-XX"><span class="nav-number">1.5.3.</span> <span class="nav-text">非Stable参数(-XX)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GC%E6%97%A5%E5%BF%97"><span class="nav-number">1.6.</span> <span class="nav-text">GC日志</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ParNew-GC%E6%97%A5%E5%BF%97"><span class="nav-number">1.6.1.</span> <span class="nav-text">ParNew GC日志</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CMS-GC%E6%97%A5%E5%BF%97"><span class="nav-number">1.6.2.</span> <span class="nav-text">CMS GC日志</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#promotionfailed%E6%97%A5%E5%BF%97%E6%A0%BC%E5%BC%8F"><span class="nav-number">1.6.3.</span> <span class="nav-text">promotionfailed日志格式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#concurrent-modefailure%E6%97%A5%E5%BF%97%E6%A0%BC%E5%BC%8F"><span class="nav-number">1.6.4.</span> <span class="nav-text">concurrent modefailure日志格式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Full-GC%E6%97%A5%E5%BF%97%E6%A0%BC%E5%BC%8F"><span class="nav-number">1.6.5.</span> <span class="nav-text">Full GC日志格式</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#hbase-gc"><span class="nav-number">2.</span> <span class="nav-text">hbase gc</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#MemStore-GC%E4%BC%98%E5%8C%96"><span class="nav-number">2.1.</span> <span class="nav-text">MemStore GC优化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Thread-Local-Allocation-Buffer"><span class="nav-number">2.1.1.</span> <span class="nav-text">Thread-Local Allocation Buffer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MemStore-Chunk-Pool"><span class="nav-number">2.1.2.</span> <span class="nav-text">MemStore Chunk Pool</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BlockCache%E4%BC%98%E5%8C%96"><span class="nav-number">2.2.</span> <span class="nav-text">BlockCache优化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#BucketCache%E6%96%B9%E6%A1%88"><span class="nav-number">2.2.1.</span> <span class="nav-text">BucketCache方案</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MSLAB"><span class="nav-number">2.3.</span> <span class="nav-text">MSLAB</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CMS%E5%8F%82%E6%95%B0"><span class="nav-number">2.4.</span> <span class="nav-text">CMS参数</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8E%9F%E6%9C%89%E5%8F%82%E6%95%B0"><span class="nav-number">2.4.1.</span> <span class="nav-text">原有参数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B0%E5%A2%9E"><span class="nav-number">2.4.2.</span> <span class="nav-text">新增</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/02/hbase%20gc/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hbase gc
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-02 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-02T00:00:00+08:00">2022-08-02</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-09 14:29:45" itemprop="dateModified" datetime="2022-09-09T14:29:45+08:00">2022-09-09</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="Java-GC概述"><a href="#Java-GC概述" class="headerlink" title="Java GC概述"></a>Java GC概述</h2><h3 id="JVM模块"><a href="#JVM模块" class="headerlink" title="JVM模块"></a>JVM模块</h3><p>Java GC(Garbage Collection,垃圾收集,垃圾回收)机制主要负责3件事:<br>1)确定哪些内存需要回收.<br>2)确定什么时候需要执行GC.<br>3)如何执行GC.</p>
+<span id="more"></span>
+<p>该机制对JVM(Java Virtual Machine)中的内存进行标记,并确定哪些内存需要回收.<br>然后,根据一定的回收策略,自动的回收内存,永不停息(Nerver Stop)的保证JVM中的内存空间,防止出现内存泄露和溢出问题.</p>
+<p>1)程序计数器<br>每个线程有一个独立的程序计数器,记录下一条要运行的指令.<br>如果执行的是JAVA方法,计数器记录正在执行的java字节码地址,如果执行的是native方法,则计数器为空.</p>
+<p>2)虚拟机栈<br>线程私有的,与线程在同一时间创建.<br>管理JAVA方法执行的内存模型.<br>每个方法执行时都会创建一个桢栈来存储方法的私有变量/操作数栈/动态链接方法/返回值/返回地址等信息.<br>栈的大小决定了方法调用的可达深度(递归多少层次,或嵌套调用多少层,-Xss参数可以设置虚拟机栈大小).<br>栈的大小可以是固定的,或者是动态扩展的.<br>如果栈的深度是固定的,请求的栈深度大于最大可用深度,则抛出<strong>StackOverflowError</strong>.<br>如果栈是可动态扩展的,但没有内存空间支持扩展,则抛出<strong>OutOfMemoryError</strong>.</p>
+<p>3)本地方法区<br>和虚拟机栈功能相似,但管理的不是JAVA方法,是本地方法,本地方法是用C实现的.</p>
+<p>4)JAVA堆<br><strong>线程共享的</strong>,存放所有对象实例和数组.<br>垃圾回收的主要区域.</p>
+<p>5)方法区<br><strong>线程共享的</strong>,用于存放被虚拟机加载的类的元数据信息:如常量/静态变量/即时编译器编译后的代码,也称为永久代.<br>如果hotspot虚拟机确定一个类的定义信息不会被使用,也会将其回收.<br>回收的基本条件至少有:所有该类的实例被回收,而且装载该类的ClassLoader被回收.</p>
+<h3 id="分代GC"><a href="#分代GC" class="headerlink" title="分代GC"></a>分代GC</h3><p>Java GC建立在这样一个假设基础上的:<br>大多数内存对象要么生存周期比较短,很快就会没人引用,比如处理RPC请求的buffer可能只会生存几微秒.<br>要么生存周期比较长,比如Block Cache中的热点Block,可能就会生存几分钟,甚至更长时间.</p>
+<p>基于这样的事实,JVM将整个堆内存分为两个部分:<br>新生代(young generation)<br>老生代(tenured generation).</p>
+<p>除此之外,JVM还有一个非堆内存区(Perm区),主要存放class信息以及其他meta元信息,内存结构如下图所示:</p>
+<img src="/images/hbgc1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>其中Young区又分为Eden区和两个Survivor区(S0和S1).<br>一个内存对象在创建之后,首先会为其在新生代申请一块内存空间,如果这个对象在新生代存活了很长时间,会将其迁移到老生代.<br>在大多数对延迟敏感的业务场景下(比如HBase),建议使用如下JVM参数,<code>-XX:+UseParNewGC和XX:+UseConcMarkSweepGC</code>,其中前者表示对新生代执行并行的垃圾回收机制,而后者表示对老生代执行并行标记-清除垃圾回收机制.<br>可见,JVM允许针对不同内存区执行不同的GC策略.</p>
+<p>大部分对象在Young区创建,很快就不可达,发生在该区域的GC称为minor GC.<br>Young区中存活下来的对象被拷贝(Promotion)到Old区,该区GC频率较低,发生在该区的GC称为major GC(full GC). </p>
+<p>绝大多数刚创建的对象会被分配在Eden区,其中的大多数对象很快就会消亡.<br>Eden区是连续的内存空间,因此在其上分配内存极快.</p>
+<p>Minor GC过程如下:<br>当Eden区满的时候,执行MinorGC,将消亡的对象清理掉,并将剩余的对象复制到一个存活区Survivor0(此时,Survivor1是空白的,两个Survivor总有一个是空白的).<br>此后,每次Eden区满了,就执行一次Minor GC,并将剩余的对象都添加到Survivor0.<br>当Survivor0也满的时候,将其中仍然活着的对象直接复制到Survivor1,以后Eden区执行Minor GC后,就将剩余的对象添加Survivor1(此时,Survivor0是空白的).<br>当两个存活区切换了几次(HotSpot虚拟机默认15次,用-XX:MaxTenuringThreshold控制,大于该值将对象提升到老年代)之后,仍然存活的对象,将被复制到老年代.</p>
+<p>年老代(Old Generation):<br>对象如果在年轻代存活了足够长的时间而没有被清理掉(即在几次Young GC后存活了下来),则会被复制到年老代.<br>年老代的空间一般比年轻代大,能存放更多的对象,在年老代上发生的GC次数也比年轻代少.<br>当年老代内存不足时,将执行Major GC(或Full GC).<br>可以使用<code>-XX:+UseAdaptiveSizePolicy</code>开关来控制是否采用动态控制策略,如果动态控制,则动态调整Java堆中各个区域的大小以及进入老年代的年龄.<br>如果对象比较大(比如长字符串或大数组),Young空间不足,则较大的对象会直接分配到老年代上.<br>用<code>-XX:PretenureSizeThreshold</code>来控制直接升入老年代的对象大小,大于这个值的对象会直接分配在老年代上.</p>
+<p>永久代的回收有两种:<br>1)常量池中的常量,无用的类信息,常量的回收很简单,没有引用了就可以被回收.<br>2)对于无用的类进行回收,必须保证3点:<br>类的所有实例都已经被回收;<br>加载类的ClassLoader已经被回收;<br>类对象的Class对象没有被引用(即没有通过反射引用该类的地方).</p>
+<h3 id="常见GC策略"><a href="#常见GC策略" class="headerlink" title="常见GC策略"></a>常见GC策略</h3><p>1)标记-清除算法(Mark-Sweep)<br>从根节点开始标记所有可达对象,其余没标记的即为垃圾对象,执行清除,但回收后的空间是不连续的.</p>
+<p>2)复制算法(copying)<br>将内存分成两块,每次只使用其中一块,垃圾回收时,将标记的对象拷贝到另外一块中,然后完全清除原来使用的那块内存.<br>复制后的空间是连续的.<br>复制算法适用于新生代,因为垃圾对象多于存活对象,复制算法更高效.</p>
+<p>3)标记-压缩算法(Mark-compact)<br>适合用于老年代的算法(存活对象多于垃圾对象).<br>标记后不复制,而是将存活对象压缩到内存的一端,然后清理边界外的所有对象.</p>
+<p>目前java中可作为GC Root的对象有:<br>虚拟机栈中引用的对象(本地变量表).<br>方法区中静态属性引用的对象.<br>方法区中常量引用的对象.<br>本地方法栈中引用的对象(Native对象).</p>
+<h4 id="新生代收集器"><a href="#新生代收集器" class="headerlink" title="新生代收集器"></a>新生代收集器</h4><h5 id="Serial收集器"><a href="#Serial收集器" class="headerlink" title="Serial收集器"></a>Serial收集器</h5><p>新生代收集器,使用停止复制算法,使用一个线程进行GC,其它工作线程暂停.<br>使用<code>-XX:+UseSerialGC</code>可以使用Serial+Serial Old模式运行进行内存回收(这也是虚拟机在Client模式下运行的默认值).</p>
+<h5 id="ParNew收集器"><a href="#ParNew收集器" class="headerlink" title="ParNew收集器"></a>ParNew收集器</h5><p>新生代收集器,使用停止复制算法,Serial收集器的多线程版,用多个线程进行GC,其它工作线程暂停,关注缩短垃圾收集时间.<br>使用<code>-XX:+UseParNewGC</code>开关来控制使用ParNew+Serial Old收集器组合收集内存.<br>使用<code>-XX:ParallelGCThreads</code>来设置执行内存回收的线程数.</p>
+<p>对象初始化之后会被放入Young区,更具体的话应该是Eden区,当Eden区满了之后,会进行一次GC.<br>GC算法会检查所有对象的引用情况,如果某个对象还有被引用,表示该对象存活.<br>检查完成之后,会将这些存活的对象移到S0区,并且回收整个Eden区空间,称为一次Minor GC.<br>接着新对象进来,又会放入Eden区,满了之后会检查S0和Eden区存活的对象,将所有存活的对象移到S1区,再回收整个S0和Eden区空间.<br>很容易理解,S0和S1两个区总会有一个区是预留给下次存放存活对象用的.</p>
+<p>整个过程可以使用如下图示:</p>
+<img src="/images/hbgc2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>1)算法会执行&#39;stop-the-world&#39;暂停,但时间非常短.<br>因为Young区通常会设置的比较小(一般不建议不超过512M),而且JVM会启动大量线程并发执行,一次Minor GC一般都会在几毫秒内完成.</p>
+<p>2)不会产生碎片,每次GC之后都会将存活的对象放入连续的空间(S0或S1).</p>
+<p>内存中所有对象都会维护一个计数器,每次Minor GC移动一个对象之后,都会为这个对象的计数器加一.<br>当计数器增加到一定阈值之后,算法就会认为该对象生命周期很长,会将其移入老生代.<br>该阈值可以通过JVM参数<code>XX:MaxTenuringThreshold</code>指定.</p>
+<h5 id="ParallelScavenge-收集器"><a href="#ParallelScavenge-收集器" class="headerlink" title="ParallelScavenge 收集器"></a>ParallelScavenge 收集器</h5><p>新生代收集器,使用停止复制算法,关注CPU吞吐量,即运行用户代码的时间/总时间,比如JVM运行100分钟,其中运行用户代码99分钟,垃 圾收集1分钟,则吞吐量是99%,这种收集器能最高效率的利用CPU,适合运行后台运算(关注缩短垃圾收集时间的收集器,如CMS,等待时间很少,所以适合用户交互,提高用户体验).<br>使用<code>-XX:+UseParallelGC</code>开关控制使用Parallel Scavenge+Serial Old收集器组合回收垃圾(这也是在Server模式下的默认值).<br>使用<code>-XX:GCTimeRatio</code>来设置用户执行时间占总时间的比例,默认99,即1%的时间用来进行垃圾回收.<br>使用<code>-XX:MaxGCPauseMillis</code>设置GC的最大停顿时间(这个参数只对Parallel Scavenge有效).</p>
+<h4 id="老年代收集器"><a href="#老年代收集器" class="headerlink" title="老年代收集器"></a>老年代收集器</h4><h5 id="Serial-Old收集器"><a href="#Serial-Old收集器" class="headerlink" title="Serial Old收集器"></a>Serial Old收集器</h5><p>老年代收集器,单线程收集器,使用标记整理算法,使用单线程进行GC,其它工作线程暂停(注意,在老年代中进行标 记整理算法清理,也需要暂停其它线程),在JDK1.5之前,Serial Old收集器与ParallelScavenge搭配使用.</p>
+<p>整理的方法是Sweep(清理)和Compact(压缩).<br>清理是将废弃的对象干掉,只留幸存的对象.<br>压缩是将移动对象,将空间填满保证内存分为2块,一块全是对象,一块空闲.</p>
+<h5 id="Parallel-Old收集器"><a href="#Parallel-Old收集器" class="headerlink" title="Parallel Old收集器"></a>Parallel Old收集器</h5><p>老年代收集器,多线程,多线程机制与Parallel Scavenge差不错,使用标记整理(与Serial Old不同,这里的整理是Summary(汇总)和Compact(压缩),汇总的意思就是将幸存的对象复制到预先准备好的区域,而不是像Sweep(清理)那样清理废弃的对象)算法,在Parallel Old执行时,仍然需要暂停其它线程.<br>Parallel Old在多核计算中很有用.<br>Parallel Old出现后(JDK 1.6),与Parallel Scavenge配合有很好的效果,充分体现Parallel Scavenge收集器吞吐量优先的效果.<br>使用<code>-XX:+UseParallelOldGC</code>开关控制使用Parallel Scavenge +Parallel Old组合收集器进行收集.</p>
+<h5 id="CMS-Concurrent-Mark-Sweep-收集器"><a href="#CMS-Concurrent-Mark-Sweep-收集器" class="headerlink" title="CMS(Concurrent Mark Sweep)收集器"></a>CMS(Concurrent Mark Sweep)收集器</h5><p>老年代收集器,致力于获取最短回收停顿时间,使用标记清除算法,多线程,优点是并发收集(用户线程可以和GC线程同时工作),停顿小.<br>使用<code>-XX:+UseConcMarkSweepGC</code>进行ParNew+CMS+Serial Old进行内存回收.<br>优先使用ParNew+CMS,当用户线程内存不足时,采用备用方案Serial Old收集.</p>
+<p>每次执行Minor GC之后,都会有部分生命周期较长的对象被移入老生代,一段时间之后,老生代空间也会被占满.<br>此时就需要针对老生代空间执行GC操作,此处我们介绍Concurrent Mark-Sweep(CMS)算法.<br>CMS算法整个流程分为6个阶段,其中部分阶段会执行&#39;stop-the-world&#39;暂停,部分阶段会和应用线程一起并发执行:</p>
+<p>1)initial-mark<br>这个阶段虚拟机会暂停所有正在执行的任务.<br>这一过程虚拟机会标记所有&#39;根对象&#39;,所谓&#39;根对象&#39;,一般是指一个运行线程直接引用到的对象.<br>虽然会暂停整个JVM,但因为&#39;根对象&#39;相对较少,这个过程通常很快.</p>
+<p>2)concurrent mark<br>垃圾回收器会从&#39;根节点&#39;开始,将所有引用到的对象都打上标记.<br>这个阶段应用程序的线程和标记线程并发执行,因此用户并不会感到停顿.</p>
+<p>3)concurrent precleaning<br>并发预清理阶段仍然是并发的.<br>在这个阶段,虚拟机查找在执行mark阶段新进入老年代的对象(可能会有一些对象从新生代晋升到老年代,或者有一些对象被分配到老年代).</p>
+<p>4)remark<br>在阶段3的基础上对查找到的对象进行重新标记,这一阶段会暂停整个JVM,但是因为阶段3已经欲检查出了所有新进入的对象,因此这个过程也会很快.</p>
+<p>5)concurrent sweep<br>上述3阶段完成了引用对象的标记,此阶段会将所有没有标记的对象作为垃圾回收掉.<br>这个阶段应用程序的线程和标记线程并发执行.</p>
+<p>6)concurrent reset<br>重置CMS收集器的数据结构,等待下一次垃圾回收.</p>
+<p>相应的,对于CMS算法,也需要关注两点:<br>1)&#39;stop-the-world&#39;暂停时间也很短暂,耗时较长的标记和清理都是并发执行的.<br>2)CMS算法在标记清理之后并没有重新压缩分配存活对象,因此整个老生代会产生很多的内存碎片.</p>
+<h5 id="G1收集器"><a href="#G1收集器" class="headerlink" title="G1收集器"></a>G1收集器</h5><p>JDK7开始支持,面向服务器的垃圾收集器,旨在取代CMS.</p>
+<h3 id="CMS-GC异常"><a href="#CMS-GC异常" class="headerlink" title="CMS GC异常"></a>CMS GC异常</h3><p>在正常的情况下CMS整个流程的暂停时间都是很短的,一般也就在10ms～100ms左右.<br>然而这与线上的情况并不相符,线上集群在读写压力很大的情况下,经常会出现长时间的卡顿,有些卡顿甚至长达几分钟,导致很严重的读写阻塞,甚至会造成Region Server和Zookeeper之间Session超时,使得Region Server异常离线.<br>对于采用CMS进行老年代GC的程序而言,尤其要注意GC日志中是否有<code>promotion failed</code>和<code>concurrent mode failure</code>两种状况,当这两种状况出现时可能会触发Serial Old GC(或Full GC).</p>
+<p>造成这些异常的原因主要有:<br>1)老年代内存不足,需要提前进行CMS.<br>2)老年代内存碎片化,需要进行压缩整理.</p>
+<h4 id="Concurrent-Failure"><a href="#Concurrent-Failure" class="headerlink" title="Concurrent Failure"></a>Concurrent Failure</h4><p>假如现在系统正在执行CMS回收老生代空间,在回收的过程中新生代来了一批对象进来,不巧的是,老生代已经没有空间再容纳这些对象了.<br>这种场景下,CMS回收器会停止继续工作,系统进入&#39;stop-the-world&#39;模式,并且回收算法会退化为单线程复制算法,重新分配整个堆内存的存活对象到S0中,释放所有其他空间.<br>很显然,整个过程会非常&#39;漫长&#39;.<br>但是这种问题也很容易解决,只需要让CMS回收器更早一点回收就可以避免.<br>JVM提供了参数<code>-XX:CMSInitiatingOccupancyFraction=N</code>来设置CMS回收的时机,其中N表示当前老生代已使用内存占新生代总内存的比例,该值默认为68,可以将该值修改的更小使得回收更早进行.</p>
+<h4 id="Promotion-Failure"><a href="#Promotion-Failure" class="headerlink" title="Promotion Failure"></a>Promotion Failure</h4><p>假设此时设置<code>-XX:CMSInitiatingOccupancyFraction＝60</code>,但是在已使用内存还没有达到总内存60%的时候,已经没有空间容纳从新生代迁移的对象了.<br>CMS算法会产生大量碎片,当碎片容量积累到一定大小之后就会造成上面的场景.<br>这种场景下,CMS回收器一样会停止工作,进入漫长的&#39;stop-the-world&#39;模式.<br>JVM也提供了参数<code>-XX:UseCMSCompactAtFullCollection</code>来减少碎片的产生,这个参数表示会在每次CMS回收垃圾之后执行一次碎片整理,很显然,这个参数会对性能有比较大的影响,对HBase这种对延迟敏感的业务来说并不是一个完美解决方案.</p>
+<h3 id="常见JVM参数"><a href="#常见JVM参数" class="headerlink" title="常见JVM参数"></a>常见JVM参数</h3><h4 id="标准参数"><a href="#标准参数" class="headerlink" title="标准参数(-)"></a>标准参数(-)</h4><p>所有的JVM实现都必须实现这些参数的功能,而且向后兼容.</p>
+<h4 id="非标准参数-X"><a href="#非标准参数-X" class="headerlink" title="非标准参数(-X)"></a>非标准参数(-X)</h4><p>默认jvm实现这些参数的功能,但是并不保证所有jvm实现都满足,且不保证向后兼容.</p>
+<p>-Xms:为Heap区域的初始值,线上环境建议与-Xmx设置为一致.<br>-Xmx:为Heap区域的最大值.<br>-Xmn1024k,-Xmn512m,-Xmn1g(-Xms,-Xmx也是种写法).</p>
+<h4 id="非Stable参数-XX"><a href="#非Stable参数-XX" class="headerlink" title="非Stable参数(-XX)"></a>非Stable参数(-XX)</h4><p>此类参数各个jvm实现会有所不同,将来可能会随时取消,需要慎重使用.</p>
+<p>1)<code>-XX:+&lt;option&gt;</code><br>启用选项</p>
+<p>2)<code>-XX:-&lt;option&gt;</code><br>不启用选项</p>
+<p>3)<code>-XX:&lt;option&gt;=&lt;number&gt;</code><br>给选项设置一个数字类型值,可跟单位,例如32k,1024m,2g</p>
+<p>4)<code>-XX:&lt;option&gt;=&lt;string&gt;</code><br>给选项设置一个字符串值,例如-XX:HeapDumpPath=./dump.core</p>
+<h3 id="GC日志"><a href="#GC日志" class="headerlink" title="GC日志"></a>GC日志</h3><p><code>-XX:+PrintGC</code>:输出GC日志<br><code>-XX:+PrintGCDetails</code>:输出GC的详细日志<br><code>-XX:+PrintGCTimeStamps</code>:输出GC的时间戳(以基准时间的形式)<br><code>-XX:+PrintGCDateStamps</code>:输出GC的时间戳(以日期的形式,2013-05-04T21:53:59.234+0800)<br><code>-XX:+PrintHeapAtGC</code>:在进行GC的前后打印出堆的信息<br><code>-Xloggc:../logs/gc.log</code>:日志文件的输出路径</p>
+<h4 id="ParNew-GC日志"><a href="#ParNew-GC日志" class="headerlink" title="ParNew GC日志"></a>ParNew GC日志</h4><p>[GC2016-03-25T02:35:26.074+0800:35289.315: [ParNew: 885174K-&gt;48101K(943744K), 0.0197790 secs]10343272K-&gt;9506199K(16672384K), 0.0199760 secs] [Times: user=0.27 sys=0.01,real=0.02 secs]</p>
+<p>[GC时间: JVM启动时间: [类型: GC前年轻代大小A-&gt; GC后年轻代大小B(年轻代总大小C), 耗时] GC前堆大小D-&gt;GC后堆大小E(堆的总大小F),GC总耗时] [Times: user=0.27 sys=0.01, real=0.02 secs]</p>
+<p>B是GC后存活的对象大小.<br>F-C老年代堆大小.<br>E-D此次GC释放内存大小.<br>(E-D)-(B-A)年轻态提升到老年代的大小.<br>(D-A)/(F-C)GC前老年代使用比例.<br>(E-B)/(F-C)GC后老年代使用比.</p>
+<h4 id="CMS-GC日志"><a href="#CMS-GC日志" class="headerlink" title="CMS GC日志"></a>CMS GC日志</h4><p>1)初始标记,暂停JVM<br>2016-01-15T12:58:23.597+0800: 4215.939:[GC [1 CMS-initial-mark: 11025382K(15728640K)] 11130602K(16672384K), 0.0848720secs] [Times: user=0.03 sys=0.05, real=0.09 secs]</p>
+<p>2)并发标记<br>2016-01-15T12:58:23.682+0800: 4216.024:[CMS-concurrent-mark-start]<br>2016-01-15T12:58:24.052+0800: 4216.393:[CMS-concurrent-mark: 0.369/0.369 secs] [Times: user=2.05 sys=0.04, real=0.37secs]</p>
+<p>3)并发预清理<br>2016-01-15T12:58:24.052+0800: 4216.393:[CMS-concurrent-preclean-start]<br>2016-01-15T12:58:24.091+0800: 4216.433:[CMS-concurrent-preclean: 0.039/0.039 secs] [Times: user=0.04 sys=0.00,real=0.04 secs]<br>2016-01-15T12:58:24.091+0800: 4216.433:[CMS-concurrent-abortable-preclean-start]</p>
+<p>4)重新标记,暂停JVM<br>CMS: abort preclean due to time2016-01-15T12:58:29.188+0800: 4221.530: [CMS-concurrent-abortable-preclean:5.094/5.097 secs] [Times: user=5.77 sys=0.18, real=5.09 secs]</p>
+<p>2016-01-15T12:58:29.189+0800: 4221.531:[GC[YG occupancy: 317194 K (943744 K)]2016-01-15T12:58:29.189+0800: 4221.531:[Rescan (parallel) , 0.0365570 secs]2016-01-15T12:58:29.226+0800: 4221.567:[weak refs processing, 0.0047560 secs]2016-01-15T12:58:29.231+0800: 4221.572:[scrub string table, 0.0006960 secs] [1 CMS-remark: 11025382K(15728640K)]11342577K(16672384K), 0.0425260 secs] [Times: user=0.57 sys=0.01, real=0.05secs]</p>
+<p>5)并发清除<br>2016-01-15T12:58:29.232+0800: 4221.574:[CMS-concurrent-sweep-start]<br>2016-01-15T12:58:30.903+0800: 4223.245:[CMS-concurrent-sweep: 1.666/1.671 secs] [Times: user=1.98 sys=0.06, real=1.67secs]</p>
+<p>6)并发重置<br>2016-01-15T12:58:30.903+0800: 4223.245:[CMS-concurrent-reset-start]<br>2016-01-15T12:58:30.959+0800: 4223.300:[CMS-concurrent-reset: 0.055/0.055 secs] [Times: user=0.03 sys=0.02, real=0.05secs]</p>
+<p>如果不发生异常,只需要关注初始标记和重新标记.</p>
+<h4 id="promotionfailed日志格式"><a href="#promotionfailed日志格式" class="headerlink" title="promotionfailed日志格式"></a>promotionfailed日志格式</h4><p>2016-01-29T00:09:17.127+0800: 1167669.469:[GC2016-01-29T00:09:17.127+0800: 1167669.469: [ParNew (promotion failed): 943655K-&gt;943655K(943744K), 0.1652200 secs]11986693K-&gt;12025719K(16672384K), 0.1655820 secs] [Times: user=0.99 sys=0.01,real=0.16 secs]</p>
+<h4 id="concurrent-modefailure日志格式"><a href="#concurrent-modefailure日志格式" class="headerlink" title="concurrent modefailure日志格式"></a>concurrent modefailure日志格式</h4><p>2016-01-18T08:49:18.984+0800: 248471.326:[GC2016-01-18T08:49:18.984+0800: 248471.326: [ParNew (promotion failed): 943734K-&gt;924083K(943744K), 0.1256890secs]2016-01-18T08:49:19.110+0800: 248471.452:[CMS2016-01-18T08:49:23.288+0800: 248475.629: [CMS-concurrent-sweep:4.197/4.347 secs] [Times: user=4.79 sys=0.02, real=4.35 secs]</p>
+<p>(concurrent mode failure):11272744K-&gt;8215769K(15728640K), 10.5375280 secs]12182463K-&gt;8215769K(16672384K), [CMS Perm : 45065K-&gt;45060K(131072K)],10.6635700 secs] [Times: user=10.95 sys=0.04, real=10.67 secs]</p>
+<h4 id="Full-GC日志格式"><a href="#Full-GC日志格式" class="headerlink" title="Full GC日志格式"></a>Full GC日志格式</h4><p>2016-01-29T00:09:17.293+0800: 1167669.635:[Full GC 2016-01-29T00:09:17.293+0800: 1167669.635:[CMS2016-01-29T00:09:17.456+0800: 1167669.798:</p>
+<p>[CMS-concurrent-abortable-preclean:0.447/0.637 secs] [Times: user=2.30 sys=0.19, real=0.64 secs]</p>
+<p>(concurrent mode failure):11082063K-&gt;7407560K(15728640K), 5.8053900 secs]12025719K-&gt;7407560K(16672384K), [CMS Perm : 45764K-&gt;45492K(131072K)],5.8056040 secs] [Times: user=5.75 sys=0.01, real=5.81 secs]</p>
+<p>这个不是promotion failed引起的,应该是有较大的对象直接在老年代分配失败造成的,很少出现该现象.</p>
+<img src="/images/hbgc6.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="hbase-gc"><a href="#hbase-gc" class="headerlink" title="hbase gc"></a>hbase gc</h2><h3 id="MemStore-GC优化"><a href="#MemStore-GC优化" class="headerlink" title="MemStore GC优化"></a>MemStore GC优化</h3><h4 id="Thread-Local-Allocation-Buffer"><a href="#Thread-Local-Allocation-Buffer" class="headerlink" title="Thread-Local Allocation Buffer"></a>Thread-Local Allocation Buffer</h4><p>HBase数据写入操作实际上并没有直接将数据写入磁盘,而是先写入内存并顺序写入HLog,之后等待满足某个特定条件后统一将内存中的数据刷新到磁盘.<br>一个RegionServer通常由多个Region组成,每张Region通常包含一张表的多个列族,而每个列族对应一块内存区域,这块内存被称为MemStore,很显然,一个RegionServer会由多个Region构成,一个Region会由多个MemStore构成.</p>
+<p>最原始的HBase版本存在很严重的内存碎片,经常会导致长时间的Full GC,其中最核心的问题就出在MemStore这里.<br>因为一个RegionServer由多个Region构成,不同Region的数据写入到对应Memstore,在JVM看来其实是混合在一起写入Heap的,此时假如Region1上对应的所有MemStore执行落盘操作.</p>
+<img src="/images/hbgc5.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>为了优化这种内存碎片可能导致的Full GC,HBase借鉴了Arena Allocation内存管理方式,它通过顺序化分配内存/内存数据分块等特性使得内存碎片更加粗粒度,有效改善Full GC情况.</p>
+<blockquote>
+<p>具体实现原理如下</p>
+</blockquote>
+<p>1)每个MemStore会实例化出来一个MemStoreLAB.<br>2)MemStoreLAB会申请一个2M大小的Chunk数组和一个Chunk偏移量,初始值为0.<br>3)当一个KeyValue值插入MemStore后,MemStoreLAB会首先通过KeyValue.getBuffer()取得data数组,并将data数组复制到Chunk数组中,之后再将Chunk偏移量往前移动data.length.</p>
+<p>4)如果当前Chunk满了之后,再调用new byte<code>[2 * 1024 * 1024]</code>申请一个新的Chunk.</p>
+<h4 id="MemStore-Chunk-Pool"><a href="#MemStore-Chunk-Pool" class="headerlink" title="MemStore Chunk Pool"></a>MemStore Chunk Pool</h4><p>然而一旦一个Chunk写满之后,系统就会重新申请一个新的Chunk,这些Chunk大部分都会经过多次YGC之后晋升到老生代,如果某个Chunk再没有被引用就会被JVM垃圾回收.<br>很显然,不断申请新的Chunk会导致YGC频率不断增多,YGC频率增加必然会导致晋升到老生代的Chunk增多,进而增加CMS GC发生的频率.<br>如果这些Chunk能够被循环利用,系统就不需要申请新的Chunk,这样就会使得YGC频率降低,晋升到老生代的Chunk就会减少,CMS GC发生的频率就会降低.<br>这就是MemStore Chunk Pool的核心思想,具体实现如下:</p>
+<p>1)系统会创建一个Chunk Pool来管理所有未被引用的chunks,这些chunk就不会再被JVM当作垃圾回收掉了.<br>2)如果一个Chunk没有再被引用,将其放入Chunk Pool.<br>3)如果当前Chunk Pool已经达到了容量最大值,就不会再接纳新的Chunk.<br>4)如果需要申请新的Chunk来存储KeyValue,首先从Chunk Pool中获取,如果能够获取得到就重复利用,如果为null就重新申请一个新的Chunk.</p>
+<h3 id="BlockCache优化"><a href="#BlockCache优化" class="headerlink" title="BlockCache优化"></a>BlockCache优化</h3><h4 id="BucketCache方案"><a href="#BucketCache方案" class="headerlink" title="BucketCache方案"></a>BucketCache方案</h4><p>BucketCache.<br>这种方案还是采用&quot;将小碎片整理为大碎片&quot;的思路,由程序在初始化的时候就申请了很多大小为2M的Bucket,数据Block的Get/Cache动作只是对这片空间的访问/覆写,CMS碎片会自然大大降低.</p>
+<h3 id="MSLAB"><a href="#MSLAB" class="headerlink" title="MSLAB"></a>MSLAB</h3><p>HBase内存回收策略CMS一定程度上降低了Stop时间,但却避免不了内存碎片的问题,HBase提供了以下几个参数,防止堆中产生过多碎片,大概思路也就是参考TLAB,叫做MSLAB(MemStore-Local Allocation Buffer).</p>
+<p>一个regionserver的内存里各个region的数据混合在一起,当某个region被flush到磁盘时,就会形成很多堆碎片.<br>其实这跟java中gc模型的假设是冲突的,同一时间创建的对象,会在同一时间消亡.<br>这个问题可以通过Arena Allocation来解决,即每次分配内存时都是在一个更大的叫做arena的内存区域分配.<br>一个典型的实现是TLAB,即每个线程维护自己的arena,每个线程用到的对象都在自己的arena区域分配.<br>其实,jvm早已经实现了TLAB,但是这个对于hbase不适用,因为hbase的regionserver使用一个单独的线程来处理所有region的请求,就算这个线程用arena方式分配还是会把所有region的数据混在一起.<br>因此hbase自己实现了MSLAB,即每个region的memStore自己实现了arena,使各个region的数据分开,就不会形成太细的碎片.<br>Arena里存放的是KeyValue对象,如果这些KeyValue对象是一样大的,不会导致严重碎片,相反这些KeyValue对象引用的字节数组才是引起碎片的主因,因此要做的就是把这些字节数组分配在一起.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">hbase.hregion.memstore.mslab.enabled&#x3D;true &#x2F;&#x2F; 默认true,开启MSALB</span><br><span class="line">hbase.hregion.memstore.mslab.chunksize&#x3D;2m &#x2F;&#x2F; chunk的大小,越大内存连续性越好,但内存平均利用率会降低</span><br><span class="line">hbase.hregion.memstore.mslab.max.allocation&#x3D;256K &#x2F;&#x2F; 通过MSLAB分配的对象不能超过256K,否则直接在Heap上分配,256K够大了</span><br><span class="line">RowKey设计</span><br></pre></td></tr></table></figure>
+
+<h3 id="CMS参数"><a href="#CMS参数" class="headerlink" title="CMS参数"></a>CMS参数</h3><h4 id="原有参数"><a href="#原有参数" class="headerlink" title="原有参数"></a>原有参数</h4><p><code>HBASE_HEAPSIZE</code>:16G<br><code>-XX:+UseConcMarkSweepGC</code>:设置年老代为并发收集<br><code>-Xmx16G -Xms16G</code>:-Xms/-Xmx相等以避免在GC后调整堆的大小.<br><code>-Xmn1G</code>:指定New Generation的大小,Yong区设置过大GC时间长.<br><code>-XX:PermSize=128M -XX:MaxPermSize=256M</code><br><code>-XX:SurvivorRatio=8</code>:设置堆内存年轻代中Eden区与Survivor区大小的比值 .设置为8,则两个Survivor区与Eden区的比值为2:8,每个Survivor区占整个年轻代的1/10. </p>
+<h4 id="新增"><a href="#新增" class="headerlink" title="新增"></a>新增</h4><p><code>-XX:CMSInitiatingOccupancyFraction=70</code>:表示年老代空间到70%时就开始执行CMS,确保年老代有足够的空间接纳来自年轻代的对象.<br><code>-XX:+UseCMSInitiatingOccupancyOnly</code>:使用CMSInitiatingOccupancyFraction的值作为old区的空间使用率限制来启动CMS垃圾回收.<br><code>-XX:+UseGCLogFileRotation-XX:NumberOfGCLogFiles=3 -XX:GCLogFileSize=128M</code>:GC日志rotate<br><code>-XX:+UseParNewGC</code>:设置年轻代为并发收集.可与CMS收集同时使用.JDK5.0以上,JVM会根据系统配置自行设置,所以无需再设置此值.<br><code>-XX:+CMSParallelRemarkEnabled</code>:并发标记,降低标记停顿,1.6以上默认true.<br><code>-XX:+UseCMSCompactAtFullCollection</code>:设置在FULL GC的时候,对年老代的压缩.CMS是不会移动内存的,因此这个非常容易产生碎片, 导致内存不够用.因此内存的压缩这个时候就会被启用.可能会影响性能,但是可以消除碎片.<br><code>-XX:CMSFullGCsBeforeCompaction=0</code>:指定进行多少次full GC之后,进行内存空间压缩,0是每次都会.</p>
+<blockquote>
+<p>依据</p>
+<p>CMS GC发生时剩余空间到达90%左右,极易发生promotion failed和concurrent mode failure,调整CMSInitiatingOccupancyFraction使CMS提前发生,给从年轻代提升的对象预留足够的空间.</p>
+<p>老年代使用70%时CMS正常发生时出现concurrent mode failure,或老年代空间足够时出现promotionfailed,判断是老年代碎片化严重导致,需要对老年代压缩整理.</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hbase/" rel="tag"># hbase</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/02/hbase%20memstore%20flush/" rel="prev" title="hbase memstore flush">
+                  <i class="fa fa-chevron-left"></i> hbase memstore flush
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/02/hbase%20blockcache/" rel="next" title="hbase blockcache">
+                  hbase blockcache <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

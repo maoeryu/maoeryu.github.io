@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="redis,可基于内存或持久化的日志型&#x2F;Key-Value数据库,通常被称为数据结构服务器,值(Value)类型有,字符串(String)哈希(Hash)列表(List)集合(Set)有序集合(Sorted Set)    优势  读写性能极高&#x2F;丰富的数据类型&#x2F;原子性操作&#x2F;支持publish&#x2F;subscribe&#x2F;通知&#x2F;key过期等.  与其它key-value存储不同点  数据类型属于基本数据结构">
+<meta property="og:type" content="article">
+<meta property="og:title" content="redis存储数据结构">
+<meta property="og:url" content="https://maoeryu.github.io/2021/02/22/redis%E5%AD%98%E5%82%A8%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="redis,可基于内存或持久化的日志型&#x2F;Key-Value数据库,通常被称为数据结构服务器,值(Value)类型有,字符串(String)哈希(Hash)列表(List)集合(Set)有序集合(Sorted Set)    优势  读写性能极高&#x2F;丰富的数据类型&#x2F;原子性操作&#x2F;支持publish&#x2F;subscribe&#x2F;通知&#x2F;key过期等.  与其它key-value存储不同点  数据类型属于基本数据结构">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/redis存储结构.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/redis_string.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/redis_hash.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/redis_list.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/redis_set.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/redis_sortset.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/redis_hyperloglog.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/redis_stream.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/redis_stream_2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/redis_geo.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/redis_内部编码.png">
+<meta property="article:published_time" content="2021-02-21T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-07-26T02:57:11.570Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="redis">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/redis存储结构.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/02/22/redis%E5%AD%98%E5%82%A8%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>redis存储数据结构 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">1.</span> <span class="nav-text">数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#string"><span class="nav-number">1.1.</span> <span class="nav-text">string</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hash"><span class="nav-number">1.2.</span> <span class="nav-text">hash</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#list"><span class="nav-number">1.3.</span> <span class="nav-text">list</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#set"><span class="nav-number">1.4.</span> <span class="nav-text">set</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sort-set"><span class="nav-number">1.5.</span> <span class="nav-text">sort set</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hyperloglog"><span class="nav-number">1.6.</span> <span class="nav-text">hyperloglog</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85"><span class="nav-number">1.7.</span> <span class="nav-text">发布订阅</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1"><span class="nav-number">1.8.</span> <span class="nav-text">事务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%A4%87%E4%BB%BD%E4%B8%8E%E6%81%A2%E5%A4%8D"><span class="nav-number">1.9.</span> <span class="nav-text">数据备份与恢复</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E5%85%A8"><span class="nav-number">1.10.</span> <span class="nav-text">安全</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E5%8C%BA"><span class="nav-number">1.11.</span> <span class="nav-text">分区</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%A1%E9%81%93%E6%8A%80%E6%9C%AF"><span class="nav-number">1.12.</span> <span class="nav-text">管道技术</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#stream"><span class="nav-number">1.13.</span> <span class="nav-text">stream</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#geo"><span class="nav-number">1.14.</span> <span class="nav-text">geo</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E9%83%A8%E7%BC%96%E7%A0%81"><span class="nav-number">1.15.</span> <span class="nav-text">内部编码</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/02/22/redis%E5%AD%98%E5%82%A8%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          redis存储数据结构
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-02-22 00:00:00" itemprop="dateCreated datePublished" datetime="2021-02-22T00:00:00+08:00">2021-02-22</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-07-26 10:57:11" itemprop="dateModified" datetime="2022-07-26T10:57:11+08:00">2022-07-26</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>redis,可基于内存或持久化的日志型/Key-Value数据库,通常被称为数据结构服务器,值(Value)类型有,<br><strong>字符串(String)</strong><br><strong>哈希(Hash)</strong><br><strong>列表(List)</strong><br><strong>集合(Set)</strong><br><strong>有序集合(Sorted Set)</strong></p>
+<img src="/images/redis存储结构.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>优势</p>
+</blockquote>
+<p>读写性能极高/丰富的数据类型/原子性操作/支持publish/subscribe/通知/key过期等.</p>
+<blockquote>
+<p>与其它key-value存储不同点</p>
+</blockquote>
+<p>数据类型属于基本数据结构,redis运行在内存中同时可持久化到磁盘.</p>
+<p>1.redis单机支持多个数据库,并且相互隔离/不能共享,集群没有数据库的概念.<br>2.redis是一个字典结构的存储服务器,客户端可以指定将数据存储在哪个字典中,类似于一个关系数据库实例中可以创建多个数据库,所以可以将每个字典都理解成一个独立的数据库.<br>3.数据库从0开始递增命名,默认支持16个,可通过配置文件修改databases,无上限.<br>4.客户端建立连接后自动选择0数据库,可通过select选择其它(<code>select 1</code>).<br>5.一个空redis实例占用内存只有1M左右,不适合在0号存储A应用/在1号存储B应用,可在0号存储A应用正式/在1号存储A应用测试,使用不同的实例隔离应用数据.</p>
+<span id="more"></span>
+<h2 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h2><h3 id="string"><a href="#string" class="headerlink" title="string"></a>string</h3><p>redis最基本的类型,二进制安全的.<br>可以包含任何数据,如jpg图片或序列化的对象.<br>一个键最大能存储512MB.<br><img src="/images/redis_string.png" width="600" style="margin-left: 0px; padding-bottom: 10px;"></p>
+<h3 id="hash"><a href="#hash" class="headerlink" title="hash"></a>hash</h3><p>一个键值(key=&gt;value)对集合,即java中Map类型.<br>一个string类型的field和value的映射表,特别适合用于存储对象.<br>每个Hash可以存储40多亿键值对.</p>
+<blockquote>
+<p>场景</p>
+<blockquote>
+<p>存储/读取/修改用户属性.</p>
+</blockquote>
+</blockquote>
+<img src="/images/redis_hash.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="list"><a href="#list" class="headerlink" title="list"></a>list</h3><p>列表是简单的字符串列表,按照插入顺序排序.<br>可以添加一个元素到列表的头部或尾部,双向链表.<br>增删快,提供了操作某一段元素的api.<br>每个列表可存储40多亿.</p>
+<blockquote>
+<p>场景</p>
+<blockquote>
+<p>最新消息排行(朋友圈的时间线)/消息队列.</p>
+</blockquote>
+</blockquote>
+<img src="/images/redis_list.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="set"><a href="#set" class="headerlink" title="set"></a>set</h3><p>string类型的无序集合,哈希表,元素不重复.<br>集合是通过哈希实现的,所以添加/删除/查找的复杂度都是O(1).<br>为集合提供了交集/并集/差集等操作.<br>每个集合可存储40多亿个成员.</p>
+<blockquote>
+<p>场景</p>
+<blockquote>
+<p>共同好友/利用唯一性统计网站的所有独立ip/好友推荐时根据tag求交集,大于某个阀值就可以推荐.</p>
+</blockquote>
+</blockquote>
+<img src="/images/redis_set.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="sort-set"><a href="#sort-set" class="headerlink" title="sort set"></a>sort set</h3><p>与set一样,为string类型元素的集合,且不允许重复成员.<br>不同的是每个元素都会关联一个double类型的权重分数score,redis正是通过分数为集合中的成员进行从小到大排序.<br>成员唯一,分数可重复.</p>
+<blockquote>
+<p>场景</p>
+<blockquote>
+<p>排行榜/带权重的消息队列.</p>
+</blockquote>
+</blockquote>
+<img src="/images/redis_sortset.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="hyperloglog"><a href="#hyperloglog" class="headerlink" title="hyperloglog"></a>hyperloglog</h3><p>新的数据结构,用来做基数(不重复元素个数)统计,每个key只需要12kb内存,耗费内存较集合小.<br><img src="/images/redis_hyperloglog.png" width="600" style="margin-left: 0px; padding-bottom: 10px;"></p>
+<h3 id="发布订阅"><a href="#发布订阅" class="headerlink" title="发布订阅"></a>发布订阅</h3><h3 id="事务"><a href="#事务" class="headerlink" title="事务"></a>事务</h3><p>redis事务相当于脚本执行,可以一次执行多个命令,并且带有以下3个重要保证,<br>1.批量操作在发送exec命令前被放入队列缓存;<br>2.收到exec命令后进入事务执行,事务中任意命令执行失败,其余命令依然被执行;<br>3.在事务执行过程中,其他客户端提交的命令请求不会插入到事务执行命令中;</p>
+<blockquote>
+<p>一个事务从开始到执行的阶段</p>
+<blockquote>
+<p>开始事务-&gt;命令入队-&gt;执行事务<br>单个redis命令的执行是原子性的,但redis事务的执行并不是原子性的.</p>
+</blockquote>
+</blockquote>
+<h3 id="数据备份与恢复"><a href="#数据备份与恢复" class="headerlink" title="数据备份与恢复"></a>数据备份与恢复</h3><p>将save/bgsave备份的dump.rdb文件移动到安装目录并启动服务即可.<br>获取redis目录使用config命令,如下,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">config get dir</span><br></pre></td></tr></table></figure>
+
+<h3 id="安全"><a href="#安全" class="headerlink" title="安全"></a>安全</h3><p>通过配置文件设置密码参数,验证是否设置了密码,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">config get requirepass</span><br></pre></td></tr></table></figure>
+
+<p>默认情况下,requirepass参数是空的,意味着无需密码即可连接redis,通过以下命令来修改该参数,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">config set requirepass xxx</span><br></pre></td></tr></table></figure>
+
+<p>客户端认证:(返回OK)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">auth xxx</span><br></pre></td></tr></table></figure>
+
+<h3 id="分区"><a href="#分区" class="headerlink" title="分区"></a>分区</h3><p>范围分区/哈希分区</p>
+<h3 id="管道技术"><a href="#管道技术" class="headerlink" title="管道技术"></a>管道技术</h3><h3 id="stream"><a href="#stream" class="headerlink" title="stream"></a>stream</h3><p>新的数据结构,主要用于消息队列.<br>原发布订阅可以分发消息,但无法记录历史消息,当出现网络断开/redis宕机时,消息就会丢弃.  </p>
+<p>stream提供了消息的持久化和主备复制功能,可以让任何客户端访问任何时间的数据,并且记录每一个客户端的访问位置,保证消息不丢失.  </p>
+<p>stream结构如下,它有一个消息链表,将所有加入的消息都串起来,每个消息都有一个唯一的ID和对应的内容.<br><img src="/images/redis_stream.png" width="600" style="margin-left: 0px; padding-bottom: 10px;"></p>
+<p>每个Stream都有唯一的名称,它就是redis的key,在我们首次使用xadd指令追加消息时自动创建.</p>
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Consumer Group</td>
+<td align="left">消费组,使用xgroup create命令创建,一个消费组有多个消费者</td>
+</tr>
+<tr>
+<td align="left">last_delivered_id</td>
+<td align="left">游标,每个消费组会有个游标last_delivered_id,任意一个消费者读取了消息都会使游标往前移动</td>
+</tr>
+<tr>
+<td align="left">pending_ids</td>
+<td align="left">消费者的状态变量,作用是维护消费者的未确认的id,其记录了当前已经被客户端读取的消息,但是还没有ack</td>
+</tr>
+</tbody></table>
+<img src="/images/redis_stream_2.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="geo"><a href="#geo" class="headerlink" title="geo"></a>geo</h3><p>主要用于存储地理位置信息,并对存储的信息进行操作,zset结构<br><img src="/images/redis_geo.png" width="600" style="margin-left: 0px; padding-bottom: 10px;"></p>
+<h3 id="内部编码"><a href="#内部编码" class="headerlink" title="内部编码"></a>内部编码</h3><img src="/images/redis_内部编码.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/redis/" rel="tag"># redis</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/02/20/redis%E5%91%BD%E4%BB%A4-%E5%85%B6%E4%BB%96/" rel="prev" title="redis命令-其他">
+                  <i class="fa fa-chevron-left"></i> redis命令-其他
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/02/22/redis-scan%E7%9A%84%E4%BD%BF%E7%94%A8/" rel="next" title="redis中scan的使用">
+                  redis中scan的使用 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="概述flume拦截器是简单的插件式组件,设置在source和channel之间.source接收到的事件event,在写入channel之前,拦截器都可以进行转换或删除这些事件.每个拦截器只处理同一个source接收到的事件.可以自定义拦截器.多个拦截器间使用空格隔开,并有先后顺序. flume内置以下几种拦截器:  Timestamp Interceptor Host Interceptor S">
+<meta property="og:type" content="article">
+<meta property="og:title" content="flume拦截器">
+<meta property="og:url" content="https://maoeryu.github.io/2021/03/05/flume%E6%8B%A6%E6%88%AA%E5%99%A8/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="概述flume拦截器是简单的插件式组件,设置在source和channel之间.source接收到的事件event,在写入channel之前,拦截器都可以进行转换或删除这些事件.每个拦截器只处理同一个source接收到的事件.可以自定义拦截器.多个拦截器间使用空格隔开,并有先后顺序. flume内置以下几种拦截器:  Timestamp Interceptor Host Interceptor S">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/flume_host.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flume_static.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flume_uuid.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flume_mobile.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flume_search.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flume_regex.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flume_regex2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flume_regex3.png">
+<meta property="article:published_time" content="2021-03-04T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-11-08T06:25:19.444Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="flume">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/flume_host.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/03/05/flume%E6%8B%A6%E6%88%AA%E5%99%A8/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>flume拦截器 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E5%87%86%E5%A4%87"><span class="nav-number">2.</span> <span class="nav-text">测试准备</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E6%9C%BA%E5%99%A8"><span class="nav-number">2.1.</span> <span class="nav-text">测试机器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#flume%E5%90%AF%E5%8A%A8%E5%91%BD%E4%BB%A4"><span class="nav-number">2.2.</span> <span class="nav-text">flume启动命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kafka%E7%94%9F%E4%BA%A7%E8%80%85%E5%90%AF%E5%8A%A8%E5%91%BD%E4%BB%A4"><span class="nav-number">2.3.</span> <span class="nav-text">kafka生产者启动命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#netcat%E5%8F%91%E9%80%81%E6%B6%88%E6%81%AF%E5%91%BD%E4%BB%A4"><span class="nav-number">2.4.</span> <span class="nav-text">netcat发送消息命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E5%9C%BA%E6%99%AF"><span class="nav-number">2.5.</span> <span class="nav-text">测试场景</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95"><span class="nav-number">3.</span> <span class="nav-text">测试</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Timestamp-Interceptor"><span class="nav-number">3.1.</span> <span class="nav-text">Timestamp Interceptor</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Host-Interceptor"><span class="nav-number">3.2.</span> <span class="nav-text">Host Interceptor</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Static-Interceptor"><span class="nav-number">3.3.</span> <span class="nav-text">Static Interceptor</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UUID-Interceptor"><span class="nav-number">3.4.</span> <span class="nav-text">UUID Interceptor</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Morphline-Interceptor"><span class="nav-number">3.5.</span> <span class="nav-text">Morphline Interceptor</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Search-and-Replace-Interceptor"><span class="nav-number">3.6.</span> <span class="nav-text">Search and Replace Interceptor</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Regex-Filtering-Interceptor"><span class="nav-number">3.7.</span> <span class="nav-text">Regex Filtering Interceptor</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Regex-Extractor-Interceptor"><span class="nav-number">3.8.</span> <span class="nav-text">Regex Extractor Interceptor</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%84%E5%BD%951"><span class="nav-number">4.</span> <span class="nav-text">附录1</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/03/05/flume%E6%8B%A6%E6%88%AA%E5%99%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          flume拦截器
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-03-05 00:00:00" itemprop="dateCreated datePublished" datetime="2021-03-05T00:00:00+08:00">2021-03-05</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-11-08 14:25:19" itemprop="dateModified" datetime="2022-11-08T14:25:19+08:00">2022-11-08</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>flume拦截器是简单的插件式组件,设置在source和channel之间.<br>source接收到的事件event,在写入channel之前,拦截器都可以进行转换或删除这些事件.<br>每个拦截器只处理同一个source接收到的事件.<br>可以自定义拦截器.<br>多个拦截器间使用空格隔开,并有先后顺序.</p>
+<p>flume内置以下几种拦截器:</p>
+<ul>
+<li>Timestamp Interceptor</li>
+<li>Host Interceptor</li>
+<li>Static Interceptor</li>
+<li>UUID Interceptor</li>
+<li>Morphline Interceptor</li>
+<li>Search and Replace Interceptor</li>
+<li>Regex Filtering Interceptor</li>
+<li>Regex Extractor Interceptor</li>
+</ul>
+<span id="more"></span>
+<h2 id="测试准备"><a href="#测试准备" class="headerlink" title="测试准备"></a>测试准备</h2><h3 id="测试机器"><a href="#测试机器" class="headerlink" title="测试机器"></a>测试机器</h3><p>本地安装flume-1.7.0和kafka,使用nc模拟发送日志.</p>
+<h3 id="flume启动命令"><a href="#flume启动命令" class="headerlink" title="flume启动命令"></a>flume启动命令</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">flume-ng.cmd agent -conf ../conf --conf-file ../conf/kafka-test.properties -name agent1 -property flume.root.logger=INFO,console</span><br></pre></td></tr></table></figure>
+
+<h3 id="kafka生产者启动命令"><a href="#kafka生产者启动命令" class="headerlink" title="kafka生产者启动命令"></a>kafka生产者启动命令</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">zookeeper-server-start.bat ../../config/zookeeper.properties</span><br><span class="line">kafka-server-start.bat ../../config/server.properties</span><br></pre></td></tr></table></figure>
+
+<h3 id="netcat发送消息命令"><a href="#netcat发送消息命令" class="headerlink" title="netcat发送消息命令"></a>netcat发送消息命令</h3><p>nc localhost 6666</p>
+<h3 id="测试场景"><a href="#测试场景" class="headerlink" title="测试场景"></a>测试场景</h3><p>source为netcat,channel为memory,sink为kafka<br>flume一般配置如下,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"># Name the components on this agent</span><br><span class="line">agent1.sources &#x3D; r1</span><br><span class="line">agent1.sinks &#x3D; k1</span><br><span class="line">agent1.channels &#x3D; c1</span><br><span class="line"></span><br><span class="line"># Describe&#x2F;configure the source</span><br><span class="line">agent1.sources.r1.type &#x3D; netcat</span><br><span class="line">agent1.sources.r1.bind &#x3D; localhost</span><br><span class="line">agent1.sources.r1.port &#x3D; 6666</span><br><span class="line"></span><br><span class="line"># Describe the sink</span><br><span class="line">agent1.sinks.k1.type &#x3D; org.apache.flume.sink.kafka.KafkaSink</span><br><span class="line">agent1.sinks.k1.kafka.topic &#x3D; xxx</span><br><span class="line">agent1.sinks.k1.kafka.bootstrap.servers &#x3D; localhost:9092</span><br><span class="line">agent1.sinks.k1.useFlumeEventFormat &#x3D; true</span><br><span class="line"></span><br><span class="line"># Use a channel which buffers events in memory</span><br><span class="line">agent1.channels.c1.type &#x3D; memory</span><br><span class="line">agent1.channels.c1.capacity &#x3D; 50000</span><br><span class="line">agent1.channels.c1.transactionCapacity &#x3D; 1000</span><br><span class="line">agent1.channels.c1.keep-alive &#x3D; 60</span><br><span class="line"></span><br><span class="line"># Bind the source and sink to the channel</span><br><span class="line">agent1.sources.r1.channels &#x3D; c1</span><br><span class="line">agent1.sinks.k1.channel &#x3D; c1</span><br></pre></td></tr></table></figure>
+
+<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><h3 id="Timestamp-Interceptor"><a href="#Timestamp-Interceptor" class="headerlink" title="Timestamp Interceptor"></a>Timestamp Interceptor</h3><p>时间戳拦截器,将当前时间戳(毫秒)加入到events header中,key名字为timestamp,值为当前时间戳.</p>
+<h3 id="Host-Interceptor"><a href="#Host-Interceptor" class="headerlink" title="Host Interceptor"></a>Host Interceptor</h3><p>主机名拦截器,将运行Flume agent的主机名或IP地址加到events header中,key名字为host.</p>
+<blockquote>
+<p>source拦截器增加部分</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">agent1.sources.r1.interceptors &#x3D; i1 i2</span><br><span class="line">agent1.sources.r1.interceptors.i1.type &#x3D; timestamp</span><br><span class="line">agent1.sources.r1.interceptors.i1.preserveExisting&#x3D;false</span><br><span class="line">agent1.sources.r1.interceptors.i2.type &#x3D; host</span><br><span class="line">agent1.sources.r1.interceptors.i2.hostHeader &#x3D; hostname</span><br><span class="line">agent1.sources.r1.interceptors.i2.useIP &#x3D; false #ip和host选其一</span><br><span class="line">agent1.sources.r1.interceptors.i2.preserveExisting &#x3D; false</span><br></pre></td></tr></table></figure>
+
+<img src="/images/flume_host.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="Static-Interceptor"><a href="#Static-Interceptor" class="headerlink" title="Static Interceptor"></a>Static Interceptor</h3><p>静态拦截器,用于在events header中加入一组静态的key和value.</p>
+<blockquote>
+<p> source拦截器增加部分</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">agent1.sources.r1.interceptors &#x3D; i1</span><br><span class="line">agent1.sources.r1.interceptors.i1.type &#x3D; static</span><br><span class="line">agent1.sources.r1.interceptors.i1.preserveExisting &#x3D; false</span><br><span class="line">agent1.sources.r1.interceptors.i1.key &#x3D; static_key</span><br><span class="line">agent1.sources.r1.interceptors.i1.value &#x3D; static_value</span><br></pre></td></tr></table></figure>
+
+<img src="/images/flume_static.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="UUID-Interceptor"><a href="#UUID-Interceptor" class="headerlink" title="UUID Interceptor"></a>UUID Interceptor</h3><p>UUID拦截器,用于在每个events header中生成一个UUID字符串.<br>例如:b5755073-77a9-43c1-8fad-b7a586fc1b97.<br>生成的UUID可以在sink中读取并使用.</p>
+<blockquote>
+<p>source拦截器增加部分</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">agent1.sources.r1.interceptors &#x3D; i1</span><br><span class="line">agent1.sources.r1.interceptors.i1.type &#x3D; org.apache.flume.sink.solr.morphline.UUIDInterceptor$Builder</span><br><span class="line">agent1.sources.r1.interceptors.i1.headerName &#x3D; uuid</span><br><span class="line">agent1.sources.r1.interceptors.i1.preserveExisting &#x3D; false</span><br><span class="line">agent1.sources.r1.interceptors.i1.prefix &#x3D; UUID-</span><br></pre></td></tr></table></figure>
+
+<img src="/images/flume_uuid.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="Morphline-Interceptor"><a href="#Morphline-Interceptor" class="headerlink" title="Morphline Interceptor"></a>Morphline Interceptor</h3><p>Morphline拦截器,该拦截器使用Morphline对每个events数据做相应的转换,用于数据清洗.<br>轻量级ETL工具.</p>
+<blockquote>
+<p>example</p>
+</blockquote>
+<p>基站同时发送3g和4g的信令到本地文件,通过flume将本地文件接入到kafka的某个topic中.<br>在这个过程中,需要对3g信令数据进行清洗,满足如下要求,<br>1.假设3g信令的格式为imsi,lac,type,timestamp.<br>2.4g信令的格式为imsi,tac,number,area_code,timestamp.<br>3.由于格式不统一,第一步就需要将3g的信令格式补全为4g的格式,没有的字段用空格补全.<br>4.将3g信令的timestamp的格式统一为4g的yyyy-MM-dd HH:mm:ss格式.<br>5.将3g信令中的type由16进制转为10进制.</p>
+<blockquote>
+<p>source拦截器增加部分</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">agent1.sources.r1.interceptors &#x3D; i1</span><br><span class="line">agent1.sources.r1.interceptors.i1.type &#x3D; org.apache.flume.sink.solr.morphline.MorphlineInterceptor$Builder</span><br><span class="line"># morphline.conf配置见附录1</span><br><span class="line">agent1.sources.r1.interceptors.i1.morphlineFile &#x3D; e:&#x2F;mypro&#x2F;sftp&#x2F;morphline.conf</span><br><span class="line">agent1.sources.r1.interceptors.i1.morphlineId &#x3D; morphline1</span><br></pre></td></tr></table></figure>
+
+<p>利用nc发送以下样例数据,查看结果.<br>11111,213,7b,1497419767</p>
+<img src="/images/flume_mobile.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="Search-and-Replace-Interceptor"><a href="#Search-and-Replace-Interceptor" class="headerlink" title="Search and Replace Interceptor"></a>Search and Replace Interceptor</h3><p>该拦截器用于将events中的正则匹配到的内容做相应的替换.</p>
+<blockquote>
+<p>source拦截器增加部分</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">agent1.sources.r1.interceptors &#x3D; i1</span><br><span class="line">agent1.sources.r1.interceptors.i1.type &#x3D; search_replace</span><br><span class="line">agent1.sources.r1.interceptors.i1.searchPattern &#x3D; [0-9]+</span><br><span class="line">agent1.sources.r1.interceptors.i1.replaceString &#x3D; xxx</span><br><span class="line">agent1.sources.r1.interceptors.i1.charset &#x3D; UTF-8</span><br></pre></td></tr></table></figure>
+
+<p>利用nc发送以下样例数据,查看结果,<strong><em>数字全部被替换为xxx</em></strong>.<br>abc12abc</p>
+<img src="/images/flume_search.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="Regex-Filtering-Interceptor"><a href="#Regex-Filtering-Interceptor" class="headerlink" title="Regex Filtering Interceptor"></a>Regex Filtering Interceptor</h3><p>该拦截器使用正则表达式过滤原始events中的内容.</p>
+<blockquote>
+<p>source拦截器增加部分</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">agent1.sources.r1.interceptors &#x3D; i1</span><br><span class="line">agent1.sources.r1.interceptors.i1.type &#x3D; regex_filter</span><br><span class="line">agent1.sources.r1.interceptors.i1.regex &#x3D; ^xxx.*</span><br><span class="line">#如果excludeEvents设为true,则表示过滤掉以xxx开头的events</span><br><span class="line">#为false,表示过滤非xxx开头的events</span><br><span class="line">agent1.sources.r1.interceptors.i1.excludeEvents &#x3D; false</span><br></pre></td></tr></table></figure>
+
+<p>利用nc发送以下样例数据,查看结果,<strong><em>只打印了xxx123</em></strong>.<br>abcxxx<br>xxx123</p>
+<img src="/images/flume_regex.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="Regex-Extractor-Interceptor"><a href="#Regex-Extractor-Interceptor" class="headerlink" title="Regex Extractor Interceptor"></a>Regex Extractor Interceptor</h3><p>该拦截器使用正则表达式抽取原始events中的内容,并将该内容加入events header中.</p>
+<blockquote>
+<p>example1<br>source拦截器增加部分</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">agent1.sources.r1.interceptors &#x3D; i1</span><br><span class="line">agent1.sources.r1.interceptors.i1.type &#x3D; regex_extractor</span><br><span class="line">agent1.sources.r1.interceptors.i1.regex &#x3D; .\*?\t(.\*?)\t(.\*?)\t.\*</span><br><span class="line">agent1.sources.r1.interceptors.i1.serializers &#x3D; s1 s2</span><br><span class="line">agent1.sources.r1.interceptors.i1.serializers.s1.name &#x3D; imei</span><br><span class="line">agent1.sources.r1.interceptors.i1.serializers.s2.name &#x3D; oaid</span><br></pre></td></tr></table></figure>
+
+<p>利用nc发送以下样例数据,查看结果.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xxx imei    oaid    abc</span><br></pre></td></tr></table></figure>
+
+<img src="/images/flume_regex2.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>example2<br>提取日志中某个字段作为kafka消息key<br>source拦截器增加部分</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">agent1.sources.r1.interceptors &#x3D; i1</span><br><span class="line">agent1.sources.r1.interceptors.i1.type &#x3D; regex_extractor</span><br><span class="line">agent1.sources.r1.interceptors.i1.regex &#x3D; .\*?\t(.\*?)\t.\*</span><br><span class="line">agent1.sources.r1.interceptors.i1.serializers &#x3D; s1</span><br><span class="line">agent1.sources.r1.interceptors.i1.serializers.s1.name &#x3D; key</span><br></pre></td></tr></table></figure>
+
+<p>利用nc发送以下样例数据,查看结果.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xxx imei    oaid    abc</span><br></pre></td></tr></table></figure>
+
+<img src="/images/flume_regex3.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="附录1"><a href="#附录1" class="headerlink" title="附录1"></a>附录1</h2><p>morphline.conf配置.<br>1.readLine是将每行数据读入;<br>2.split将每行数据按照逗号分隔成指定的字段;<br>3.convertTimestamp将时间戳转为yyyy-MM-dd HH:mm:ss格式;<br>4.java里面的代码实现16进制转10进制的功能;<br>5.setValues设置Event的body和key;<br>6.toByteArray必须将body转为Byte数组;</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line">morphlines: [</span><br><span class="line">  &#123;</span><br><span class="line">    id: morphline1</span><br><span class="line">    importCommands: [&quot;org.kitesdk.**&quot;, &quot;org.apache.solr.**&quot;]</span><br><span class="line">    commands: [</span><br><span class="line">      &#123;</span><br><span class="line">        readLine &#123;</span><br><span class="line">          charset: UTF-8</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      &#123;</span><br><span class="line">        split &#123;</span><br><span class="line">          inputField: message</span><br><span class="line">          outputFields: [imsi, lac, type, timestamp]</span><br><span class="line">          separator: &quot;,&quot;</span><br><span class="line">          isRegex: false</span><br><span class="line">          addEmptyStrings: false</span><br><span class="line">          trim: true</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      &#123;</span><br><span class="line">        convertTimestamp &#123;</span><br><span class="line">          field : timestamp</span><br><span class="line">          inputFormats : [&quot;unixTimeInSeconds&quot;]</span><br><span class="line">          inputTimezone : UTC</span><br><span class="line">          outputFormat : &quot;yyyy-MM-dd HH:mm:ss&quot;</span><br><span class="line">          outputTimezone : UTC</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      &#123;</span><br><span class="line">        java &#123;</span><br><span class="line">          imports: &quot;import java.util.*;&quot;</span><br><span class="line">          code: &quot;&quot;&quot;</span><br><span class="line">                List&lt;String&gt; type &#x3D; record.get(&quot;type&quot;);</span><br><span class="line">                if(type.size()&#x3D;&#x3D;1)&#123;</span><br><span class="line">                   type.set(0,Integer.valueOf(type.get(0),16).toString());</span><br><span class="line">                &#125;</span><br><span class="line">               return child.process(record);</span><br><span class="line">               &quot;&quot;&quot;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      &#123;</span><br><span class="line">        setValues &#123;</span><br><span class="line">          _attachment_body: &quot;@&#123;imsi&#125;,@&#123;lac&#125;,,,@&#123;timestamp&#125;&quot;</span><br><span class="line">          key: &quot;@&#123;imsi&#125;&quot;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      &#123;</span><br><span class="line">        toByteArray &#123;field: _attachment_body&#125;</span><br><span class="line">      &#125;</span><br><span class="line">    ]</span><br><span class="line">  &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/flume/" rel="tag"># flume</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/03/05/metricbeat%E6%94%B6%E9%9B%86flume%20metrics/" rel="prev" title="metricbeat收集flume metrics">
+                  <i class="fa fa-chevron-left"></i> metricbeat收集flume metrics
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/03/05/flume%E5%A4%9A%E5%AF%B9%E5%A4%9A%E5%85%B3%E7%B3%BB%E6%97%A5%E5%BF%97%E6%94%B6%E9%9B%86/" rel="next" title="flume多对多关系日志收集">
+                  flume多对多关系日志收集 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

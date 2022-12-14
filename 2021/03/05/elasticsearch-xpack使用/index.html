@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="elasticsearch版本为6.8.2 安装部署下载并安装elasticsearch&#x2F;kibana&#x2F;x-pack.  下载地址  https:&#x2F;&#x2F;www.elastic.co&#x2F;downloads&#x2F;past-releases&#x2F;elasticsearch-6-8-2https:&#x2F;&#x2F;www.elastic.co&#x2F;downloads&#x2F;past-releases&#x2F;kibana-6-8-2 选择6.8.2">
+<meta property="og:type" content="article">
+<meta property="og:title" content="elasticsearch-xpack使用">
+<meta property="og:url" content="https://maoeryu.github.io/2021/03/05/elasticsearch-xpack%E4%BD%BF%E7%94%A8/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="elasticsearch版本为6.8.2 安装部署下载并安装elasticsearch&#x2F;kibana&#x2F;x-pack.  下载地址  https:&#x2F;&#x2F;www.elastic.co&#x2F;downloads&#x2F;past-releases&#x2F;elasticsearch-6-8-2https:&#x2F;&#x2F;www.elastic.co&#x2F;downloads&#x2F;past-releases&#x2F;kibana-6-8-2 选择6.8.2">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2021-03-04T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-07-26T02:51:43.906Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="elasticsearch">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/03/05/elasticsearch-xpack%E4%BD%BF%E7%94%A8/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>elasticsearch-xpack使用 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2"><span class="nav-number">1.</span> <span class="nav-text">安装部署</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#x-pack%E6%8F%92%E4%BB%B6%E7%A0%B4%E8%A7%A3"><span class="nav-number">2.</span> <span class="nav-text">x-pack插件破解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E6%96%87%E4%BB%B6"><span class="nav-number">2.1.</span> <span class="nav-text">创建文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E8%AF%91java"><span class="nav-number">2.2.</span> <span class="nav-text">编译java</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9B%BF%E6%8D%A2jar%E5%8C%85"><span class="nav-number">2.3.</span> <span class="nav-text">替换jar包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%B3%E8%AF%B7%E8%AF%81%E4%B9%A6"><span class="nav-number">2.4.</span> <span class="nav-text">申请证书</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9json%E8%AF%81%E4%B9%A6"><span class="nav-number">2.5.</span> <span class="nav-text">修改json证书</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8A%E4%BC%A0%E8%AF%81%E4%B9%A6"><span class="nav-number">2.6.</span> <span class="nav-text">上传证书</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A0%B4%E8%A7%A3%E5%AE%8C%E6%88%90"><span class="nav-number">2.7.</span> <span class="nav-text">破解完成</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%90%AFes%E7%99%BB%E5%BD%95%E5%8A%9F%E8%83%BD"><span class="nav-number">3.</span> <span class="nav-text">开启es登录功能</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85ssl%E5%92%8Cca%E8%AF%81%E4%B9%A6"><span class="nav-number">3.1.</span> <span class="nav-text">安装ssl和ca证书</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E9%85%8D%E7%BD%AE"><span class="nav-number">3.2.</span> <span class="nav-text">修改配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E7%BD%AE%E5%AF%86%E7%A0%81"><span class="nav-number">3.3.</span> <span class="nav-text">重置密码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9kibana"><span class="nav-number">3.4.</span> <span class="nav-text">修改kibana</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E5%90%AFelasticsearch"><span class="nav-number">3.5.</span> <span class="nav-text">重启elasticsearch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3head%E6%8F%92%E4%BB%B6%E6%97%A0%E6%B3%95%E7%99%BB%E5%BD%95%E9%97%AE%E9%A2%98"><span class="nav-number">3.6.</span> <span class="nav-text">解决head插件无法登录问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ES%E5%AE%89%E5%85%A8%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0"><span class="nav-number">4.</span> <span class="nav-text">ES安全配置参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ES%E7%94%A8%E6%88%B7%E5%8F%8A%E8%A7%92%E8%89%B2%E8%AF%B4%E6%98%8E"><span class="nav-number">5.</span> <span class="nav-text">ES用户及角色说明</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E7%BD%AE%E7%94%A8%E6%88%B7"><span class="nav-number">5.1.</span> <span class="nav-text">内置用户</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E7%BD%AEroles%E6%9D%83%E9%99%90"><span class="nav-number">5.2.</span> <span class="nav-text">内置roles权限</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cluster%E6%9D%83%E9%99%90-%E5%8F%AF%E4%BB%A5%E5%88%86%E9%85%8D%E7%BB%99%E8%A7%92%E8%89%B2%E7%9A%84%E6%9D%83%E9%99%90"><span class="nav-number">5.3.</span> <span class="nav-text">cluster权限,可以分配给角色的权限</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#indices%E6%9D%83%E9%99%90"><span class="nav-number">5.4.</span> <span class="nav-text">indices权限</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/03/05/elasticsearch-xpack%E4%BD%BF%E7%94%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          elasticsearch-xpack使用
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-03-05 00:00:00" itemprop="dateCreated datePublished" datetime="2021-03-05T00:00:00+08:00">2021-03-05</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-07-26 10:51:43" itemprop="dateModified" datetime="2022-07-26T10:51:43+08:00">2022-07-26</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>elasticsearch版本为6.8.2</p>
+<h2 id="安装部署"><a href="#安装部署" class="headerlink" title="安装部署"></a>安装部署</h2><p>下载并安装elasticsearch/kibana/x-pack.</p>
+<blockquote>
+<p>下载地址</p>
+</blockquote>
+<p><a target="_blank" rel="noopener" href="https://www.elastic.co/downloads/past-releases/elasticsearch-6-8-2">https://www.elastic.co/downloads/past-releases/elasticsearch-6-8-2</a><br><a target="_blank" rel="noopener" href="https://www.elastic.co/downloads/past-releases/kibana-6-8-2">https://www.elastic.co/downloads/past-releases/kibana-6-8-2</a></p>
+<p>选择6.8.2版本下载,可选windows/linux版本.<br>为方便测试,本文档下载windows版本.<br>Kibana与elasticsearch版本保持一致.<br>文件下载后解压即可.</p>
+<p>Elasticsearch6.3版本后,x-pack插件随elasticseach一起安装,无需单独安装.</p>
+<span id="more"></span>
+<h2 id="x-pack插件破解"><a href="#x-pack插件破解" class="headerlink" title="x-pack插件破解"></a>x-pack插件破解</h2><p>因elasticsearch目前所有版本x-pack均有试用期,为去除试用期限制,采用修改源码/替换jar包中 class文件的方法进行破解.</p>
+<h3 id="创建文件"><a href="#创建文件" class="headerlink" title="创建文件"></a>创建文件</h3><p>创建两个java文件,</p>
+<ul>
+<li>XPackBuild.java</li>
+<li>LicenseVerifier.java</li>
+</ul>
+<h3 id="编译java"><a href="#编译java" class="headerlink" title="编译java"></a>编译java</h3><p>将${es_home}/lib/目录下<br>elasticsearch-6.8.2.jar,<br>lucene-core-7.7.0.jar,<br>elasticsearch-core-6.8.2.jar,<br>及${es_home}/modules/x-pack-core/目录下<br>x-pack-core-6.8.2.jar<br>添加到类路径,编译成.class文件.</p>
+<p>两个java文件如下,</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> org.elasticsearch.xpack.core;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.elasticsearch.common.SuppressForbidden;</span><br><span class="line"><span class="keyword">import</span> org.elasticsearch.common.io.PathUtils;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.net.URISyntaxException;</span><br><span class="line"><span class="keyword">import</span> java.net.URL;</span><br><span class="line"><span class="keyword">import</span> java.nio.file.Path;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">XPackBuild</span> </span>&#123;</span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> XPackBuild CURRENT;</span><br><span class="line">  <span class="keyword">private</span> String shortHash;</span><br><span class="line">  <span class="keyword">private</span> String date;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@SuppressForbidden(reason = &quot;looks up path of xpack.jar directly&quot;)</span></span><br><span class="line">  <span class="function"><span class="keyword">static</span> Path <span class="title">getElasticsearchCodebase</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> URL url = XPackBuild.class.getProtectionDomain().getCodeSource().getLocation();</span><br><span class="line">    <span class="keyword">try</span> &#123; <span class="keyword">return</span> PathUtils.get(url.toURI()); &#125; <span class="keyword">catch</span> (URISyntaxException bogus) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(bogus);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  XPackBuild(<span class="keyword">final</span> String shortHash, <span class="keyword">final</span> String date) &#123;</span><br><span class="line">    <span class="keyword">this</span>.shortHash = shortHash;</span><br><span class="line">    <span class="keyword">this</span>.date = date;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> String <span class="title">shortHash</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>.shortHash;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> String <span class="title">date</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>.date;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">static</span> &#123;</span><br><span class="line">    <span class="keyword">final</span> Path path = getElasticsearchCodebase();</span><br><span class="line">    String shortHash = <span class="keyword">null</span>;</span><br><span class="line">    String date = <span class="keyword">null</span>;</span><br><span class="line">    Label_0157:</span><br><span class="line">    &#123;</span><br><span class="line">      shortHash = <span class="string">&quot;Unknown&quot;</span>;</span><br><span class="line">      date = <span class="string">&quot;Unknown&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    CURRENT = <span class="keyword">new</span> XPackBuild(shortHash, date);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> org.elasticsearch.license;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LicenseVerifier</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">verifyLicense</span><span class="params">(<span class="keyword">final</span> License license, <span class="keyword">final</span> <span class="keyword">byte</span>[] encryptedPublicKeyData)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">verifyLicense</span><span class="params">(<span class="keyword">final</span> License license)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="替换jar包"><a href="#替换jar包" class="headerlink" title="替换jar包"></a>替换jar包</h3><p>替换x-pack-core-6.8.2.jar中对应包下两个.class文件.</p>
+<h3 id="申请证书"><a href="#申请证书" class="headerlink" title="申请证书"></a>申请证书</h3><p>官网申请license证书,<br><a target="_blank" rel="noopener" href="https://license.elastic.co/registration">https://license.elastic.co/registration</a>,<br>邮箱需填写正确,用来接收json文件证书.</p>
+<h3 id="修改json证书"><a href="#修改json证书" class="headerlink" title="修改json证书"></a>修改json证书</h3><p>&quot;type&quot;:&quot;basic&quot;替换为,<br>&quot;type&quot;:&quot;platinum&quot; #基础版变更为铂金版</p>
+<p>&quot;expiry_date_in_millis&quot;:1561420799999替换为,<br>&quot;expiry_date_in_millis&quot;:3107746200000 #1年变为50年</p>
+<p>以下为修改后的json证书内容,</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="attr">&quot;license&quot;</span>:&#123;<span class="attr">&quot;uid&quot;</span>:<span class="string">&quot;b4cb1330-2b6c-45e7-b82c-fec843a9272a&quot;</span>,<span class="attr">&quot;type&quot;</span>:<span class="string">&quot;platinum&quot;</span>,<span class="attr">&quot;issue_date_in_millis&quot;</span>:<span class="number">1584921600000</span>,<span class="attr">&quot;expiry_date_in_millis&quot;</span>:<span class="number">3107746200000</span>,<span class="attr">&quot;max_nodes&quot;</span>:<span class="number">100</span>,<span class="attr">&quot;issued_to&quot;</span>:<span class="string">&quot;li dongbing (maoeryu)&quot;</span>,<span class="attr">&quot;issuer&quot;</span>:<span class="string">&quot;Web Form&quot;</span>,<span class="attr">&quot;signature&quot;</span>:<span class="string">&quot;AAAAAwAAAA1WbWcmp+djSveU1CeIAAABmC9ZN0hjZDBGYnVyRXpCOW5Bb3FjZDAxOWpSbTVoMVZwUzRxVk1PSmkxaktJRVl5MUYvUWh3bHZVUTllbXNPbzBUemtnbWpBbmlWRmRZb25KNFlBR2x0TXc2K2p1Y1VtMG1UQU9TRGZVSGRwaEJGUjE3bXd3LzRqZ05iLzRteWFNekdxRGpIYlFwYkJiNUs0U1hTVlJKNVlXekMrSlVUdFIvV0FNeWdOYnlESDc3MWhlY3hSQmdKSjJ2ZTcvYlBFOHhPQlV3ZHdDQ0tHcG5uOElCaDJ4K1hob29xSG85N0kvTWV3THhlQk9NL01VMFRjNDZpZEVXeUtUMXIyMlIveFpJUkk2WUdveEZaME9XWitGUi9WNTZVQW1FMG1DenhZU0ZmeXlZakVEMjZFT2NvOWxpZGlqVmlHNC8rWVVUYzMwRGVySHpIdURzKzFiRDl4TmM1TUp2VTBOUlJZUlAyV0ZVL2kvVk10L0NsbXNFYVZwT3NSU082dFNNa2prQ0ZsclZ4NTltbU1CVE5lR09Bck93V2J1Y3c9PQAAAQCYCKDoDuQ/mZp9CpPMGji1xNxofr68iypckaSnmmxZMacGStAvic/DdMY/4cuAMa6HQDvkvnTZRymm9lyT4yosyXcBumDLWz3gxki20ZinBLfemUw6cDp+kQf4oI3qO986vKkXlZ87akY6qy32INSdFgPk7SucADmLZdjojNFBldRkg29tQoIhDAhutyyi3cOhlAfd7u03CGx2e/dNwy2dtsgjJjwMuxM76x0pzzqJ9AAMlCOGti5MzRmq5/AN6Gw4Z2mJA1ErgG13ZeDyrbFBMaeirnQh5q/uXD/xMxYQHI97M/3YY65druE/L80W/IgKHTCbh2TmL1it9pQogcip&quot;</span>,<span class="attr">&quot;start_date_in_millis&quot;</span>:<span class="number">1584921600000</span>&#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="上传证书"><a href="#上传证书" class="headerlink" title="上传证书"></a>上传证书</h3><p>编辑${es_home}/config/elasticsearch.yml,添加<br>xpack.security.enabled: false</p>
+<p>启动elasticsearch/kibana,<br>依次点击主界面Management-Elasticsearch-License Management,<br>上传修改后的json证书,界面可看到证书失效日期.</p>
+<h3 id="破解完成"><a href="#破解完成" class="headerlink" title="破解完成"></a>破解完成</h3><p>x-pack插件破解完成.</p>
+<h2 id="开启es登录功能"><a href="#开启es登录功能" class="headerlink" title="开启es登录功能"></a>开启es登录功能</h2><h3 id="安装ssl和ca证书"><a href="#安装ssl和ca证书" class="headerlink" title="安装ssl和ca证书"></a>安装ssl和ca证书</h3><p>${es_home}/bin/elasticsearch-certgen<br>压缩包名称:cert.zip<br>实例名:my-application<br>文件夹名:elasticsearch<br>IP:loclhost,多ip用逗号隔开<br>节点名:node-1,多节点用逗号隔开<br>按空格下一步,完成.</p>
+<p>解压生成的cert.zip,将文件夹复制到${es_home}/config/下,如果是集群,每个节点均要复制.</p>
+<h3 id="修改配置"><a href="#修改配置" class="headerlink" title="修改配置"></a>修改配置</h3><p>修改elasticsearch.yml,打开安全配置功能,</p>
+<p>xpack.security.enabled: true<br>xpack.security.transport.ssl.enabled: true<br>xpack.ssl.key: elasticsearch/elasticsearch.key<br>xpack.ssl.certificate: elasticsearch/elasticsearch.crt<br>xpack.ssl.certificate_authorities: ca/ca.crt</p>
+<h3 id="重置密码"><a href="#重置密码" class="headerlink" title="重置密码"></a>重置密码</h3><p>重置登录权限密码,如果是集群,需要在每个节点操作,且密码相同.</p>
+<p>${es_home}/bin/elasticsearch-setup-passwords interactive</p>
+<p>按操作步骤依次重置<br>elastic/kibana/apm_system/logstash_system/beats_system/remote_monitoring_user<br>账号的密码.</p>
+<p>此命令只能使用一次,后期修改密码从kibana界面操作.</p>
+<h3 id="修改kibana"><a href="#修改kibana" class="headerlink" title="修改kibana"></a>修改kibana</h3><p>修改kibana.yml,配置登录账户密码</p>
+<p>elasticsearch.username: &quot;elastic&quot;<br>elasticsearch.password: &quot;password&quot;</p>
+<h3 id="重启elasticsearch"><a href="#重启elasticsearch" class="headerlink" title="重启elasticsearch"></a>重启elasticsearch</h3><p>重启elasticsearch/kibana,需要账户密码登录.</p>
+<h3 id="解决head插件无法登录问题"><a href="#解决head插件无法登录问题" class="headerlink" title="解决head插件无法登录问题"></a>解决head插件无法登录问题</h3><p>修改elasticsearch.yml,添加以下内容,<br>http.cors.enabled: true<br>http.cors.allow-origin: &quot;*&quot;<br>http.cors.allow-headers: Authorization,X-Requested-With,Content-Length,Content-Type</p>
+<p>重启elasticsearch,使用账号密码进行登录.<br><a target="_blank" rel="noopener" href="http://localhost:9100/?auth_user=elastic&amp;auth_password=%7Bpassword%7D">http://localhost:9100/?auth_user=elastic&amp;auth_password={password}</a></p>
+<h2 id="ES安全配置参数"><a href="#ES安全配置参数" class="headerlink" title="ES安全配置参数"></a>ES安全配置参数</h2><p>xpack.security.audit.enabled: true<br>启用审计.</p>
+<h2 id="ES用户及角色说明"><a href="#ES用户及角色说明" class="headerlink" title="ES用户及角色说明"></a>ES用户及角色说明</h2><h3 id="内置用户"><a href="#内置用户" class="headerlink" title="内置用户"></a>内置用户</h3><table>
+<thead>
+<tr>
+<th align="left">username</th>
+<th align="left">role</th>
+<th align="left">权限</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">elastic</td>
+<td align="left">superuser</td>
+<td align="left">内置超级用户</td>
+</tr>
+<tr>
+<td align="left">kibana</td>
+<td align="left">kibana_system</td>
+<td align="left">用户kibana用来连接es并与之通信.Kibana服务器以该用户身份提交请求以访问集群监视API和.kibana索引.不能访问index</td>
+</tr>
+<tr>
+<td align="left">logstash_system</td>
+<td align="left">logstash_system</td>
+<td align="left">用户Logstash在Elasticsearch中存储监控信息时使用</td>
+</tr>
+<tr>
+<td align="left">beats_system</td>
+<td align="left">beats_system</td>
+<td align="left">Beats在Elasticsearch中存储监视信息时使用的用户</td>
+</tr>
+<tr>
+<td align="left">apm_system</td>
+<td align="left">apm_system</td>
+<td align="left">APM服务器在Elasticsearch中存储监视信息时使用的用户</td>
+</tr>
+<tr>
+<td align="left">remote_monitoring_user</td>
+<td align="left">remote_monitoring_collector</td>
+<td align="left">Metricbeat用户在Elasticsearch中收集和存储监视信息时使用.它具有remote_monitoring_agent和remote_monitoring_collector内置角色</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left">remote_monitoring_agent</td>
+<td align="left">同上</td>
+</tr>
+</tbody></table>
+<h3 id="内置roles权限"><a href="#内置roles权限" class="headerlink" title="内置roles权限"></a>内置roles权限</h3><table>
+<thead>
+<tr>
+<th align="left">role</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">ingest_admin</td>
+<td align="left">授予访问权限以管理所有索引模板和所有摄取管道配置.这个角色不能提供创建索引的能力.这些特权必须在一个单独的角色中定义</td>
+</tr>
+<tr>
+<td align="left">kibana_dashboard_only_user</td>
+<td align="left">授予对Kibana仪表板的访问权限以及对.kibana索引的只读权限.这个角色无法访问Kibana中的编辑工具</td>
+</tr>
+<tr>
+<td align="left">kibana_system</td>
+<td align="left">授予Kibana系统用户读取和写入Kibana索引所需的访问权限,管理索引模板并检查Elasticsearch集群的可用性.此角色授予对.monitoring-索引的读取访问权限以及对.reporting-索引的读取和写入访问权限</td>
+</tr>
+<tr>
+<td align="left">kibana_user</td>
+<td align="left">授予Kibana用户所需的最低权限.此角色授予访问集群的Kibana索引和授予监视权限</td>
+</tr>
+<tr>
+<td align="left">logstash_admin</td>
+<td align="left">授予访问用于管理配置的.logstash *索引的权限</td>
+</tr>
+<tr>
+<td align="left">logstash_system</td>
+<td align="left">授予Logstash系统用户所需的访问权限,以将系统级别的数据(如监视)发送给Elasticsearch.不应将此角色分配给用户,因为授予的权限可能会在不同版本之间发生变化.此角色不提供对logstash索引的访问权限,不适合在Logstash管道中使用</td>
+</tr>
+<tr>
+<td align="left">machine_learning_admin</td>
+<td align="left">授予manage_ml群集权限并读取.ml- *索引的访问权限</td>
+</tr>
+<tr>
+<td align="left">machine_learning_user</td>
+<td align="left">授予查看X-Pack机器学习配置,状态和结果所需的最低权限.此角色授予monitor_ml集群特权,并可以读取.ml-notifications和.ml-anomalies *索引,以存储机器学习结果</td>
+</tr>
+<tr>
+<td align="left">monitoring_user</td>
+<td align="left">授予除使用Kibana所需的X-Pack监视用户以外的任何用户所需的最低权限.这个角色允许访问监控指标.监控用户也应该分配kibana_user角色</td>
+</tr>
+<tr>
+<td align="left">remote_monitoring_agent</td>
+<td align="left">授予远程监视代理程序将数据写入此群集所需的最低权限</td>
+</tr>
+<tr>
+<td align="left">reporting_user</td>
+<td align="left">授予使用Kibana所需的X-Pack报告用户所需的特定权限. 这个角色允许访问报告指数.还应该为报告用户分配kibana_user角色和一个授予他们访问将用于生成报告的数据的角色. superuser #授予对群集的完全访问权限,包括所有索引和数据. 具有超级用户角色的用户还可以管理用户和角色,并模拟系统中的任何其他用户.由于此角色的宽容性质,在将其分配给用户时要格外小心</td>
+</tr>
+<tr>
+<td align="left">transport_client</td>
+<td align="left">通过Java传输客户端授予访问集群所需的权限. Java传输客户端使用节点活性API和群集状态API(当启用嗅探时)获取有关群集中节点的信息. 如果他们使用传输客户端,请为您的用户分配此角色.使用传输客户端有效地意味着用户被授予访问群集状态的权限.这意味着用户可以查看所有索引,索引模板,映射,节点以及集群基本所有内容的元数据.但是,此角色不授予查看所有索引中的数据的权限</td>
+</tr>
+<tr>
+<td align="left">watcher_admin</td>
+<td align="left">授予对.watches索引的写入权限,读取对监视历史记录的访问权限和触发的监视索引,并允许执行所有监视器操作</td>
+</tr>
+<tr>
+<td align="left">watcher_user</td>
+<td align="left">授予读取.watches索引,获取观看动作和观察者统计信息的权限</td>
+</tr>
+</tbody></table>
+<h3 id="cluster权限-可以分配给角色的权限"><a href="#cluster权限-可以分配给角色的权限" class="headerlink" title="cluster权限,可以分配给角色的权限"></a>cluster权限,可以分配给角色的权限</h3><table>
+<thead>
+<tr>
+<th align="left">权限</th>
+<th align="left">详情</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">all</td>
+<td align="left">所有集群管理操作,如快照,节点关闭/重新启动,设置更新,重新路由或管理用户和角色</td>
+</tr>
+<tr>
+<td align="left">monitor</td>
+<td align="left">所有集群只读操作,如集群运行状况,热线程,节点信息,节点和集群统计信息,快照/恢复状态,等待集群任务</td>
+</tr>
+<tr>
+<td align="left">monitor_ml</td>
+<td align="left">所有只读机器学习操作,例如获取有关数据传输,作业,模型快照或结果的信息</td>
+</tr>
+<tr>
+<td align="left">monitor_watcher</td>
+<td align="left">所有只读操作,例如获取watch和watcher统计信息</td>
+</tr>
+<tr>
+<td align="left">manage</td>
+<td align="left">构建monitor并添加更改集群中值的集群操作.这包括快照,更新设置和重新路由.此特权不包括管理安全性的能力</td>
+</tr>
+<tr>
+<td align="left">manage_index_templates</td>
+<td align="left">索引模板上的所有操作</td>
+</tr>
+<tr>
+<td align="left">manage_ml</td>
+<td align="left">所有机器学习操作,例如创建和删除数据传输,作业和模型快照.数据处理以具有提升特权的系统用户身份运行,包括读取所有索引的权限</td>
+</tr>
+<tr>
+<td align="left">manage_pipeline</td>
+<td align="left">摄取管道的所有操作</td>
+</tr>
+<tr>
+<td align="left">manage_security</td>
+<td align="left">所有与安全相关的操作,例如对用户和角色的CRUD操作以及缓存清除</td>
+</tr>
+<tr>
+<td align="left">manage_watcher</td>
+<td align="left">所有观察者操作,例如放置watches,执行,激活或确认.Watches作为具有提升特权的系统用户运行,包括读取和写入所有索引的权限.Watches作为具有提升特权的系统用户运行,包括读取和写入所有索引的权限</td>
+</tr>
+<tr>
+<td align="left">transport_client</td>
+<td align="left">传输客户端连接所需的所有权限.远程集群需要启用跨集群搜索</td>
+</tr>
+</tbody></table>
+<h3 id="indices权限"><a href="#indices权限" class="headerlink" title="indices权限"></a>indices权限</h3><table>
+<thead>
+<tr>
+<th align="left">权限</th>
+<th align="left">详情</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">all</td>
+<td align="left">索引上的任何操作</td>
+</tr>
+<tr>
+<td align="left">monitor</td>
+<td align="left">监控所需的所有操作(恢复,细分信息,索引统计信息和状态)</td>
+</tr>
+<tr>
+<td align="left">manage</td>
+<td align="left">所有monitor特权加索引管理(别名,分析,缓存清除,关闭,删除,存在,刷新,映射,打开,强制合并,刷新,设置,搜索分片,模板,验证)</td>
+</tr>
+<tr>
+<td align="left">view_index_metadata</td>
+<td align="left">对索引元数据(别名,别名存在,获取索引,存在,字段映射,映射,搜索分片,类型存在,验证,warmers,设置)进行只读访问.此特权主要供Kibana用户使用</td>
+</tr>
+<tr>
+<td align="left">read</td>
+<td align="left">只读操作(计数,解释,获取,mget,获取索引脚本,更多像这样,多渗透/搜索/ termvector,渗透,滚动,clear_scroll,搜索,建议,tv)</td>
+</tr>
+<tr>
+<td align="left">read_cross_cluster</td>
+<td align="left">只读访问来自远程集群的搜索操作</td>
+</tr>
+<tr>
+<td align="left">index</td>
+<td align="left">索引和更新文件.还授予对更新映射操作的访问权限</td>
+</tr>
+<tr>
+<td align="left">create</td>
+<td align="left">索引文件.还授予对更新映射操作的访问权限</td>
+</tr>
+<tr>
+<td align="left">delete</td>
+<td align="left">删除文件</td>
+</tr>
+<tr>
+<td align="left">write</td>
+<td align="left">对文档执行所有写入操作的权限,包括索引,更新和删除文档以及执行批量操作的权限.还授予对更新映射操作的访问权限</td>
+</tr>
+<tr>
+<td align="left">delete_index</td>
+<td align="left">删除索引</td>
+</tr>
+<tr>
+<td align="left">create_index</td>
+<td align="left">创建索引.创建索引请求可能包含在创建索引时添加到索引的别名.在这种情况下,该请求最好有manage权限,同时设置索引和别名</td>
+</tr>
+</tbody></table>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/elasticsearch/" rel="tag"># elasticsearch</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/03/05/elasticsearch%E7%B4%A2%E5%BC%95%E6%A8%A1%E6%9D%BF%E5%8F%98%E5%8C%96%E6%B5%8B%E8%AF%95/" rel="prev" title="elasticsearch索引模板变化测试">
+                  <i class="fa fa-chevron-left"></i> elasticsearch索引模板变化测试
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/03/05/cdh%E9%83%A8%E7%BD%B2/" rel="next" title="cdh部署">
+                  cdh部署 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="布隆过滤器(Bloom Filter)是由布隆(Burton Howard Bloom)在 1970 年提出的,它实际上是由一个很长的二进制向量和一系列随机hash映射函数组成(用二进制数组存储数据的特征).一种低空间成本的判断元素是否存在的方式.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="java布隆过滤器">
+<meta property="og:url" content="https://maoeryu.github.io/2022/09/14/java%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="布隆过滤器(Bloom Filter)是由布隆(Burton Howard Bloom)在 1970 年提出的,它实际上是由一个很长的二进制向量和一系列随机hash映射函数组成(用二进制数组存储数据的特征).一种低空间成本的判断元素是否存在的方式.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl182.webp">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl183.webp">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl184.webp">
+<meta property="article:published_time" content="2022-09-13T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-14T06:01:40.323Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="java">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/flgl182.webp">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/09/14/java%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>java布隆过滤器 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">2.1.</span> <span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0"><span class="nav-number">2.2.</span> <span class="nav-text">添加</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A4%E6%96%AD%E5%AD%98%E5%9C%A8"><span class="nav-number">2.3.</span> <span class="nav-text">判断存在</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%93%88%E5%B8%8C%E5%87%BD%E6%95%B0"><span class="nav-number">2.4.</span> <span class="nav-text">哈希函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8%E5%A4%A7%E5%B0%8F-%E5%93%88%E5%B8%8C%E5%87%BD%E6%95%B0%E6%95%B0%E9%87%8F-%E8%AF%AF%E5%88%A4%E7%8E%87"><span class="nav-number">2.5.</span> <span class="nav-text">布隆过滤器大小&#x2F;哈希函数数量&#x2F;误判率</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">3.</span> <span class="nav-text">应用场景</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="nav-number">3.1.</span> <span class="nav-text">数据库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%BB%91%E5%90%8D%E5%8D%95"><span class="nav-number">3.2.</span> <span class="nav-text">黑名单</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.</span> <span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Guava%E7%9A%84%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8"><span class="nav-number">4.1.</span> <span class="nav-text">Guava的布隆过滤器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#BloomFilter%E7%9A%84%E6%88%90%E5%91%98%E5%8F%98%E9%87%8F"><span class="nav-number">4.1.1.</span> <span class="nav-text">BloomFilter的成员变量</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8"><span class="nav-number">4.1.2.</span> <span class="nav-text">创建布隆过滤器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#put%E6%96%B9%E6%B3%95"><span class="nav-number">4.1.3.</span> <span class="nav-text">put方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95"><span class="nav-number">4.1.4.</span> <span class="nav-text">测试</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8redission%E5%88%9B%E5%BB%BA%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8"><span class="nav-number">4.2.</span> <span class="nav-text">使用redission创建布隆过滤器</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/09/14/java%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          java布隆过滤器
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2022-09-14 00:00:00 / Modified: 14:01:40" itemprop="dateCreated datePublished" datetime="2022-09-14T00:00:00+08:00">2022-09-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>布隆过滤器(Bloom Filter)是由布隆(Burton Howard Bloom)在 1970 年提出的,它实际上是由一个很长的二进制向量和一系列随机hash映射函数组成(用二进制数组存储数据的特征).<br>一种低空间成本的判断元素是否存在的方式.</p>
+<span id="more"></span>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>布隆过滤器(BloomFilter)是一种用于判断元素是否存在的方式,它的空间成本非常小,速度也很快.</p>
+<p>但是由于它是基于概率的,因此它存在一定的误判率.<br>Contains()操作:<br>如果返回true只是表示元素<strong>可能存在集合内</strong>,<br>返回false则表示元素<strong>一定不存在集合内</strong>.<br>因此适合用于能够容忍一定误判元素存在集合内的场景,比如缓存.</p>
+<p>它一秒能够进行上百万次操作(主要取决于哈希函数的速度),并且1亿数据在误判率1%的情况下,只需要114MB内存.</p>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><h3 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h3><p>布隆过滤器的数据结构是一个位向量,也就是一个由0/1所组成的向量(下面是一个初始向量).</p>
+<img src="/images/flgl182.webp" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="添加"><a href="#添加" class="headerlink" title="添加"></a>添加</h3><p>每个元素添加进布隆过滤器前,都会经过多个不同的哈希函数,计算出不同的哈希值,然后映射到位向量上,也就是对应的位上面置1.</p>
+<img src="/images/flgl183.webp" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="判断存在"><a href="#判断存在" class="headerlink" title="判断存在"></a>判断存在</h3><p>判断元素是否存在也是如上图流程,根据哈希函数映射的位置,判断所有映射位置是否都为1,如果是则元素可能存在,否则元素一定不存在.</p>
+<p>由于不同的值通过哈希函数之后可能会映射到相同的位置,因此如果一个不存在的元素对应地位位置都被其他元素所设置位1,则查询时就会误判.</p>
+<img src="/images/flgl184.webp" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>假设上图元素3334并没有加入集合,但是由于它映射的位置已经被其他元素所映射,则查询时会误判.</p>
+<h3 id="哈希函数"><a href="#哈希函数" class="headerlink" title="哈希函数"></a>哈希函数</h3><p>布隆过滤器里面的哈希函数需要是彼此独立且均匀分布(类似于哈希表的哈希函数),而且需要尽可能的快,比如murmur3就是一个很好的选择.</p>
+<p>布隆过滤器的性能严重依赖于哈希函数的性能,而一般哈希函数的性能则依赖于输入串(一般为字节数组)的长度,因此为了提高布隆过滤器的性能建议减少输入串的长度.</p>
+<h3 id="布隆过滤器大小-哈希函数数量-误判率"><a href="#布隆过滤器大小-哈希函数数量-误判率" class="headerlink" title="布隆过滤器大小/哈希函数数量/误判率"></a>布隆过滤器大小/哈希函数数量/误判率</h3><p>布隆过滤器的大小/哈希函数数量和误判率之间是互相影响的,如果我们想减少误判率,则需要更大的布隆过滤器和更多的哈希函数.<br>但是我们很难直观地计算出这些参数,还好有两个公式可以帮助我们计算出准确的数值.</p>
+<p>在我们可以确定我们的元素数量和能够容忍的错误率的情况下,我们可以根据下面公式计算布隆过滤器大小和哈希函数数量:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">n &#x3D; 元素数量</span><br><span class="line">m &#x3D; 布隆过滤器大小(位数)</span><br><span class="line">k &#x3D; 哈希函数数量</span><br><span class="line">fpr &#x3D; 错误率(falsePositiveRate,假阳性率)</span><br><span class="line"></span><br><span class="line">m &#x3D; n*(-ln(fpr)&#x2F;(ln2*ln2))</span><br><span class="line">k &#x3D; ln2 * m &#x2F; n</span><br></pre></td></tr></table></figure>
+
+<h2 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h2><h3 id="数据库"><a href="#数据库" class="headerlink" title="数据库"></a>数据库</h3><p>布隆过滤器可以提前过滤所查询数据并不存在的请求,避免对磁盘访问的耗时.<br>比如LevelDB就使用了布隆过滤器过滤请求.</p>
+<h3 id="黑名单"><a href="#黑名单" class="headerlink" title="黑名单"></a>黑名单</h3><p>假设有10亿个黑名单URL,每个URL大小为64字节.<br>使用Bloom Filter,如果错误率为0.1%,只需要1.4GB内存,如果错误率为0.0001%,也只需要2.9GB内存.</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><h3 id="Guava的布隆过滤器"><a href="#Guava的布隆过滤器" class="headerlink" title="Guava的布隆过滤器"></a>Guava的布隆过滤器</h3><p>Guava中,布隆过滤器的实现主要涉及到2个类:BloomFilter/BloomFilterStrategies.</p>
+<h4 id="BloomFilter的成员变量"><a href="#BloomFilter的成员变量" class="headerlink" title="BloomFilter的成员变量"></a>BloomFilter的成员变量</h4><p>需要注意的是不同Guava版本的BloomFilter实现不同.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;** guava实现的以CAS方式设置每个bit位的bit数组 *&#x2F;</span><br><span class="line">private final LockFreeBitArray bits;</span><br><span class="line"></span><br><span class="line">&#x2F;** hash函数的个数 *&#x2F;</span><br><span class="line">private final int numHashFunctions;</span><br><span class="line"></span><br><span class="line">&#x2F;** guava中将对象转换为byte的通道 *&#x2F;</span><br><span class="line">private final Funnel&lt;? super T&gt; funnel;</span><br><span class="line"></span><br><span class="line">&#x2F;**</span><br><span class="line"> * 将byte转换为n个bit的策略,也是bloomfilter hash映射的具体实现</span><br><span class="line"> *&#x2F;</span><br><span class="line">private final Strategy strategy;</span><br></pre></td></tr></table></figure>
+
+<p>这是它的4个成员变量:</p>
+<ol>
+<li>LockFreeBitArray是定义在BloomFilterStrategies中的内部类,封装了布隆过滤器底层bit数组的操作.</li>
+<li>numHashFunctions表示哈希函数的个数.</li>
+<li>Funnel,它和PrimitiveSink配套使用,能将任意类型的对象转化成Java基本数据类型,默认用java.nio.ByteBuffer实现,最终均转化为byte数组.</li>
+<li>Strategy是定义在BloomFilter类内部的接口,代码如下,主要有2个方法,put和mightContain.<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">interface Strategy extends java.io.Serializable &#123;</span><br><span class="line">  &#x2F;** 设置元素 *&#x2F;</span><br><span class="line">  &lt;T&gt; boolean put(T object, Funnel&lt;? super T&gt; funnel, int numHashFunctions, BitArray bits);</span><br><span class="line"></span><br><span class="line">  &#x2F;** 判断元素是否存在*&#x2F;</span><br><span class="line">  &lt;T&gt; boolean mightContain(T object, Funnel&lt;? super T&gt; funnel, int numHashFunctions, BitArray bits);</span><br><span class="line">  .....</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h4 id="创建布隆过滤器"><a href="#创建布隆过滤器" class="headerlink" title="创建布隆过滤器"></a>创建布隆过滤器</h4><p>BloomFilter并没有公有的构造函数,只有一个私有构造函数,而对外它提供了5个重载的create方法.<br>在缺省情况下误判率设定为<strong>3%</strong>,采用<strong>BloomFilterStrategies.MURMUR128_MITZ_64</strong>的实现.</p>
+<p>BloomFilterStrategies.MURMUR128_MITZ_64是Strategy的两个实现之一,Guava以枚举的方式提供这两个实现.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">enum BloomFilterStrategies implements BloomFilter.Strategy &#123;</span><br><span class="line">    MURMUR128_MITZ_32() &#123;&#x2F;&#x2F;...&#125;</span><br><span class="line">    MURMUR128_MITZ_64() &#123;&#x2F;&#x2F;...&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>二者对应了32位哈希映射函数,和64位哈希映射函数,后者使用了murmur3 hash生成的所有128位,具有更大的空间,不过原理是相通的,我们选择相对简单的MURMUR128_MITZ_32来分析.</p>
+<h4 id="put方法"><a href="#put方法" class="headerlink" title="put方法"></a>put方法</h4><p>它用两个hash函数来模拟多个hash函数的情况,这是布隆过滤器的一种优化.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">public &lt;T&gt; boolean put(</span><br><span class="line">  T object, Funnel&lt;? super T&gt; funnel, int numHashFunctions, BitArray bits) &#123;</span><br><span class="line">  long bitSize &#x3D; bits.bitSize();</span><br><span class="line">  &#x2F;&#x2F; 先利用murmur3 hash对输入的funnel计算得到128位的哈希值,funnel现将object转换为byte数组,</span><br><span class="line">  &#x2F;&#x2F; 然后在使用哈希函数转换为long</span><br><span class="line">  long hash64 &#x3D; Hashing.murmur3_128().hashObject(object, funnel).asLong();</span><br><span class="line">  &#x2F;&#x2F; 根据hash值的高低位算出hash1和hash2</span><br><span class="line">  int hash1 &#x3D; (int) hash64;</span><br><span class="line">  int hash2 &#x3D; (int) (hash64 &gt;&gt;&gt; 32);</span><br><span class="line"></span><br><span class="line">  boolean bitsChanged &#x3D; false;</span><br><span class="line">  &#x2F;&#x2F; 循环体内采用了2个函数模拟其他函数的思想,相当于每次累加hash2</span><br><span class="line">  for (int i &#x3D; 1; i &lt;&#x3D; numHashFunctions; i++) &#123;</span><br><span class="line">    int combinedHash &#x3D; hash1 + (i * hash2);</span><br><span class="line">    &#x2F;&#x2F; 如果是负数就变为正数</span><br><span class="line">    if (combinedHash &lt; 0) &#123;</span><br><span class="line">      combinedHash &#x3D; ~combinedHash;</span><br><span class="line">    &#125;</span><br><span class="line">    &#x2F;&#x2F; 通过基于bitSize取模的方式获取bit数组中的索引,然后调用set函数设置.</span><br><span class="line">    bitsChanged |&#x3D; bits.set(combinedHash % bitSize);</span><br><span class="line">  &#125;</span><br><span class="line">  return bitsChanged;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在put方法中,先是将索引位置上的二进制置为1,然后用bitsChanged记录插入结果,如果返回true表明没有重复插入成功,而mightContain方法则是将索引位置上的数值取出,并判断是否为0,只要其中出现一个0,那么立即判断为不存在.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">public &lt;T&gt; boolean mightContain(</span><br><span class="line">    T object, Funnel&lt;? super T&gt; funnel, int numHashFunctions, BitArray bits) &#123;</span><br><span class="line">    long bitSize &#x3D; bits.bitSize();</span><br><span class="line">    long hash64 &#x3D; Hashing.murmur3_128().hashObject(object, funnel).asLong();</span><br><span class="line">    int hash1 &#x3D; (int) hash64;</span><br><span class="line">    int hash2 &#x3D; (int) (hash64 &gt;&gt;&gt; 32);</span><br><span class="line"></span><br><span class="line">    for (int i &#x3D; 1; i &lt;&#x3D; numHashFunctions; i++) &#123;</span><br><span class="line">    int combinedHash &#x3D; hash1 + (i * hash2);</span><br><span class="line">    &#x2F;&#x2F; Flip all the bits if it&#39;s negative (guaranteed positive number)</span><br><span class="line">    if (combinedHash &lt; 0) &#123;</span><br><span class="line">        combinedHash &#x3D; ~combinedHash;</span><br><span class="line">    &#125;</span><br><span class="line">    &#x2F;&#x2F; 和put的区别就在这里,从set转换为get,来判断是否存在</span><br><span class="line">    if (!bits.get(combinedHash % bitSize)) &#123;</span><br><span class="line">        return false;</span><br><span class="line">    &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return true;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Guava为了提供效率,自己实现了LockFreeBitArray来提供bit数组的无锁设置和读取.<br>我们只来看一下它的put函数.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">boolean set(long bitIndex) &#123;</span><br><span class="line">  if (get(bitIndex)) &#123;</span><br><span class="line">    return false;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  int longIndex &#x3D; (int) (bitIndex &gt;&gt;&gt; LONG_ADDRESSABLE_BITS);</span><br><span class="line">  long mask &#x3D; 1L &lt;&lt; bitIndex; &#x2F;&#x2F; only cares about low 6 bits of bitIndex</span><br><span class="line"></span><br><span class="line">  long oldValue;</span><br><span class="line">  long newValue;</span><br><span class="line">  &#x2F;&#x2F; 经典的CAS自旋重试机制</span><br><span class="line">  do &#123;</span><br><span class="line">    oldValue &#x3D; data.get(longIndex);</span><br><span class="line">    newValue &#x3D; oldValue | mask;</span><br><span class="line">  if (oldValue &#x3D;&#x3D; newValue) &#123;</span><br><span class="line">    return false;</span><br><span class="line">  &#125;</span><br><span class="line">  &#125; while (!data.compareAndSet(longIndex, oldValue, newValue));</span><br><span class="line"></span><br><span class="line">  bitCount.increment();</span><br><span class="line">  return true;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">  &lt;groupId&gt;com.google.guava&lt;&#x2F;groupId&gt;</span><br><span class="line">  &lt;artifactId&gt;guava&lt;&#x2F;artifactId&gt;</span><br><span class="line">  &lt;version&gt;31.1-jre&lt;&#x2F;version&gt;</span><br><span class="line">&lt;&#x2F;dependency&gt;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">BloomFilter&lt;CharSequence&gt; bloomFilter &#x3D; BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), 1000000, 0.04);</span><br><span class="line">bloomFilter.put(&quot;tom&quot;);</span><br><span class="line">System.out.println(bloomFilter.mightContain(&quot;aaa&quot;));</span><br><span class="line">System.out.println(bloomFilter.mightContain(&quot;bbb&quot;));</span><br></pre></td></tr></table></figure>
+
+<h3 id="使用redission创建布隆过滤器"><a href="#使用redission创建布隆过滤器" class="headerlink" title="使用redission创建布隆过滤器"></a>使用redission创建布隆过滤器</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">  &lt;groupId&gt;org.redisson&lt;&#x2F;groupId&gt;</span><br><span class="line">  &lt;artifactId&gt;redisson&lt;&#x2F;artifactId&gt;</span><br><span class="line">  &lt;version&gt;3.11.2&lt;&#x2F;version&gt;</span><br><span class="line">&lt;&#x2F;dependency&gt;</span><br></pre></td></tr></table></figure>
+
+<p>首先需要连接上redis,然后创建redission,使用redission创建布隆过滤器,直接使用即可.<br>可以指定预计的数量以及期待的误判率.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">Config config &#x3D; new Config();</span><br><span class="line">config.useSingleServer().setAddress(&quot;redis:&#x2F;&#x2F;oceanbase004:6379&quot;);</span><br><span class="line">&#x2F;&#x2F;config.useSingleServer().setPassword(&quot;&quot;);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 相当于创建了redis的连接</span><br><span class="line">RedissonClient redisson &#x3D; Redisson.create(config);</span><br><span class="line">RBloomFilter&lt;String&gt; bloomFilter &#x3D; redisson.getBloomFilter(&quot;myBloomFilter&quot;);</span><br><span class="line">&#x2F;&#x2F;初始化,预计元素数量为100000000,期待的误差率为4%</span><br><span class="line">bloomFilter.tryInit(100000000, 0.04);</span><br><span class="line">&#x2F;&#x2F;将号码10086插入到布隆过滤器中</span><br><span class="line">bloomFilter.add(&quot;12345&quot;);</span><br><span class="line"></span><br><span class="line">System.out.println(bloomFilter.contains(&quot;123456&quot;));</span><br><span class="line">System.out.println(bloomFilter.contains(&quot;12345&quot;));</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/java/" rel="tag"># java</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/09/14/shell%E5%91%BD%E4%BB%A4-lsof/" rel="prev" title="shell命令-lsof">
+                  <i class="fa fa-chevron-left"></i> shell命令-lsof
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/09/15/%E6%95%B0%E6%8D%AE%E6%B9%96hudi-delta%20lake-iceberg%E5%AF%B9%E6%AF%94/" rel="next" title="数据湖hudi-delta lake-iceberg对比">
+                  数据湖hudi-delta lake-iceberg对比 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

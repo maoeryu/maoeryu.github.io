@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="cdh版本为5.10.1 调研cdh集群安装,组件参数调整,集群节点上线&#x2F;下线操作,角色迁移.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="cdh部署">
+<meta property="og:url" content="https://maoeryu.github.io/2021/03/05/cdh%E9%83%A8%E7%BD%B2/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="cdh版本为5.10.1 调研cdh集群安装,组件参数调整,集群节点上线&#x2F;下线操作,角色迁移.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_4.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_5.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_6.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_7.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_8.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_9.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_10.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_11.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_12.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_13.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_14.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_15.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_16.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_17.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_18.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_19.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_20.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_21.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_22.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_23.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/cm_24.png">
+<meta property="article:published_time" content="2021-03-04T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-08T06:44:19.214Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="cdh">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/cm_1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/03/05/cdh%E9%83%A8%E7%BD%B2/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>cdh部署 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E5%87%86%E5%A4%87"><span class="nav-number">1.</span> <span class="nav-text">安装准备</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E5%8C%85"><span class="nav-number">1.1.</span> <span class="nav-text">安装包</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%8A%82%E7%82%B9%E8%A7%84%E5%88%92"><span class="nav-number">2.</span> <span class="nav-text">节点规划</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA"><span class="nav-number">3.</span> <span class="nav-text">环境搭建</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9B%B4%E6%94%B9yum%E6%BA%90-%E5%B9%B6%E5%AE%89%E8%A3%85%E7%9B%B8%E5%BA%94%E8%BD%AF%E4%BB%B6"><span class="nav-number">3.1.</span> <span class="nav-text">更改yum源,并安装相应软件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B3%E9%97%AD%E9%98%B2%E7%81%AB%E5%A2%99"><span class="nav-number">3.2.</span> <span class="nav-text">关闭防火墙</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0hosts"><span class="nav-number">3.3.</span> <span class="nav-text">添加hosts</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E7%BD%91%E5%85%B3%E9%85%8D%E7%BD%AE"><span class="nav-number">3.4.</span> <span class="nav-text">修改网关配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A6%81%E7%94%A8Selinux"><span class="nav-number">3.5.</span> <span class="nav-text">禁用Selinux</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E6%96%87%E4%BB%B6%E6%89%93%E5%BC%80%E6%95%B0%E9%87%8F%E5%92%8C%E7%94%A8%E6%88%B7%E6%9C%80%E5%A4%A7%E8%BF%9B%E7%A8%8B%E6%95%B0"><span class="nav-number">3.6.</span> <span class="nav-text">设置文件打开数量和用户最大进程数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A6%81%E7%94%A8swap"><span class="nav-number">3.7.</span> <span class="nav-text">禁用swap</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B3%E9%97%AD%E5%A4%A7%E9%A1%B5%E9%9D%A2%E5%8E%8B%E7%BC%A9"><span class="nav-number">3.8.</span> <span class="nav-text">关闭大页面压缩</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85jdk"><span class="nav-number">3.9.</span> <span class="nav-text">安装jdk</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85ssh"><span class="nav-number">3.10.</span> <span class="nav-text">安装ssh</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E6%97%B6%E9%97%B4%E5%90%8C%E6%AD%A5"><span class="nav-number">3.11.</span> <span class="nav-text">集群时间同步</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql%E5%AE%89%E8%A3%85"><span class="nav-number">4.</span> <span class="nav-text">mysql安装</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E9%80%891%E5%8F%B0%E8%8A%82%E7%82%B9-%E5%8D%B8%E8%BD%BD%E7%B3%BB%E7%BB%9F%E8%87%AA%E5%B8%A6%E7%9A%84Mariadb"><span class="nav-number">4.1.</span> <span class="nav-text">任选1台节点,卸载系统自带的Mariadb</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E8%BE%91my-cnf%E6%96%87%E4%BB%B6"><span class="nav-number">4.2.</span> <span class="nav-text">编辑my.cnf文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0mysql%E7%94%A8%E6%88%B7%E7%BB%84-%E5%B9%B6%E5%8A%A0%E5%85%A5%E7%BB%84"><span class="nav-number">4.3.</span> <span class="nav-text">添加mysql用户组,并加入组</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%8E%8B%E5%AE%89%E8%A3%85%E5%8C%85"><span class="nav-number">4.4.</span> <span class="nav-text">解压安装包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%90%AFmysql%E6%9C%8D%E5%8A%A1"><span class="nav-number">4.5.</span> <span class="nav-text">开启mysql服务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E5%AF%86%E7%A0%81"><span class="nav-number">4.6.</span> <span class="nav-text">设置密码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E7%9B%B8%E5%85%B3%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="nav-number">4.7.</span> <span class="nav-text">创建相关数据库</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cm%E5%AE%89%E8%A3%85"><span class="nav-number">5.</span> <span class="nav-text">cm安装</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#107%E4%B8%8B%E5%AE%89%E8%A3%85cm-server"><span class="nav-number">5.1.</span> <span class="nav-text">107下安装cm-server</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">5.2.</span> <span class="nav-text">修改配置文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0mysql-jar%E5%8C%85"><span class="nav-number">5.3.</span> <span class="nav-text">添加mysql jar包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BAcdh%E5%86%85%E7%BD%AE%E6%95%B0%E6%8D%AE%E5%BA%93scm"><span class="nav-number">5.4.</span> <span class="nav-text">创建cdh内置数据库scm</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E8%AF%BB%E5%86%99%E6%9D%83%E9%99%90"><span class="nav-number">5.5.</span> <span class="nav-text">修改读写权限</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%80%E6%9C%89%E8%8A%82%E7%82%B9%E5%88%9B%E5%BB%BAscm%E7%94%A8%E6%88%B7"><span class="nav-number">5.6.</span> <span class="nav-text">所有节点创建scm用户</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E7%9B%AE%E5%BD%95"><span class="nav-number">5.7.</span> <span class="nav-text">创建目录</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E5%88%B6%E6%96%87%E4%BB%B6"><span class="nav-number">5.8.</span> <span class="nav-text">复制文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8cm"><span class="nav-number">5.9.</span> <span class="nav-text">启动cm</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%99%BB%E5%BD%95cm"><span class="nav-number">5.10.</span> <span class="nav-text">登录cm</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%84%E4%BB%B6%E5%AE%89%E8%A3%85"><span class="nav-number">6.</span> <span class="nav-text">组件安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81%E6%9C%8D%E5%8A%A1"><span class="nav-number">7.</span> <span class="nav-text">验证服务</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#hdfs"><span class="nav-number">7.1.</span> <span class="nav-text">hdfs</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hive"><span class="nav-number">7.2.</span> <span class="nav-text">hive</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hadoop"><span class="nav-number">7.3.</span> <span class="nav-text">hadoop</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hbase"><span class="nav-number">7.4.</span> <span class="nav-text">hbase</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A3%81%E7%9B%98%E6%9B%B4%E6%8D%A2"><span class="nav-number">8.</span> <span class="nav-text">磁盘更换</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5hdfs%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F"><span class="nav-number">8.1.</span> <span class="nav-text">检查hdfs文件系统</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E6%8D%9F%E5%9D%8F%E7%A3%81%E7%9B%98"><span class="nav-number">8.2.</span> <span class="nav-text">删除损坏磁盘</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9B%B4%E6%8D%A2%E6%96%B0%E7%A3%81%E7%9B%98"><span class="nav-number">8.3.</span> <span class="nav-text">更换新磁盘</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%92%E8%89%B2%E8%BF%81%E7%A7%BB"><span class="nav-number">9.</span> <span class="nav-text">角色迁移</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%AE%E5%89%8D%E8%A7%92%E8%89%B2%E5%88%86%E9%85%8D"><span class="nav-number">9.1.</span> <span class="nav-text">目前角色分配</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#namenode"><span class="nav-number">9.2.</span> <span class="nav-text">namenode</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hbase-1"><span class="nav-number">9.3.</span> <span class="nav-text">hbase</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kafka"><span class="nav-number">9.4.</span> <span class="nav-text">kafka</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#yarn"><span class="nav-number">9.5.</span> <span class="nav-text">yarn</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zk"><span class="nav-number">9.6.</span> <span class="nav-text">zk</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8B%E7%BA%BF%E8%8A%82%E7%82%B9"><span class="nav-number">9.7.</span> <span class="nav-text">下线节点</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/03/05/cdh%E9%83%A8%E7%BD%B2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          cdh部署
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-03-05 00:00:00" itemprop="dateCreated datePublished" datetime="2021-03-05T00:00:00+08:00">2021-03-05</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-08 14:44:19" itemprop="dateModified" datetime="2022-09-08T14:44:19+08:00">2022-09-08</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E8%BF%90%E7%BB%B4/" itemprop="url" rel="index"><span itemprop="name">运维</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>cdh版本为5.10.1</p>
+<p>调研cdh集群安装,组件参数调整,集群节点上线/下线操作,角色迁移.</p>
+<span id="more"></span>
+<h2 id="安装准备"><a href="#安装准备" class="headerlink" title="安装准备"></a>安装准备</h2><h3 id="安装包"><a href="#安装包" class="headerlink" title="安装包"></a>安装包</h3><p>本次安装cdh5.10.1版本,jdk版本为jdk8-181,centos系统为centos7 64位版本,</p>
+<p>cloudera-manager-centos7-cm5.10.1_x86_64.tar.gz<br>CDH-5.10.1-1.cdh5.10.1.p0.10-el7.parcel<br>CDH-5.10.1-1.cdh5.10.1.p0.10-el7.parcel.sha1<br>manifest.json,jdk-8u181-linux-x64.tar.gz</p>
+<blockquote>
+<p>cloudera-manager下载页面<br><a target="_blank" rel="noopener" href="http://archive.cloudera.com/cm5/cm/5/">http://archive.cloudera.com/cm5/cm/5/</a></p>
+</blockquote>
+<blockquote>
+<p>cdh下载页面<br><a target="_blank" rel="noopener" href="http://archive.cloudera.com/cdh5/parcels/5.10.1/">http://archive.cloudera.com/cdh5/parcels/5.10.1/</a></p>
+</blockquote>
+<blockquote>
+<p>jdk8下载页面<br><a target="_blank" rel="noopener" href="https://www.oracle.com/java/technologies/javase/javase8-archive-downloads.html">https://www.oracle.com/java/technologies/javase/javase8-archive-downloads.html</a> </p>
+</blockquote>
+<h2 id="节点规划"><a href="#节点规划" class="headerlink" title="节点规划"></a>节点规划</h2><p>共3台节点,其中107为server/agent,另两台为agent,</p>
+<table>
+<thead>
+<tr>
+<th align="left">主机</th>
+<th align="left">server</th>
+<th align="left">agent</th>
+<th align="left">zk</th>
+<th align="left">nn</th>
+<th align="left">2nn</th>
+<th align="left">dn</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">107</td>
+<td align="left">是</td>
+<td align="left">是</td>
+<td align="left">是</td>
+<td align="left">是</td>
+<td align="left"></td>
+<td align="left">是</td>
+</tr>
+<tr>
+<td align="left">108</td>
+<td align="left"></td>
+<td align="left">是</td>
+<td align="left">是</td>
+<td align="left"></td>
+<td align="left">是</td>
+<td align="left">是</td>
+</tr>
+<tr>
+<td align="left">109</td>
+<td align="left"></td>
+<td align="left">是</td>
+<td align="left">是</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">是</td>
+</tr>
+</tbody></table>
+<h2 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h2><h3 id="更改yum源-并安装相应软件"><a href="#更改yum源-并安装相应软件" class="headerlink" title="更改yum源,并安装相应软件"></a>更改yum源,并安装相应软件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /etc/yum.repos.d/</span><br><span class="line">rm -rf ./*</span><br><span class="line">curl -o /etc/yum.repos.d/ali.repo http://mirrors.aliyun.com/repo/Centos-7.repo</span><br><span class="line">yum clean all</span><br><span class="line">yum makecache</span><br><span class="line">yum –y install psmisc python-lxml ntp libaio* vim rsync lrzsz net-tools autoconf</span><br></pre></td></tr></table></figure>
+
+<h3 id="关闭防火墙"><a href="#关闭防火墙" class="headerlink" title="关闭防火墙"></a>关闭防火墙</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl stop firewalld.service <span class="comment">#禁用</span></span><br><span class="line">chkconfig firewalld off <span class="comment">#禁用开机自启</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="添加hosts"><a href="#添加hosts" class="headerlink" title="添加hosts"></a>添加hosts</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">172.18.250.107 oceanbase002</span><br><span class="line">172.18.250.108 oceanbase003</span><br><span class="line">172.18.250.109 oceanbase004</span><br></pre></td></tr></table></figure>
+
+<h3 id="修改网关配置"><a href="#修改网关配置" class="headerlink" title="修改网关配置"></a>修改网关配置</h3><p>vim /etc/resolv.conf<br>nameserver xxx.xxx.xxx.xxx</p>
+<h3 id="禁用Selinux"><a href="#禁用Selinux" class="headerlink" title="禁用Selinux"></a>禁用Selinux</h3><p>vim /etc/sysconfig/selinux</p>
+<p>SELINUX=disabled</p>
+<h3 id="设置文件打开数量和用户最大进程数"><a href="#设置文件打开数量和用户最大进程数" class="headerlink" title="设置文件打开数量和用户最大进程数"></a>设置文件打开数量和用户最大进程数</h3><p>vim /etc/security/limits.conf<br>添加以下内容,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">* soft nofile 65535</span><br><span class="line">* hard nofile 65535</span><br><span class="line">* soft nproc 32000</span><br><span class="line">* hard nproc 32000</span><br></pre></td></tr></table></figure>
+
+<h3 id="禁用swap"><a href="#禁用swap" class="headerlink" title="禁用swap"></a>禁用swap</h3><p>/proc/sys/vm/swappiness设置为0,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">echo &#39;vm.swappiness &#x3D; 0&#39;&gt;&#x2F;etc&#x2F;sysctl.conf</span><br><span class="line">sysctl -p</span><br></pre></td></tr></table></figure>
+
+<h3 id="关闭大页面压缩"><a href="#关闭大页面压缩" class="headerlink" title="关闭大页面压缩"></a>关闭大页面压缩</h3><p>vim /etc/rc.local</p>
+<p>末尾加上(永久生效)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">echo never &gt; &#x2F;sys&#x2F;kernel&#x2F;mm&#x2F;transparent_hugepage&#x2F;enabled</span><br><span class="line">echo never &gt; &#x2F;sys&#x2F;kernel&#x2F;mm&#x2F;transparent_hugepage&#x2F;defrag</span><br></pre></td></tr></table></figure>
+
+<h3 id="安装jdk"><a href="#安装jdk" class="headerlink" title="安装jdk"></a>安装jdk</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mkdir &#x2F;usr&#x2F;java</span><br><span class="line">cd &#x2F;usr&#x2F;java</span><br><span class="line">tar xzf jdk-8u181-linux-x64.tar.gz</span><br><span class="line">ln -s jdk1.8.0_181 default</span><br></pre></td></tr></table></figure>
+
+<p>配置java环境变量,在末尾添加,<br>vim /etc/profile</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">export JAVA_HOME&#x3D;&#x2F;usr&#x2F;java&#x2F;default</span><br><span class="line">export PATH&#x3D;$PATH:$JAVA_HOME&#x2F;bin</span><br></pre></td></tr></table></figure>
+
+<p>验证java安装,java –version</p>
+<h3 id="安装ssh"><a href="#安装ssh" class="headerlink" title="安装ssh"></a>安装ssh</h3><p>107无密访问其它节点,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ssh-keygen</span><br><span class="line">cp id_rsa.pub authorized_keys</span><br><span class="line">chmod 600 authorized_keys</span><br><span class="line">ssh-copy-id root@xxx</span><br></pre></td></tr></table></figure>
+
+<h3 id="集群时间同步"><a href="#集群时间同步" class="headerlink" title="集群时间同步"></a>集群时间同步</h3><p>vim /etc/ntp.conf</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">#去掉这个注释,将地址改成网段地址</span><br><span class="line">restrict xxx.xxx.xxx.xxx mask 255.255.255.0 nomodify notrap</span><br><span class="line"></span><br><span class="line">#注释掉这几个</span><br><span class="line">#server 0.centos.pool.ntp.org iburst</span><br><span class="line">#server 1.centos.pool.ntp.org iburst</span><br><span class="line">#server 2.centos.pool.ntp.org iburst</span><br><span class="line">#server 3.centos.pool.ntp.org iburst</span><br><span class="line"></span><br><span class="line">#添加一下内容</span><br><span class="line">server 127.127.1.0</span><br><span class="line">fudge 127.127.1.0 startum 10</span><br></pre></td></tr></table></figure>
+
+<p>vim /etc/sysconfig/ntpd<br>加入下面一句话,用于配置boot时间和系统时间同步,<br><code>SYNC_HWCLOCK=yes</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#启动ntpd服务器</span></span><br><span class="line">systemctl start ntpd.service</span><br><span class="line">systemctl status ntpd.service</span><br><span class="line">chkconfig ntpd on</span><br><span class="line">chkconfig --list |grep ntpd</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">#客户机配置(从节点),添加以下内容,</span></span><br><span class="line">server 172.18.250.107 iburst</span><br><span class="line"></span><br><span class="line"><span class="comment">#重启ntp并验证</span></span><br><span class="line">systemctl restart ntpd</span><br><span class="line">ntpq -p</span><br></pre></td></tr></table></figure>
+
+<h2 id="mysql安装"><a href="#mysql安装" class="headerlink" title="mysql安装"></a>mysql安装</h2><h3 id="任选1台节点-卸载系统自带的Mariadb"><a href="#任选1台节点-卸载系统自带的Mariadb" class="headerlink" title="任选1台节点,卸载系统自带的Mariadb"></a>任选1台节点,卸载系统自带的Mariadb</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rpm -qa|grep mariadb <span class="comment">#查询出已安装的mariadb</span></span><br><span class="line">rpm -e --nodeps 文件名 <span class="comment">#卸载,文件名为使用rpm -qa|grep mariadb命令查出的所有文件</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="编辑my-cnf文件"><a href="#编辑my-cnf文件" class="headerlink" title="编辑my.cnf文件"></a>编辑my.cnf文件</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[mysql]</span><br><span class="line">default-character-set&#x3D;utf8</span><br><span class="line">socket&#x3D;&#x2F;var&#x2F;lib&#x2F;mysql&#x2F;mysql.sock</span><br><span class="line">[mysqld]</span><br><span class="line">skip-name-resolve</span><br><span class="line">port&#x3D;3306</span><br><span class="line">socket&#x3D;&#x2F;var&#x2F;lib&#x2F;mysql&#x2F;mysql.sock</span><br><span class="line">basedir&#x3D;&#x2F;usr&#x2F;local&#x2F;mysql</span><br><span class="line">datadir&#x3D;&#x2F;usr&#x2F;local&#x2F;mysql&#x2F;data</span><br><span class="line">max_connections&#x3D;200</span><br><span class="line">character-set-server&#x3D;utf8</span><br><span class="line">default-storage-engine&#x3D;INNODB</span><br><span class="line">lower_case_table_names&#x3D;1</span><br><span class="line">max_allowed_packet&#x3D;16M</span><br></pre></td></tr></table></figure>
+
+<h3 id="添加mysql用户组-并加入组"><a href="#添加mysql用户组-并加入组" class="headerlink" title="添加mysql用户组,并加入组"></a>添加mysql用户组,并加入组</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">groupadd mysql</span><br><span class="line">useradd -g mysql mysql</span><br></pre></td></tr></table></figure>
+
+<h3 id="解压安装包"><a href="#解压安装包" class="headerlink" title="解压安装包"></a>解压安装包</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd &#x2F;usr</span><br><span class="line">tar xzf mysql-5.6.45-linux-glibc2.12-x86_64.tar.gz</span><br><span class="line">ln -s mysql-5.6.45-linux-glibc2.12-x86_64 mysql</span><br></pre></td></tr></table></figure>
+
+<h3 id="开启mysql服务"><a href="#开启mysql服务" class="headerlink" title="开启mysql服务"></a>开启mysql服务</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mkdir &#x2F;var&#x2F;lib&#x2F;mysql</span><br><span class="line">mkdir &#x2F;var&#x2F;lib&#x2F;mysql&#x2F;mysql</span><br><span class="line">chown -R mysql:mysql &#x2F;var&#x2F;lib&#x2F;mysql</span><br><span class="line">chown -R mysql:mysql &#x2F;var&#x2F;lib&#x2F;mysql&#x2F;mysql</span><br><span class="line">.&#x2F;scripts&#x2F;mysql_install_db --user&#x3D;mysql --basedir&#x3D;&#x2F;usr&#x2F;local&#x2F;mysql&#x2F; --datadir&#x3D;&#x2F;usr&#x2F;local&#x2F;mysql&#x2F;data&#x2F;</span><br><span class="line">chown -R mysql:mysql data   </span><br><span class="line">chown 777 &#x2F;etc&#x2F;my.cnf</span><br><span class="line">cp .&#x2F;support-files&#x2F;mysql.server &#x2F;etc&#x2F;rc.d&#x2F;init.d&#x2F;mysqld</span><br><span class="line">chmod +x &#x2F;etc&#x2F;rc.d&#x2F;init.d&#x2F;mysqld</span><br><span class="line">chkconfig --add mysqld</span><br><span class="line">chkconfig --list mysqld</span><br><span class="line">service mysqld start</span><br></pre></td></tr></table></figure>
+
+<h3 id="设置密码"><a href="#设置密码" class="headerlink" title="设置密码"></a>设置密码</h3><p>以root账户登陆mysql,默认是没有密码,mysql -u root -p</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">#设置root账户密码</span><br><span class="line">use mysql;</span><br><span class="line">update user set password&#x3D;password(&#39;root&#39;) where user&#x3D;&#39;root&#39;and host&#x3D;&#39;localhost&#39;;</span><br><span class="line">GRANT ALL PRIVILEGES ON *.* TO&#39;root&#39;@&#39;%&#39; IDENTIFIED BY &#39;root&#39; WITH GRANT OPTION;</span><br><span class="line">FLUSH PRIVILEGES;</span><br></pre></td></tr></table></figure>
+
+<h3 id="创建相关数据库"><a href="#创建相关数据库" class="headerlink" title="创建相关数据库"></a>创建相关数据库</h3><p>mysql -uroot -proot</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> database hive <span class="keyword">DEFAULT</span> CHARSET utf8 <span class="keyword">COLLATE</span> utf8_general_ci;</span><br><span class="line"><span class="keyword">create</span> database hue <span class="keyword">DEFAULT</span> CHARSET utf8 <span class="keyword">COLLATE</span> utf8_general_ci;</span><br><span class="line"><span class="keyword">create</span> database oozie <span class="keyword">DEFAULT</span> CHARSET utf8 <span class="keyword">COLLATE</span> utf8_general_ci;</span><br><span class="line"><span class="keyword">create</span> database sentry <span class="keyword">DEFAULT</span> CHARSET utf8 <span class="keyword">COLLATE</span> utf8_general_ci;</span><br><span class="line"><span class="keyword">create</span> database report <span class="keyword">DEFAULT</span> CHARSET utf8 <span class="keyword">COLLATE</span> utf8_general_ci;</span><br><span class="line"></span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">ALL</span> <span class="keyword">ON</span> hue.<span class="operator">*</span> <span class="keyword">TO</span> <span class="string">&#x27;hue&#x27;</span>@<span class="string">&#x27;%&#x27;</span> IDENTIFIED <span class="keyword">BY</span> <span class="string">&#x27;root&#x27;</span>;</span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">ALL</span> <span class="keyword">ON</span> sentry.<span class="operator">*</span> <span class="keyword">TO</span> <span class="string">&#x27;sentry&#x27;</span>@<span class="string">&#x27;%&#x27;</span> IDENTIFIED <span class="keyword">BY</span> <span class="string">&#x27;root&#x27;</span>;</span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">ALL</span> <span class="keyword">ON</span> oozie.<span class="operator">*</span> <span class="keyword">TO</span> <span class="string">&#x27;oozie&#x27;</span>@<span class="string">&#x27;%&#x27;</span> IDENTIFIED <span class="keyword">BY</span> <span class="string">&#x27;root&#x27;</span>;</span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">ALL</span> <span class="keyword">ON</span> hive.<span class="operator">*</span> <span class="keyword">TO</span> <span class="string">&#x27;hive&#x27;</span>@<span class="string">&#x27;%&#x27;</span> IDENTIFIED <span class="keyword">BY</span> <span class="string">&#x27;root&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="cm安装"><a href="#cm安装" class="headerlink" title="cm安装"></a>cm安装</h2><h3 id="107下安装cm-server"><a href="#107下安装cm-server" class="headerlink" title="107下安装cm-server"></a>107下安装cm-server</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd &#x2F;opt</span><br><span class="line">tar xzf cloudera-manager-centos7-cm5.10.1_x86_64.tar.gz</span><br><span class="line">ln -s .&#x2F;cm-5.10.1 cm</span><br></pre></td></tr></table></figure>
+
+<h3 id="修改配置文件"><a href="#修改配置文件" class="headerlink" title="修改配置文件"></a>修改配置文件</h3><p>vim /opt/cm/etc/cloudera-scm-agent/config.ini<br>server_host=oceanbase002</p>
+<h3 id="添加mysql-jar包"><a href="#添加mysql-jar包" class="headerlink" title="添加mysql jar包"></a>添加mysql jar包</h3><p>cp mysql-connector-java.jar /opt/cm/share/cmf/lib/</p>
+<h3 id="创建cdh内置数据库scm"><a href="#创建cdh内置数据库scm" class="headerlink" title="创建cdh内置数据库scm"></a>创建cdh内置数据库scm</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;opt&#x2F;cm&#x2F;share&#x2F;cmf&#x2F;schema&#x2F;scm_prepare_database.sh mysql -hoceanbase003 -uroot -proot --scm-host localhost scm root root</span><br></pre></td></tr></table></figure>
+
+<h3 id="修改读写权限"><a href="#修改读写权限" class="headerlink" title="修改读写权限"></a>修改读写权限</h3><p>将parecel包中3个文件复制到/opt/cloudera/parcel-repo/目录下,<br>修改CDH-5.10.1-1.cdh5.10.1.p0.10-el7.parcel.sha1文件后缀去掉1,<br>使用<code>chmod -R guo+wr *</code>给上述三个文件配置可写可读的权限.</p>
+<h3 id="所有节点创建scm用户"><a href="#所有节点创建scm用户" class="headerlink" title="所有节点创建scm用户"></a>所有节点创建scm用户</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">useradd --system --home&#x3D;&#x2F;opt&#x2F;cm&#x2F;run&#x2F;cloudera-scm-server --no-create-home --shell&#x3D;&#x2F;bin&#x2F;false --comment &quot;Cloudera SCM User&quot; cloudera-scm</span><br></pre></td></tr></table></figure>
+
+<h3 id="创建目录"><a href="#创建目录" class="headerlink" title="创建目录"></a>创建目录</h3><blockquote>
+<p>主节点</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mkdir &#x2F;var&#x2F;cloudera-scm-server</span><br><span class="line">chown -R cloudera-scm:cloudera-scm &#x2F;var&#x2F;cloudera-scm-server</span><br><span class="line">mkdir &#x2F;opt&#x2F;cm&#x2F;run&#x2F;cloudera-scm-agent</span><br><span class="line">chown -R cloudera-scm:cloudera-scm &#x2F;opt&#x2F;</span><br></pre></td></tr></table></figure>
+
+<h3 id="复制文件"><a href="#复制文件" class="headerlink" title="复制文件"></a>复制文件</h3><p>将主节点下/opt/<em>全部复制其它节点对应路径下,<br>授权所有节点/opt下所有文件,<br>chown -R cloudera-scm:cloudera-scm /opt/</em></p>
+<h3 id="启动cm"><a href="#启动cm" class="headerlink" title="启动cm"></a>启动cm</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;opt&#x2F;cm&#x2F;etc&#x2F;init.d&#x2F;cloudera-scm-server start</span><br><span class="line">&#x2F;opt&#x2F;cm&#x2F;etc&#x2F;init.d&#x2F;cloudera-scm-agent start</span><br><span class="line">&#x2F;opt&#x2F;cm&#x2F;etc&#x2F;init.d&#x2F;cloudera-scm-server stop</span><br><span class="line">&#x2F;opt&#x2F;cm&#x2F;etc&#x2F;init.d&#x2F;cloudera-scm-agent stop</span><br><span class="line"></span><br><span class="line">&#x2F;opt&#x2F;cm&#x2F;etc&#x2F;init.d&#x2F;cloudera-scm-server restart</span><br><span class="line">&#x2F;opt&#x2F;cm&#x2F;etc&#x2F;init.d&#x2F;cloudera-scm-agent restart</span><br><span class="line">&#x2F;opt&#x2F;cm&#x2F;etc&#x2F;init.d&#x2F;cloudera-scm-server status</span><br><span class="line">&#x2F;opt&#x2F;cm&#x2F;etc&#x2F;init.d&#x2F;cloudera-scm-agent status</span><br></pre></td></tr></table></figure>
+
+<h3 id="登录cm"><a href="#登录cm" class="headerlink" title="登录cm"></a>登录cm</h3><p><a target="_blank" rel="noopener" href="http://oceanbase002:7180/">http://oceanbase002:7180/</a><br>admin/admin</p>
+<h2 id="组件安装"><a href="#组件安装" class="headerlink" title="组件安装"></a>组件安装</h2><img src="/images/cm_1.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/cm_2.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/cm_3.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/cm_4.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/cm_5.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/cm_6.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/cm_7.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/cm_8.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/cm_9.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/cm_10.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+
+<p>复制mysql jar包到hive/oozie lib目录下,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cp &#x2F;opt&#x2F;cm&#x2F;share&#x2F;cmf&#x2F;lib&#x2F;mysql-connector-java.jar &#x2F;opt&#x2F;cloudera&#x2F;parcels&#x2F;CDH&#x2F;lib&#x2F;hive&#x2F;lib&#x2F;</span><br><span class="line">cp &#x2F;opt&#x2F;cm&#x2F;share&#x2F;cmf&#x2F;lib&#x2F;mysql-connector-java.jar &#x2F;var&#x2F;lib&#x2F;oozie&#x2F;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/cm_11.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/cm_12.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/cm_13.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="验证服务"><a href="#验证服务" class="headerlink" title="验证服务"></a>验证服务</h2><h3 id="hdfs"><a href="#hdfs" class="headerlink" title="hdfs"></a>hdfs</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">sudo -u hdfs hadoop fs -mkdir -p &#x2F;user&#x2F;test_table</span><br><span class="line">sudo -u hdfs hadoop fs -chown root:root &#x2F;user&#x2F;test_table</span><br><span class="line">cat &gt; a.txt</span><br><span class="line">1#2</span><br><span class="line">c#d</span><br><span class="line"></span><br><span class="line">hadoop fs -put a.txt &#x2F;user&#x2F;test_table</span><br><span class="line">hadoop fs -cat &#x2F;user&#x2F;test_table&#x2F;a.txt</span><br><span class="line">1#2</span><br><span class="line">c#d</span><br><span class="line">rm -rf a.txt</span><br><span class="line"></span><br><span class="line">hadoop fs -get &#x2F;user&#x2F;test_table&#x2F;a.txt</span><br><span class="line"></span><br><span class="line">cat a.txt</span><br><span class="line">1#2</span><br><span class="line">c#d</span><br></pre></td></tr></table></figure>
+
+<h3 id="hive"><a href="#hive" class="headerlink" title="hive"></a>hive</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">external</span> <span class="keyword">table</span> test_table(</span><br><span class="line">s1 string,</span><br><span class="line">s2 string</span><br><span class="line">)</span><br><span class="line"><span class="type">row</span> format delimited fields terminated <span class="keyword">by</span> <span class="string">&#x27;#&#x27;</span></span><br><span class="line">stored <span class="keyword">as</span> textfile location <span class="string">&#x27;/user/test_table&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test_table;</span><br><span class="line"><span class="keyword">select</span> <span class="built_in">count</span>(<span class="operator">*</span>) <span class="keyword">from</span> test_table;</span><br></pre></td></tr></table></figure>
+
+<h3 id="hadoop"><a href="#hadoop" class="headerlink" title="hadoop"></a>hadoop</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hadoop jar &#x2F;opt&#x2F;cloudera&#x2F;parcels&#x2F;CDH&#x2F;lib&#x2F;hadoop-0.20-mapreduce&#x2F;hadoop-examples.jar pi 5 5</span><br></pre></td></tr></table></figure>
+
+<h3 id="hbase"><a href="#hbase" class="headerlink" title="hbase"></a>hbase</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hbase org.apache.hadoop.hbase.PerformanceEvaluation --nomapred --rows&#x3D;100 sequentialWrite 1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">count &#39;TestTable&#39;</span><br><span class="line">create &#39;TestUpdate&#39;,&#39;member_id&#39;,&#39;address&#39;,&#39;info&#39;</span><br><span class="line">put &#39;TestUpdate&#39;,&#39;member1&#39;,&#39;info:age&#39;,&#39;29&#39;</span><br><span class="line">put &#39;TestUpdate&#39;,&#39;member1&#39;,&#39;info:birthday&#39;,&#39;1987-12-12&#39;</span><br><span class="line">put &#39;TestUpdate&#39;,&#39;member1&#39;,&#39;info:company&#39;,&#39;IBM&#39;</span><br><span class="line">put &#39;TestUpdate&#39;,&#39;member1&#39;,&#39;address:contry&#39;,&#39;China&#39;</span><br><span class="line">put &#39;TestUpdate&#39;,&#39;member1&#39;,&#39;address:province&#39;,&#39;Shanghai&#39;</span><br><span class="line">put &#39;TestUpdate&#39;,&#39;member1&#39;,&#39;address:city&#39;,&#39;Shanghai&#39;</span><br><span class="line">put &#39;TestUpdate&#39;,&#39;member2&#39;,&#39;info:age&#39;,&#39;30&#39;</span><br><span class="line">put &#39;TestUpdate&#39;,&#39;member2&#39;,&#39;info:birthday&#39;,&#39;1986-12-12&#39;</span><br><span class="line">put &#39;TestUpdate&#39;,&#39;member2&#39;,&#39;info:company&#39;,&#39;Oracle&#39;</span><br><span class="line">put &#39;TestUpdate&#39;,&#39;member2&#39;,&#39;address:contry&#39;,&#39;US&#39;</span><br><span class="line">put &#39;TestUpdate&#39;,&#39;member2&#39;,&#39;address:province&#39;,&#39;CA&#39;</span><br><span class="line">put &#39;TestUpdate&#39;,&#39;member2&#39;,&#39;address:city&#39;,&#39;Pat&#39;</span><br><span class="line">count &#39;TestUpdate&#39;</span><br><span class="line">scan &#39;TestUpdate&#39;</span><br></pre></td></tr></table></figure>
+
+<h2 id="磁盘更换"><a href="#磁盘更换" class="headerlink" title="磁盘更换"></a>磁盘更换</h2><h3 id="检查hdfs文件系统"><a href="#检查hdfs文件系统" class="headerlink" title="检查hdfs文件系统"></a>检查hdfs文件系统</h3><p><code>hdfs fsck /</code></p>
+<h3 id="删除损坏磁盘"><a href="#删除损坏磁盘" class="headerlink" title="删除损坏磁盘"></a>删除损坏磁盘</h3><p>依次点击cdh首页-HDFS-实例,点击损坏磁盘所在的datanode,</p>
+<img src="/images/cm_14.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>再点击配置,找到datanode数据目录配置项,删除损坏磁盘目录dn1,保存更改后,再点击刷新-刷新集群-完成,</p>
+<img src="/images/cm_15.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/cm_16.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/cm_17.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>进入节点,目录下,执行<code>du -sm *</code>,查看数据复制情况.<br>dn1所在目录中的数据会复制到当前机器下配置的其它数据目录下,<br>使用<code>hadoop fsck /</code>查看数据块是否异常.</p>
+<h3 id="更换新磁盘"><a href="#更换新磁盘" class="headerlink" title="更换新磁盘"></a>更换新磁盘</h3><p>重新挂载原目录,chmod 755,chown对应用户及组,<br>在该节点下,重新添加datanode数据目录dn1,并刷新集群.</p>
+<h2 id="角色迁移"><a href="#角色迁移" class="headerlink" title="角色迁移"></a>角色迁移</h2><h3 id="目前角色分配"><a href="#目前角色分配" class="headerlink" title="目前角色分配"></a>目前角色分配</h3><img src="/images/cm_18.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>考虑到004节点即将下线,将该节点角色依次迁移到其它节点.</p>
+<h3 id="namenode"><a href="#namenode" class="headerlink" title="namenode"></a>namenode</h3><p>依次点击首页-HDFS-实例,选中后,点击迁移角色,</p>
+<img src="/images/cm_19.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/cm_20.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>因journalnode和failover controller需同时迁移,目前无其它机器,此操作暂停.</p>
+<h3 id="hbase-1"><a href="#hbase-1" class="headerlink" title="hbase"></a>hbase</h3><p>依次点击首页-HBASE-实例,选中后,点击停止-删除.</p>
+<img src="/images/cm_21.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="kafka"><a href="#kafka" class="headerlink" title="kafka"></a>kafka</h3><p>依次点击首页-KAFKA-实例,添加角色/停止-删除.</p>
+<h3 id="yarn"><a href="#yarn" class="headerlink" title="yarn"></a>yarn</h3><p>依次点击首页-YARN-实例,添加角色/停止-删除.</p>
+<h3 id="zk"><a href="#zk" class="headerlink" title="zk"></a>zk</h3><p>依次点击首页-ZK-实例,添加角色/停止-删除.</p>
+<h3 id="下线节点"><a href="#下线节点" class="headerlink" title="下线节点"></a>下线节点</h3><p>依次点击首页-主机,选中后,点击从集群中删除,</p>
+<img src="/images/cm_22.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/cm_23.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/cm_24.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/cdh/" rel="tag"># cdh</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/03/05/elasticsearch-xpack%E4%BD%BF%E7%94%A8/" rel="prev" title="elasticsearch-xpack使用">
+                  <i class="fa fa-chevron-left"></i> elasticsearch-xpack使用
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/03/08/flume%20event%E6%B5%81%E5%88%86%E6%9E%90/" rel="next" title="flume event流分析">
+                  flume event流分析 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

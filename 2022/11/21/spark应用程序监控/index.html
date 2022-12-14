@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="table th:first-of-type {   width: 40%; } table th:nth-of-type(2) {   width: 60%; }    spark 2.4.8有多种方法可以监控 Spark 应用程序:Web UI、指标和外部检测.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="spark应用程序监控">
+<meta property="og:url" content="https://maoeryu.github.io/2022/11/21/spark%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E7%9B%91%E6%8E%A7/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="table th:first-of-type {   width: 40%; } table th:nth-of-type(2) {   width: 60%; }    spark 2.4.8有多种方法可以监控 Spark 应用程序:Web UI、指标和外部检测.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-11-20T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-11-22T02:26:09.435Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="spark">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/11/21/spark%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E7%9B%91%E6%8E%A7/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>spark应用程序监控 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Web-Interfaces"><span class="nav-number">1.</span> <span class="nav-text">Web Interfaces</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8B%E5%90%8E%E8%A7%82%E5%AF%9F"><span class="nav-number">2.</span> <span class="nav-text">事后观察</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F"><span class="nav-number">2.1.</span> <span class="nav-text">环境变量</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Spark-%E5%8E%86%E5%8F%B2%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%85%8D%E7%BD%AE%E9%80%89%E9%A1%B9"><span class="nav-number">2.2.</span> <span class="nav-text">Spark 历史服务器配置选项</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#REST-API"><span class="nav-number">3.</span> <span class="nav-text">REST API</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#applications"><span class="nav-number">3.1.</span> <span class="nav-text">&#x2F;applications</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-jobs"><span class="nav-number">3.2.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;jobs</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-jobs-job-id"><span class="nav-number">3.3.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;jobs&#x2F;[job-id]</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-stages"><span class="nav-number">3.4.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;stages</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-stages-stage-id"><span class="nav-number">3.5.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;stages&#x2F;[stage-id]</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-stages-stage-id-stage-attempt-id"><span class="nav-number">3.6.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;stages&#x2F;[stage-id]&#x2F;[stage-attempt-id]</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-stages-stage-id-stage-attempt-id-taskSummary"><span class="nav-number">3.7.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;stages&#x2F;[stage-id]&#x2F;[stage-attempt-id]&#x2F;taskSummary</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-stages-stage-id-stage-attempt-id-taskList"><span class="nav-number">3.8.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;stages&#x2F;[stage-id]&#x2F;[stage-attempt-id]&#x2F;taskList</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-executors"><span class="nav-number">3.9.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;executors</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-executors-executor-id-threads"><span class="nav-number">3.10.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;executors&#x2F;[executor-id]&#x2F;threads</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-allexecutors"><span class="nav-number">3.11.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;allexecutors</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-storage-rdd"><span class="nav-number">3.12.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;storage&#x2F;rdd</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-storage-rdd-rdd-id"><span class="nav-number">3.13.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;storage&#x2F;rdd&#x2F;[rdd-id]</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-base-app-id-logs"><span class="nav-number">3.14.</span> <span class="nav-text">&#x2F;applications&#x2F;[base-app-id]&#x2F;logs</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-base-app-id-attempt-id-logs"><span class="nav-number">3.15.</span> <span class="nav-text">&#x2F;applications&#x2F;[base-app-id]&#x2F;[attempt-id]&#x2F;logs</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-streaming-statistics"><span class="nav-number">3.16.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;streaming&#x2F;statistics</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-streaming-receivers"><span class="nav-number">3.17.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;streaming&#x2F;receivers</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-streaming-receivers-stream-id"><span class="nav-number">3.18.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;streaming&#x2F;receivers&#x2F;[stream-id]</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-streaming-batches"><span class="nav-number">3.19.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;streaming&#x2F;batches</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-streaming-batches-batch-id"><span class="nav-number">3.20.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;streaming&#x2F;batches&#x2F;[batch-id]</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-streaming-batches-batch-id-operations"><span class="nav-number">3.21.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;streaming&#x2F;batches&#x2F;[batch-id]&#x2F;operations</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-streaming-batches-batch-id-operations-outputOp-id"><span class="nav-number">3.22.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;streaming&#x2F;batches&#x2F;[batch-id]&#x2F;operations&#x2F;[outputOp-id]</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#applications-app-id-environment"><span class="nav-number">3.23.</span> <span class="nav-text">&#x2F;applications&#x2F;[app-id]&#x2F;environment</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#version"><span class="nav-number">3.24.</span> <span class="nav-text">&#x2F;version</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E8%80%85%E4%BB%BB%E5%8A%A1%E6%8C%87%E6%A0%87"><span class="nav-number">4.</span> <span class="nav-text">执行者任务指标</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#API-%E7%89%88%E6%9C%AC%E6%8E%A7%E5%88%B6%E7%AD%96%E7%95%A5"><span class="nav-number">4.1.</span> <span class="nav-text">API 版本控制策略</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Metrics-%E6%8C%87%E6%A0%87"><span class="nav-number">5.</span> <span class="nav-text">Metrics(指标)</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/11/21/spark%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E7%9B%91%E6%8E%A7/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          spark应用程序监控
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-11-21 00:00:00" itemprop="dateCreated datePublished" datetime="2022-11-21T00:00:00+08:00">2022-11-21</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-11-22 10:26:09" itemprop="dateModified" datetime="2022-11-22T10:26:09+08:00">2022-11-22</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <style>
+table th:first-of-type {
+  width: 40%;
+}
+table th:nth-of-type(2) {
+  width: 60%;
+}
+</style>
+
+
+<p>spark 2.4.8<br>有多种方法可以监控 Spark 应用程序:Web UI、指标和外部检测.</p>
+<span id="more"></span>
+<h3 id="Web-Interfaces"><a href="#Web-Interfaces" class="headerlink" title="Web Interfaces"></a>Web Interfaces</h3><p>每个 SparkContext 都会启动一个 Web UI,默认情况下在端口 4040 上显示有关应用程序的有用信息.<br>这包括:</p>
+<ol>
+<li>调度程序阶段和任务的列表</li>
+<li>RDD 大小和内存使用情况的总结</li>
+<li>环境信息</li>
+<li>有关正在运行的执行程序的信息</li>
+</ol>
+<p>您只需在网络浏览器中打开<code>http://&lt;driver-node&gt;:4040</code>即可访问此界面.<br>如果多个 SparkContext 在同一主机上运行,它们将绑定到以 4040(4041、4042 等)开头的连续端口.</p>
+<p>请注意,此信息默认仅在应用运行期间可用.<br>要事后查看 Web UI,请在启动应用程序之前设置<font color="blue">spark.eventLog.enabled = true</font>.<br>这会将 Spark 配置为记录将 UI 中显示的信息编码到持久存储的 Spark 事件.</p>
+<h3 id="事后观察"><a href="#事后观察" class="headerlink" title="事后观察"></a>事后观察</h3><p>如果应用程序的事件日志存在,仍然可以通过 Spark 的历史服务器构建应用程序的 UI.<br>您可以通过执行以下命令来启动历史服务器:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;sbin&#x2F;start-history-server.sh</span><br></pre></td></tr></table></figure>
+
+<p>这会在默认情况下创建一个 Web 界面<code>http://&lt;server-url&gt;:18080</code>,列出未完成和已完成的应用程序和尝试.</p>
+<p>当使用文件系统提供者类(见下文spark.history.provider)时,基本日志记录目录必须在<code>spark.history.fs.logDirectory</code>配置选项中提供,并且应该包含每个代表应用程序事件日志的子目录.</p>
+<p>spark 作业本身必须配置为记录事件,并将它们记录到同一个共享的可写目录中.<br>例如,如果服务器配置了日志目录 hdfs://namenode/shared/spark-logs,则客户端选项为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spark.eventLog.enabled true</span><br><span class="line">spark.eventLog.dir hdfs:&#x2F;&#x2F;namenode&#x2F;shared&#x2F;spark-logs</span><br></pre></td></tr></table></figure>
+
+<p>历史服务器可以配置如下.</p>
+<h4 id="环境变量"><a href="#环境变量" class="headerlink" title="环境变量"></a>环境变量</h4><table>
+<thead>
+<tr>
+<th align="left">环境变量</th>
+<th align="left">意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">SPARK_DAEMON_MEMORY</td>
+<td align="left">分配给历史服务器的内存(默认值:1g).</td>
+</tr>
+<tr>
+<td align="left">SPARK_DAEMON_JAVA_OPTS</td>
+<td align="left">历史服务器的 JVM 选项(默认值:无).</td>
+</tr>
+<tr>
+<td align="left">SPARK_DAEMON_CLASSPATH</td>
+<td align="left">历史服务器的类路径(默认值:无).</td>
+</tr>
+<tr>
+<td align="left">SPARK_PUBLIC_DNS</td>
+<td align="left">历史服务器的公共地址.如果未设置,应用程序历史记录的链接可能会使用服务器的内部地址,从而导致链接断开(默认值:无).</td>
+</tr>
+<tr>
+<td align="left">SPARK_HISTORY_OPTS</td>
+<td align="left">spark.history.*历史服务器的配置选项(默认值:无).</td>
+</tr>
+</tbody></table>
+<h4 id="Spark-历史服务器配置选项"><a href="#Spark-历史服务器配置选项" class="headerlink" title="Spark 历史服务器配置选项"></a>Spark 历史服务器配置选项</h4><p>Spark History Server 的安全选项在 安全页面中有更详细的介绍.</p>
+<p>spark.history.provider<br>org.apache.spark.deploy.history.FsHistoryProvider<br>实现应用程序历史后端的类的名称.目前只有一种实现,由 Spark 提供,它会查找存储在文件系统中的应用程序日志.</p>
+<p>spark.history.fs.logDirectory<br>file:/tmp/spark-events<br>对于文件系统历史提供程序,指向包含要加载的应用程序事件日志的目录的 URL.这可以是本地file:// path、HDFS 路径hdfs://namenode/shared/spark-logs 或 Hadoop API 支持的替代文件系统的路径.</p>
+<p>spark.history.fs.update.interval<br>10s<br>文件系统历史记录提供程序检查日志目录中新日志或更新日志的时间段.较短的时间间隔可以更快地检测到新应用程序,但代价是更多的服务器负载会重新读取更新的应用程序.一旦更新完成,已完成和未完成的应用程序的列表将反映更改.</p>
+<p>spark.history.retainedApplications<br>50<br>要在缓存中保留 UI 数据的应用程序数.如果超过此上限,那么最旧的应用程序将从缓存中删除.如果一个应用程序不在缓存中,如果从 UI 访问它,则必须从磁盘加载它.</p>
+<p>spark.history.ui.maxApplications<br>Int.MaxValue<br>要在历史摘要页面上显示的应用程序数.应用程序 UI 仍然可以通过直接访问它们的 URL 来使用,即使它们没有显示在历史摘要页面上也是如此.</p>
+<p>spark.history.ui.port<br>18080<br>历史服务器的 Web 界面绑定到的端口.</p>
+<p>spark.history.kerberos.enabled<br>false<br>指示历史服务器是否应使用 kerberos 登录.如果历史服务器正在访问安全 Hadoop 集群上的 HDFS 文件,则这是必需的.如果这是真的,它使用配置spark.history.kerberos.principal和 spark.history.kerberos.keytab.</p>
+<p>spark.history.kerberos.principal<br>(none)<br>历史服务器的 Kerberos 主体名称.</p>
+<p>spark.history.kerberos.keytab<br>(none)<br>历史服务器的 kerberos keytab 文件的位置.</p>
+<p>spark.history.fs.cleaner.enabled<br>false<br>指定历史服务器是否应定期从存储中清除事件日志.</p>
+<p>spark.history.fs.cleaner.interval<br>1d<br>文件系统作业历史清理器检查要删除的文件的频率.文件只有在早于spark.history.fs.cleaner.maxAge</p>
+<p>spark.history.fs.cleaner.maxAge<br>7d<br>当文件系统历史清理器运行时,早于此的作业历史文件将被删除.</p>
+<p>spark.history.fs.endEventReparseChunkSize<br>1m<br>在查找结束事件的日志文件末尾解析多少字节.这用于通过跳过事件日志文件中不必要的部分来加快应用程序列表的生成.可以通过将此配置设置为 0 来禁用它.</p>
+<p>spark.history.fs.inProgressOptimization.enabled<br>true<br>启用对正在进行的日志的优化处理.此选项可能会使未能重命名其事件日志的已完成应用程序列为进行中.</p>
+<p>spark.history.fs.numReplayThreads<br>25% of available cores<br>历史服务器将用于处理事件日志的线程数.</p>
+<p>spark.history.store.maxDiskUsage<br>10g<br>存储缓存应用程序历史信息的本地目录的最大磁盘使用率.</p>
+<p>spark.history.store.path<br>(none)<br>缓存应用程序历史数据的本地目录.如果设置,历史服务器会将应用程序数据存储在磁盘上,而不是将其保存在内存中.写入磁盘的数据将在历史服务器重启时重新使用.</p>
+<p>请注意,在所有这些 UI 中,表格都可以通过单击其标题进行排序,从而可以轻松识别慢速任务、数据倾斜等.</p>
+<blockquote>
+<p>笔记</p>
+</blockquote>
+<ol>
+<li>历史服务器显示已完成和未完成的 Spark 作业.<br>如果应用程序在失败后进行多次尝试,将显示失败的尝试,以及任何正在进行的未完成尝试或最终成功的尝试.</li>
+<li>不完整的应用程序只会间歇性地更新.<br>更新之间的时间由检查已更改文件 ( spark.history.fs.update.interval) 之间的时间间隔定义.<br>在较大的集群上,更新间隔可以设置为较大的值.<br>查看正在运行的应用程序的方式其实就是查看它自己的web UI.</li>
+<li>未将自己注册为已完成而退出的应用程序将被列为未完成-即使它们不再运行.<br>如果应用程序崩溃,就会发生这种情况.</li>
+<li>表示 Spark 作业完成的一种方法是显式停止 Spark 上下文 ( sc.stop()),或者在 Python 中使用with SparkContext() as sc:构造来处理 Spark 上下文设置和拆除.</li>
+</ol>
+<h3 id="REST-API"><a href="#REST-API" class="headerlink" title="REST API"></a>REST API</h3><p>除了在 UI 中查看指标外,它们还可以 JSON 形式提供.<br>这为开发人员提供了一种简单的方法来为 Spark 创建新的可视化和监控工具.<br>JSON 可用于正在运行的应用程序和历史服务器.<br>端点安装在/api/v1. 例如,对于历史服务器,它们通常可以在<code>http://&lt;server-url&gt;:18080/api/v1</code>访问,对于正在运行的应用程序,它们通常可以在<code>http://localhost:4040/api/v1</code>访问.</p>
+<p>在 API 中,应用程序由其应用程序 ID 引用<code>[app-id]</code>.<br>在 YARN 上运行时,每个应用程序可能有多次尝试,但只有集群模式的应用程序有尝试 ID,客户端模式的应用程序没有.<br>YARN 集群模式下的应用程序可以通过其<code>[attempt-id]</code>. 在下面列出的 API 中,当以 YARN 集群模式运行时, <code>[app-id]</code>实际上将是<code>[base-app-id]/[attempt-id]</code>,其中<code>[base-app-id]</code>是 YARN 应用程序 ID.</p>
+<h4 id="applications"><a href="#applications" class="headerlink" title="/applications"></a>/applications</h4><p>所有应用程序的列表.</p>
+<p><code>?status=[completed|running]</code><br>仅列出处于所选状态的应用程序.</p>
+<p><code>?minDate=[date]</code><br>列出的最早开始日期/时间.</p>
+<p><code>?maxDate=[date]</code><br>列出的最晚开始日期/时间.</p>
+<p><code>?minEndDate=[date]</code><br>列出的最早结束日期/时间.</p>
+<p><code>?maxEndDate=[date]</code><br>列出的最晚结束日期/时间.</p>
+<p><code>?limit=[limit]</code><br>限制列出的应用程序的数量.</p>
+<p>例子:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">?minDate&#x3D;2015-02-10</span><br><span class="line">?minDate&#x3D;2015-02-03T16:42:40.000GMT</span><br><span class="line">?maxDate&#x3D;2015-02-11T20:41:30.000GMT</span><br><span class="line">?minEndDate&#x3D;2015-02-12</span><br><span class="line">?minEndDate&#x3D;2015-02-12T09:15:10.000GMT</span><br><span class="line">?maxEndDate&#x3D;2015-02-14T16:30:45.000GMT</span><br><span class="line">?limit&#x3D;10</span><br></pre></td></tr></table></figure>
+
+<h4 id="applications-app-id-jobs"><a href="#applications-app-id-jobs" class="headerlink" title="/applications/[app-id]/jobs"></a>/applications/[app-id]/jobs</h4><p>给定应用程序的所有作业的列表.</p>
+<p><code>?status=[running|succeeded|failed|unknown]</code><br>仅列出特定状态的作业.</p>
+<h4 id="applications-app-id-jobs-job-id"><a href="#applications-app-id-jobs-job-id" class="headerlink" title="/applications/[app-id]/jobs/[job-id]"></a>/applications/[app-id]/jobs/[job-id]</h4><p>给定作业的详细信息.</p>
+<h4 id="applications-app-id-stages"><a href="#applications-app-id-stages" class="headerlink" title="/applications/[app-id]/stages"></a>/applications/[app-id]/stages</h4><p>给定应用程序的所有阶段的列表.</p>
+<p><code>?status=[active|complete|pending|failed]</code><br>仅列出状态中的阶段.</p>
+<h4 id="applications-app-id-stages-stage-id"><a href="#applications-app-id-stages-stage-id" class="headerlink" title="/applications/[app-id]/stages/[stage-id]"></a>/applications/[app-id]/stages/[stage-id]</h4><p>给定阶段的所有尝试的列表.</p>
+<h4 id="applications-app-id-stages-stage-id-stage-attempt-id"><a href="#applications-app-id-stages-stage-id-stage-attempt-id" class="headerlink" title="/applications/[app-id]/stages/[stage-id]/[stage-attempt-id]"></a>/applications/[app-id]/stages/[stage-id]/[stage-attempt-id]</h4><p>给定阶段尝试的详细信息.</p>
+<h4 id="applications-app-id-stages-stage-id-stage-attempt-id-taskSummary"><a href="#applications-app-id-stages-stage-id-stage-attempt-id-taskSummary" class="headerlink" title="/applications/[app-id]/stages/[stage-id]/[stage-attempt-id]/taskSummary"></a>/applications/[app-id]/stages/[stage-id]/[stage-attempt-id]/taskSummary</h4><p>给定阶段尝试中所有任务的摘要指标.</p>
+<p><code>?quantiles</code><br>用给定的分位数总结指标.</p>
+<p>例子:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?quantiles&#x3D;0.01,0.5,0.99</span><br></pre></td></tr></table></figure>
+
+<h4 id="applications-app-id-stages-stage-id-stage-attempt-id-taskList"><a href="#applications-app-id-stages-stage-id-stage-attempt-id-taskList" class="headerlink" title="/applications/[app-id]/stages/[stage-id]/[stage-attempt-id]/taskList"></a>/applications/[app-id]/stages/[stage-id]/[stage-attempt-id]/taskList</h4><p>给定阶段尝试的所有任务列表.</p>
+<p><code>?offset=[offset]&amp;length=[len]</code><br>列出给定范围内的任务.</p>
+<p><code>?sortBy=[runtime|-runtime]</code><br>对任务进行排序.</p>
+<p>例子:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?offset&#x3D;10&amp;length&#x3D;50&amp;sortBy&#x3D;runtime</span><br></pre></td></tr></table></figure>
+
+<h4 id="applications-app-id-executors"><a href="#applications-app-id-executors" class="headerlink" title="/applications/[app-id]/executors"></a>/applications/[app-id]/executors</h4><p>给定应用程序的所有活动执行程序的列表.</p>
+<h4 id="applications-app-id-executors-executor-id-threads"><a href="#applications-app-id-executors-executor-id-threads" class="headerlink" title="/applications/[app-id]/executors/[executor-id]/threads"></a>/applications/[app-id]/executors/[executor-id]/threads</h4><p>在给定的活动执行器中运行的所有线程的堆栈跟踪.<br>无法通过历史服务器获得.</p>
+<h4 id="applications-app-id-allexecutors"><a href="#applications-app-id-allexecutors" class="headerlink" title="/applications/[app-id]/allexecutors"></a>/applications/[app-id]/allexecutors</h4><p>给定应用程序的所有(活动和死亡)执行程序的列表.</p>
+<h4 id="applications-app-id-storage-rdd"><a href="#applications-app-id-storage-rdd" class="headerlink" title="/applications/[app-id]/storage/rdd"></a>/applications/[app-id]/storage/rdd</h4><p>给定应用程序的存储 RDD 列表.</p>
+<h4 id="applications-app-id-storage-rdd-rdd-id"><a href="#applications-app-id-storage-rdd-rdd-id" class="headerlink" title="/applications/[app-id]/storage/rdd/[rdd-id]"></a>/applications/[app-id]/storage/rdd/[rdd-id]</h4><p>给定 RDD 的存储状态的详细信息.</p>
+<h4 id="applications-base-app-id-logs"><a href="#applications-base-app-id-logs" class="headerlink" title="/applications/[base-app-id]/logs"></a>/applications/[base-app-id]/logs</h4><p>将给定应用程序的所有尝试的事件日志下载为 zip 文件中的文件.</p>
+<h4 id="applications-base-app-id-attempt-id-logs"><a href="#applications-base-app-id-attempt-id-logs" class="headerlink" title="/applications/[base-app-id]/[attempt-id]/logs"></a>/applications/[base-app-id]/[attempt-id]/logs</h4><p>将特定应用程序尝试的事件日志下载为 zip 文件.</p>
+<h4 id="applications-app-id-streaming-statistics"><a href="#applications-app-id-streaming-statistics" class="headerlink" title="/applications/[app-id]/streaming/statistics"></a>/applications/[app-id]/streaming/statistics</h4><p>流上下文的统计信息.</p>
+<h4 id="applications-app-id-streaming-receivers"><a href="#applications-app-id-streaming-receivers" class="headerlink" title="/applications/[app-id]/streaming/receivers"></a>/applications/[app-id]/streaming/receivers</h4><p>所有流式接收器的列表.</p>
+<h4 id="applications-app-id-streaming-receivers-stream-id"><a href="#applications-app-id-streaming-receivers-stream-id" class="headerlink" title="/applications/[app-id]/streaming/receivers/[stream-id]"></a>/applications/[app-id]/streaming/receivers/[stream-id]</h4><p>给定接收器的详细信息.</p>
+<h4 id="applications-app-id-streaming-batches"><a href="#applications-app-id-streaming-batches" class="headerlink" title="/applications/[app-id]/streaming/batches"></a>/applications/[app-id]/streaming/batches</h4><p>所有保留批次的列表.</p>
+<h4 id="applications-app-id-streaming-batches-batch-id"><a href="#applications-app-id-streaming-batches-batch-id" class="headerlink" title="/applications/[app-id]/streaming/batches/[batch-id]"></a>/applications/[app-id]/streaming/batches/[batch-id]</h4><p>给定批次的详细信息.</p>
+<h4 id="applications-app-id-streaming-batches-batch-id-operations"><a href="#applications-app-id-streaming-batches-batch-id-operations" class="headerlink" title="/applications/[app-id]/streaming/batches/[batch-id]/operations"></a>/applications/[app-id]/streaming/batches/[batch-id]/operations</h4><p>给定批次的所有输出操作的列表.</p>
+<h4 id="applications-app-id-streaming-batches-batch-id-operations-outputOp-id"><a href="#applications-app-id-streaming-batches-batch-id-operations-outputOp-id" class="headerlink" title="/applications/[app-id]/streaming/batches/[batch-id]/operations/[outputOp-id]"></a>/applications/[app-id]/streaming/batches/[batch-id]/operations/[outputOp-id]</h4><p>给定操作和给定批次的详细信息.</p>
+<h4 id="applications-app-id-environment"><a href="#applications-app-id-environment" class="headerlink" title="/applications/[app-id]/environment"></a>/applications/[app-id]/environment</h4><p>给定应用程序的环境详细信息.</p>
+<h4 id="version"><a href="#version" class="headerlink" title="/version"></a>/version</h4><p>获取当前的 spark 版本.</p>
+<p>可以检索的作业和阶段的数量受限于独立 Spark UI 的相同保留机制.<br>&quot;spark.ui.retainedJobs&quot;定义触发作业和阶段垃圾收集的阈值spark.ui.retainedStages.<br>请注意,垃圾收集发生在播放时:可以通过增加这些值并重新启动历史服务器来检索更多条目.</p>
+<h3 id="执行者任务指标"><a href="#执行者任务指标" class="headerlink" title="执行者任务指标"></a>执行者任务指标</h3><p>REST API 以任务执行的粒度公开 Spark 执行器收集的任务指标值.<br>这些指标可用于性能故障排除和工作负载表征.<br>可用指标列表,带有简短描述:</p>
+<table>
+<thead>
+<tr>
+<th align="left">Spark 执行器任务指标名称</th>
+<th align="left">介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">executorRunTime</td>
+<td align="left">执行者运行此任务所花费的时间.这包括获取shuffle数据的时间.该值以毫秒表示.</td>
+</tr>
+<tr>
+<td align="left">executorCpuTime</td>
+<td align="left">执行者运行此任务所花费的 CPU 时间.这包括获取shuffle数据的时间.该值以纳秒表示.</td>
+</tr>
+<tr>
+<td align="left">executorDeserializeTime</td>
+<td align="left">反序列化此任务所花费的时间.该值以毫秒表示.</td>
+</tr>
+<tr>
+<td align="left">executorDeserializeCpuTime</td>
+<td align="left">执行程序反序列化此任务所花费的 CPU 时间.该值以纳秒表示.</td>
+</tr>
+<tr>
+<td align="left">resultSize</td>
+<td align="left">此任务作为 TaskResult 传输回驱动程序的字节数.</td>
+</tr>
+<tr>
+<td align="left">jvmGCTime</td>
+<td align="left">JVM 在执行此任务时花费在垃圾回收上的时间.该值以毫秒表示.</td>
+</tr>
+<tr>
+<td align="left">resultSerializationTime</td>
+<td align="left">序列化任务结果所用的时间.该值以毫秒表示.</td>
+</tr>
+<tr>
+<td align="left">memoryBytesSpilled</td>
+<td align="left">此任务溢出的内存字节数.</td>
+</tr>
+<tr>
+<td align="left">diskBytesSpilled</td>
+<td align="left">此任务溢出的磁盘字节数.</td>
+</tr>
+<tr>
+<td align="left">peakExecutionMemory</td>
+<td align="left">在洗牌、聚合和连接期间创建的内部数据结构使用的峰值内存.这个累加器的值应该大约是这个任务中创建的所有此类数据结构的峰值大小的总和.对于 SQL 作业,这只会跟踪所有不安全的运算符和 ExternalSort.</td>
+</tr>
+<tr>
+<td align="left">inputMetrics.*</td>
+<td align="left">与从 <code>[[org.apache.spark.rdd.HadoopRDD]]</code> 或持久数据中读取数据相关的指标.</td>
+</tr>
+<tr>
+<td align="left">.bytesRead</td>
+<td align="left">读取的字节总数.</td>
+</tr>
+<tr>
+<td align="left">.recordsRead</td>
+<td align="left">读取的记录总数.</td>
+</tr>
+<tr>
+<td align="left">outputMetrics.*</td>
+<td align="left">与外部写入数据(例如分布式文件系统)相关的指标,仅在具有输出的任务中定义.</td>
+</tr>
+<tr>
+<td align="left">.bytesWritten</td>
+<td align="left">写入的总字节数</td>
+</tr>
+<tr>
+<td align="left">.recordsWritten</td>
+<td align="left">写入的记录总数</td>
+</tr>
+<tr>
+<td align="left">shuffleReadMetrics.*</td>
+<td align="left">与随机读取操作相关的指标.</td>
+</tr>
+<tr>
+<td align="left">.recordsRead</td>
+<td align="left">洗牌操作中读取的记录数</td>
+</tr>
+<tr>
+<td align="left">.remoteBlocksFetched</td>
+<td align="left">在混洗操作中获取的远程块数</td>
+</tr>
+<tr>
+<td align="left">.localBlocksFetched</td>
+<td align="left">在混洗操作中获取的本地(与从远程执行程序读取相反)块的数量</td>
+</tr>
+<tr>
+<td align="left">.totalBlocksFetched</td>
+<td align="left">在混洗操作中获取的块数(本地和远程)</td>
+</tr>
+<tr>
+<td align="left">.remoteBytesRead</td>
+<td align="left">洗牌操作中读取的远程字节数</td>
+</tr>
+<tr>
+<td align="left">.localBytesRead</td>
+<td align="left">从本地磁盘(与从远程执行程序读取相反)的随机播放操作中读取的字节数</td>
+</tr>
+<tr>
+<td align="left">.totalBytesRead</td>
+<td align="left">随机播放操作中读取的字节数(本地和远程)</td>
+</tr>
+<tr>
+<td align="left">.remoteBytesReadToDisk</td>
+<td align="left">在混洗操作中读取到磁盘的远程字节数.大块在随机读取操作中被提取到磁盘,而不是被读入内存,这是默认行为.</td>
+</tr>
+<tr>
+<td align="left">.fetchWaitTime</td>
+<td align="left">任务等待远程洗牌块所花费的时间.这仅包括随机输入数据的时间阻塞.例如,如果任务尚未完成处理块 A 时正在获取块 B,则不认为它在块 B 上阻塞.该值以毫秒表示.</td>
+</tr>
+<tr>
+<td align="left">shuffleWriteMetrics.*</td>
+<td align="left">与写入混洗数据的操作相关的指标.</td>
+</tr>
+<tr>
+<td align="left">.bytesWritten</td>
+<td align="left">在随机操作中写入的字节数</td>
+</tr>
+<tr>
+<td align="left">.recordsWritten</td>
+<td align="left">在随机操作中写入的记录数</td>
+</tr>
+<tr>
+<td align="left">.writeTime</td>
+<td align="left">阻塞写入磁盘或缓冲区缓存所花费的时间.该值以纳秒表示.</td>
+</tr>
+</tbody></table>
+<h4 id="API-版本控制策略"><a href="#API-版本控制策略" class="headerlink" title="API 版本控制策略"></a>API 版本控制策略</h4><p>这些端点已进行严格版本控制,以便更轻松地在其上开发应用程序.<br>特别是,Spark 保证:</p>
+<ol>
+<li>永远不会从一个版本中删除端点</li>
+<li>永远不会为任何给定端点删除单个字段</li>
+<li>可能会添加新的端点</li>
+<li>可以将新字段添加到现有端点</li>
+<li>未来可能会添加新版本的 api 作为单独的端点(例如,api/v2).新版本不需要向后兼容.</li>
+<li>API 版本可能会被删除,但只有在与新 API 版本共存的至少一个次要版本之后.</li>
+</ol>
+<p>请注意,即使在检查正在运行的应用程序的 UI 时,该<code>applications/[app-id]</code>部分仍然是必需的,尽管只有一个应用程序可用.<br>例如.<br>要查看正在运行的应用程序的作业列表,您可以转到<code>http://localhost:4040/api/v1/applications/[app-id]/jobs</code>.<br>这是为了在两种模式下保持路径一致.</p>
+<h3 id="Metrics-指标"><a href="#Metrics-指标" class="headerlink" title="Metrics(指标)"></a>Metrics(指标)</h3><p>Spark 有一个基于 Dropwizard Metrics Library的可配置指标系统.<br>这允许用户向各种接收器报告 Spark 指标,包括 HTTP、JMX 和 CSV 文件.<br>指标系统是通过 Spark 期望出现在的配置文件配置的$SPARK_HOME/conf/metrics.properties.<br>可以通过 spark.metrics.conf 配置属性指定自定义文件位置.<br>默认情况下,用于驱动程序或执行程序指标的根命名空间是spark.app.id. 然而,通常情况下,用户希望能够跨应用程序跟踪驱动程序和执行程序的指标,这很难用应用程序 ID(即spark.app.id)来实现,因为它会随着应用程序的每次调用而变化.<br>对于此类用例,可以使用以下方法为指标报告指定自定义命名空间spark.metrics.namespace 配置属性.<br>例如,如果用户想要将指标命名空间设置为应用程序的名称,他们可以将spark.metrics.namespace属性设置为类似${spark.app.name}. 该值随后由 Spark 适当扩展,并用作指标系统的根命名空间.<br>非驱动程序和执行程序指标从不以spark.app.id为前缀,该spark.metrics.namespace属性也不会对此类指标产生任何此类影响.</p>
+<p>Spark 的指标被解耦到 对应于 Spark 组件的不同实例中.<br>在每个实例中,您可以配置一组向其报告指标的接收器.<br>目前支持以下实例:<br>master:Spark 独立主进程.<br>applications:master 中的一个组件,报告各种应用程序.<br>worker:一个 Spark 独立工作进程.<br>executor: 一个 Spark 执行器.<br>driver:Spark 驱动程序进程(创建 SparkContext 的进程).<br>shuffleService:Spark 随机播放服务.<br>applicationMaster: 在 YARN 上运行时的 Spark ApplicationMaster.</p>
+<p>每个实例都可以向零个或多个接收器报告.<br>水槽包含在 org.apache.spark.metrics.sink包装中:<br>ConsoleSink:将指标信息记录到控制台.<br>CSVSink:定期将指标数据导出到 CSV 文件.<br>JmxSink:注册指标以在 JMX 控制台中查看.<br>MetricsServlet:在现有的 Spark UI 中添加一个 servlet,以将指标数据作为 JSON 数据提供.<br>GraphiteSink:将指标发送到 Graphite 节点.<br>Slf4jSink:将指标作为日志条目发送到 slf4j.<br>StatsdSink:将指标发送到 StatsD 节点.</p>
+<p>Spark 还支持 Ganglia 接收器,由于许可限制,该接收器未包含在默认构建中:<br>GangliaSink:将指标发送到 Ganglia 节点或多播组.</p>
+<p>要安装,GangliaSink您需要执行 Spark 的自定义构建.<br>请注意,通过嵌入此库,您将在 Spark 包中包含LGPL许可代码.<br>对于 sbt 用户, SPARK_GANGLIA_LGPL在构建之前设置环境变量.<br>对于 Maven 用户,启用-Pspark-ganglia-lgpl配置文件.<br>除了修改集群的 Spark 构建之外,用户应用程序还需要链接到spark-ganglia-lgpl工件.</p>
+<p>指标配置文件的语法在示例配置文件 $SPARK_HOME/conf/metrics.properties.template.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/spark/" rel="tag"># spark</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/11/21/spark%E8%B0%83%E4%BC%98%E6%8C%87%E5%8D%97/" rel="prev" title="spark调优指南">
+                  <i class="fa fa-chevron-left"></i> spark调优指南
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/11/21/spark%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%91%BD%E4%BB%A4%E5%8F%82%E6%95%B0/" rel="next" title="spark客户端命令参数">
+                  spark客户端命令参数 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

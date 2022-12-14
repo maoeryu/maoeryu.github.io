@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="在Kafka中,每个主题都分为一组称为分区的日志.生产者写入这些日志的尾部,消费者按照自己的节奏阅读日志.Kafka通过在消费者组之间分配分区来扩展主题消费,消费者组是一组共享公共组标识符的消费者. 下图显示了具有三个分区的单个主题和具有两个成员的消费者组,主题中的每个分区都被分配给组中的一个成员.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kafka consumer">
+<meta property="og:url" content="https://maoeryu.github.io/2022/03/01/kafka%20consumer/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="在Kafka中,每个主题都分为一组称为分区的日志.生产者写入这些日志的尾部,消费者按照自己的节奏阅读日志.Kafka通过在消费者组之间分配分区来扩展主题消费,消费者组是一组共享公共组标识符的消费者. 下图显示了具有三个分区的单个主题和具有两个成员的消费者组,主题中的每个分区都被分配给组中的一个成员.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_consumer_1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_consumer_3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_consumer_4.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_consumer_5.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_consumer_6.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_consumer_7.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_consumer_8.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_consumer1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_consumer2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_consumer3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_consumer4.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_consumer5.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_consumer6.png">
+<meta property="article:published_time" content="2022-02-28T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-07-26T02:55:53.069Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="kafka">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/kafka_consumer_1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/03/01/kafka%20consumer/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>kafka consumer | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">设计原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%84%E7%8A%B6%E6%80%81"><span class="nav-number">1.1.</span> <span class="nav-text">组状态</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%84%E7%8A%B6%E6%80%81%E6%9C%BA"><span class="nav-number">1.2.</span> <span class="nav-text">组状态机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%84%E7%AE%A1%E7%90%86"><span class="nav-number">1.3.</span> <span class="nav-text">组管理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8A%A0%E5%85%A5%E7%BB%84"><span class="nav-number">1.3.1.</span> <span class="nav-text">加入组</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E7%BB%84%E7%8A%B6%E6%80%81%E4%BF%A1%E6%81%AF"><span class="nav-number">1.3.2.</span> <span class="nav-text">同步组状态信息</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rebalance%E5%9C%BA%E6%99%AF%E5%89%96%E6%9E%90"><span class="nav-number">1.4.</span> <span class="nav-text">rebalance场景剖析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B0%E6%88%90%E5%91%98%E5%8A%A0%E5%85%A5%E7%BB%84"><span class="nav-number">1.4.1.</span> <span class="nav-text">新成员加入组</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%88%90%E5%91%98%E5%8F%91%E7%94%9F%E5%B4%A9%E6%BA%83"><span class="nav-number">1.4.2.</span> <span class="nav-text">成员发生崩溃</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%88%90%E5%91%98%E4%B8%BB%E5%8A%A8%E7%A6%BB%E7%BB%84"><span class="nav-number">1.4.3.</span> <span class="nav-text">成员主动离组</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%88%90%E5%91%98%E6%8F%90%E4%BA%A4%E4%BD%8D%E7%A7%BB"><span class="nav-number">1.4.4.</span> <span class="nav-text">成员提交位移</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E5%BF%B5"><span class="nav-number">1.5.</span> <span class="nav-text">概念</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B6%88%E8%B4%B9%E8%80%85"><span class="nav-number">1.5.1.</span> <span class="nav-text">消费者</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B6%88%E8%B4%B9%E8%80%85%E7%BB%84"><span class="nav-number">1.5.2.</span> <span class="nav-text">消费者组</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%8D%E7%A7%BB"><span class="nav-number">1.5.3.</span> <span class="nav-text">位移</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%8D%E7%A7%BB%E6%8F%90%E4%BA%A4"><span class="nav-number">1.5.4.</span> <span class="nav-text">位移提交</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#consumer-offsets"><span class="nav-number">1.5.5.</span> <span class="nav-text">__consumer_offsets</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#rebalance"><span class="nav-number">1.5.6.</span> <span class="nav-text">rebalance</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%8F%91"><span class="nav-number">2.</span> <span class="nav-text">开发</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9E%84%E5%BB%BAconsumer"><span class="nav-number">2.1.</span> <span class="nav-text">构建consumer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E6%95%B0"><span class="nav-number">2.2.</span> <span class="nav-text">参数</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#bootstrap-servers"><span class="nav-number">2.2.1.</span> <span class="nav-text">bootstrap.servers</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#group-id"><span class="nav-number">2.2.2.</span> <span class="nav-text">group.id</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#key-deserializer"><span class="nav-number">2.2.3.</span> <span class="nav-text">key.deserializer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#value-deserializer"><span class="nav-number">2.2.4.</span> <span class="nav-text">value.deserializer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#session-timeout-ms"><span class="nav-number">2.2.5.</span> <span class="nav-text">session.timeout.ms</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#max-poll-interval-ms"><span class="nav-number">2.2.6.</span> <span class="nav-text">max.poll.interval.ms</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#auto-offset-reset"><span class="nav-number">2.2.7.</span> <span class="nav-text">auto.offset.reset</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#enable-auto-commit"><span class="nav-number">2.2.8.</span> <span class="nav-text">enable.auto.commit</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#fetch-max-bytes"><span class="nav-number">2.2.9.</span> <span class="nav-text">fetch.max.bytes</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#max-poll-records"><span class="nav-number">2.2.10.</span> <span class="nav-text">max.poll.records</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#heartbeat-interval-ms"><span class="nav-number">2.2.11.</span> <span class="nav-text">heartbeat.interval.ms</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#connections-max-idle-ms"><span class="nav-number">2.2.12.</span> <span class="nav-text">connections.max.idle.ms</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%A2%E9%98%85topic"><span class="nav-number">2.3.</span> <span class="nav-text">订阅topic</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E8%BD%AE%E8%AF%A2"><span class="nav-number">2.4.</span> <span class="nav-text">消息轮询</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%8D%E7%A7%BB%E7%AE%A1%E7%90%86"><span class="nav-number">2.5.</span> <span class="nav-text">位移管理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%89%8B%E5%8A%A8%E6%8F%90%E4%BA%A4"><span class="nav-number">2.5.1.</span> <span class="nav-text">手动提交</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%87%AA%E5%8A%A8%E6%8F%90%E4%BA%A4"><span class="nav-number">2.5.2.</span> <span class="nav-text">自动提交</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rebalance-1"><span class="nav-number">2.6.</span> <span class="nav-text">rebalance</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A7%A6%E5%8F%91%E6%9D%A1%E4%BB%B6"><span class="nav-number">2.6.1.</span> <span class="nav-text">触发条件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E9%85%8D%E7%AD%96%E7%95%A5"><span class="nav-number">2.6.2.</span> <span class="nav-text">分配策略</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B"><span class="nav-number">2.6.3.</span> <span class="nav-text">流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#rebalance%E7%9B%91%E5%90%AC%E5%99%A8"><span class="nav-number">2.6.4.</span> <span class="nav-text">rebalance监听器</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%BA%8F%E5%88%97%E5%8C%96"><span class="nav-number">2.7.</span> <span class="nav-text">解序列化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E8%A7%A3%E5%BA%8F%E5%88%97%E5%8C%96%E5%99%A8"><span class="nav-number">2.7.1.</span> <span class="nav-text">自定义解序列化器</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E7%BA%BF%E7%A8%8B%E6%B6%88%E8%B4%B9%E5%AE%9E%E4%BE%8B"><span class="nav-number">3.</span> <span class="nav-text">多线程消费实例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AF%8F%E4%B8%AA%E7%BA%BF%E7%A8%8B%E7%BB%B4%E6%8A%A4%E4%B8%80%E4%B8%AA%E5%AE%9E%E4%BE%8B"><span class="nav-number">3.1.</span> <span class="nav-text">每个线程维护一个实例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ConsumerRunnable"><span class="nav-number">3.1.1.</span> <span class="nav-text">ConsumerRunnable</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ConsumerGroup"><span class="nav-number">3.1.2.</span> <span class="nav-text">ConsumerGroup</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%95%E5%AE%9E%E4%BE%8B-%E5%A4%9Aworker%E7%BA%BF%E7%A8%8B"><span class="nav-number">3.2.</span> <span class="nav-text">单实例+多worker线程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ConsumerThreadHandler"><span class="nav-number">3.2.1.</span> <span class="nav-text">ConsumerThreadHandler</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ConsumerWorker"><span class="nav-number">3.2.2.</span> <span class="nav-text">ConsumerWorker</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#App"><span class="nav-number">3.2.3.</span> <span class="nav-text">App</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8B%AC%E7%AB%8B%E6%B6%88%E8%B4%B9%E8%80%85"><span class="nav-number">3.3.</span> <span class="nav-text">独立消费者</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%84%E5%BD%95"><span class="nav-number">4.</span> <span class="nav-text">附录</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/03/01/kafka%20consumer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          kafka consumer
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-03-01 00:00:00" itemprop="dateCreated datePublished" datetime="2022-03-01T00:00:00+08:00">2022-03-01</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-07-26 10:55:53" itemprop="dateModified" datetime="2022-07-26T10:55:53+08:00">2022-07-26</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>在Kafka中,每个主题都分为一组称为分区的日志.<br>生产者写入这些日志的尾部,消费者按照自己的节奏阅读日志.<br>Kafka通过在消费者组之间分配分区来扩展主题消费,消费者组是一组共享公共组标识符的消费者.</p>
+<p>下图显示了具有三个分区的单个主题和具有两个成员的消费者组,主题中的每个分区都被分配给组中的一个成员.</p>
+<img src="/images/kafka_consumer_1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<span id="more"></span>
+
+<h2 id="设计原理"><a href="#设计原理" class="headerlink" title="设计原理"></a>设计原理</h2><p>分区分配的操作是在consumer端执行的而非broker端,便与维护与升级,实现自定义策略,同时解耦了组管理与分区分配,coordinator负责组管理工作,而consumer程序负责分区分配.</p>
+<h3 id="组状态"><a href="#组状态" class="headerlink" title="组状态"></a>组状态</h3><p><code>Empty</code><br>该状态表明group下没有任何active consumer,但可能包含位移信息.<br>每个group创建时便处于Empty状态.<br>若group工作了一段时间后所有consumer都离开组,那么group也会处于该状态.<br>由于可能包含位移信息,处于此状态下的group依然可以响应OffsetFetch请求,即返回clients端对应的位移信息.</p>
+<p><code>PreparingRebalance</code><br>该状态表明group正在准备进行group rebalance.<br>此时,group已经&quot;受理&quot;了部分成员发送过来的JoinGroup请求,同时等待其他成员发送JoinGroup请求,直到所有成员都成功加入组或超时.<br>由于该状态下的group依然可能保存有位移信息,因此clients依然可以发起OffsetFetch请求去获取位移,甚至还可以发起OffsetCommit请求去提交位移.</p>
+<p><code>AwaitingSync</code><br>该状态表明所有成员都已经加入组并等待leader consumer发送分区分配方案.<br>同样地,此时依然可以获取位移,但若提交位移,coordinator将会抛出REBALANCE_IN_PROGRESS异常来表明该group正在进行rebalance.</p>
+<p><code>Stable</code><br>该状态表明group开始正常消费.<br>此时group必须响应clients发送过来的任何请求,比如位移提交请求/位移获取请求/心跳请求等.</p>
+<p><code>Dead</code><br>该状态表明group已经彻底废弃,group内没有任何active成员并且group的所有元数据信息都已被删除.<br>处于此状态的group不会响应任何请求.<br>严格来说,coordinator会返回UNKNOWN_MEMBER_ID异常.</p>
+<h3 id="组状态机"><a href="#组状态机" class="headerlink" title="组状态机"></a>组状态机</h3><p>当group首次创建时,coordinator会设置该group状态为Empty,<br>当有新的成员加入组时,组状态变更为PreparingRebalance.<br>此时group会等待一段时间让更多的组成员加入(由consumer端参数<code>max.poll.interval.ms</code>指定).<br>如果所有成员都及时地加入了组,那么组状态变更为AwaitingSync.<br>此时leader consumer开始分配消费方案.</p>
+<p>在分配方案确定后,leader consumer将分配方案以SyncGroup请求的方式发送给coordinator,然后coordinator把方案下发给下面的所有组成员.<br>此时组状态进入到Stable,表明group开始正常消费数据.</p>
+<p>当group处于Stable时,若所有成员都离组,那么此时group状态会<br>首先调整为PreparingRebalance,<br>然后变更为Empty,<br>最后等待元数据过期被移除后group变更为Dead.</p>
+<img src="/images/kafka_consumer_3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>状态流转条件</p>
+</blockquote>
+<p><code>Empty与PreparingRebalance</code><br>Empty状态的group下没有任何active consumer.<br>此时当有一个consumer加入时,Empty变为PreparingRebalance.<br>反之,处于PreparingRebalance状态的group中,当所有成员都离开组时,PreparingRebalance变为Empty.</p>
+<p><code>Empty与Dead</code><br>Empty状态下的group依然可能保存group元数据信息甚至位移信息.<br>Kafka默认会在1天(broker端参数<code>offsets.retention.minutes</code>配置)后删除这些数据.<br>一旦这些数据被删除,则group进入Dead状态.</p>
+<p><code>PreparingRebalance与AwaitingSync</code><br>在PreparingRebalance状态时,若成员在规定时间内(<code>max.poll.interval.ms</code>)完成加入组操作,那么group进入AwaitingSync状态.<br>若有的组成员很慢,没能在这段时间内加入组,那么规定时间一过group依然会进入AwaitingSync,当那个慢consumer加入组时,group 又会重新变更为PreparingRebelance.<br>因此在实际应用中一定要谨慎设置<code>max.poll.interval.ms</code>参数.<br>对于处于AwaitingSync状态的group而言,当已加入成员崩溃/主动离组或元数据信息发生变更时,group也会重新进入PreparingRebalance.</p>
+<p><code>AwaitingSync与Stable</code><br>在coordinator成功下发了leader consumer所做的分配方案后,group进入到Stable状态开始正常工作.</p>
+<p><code>Stable与PreparingRebalance</code><br>group正常工作时,当有成员发生崩溃或主动离组,抑或是leader consumer重新加入组,再或是有成员元数据发生变更,则group会直接进入PreparingRebalance开启新一轮rebalance.<br>在实际场景中,最常见的rebalance都是因为处于Stable状态的group下的consumer消费处理逻辑过重且session超时,从而被&quot;踢出&quot;group而导致的.</p>
+<p><code>其他状态与Dead</code><br>consumer group的位移保存在内部topic(<code>__consumer_offsets</code>)下的某个分区.<br>当这个分区leader所在的broker发生了崩溃时,就必须对该分区进行迁移,从而导致coordinator的变更.<br>当出现这种情况时,不论group处于哪种状态,都必须直接将group设置为Dead状态.</p>
+<h3 id="组管理"><a href="#组管理" class="headerlink" title="组管理"></a>组管理</h3><p>coordinator的组管理协议由两个阶段构成,即组成员加入阶段和状态同步阶段.<br>第一个阶段用于为group指定active成员并从它们之中选出leader consumer,<br>第二个阶段则让leader consumer制定分配方案并同步到其他组成员中.</p>
+<p>从consumer的角度来看,<br>第一个阶段是收集所有consumer的topic订阅信息,<br>而第二个阶段则利用这些信息给每个consumer分配要消费的分区.<br>每个group下的leader consumer通常都是第一个加入group的consumer.</p>
+<h4 id="加入组"><a href="#加入组" class="headerlink" title="加入组"></a>加入组</h4><p>让成员加入group,所用到的协议请求类型是JoinGroup.<br>当确定了该group对应的coordinator之后,每个成员都要显式地发送JoinGroup请求给coordinator.<br>该请求封装了consumer各自的订阅信息/成员id等元数据.<br>coordinator会持有这些JoinGroup请求一段时间,直到所有组成员都发送了JoinGroup请求.<br>此时,coordinator选择其中的一个consumer作为leader,然后给所有组成员发送对应的response.</p>
+<p>coordinator拿到所有成员的JoinGroup请求后会去获取所有成员都支持的协议类型.<br>如果有成员指定了一个与其他成员都不兼容的协议类型,则该成员将被拒绝加入组.<br>通信协议是consumergroup端支持的分配策略.<br>举例,Kafka默认支持3种分配策略(range/round-robin和sticky),如果有一个consumer指定了自定义的策略而其他consumer都不支持该策略,那么这个consumer就不被允许加入组.</p>
+<p>coordinator处理JoinGroup请求后会把所有consumer成员的元数据信息封装进一个数组,然后以JoinGroupresponse的方式发给group的leaderconsumer.<br>切记,它只会给leaderconsumer发送这样的信息,给其他成员只会发送一个空数组.<br>这样做,非leader consumer本来也不需要知晓这部分信息,同时极大地减少了网络I/O传输的开销.</p>
+<p>leaderconsumer通过JoinGroupresponse知晓了group下所有成员的订阅情况,这样它就有足够的信息开始制定分配方案了.</p>
+<h4 id="同步组状态信息"><a href="#同步组状态信息" class="headerlink" title="同步组状态信息"></a>同步组状态信息</h4><p>group所有成员都加入组之后,leaderconsumer根据指定的分配策略进行分区的分配.<br>实现分区负载的均匀分配以及rebalance之后最少的分配变动.</p>
+<p>在这一阶段中,group所有成员都需要显式地给coordinator发送SyncGroup请求.<br>不过只有leaderconsumer的SyncGroup请求中会包含它的分配方案.<br>coordinator接收到leader的SyncGroup请求后取出分配方案并单独抽取出每个consumer对应的分区,然后把分区封装进SyncGroup的response,发送给各个consumer.<br>这样每个consumer都只会得到属于自己的那一部分分区,而不会知晓其他consumer的分配方案.</p>
+<p>在所有consumer成员都收到SyncGroup response之后,coordinator将group状态设置为Stable,此时组开始正常工作,每个成员按照coordinator发过来的方案开始消费指定的分区.</p>
+<h3 id="rebalance场景剖析"><a href="#rebalance场景剖析" class="headerlink" title="rebalance场景剖析"></a>rebalance场景剖析</h3><h4 id="新成员加入组"><a href="#新成员加入组" class="headerlink" title="新成员加入组"></a>新成员加入组</h4><img src="/images/kafka_consumer_4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="成员发生崩溃"><a href="#成员发生崩溃" class="headerlink" title="成员发生崩溃"></a>成员发生崩溃</h4><p>组成员崩溃和组成员主动离开是两种不同的场景.<br>因为在崩溃时成员并不会主动告知coordinator此事,coordinator有可能需要一个完整的<code>session.timeout</code>周期才检测到这一崩溃,这必然会造成consumer的滞后.</p>
+<p>可以说离开组是主动地发起rebalance,而崩溃则是被动地发起rebalance.</p>
+<img src="/images/kafka_consumer_5.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="成员主动离组"><a href="#成员主动离组" class="headerlink" title="成员主动离组"></a>成员主动离组</h4><img src="/images/kafka_consumer_6.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="成员提交位移"><a href="#成员提交位移" class="headerlink" title="成员提交位移"></a>成员提交位移</h4><img src="/images/kafka_consumer_7.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h3><h4 id="消费者"><a href="#消费者" class="headerlink" title="消费者"></a>消费者</h4><p>consumer是读取Kafka集群中某些topic消息的应用程序.<br>分为消费者组(consumer group)和独立消费者(standalone consumer).</p>
+<p>消费者组:由多个消费者实例(consumer instance)构成一个整体进行消费的.<br>独立消费者:单独执行消费操作.</p>
+<h4 id="消费者组"><a href="#消费者组" class="headerlink" title="消费者组"></a>消费者组</h4><p>消费者使用一个消费者组名(group.id)来标记自己,topic的每条消息都只会被发送到每个订阅它的消费者组的一个消费者实例上.</p>
+<p>一个consumergroup可能有若干个consumer实例(一个group只有一个实例也是允许的).<br>对于同一个group而言,topic的每条消息只能被发送到group下的一个consumer实例上.<br>topic消息可以被发送到多个group中.</p>
+<p>用于实现高伸缩性/高容错性的consumer机制.<br>组内多个consumer实例可以同时读取Kafka消息,而且一旦有某个consumer挂了,consumer group会立即将已崩溃consumer负责的分区转交给其他consumer来负责,从而保证整个group可以继续工作,不会丢失数据,这个过程被称为重平衡(rebalance).</p>
+<img src="/images/kafka_consumer_8.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>Kafka目前只提供单个分区内的消息顺序,而不会维护全局的消息顺序,<br>因此如果用户要实现topic全局的消息读取顺序,<br>就只能通过让每个consumer group下只包含一个consumer实例的方式来间接实现.</p>
+</blockquote>
+<h4 id="位移"><a href="#位移" class="headerlink" title="位移"></a>位移</h4><p>让consumer group保存offset,那么只需要简单地保存一个长整型数据就可以了,同时Kafka consumer还引入了检查点机制(checkpointing)定期对offset进行持久化,从而简化了应答机制的实现.</p>
+<img src="/images/kafka_consumer1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="位移提交"><a href="#位移提交" class="headerlink" title="位移提交"></a>位移提交</h4><p>consumer客户端需要定期地向Kafka集群汇报自己消费数据的进度,这一过程被称为位移提交(offset commit).<br>位移提交这件事情对于consumer而言非常重要,它不仅表征了consumer端的消费进度,同时也直接决定了consumer端的消费语义保证.</p>
+<blockquote>
+<p>旧版本位移提交</p>
+</blockquote>
+<img src="/images/kafka_consumer2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>该路径是<code>/consumers/&lt;group.id&gt;/offsets/&lt;topic&gt;/&lt;partitionId&gt;</code>,其中group.id/topic和partitionId是变化的值,因用户的不同环境而不同.</p>
+<p>新版本consumer把位移提交到Kafka的一个内部topic(<code>__consumer_offsets</code>)上.</p>
+<h4 id="consumer-offsets"><a href="#consumer-offsets" class="headerlink" title="__consumer_offsets"></a><code>__consumer_offsets</code></h4><img src="/images/kafka_consumer3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>KV格式的消息,key就是一个三元组:<code>group.id + topic + 分区号</code>,而value就是offset的值.<br>每当更新同一个key的最新offset值时,该topic就会写入一条含有最新offset的消息,同时Kafka会定期地对该 topic执行压实操作(compact),即为每个消息key只保存含有最新offset的消息.<br>这样既避免了对分区日志消息的修改,也控制住了<code>__consumer_offsets</code> topic总体的日志容量,同时还能实时反映最新的消费进度.</p>
+<p>对每个group.id做哈希求模运算,从而将负载分散到不同的<code>__consumer_offsets</code>分区上.</p>
+<h4 id="rebalance"><a href="#rebalance" class="headerlink" title="rebalance"></a>rebalance</h4><h2 id="开发"><a href="#开发" class="headerlink" title="开发"></a>开发</h2><h3 id="构建consumer"><a href="#构建consumer" class="headerlink" title="构建consumer"></a>构建consumer</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">Properties props = <span class="keyword">new</span> Properties();</span><br><span class="line">props.put(<span class="string">&quot;bootstrap.servers&quot;</span>, <span class="string">&quot;oceanbase004:9092&quot;</span>);</span><br><span class="line">props.put(<span class="string">&quot;group.id&quot;</span>, <span class="string">&quot;xxx&quot;</span>);</span><br><span class="line">props.put(<span class="string">&quot;enable.auto.commit&quot;</span>, <span class="string">&quot;true&quot;</span>);</span><br><span class="line">props.put(<span class="string">&quot;auto.commit.interval.ms&quot;</span>, <span class="string">&quot;1000&quot;</span>);</span><br><span class="line">props.put(<span class="string">&quot;auto.offset.reset&quot;</span>, <span class="string">&quot;latest&quot;</span>);</span><br><span class="line">props.put(<span class="string">&quot;key.deserializer&quot;</span>, <span class="string">&quot;org.apache.kafka.common.serialization.StringDeserializer&quot;</span>);</span><br><span class="line">props.put(<span class="string">&quot;value.deserializer&quot;</span>, <span class="string">&quot;org.apache.kafka.common.serialization.StringDeserializer&quot;</span>);</span><br><span class="line"></span><br><span class="line">KafkaConsumer&lt;String, String&gt; consumer = <span class="keyword">new</span> KafkaConsumer&lt;&gt;(props);</span><br><span class="line">String topic = <span class="string">&quot;xxx&quot;</span>;</span><br><span class="line">consumer.subscribe(Collections.singleton(topic));</span><br><span class="line"></span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">  <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">    ConsumerRecords&lt;String, String&gt; records = consumer.poll(<span class="number">100</span>);</span><br><span class="line">    <span class="keyword">for</span> (ConsumerRecord&lt;String, String&gt; record : records) &#123;</span><br><span class="line">      String key = record.key(), value = record.value();</span><br><span class="line">      System.out.println(value);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">  consumer.close();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>consumer.poll(1000)</p>
+</blockquote>
+<p>这里的1000是一个超时设定(timeout).<br>通常情况下如果consumer拿到了足够多的可用数据,那么它可以立即从该方法返回.<br>但若当前没有足够多的数据可供返回,consumer会处于阻塞状态.<br>这个超时参数即控制阻塞的最大时间.<br>这里的1000表示即使没有那么多数据,consumer最多也不要等待超过1秒的时间.</p>
+<p>这个超时设定给予了用户能够在consumer消费间隔之余做一些其他事情的能力.<br>若用户有定时方面的需求,那么根据需求设定timeout是一个不错的选择.<br>否则,设定一个比较大的值甚至Integer.MAX_VALUE是不错的建议.</p>
+<h3 id="参数"><a href="#参数" class="headerlink" title="参数"></a>参数</h3><h4 id="bootstrap-servers"><a href="#bootstrap-servers" class="headerlink" title="bootstrap.servers"></a><code>bootstrap.servers</code></h4><p>可以指定多组,使用逗号分隔,如<code>kafka1:9092,kafka2:9092,kafka3:9092</code>.</p>
+<h4 id="group-id"><a href="#group-id" class="headerlink" title="group.id"></a><code>group.id</code></h4><h4 id="key-deserializer"><a href="#key-deserializer" class="headerlink" title="key.deserializer"></a><code>key.deserializer</code></h4><p>实现<code>org.apache.kafka.common.serialization.Deserializer</code>接口的Java类的全限定名称.</p>
+<h4 id="value-deserializer"><a href="#value-deserializer" class="headerlink" title="value.deserializer"></a><code>value.deserializer</code></h4><h4 id="session-timeout-ms"><a href="#session-timeout-ms" class="headerlink" title="session.timeout.ms"></a><code>session.timeout.ms</code></h4><p>检测组内成员发送崩溃的时间,默认10s,假设设置该参数为5分钟,那么当某个group成员突然崩溃了(比如被kill-9或宕机),管理group的Kafka组件有可能需要5分钟才能感知到这个崩溃.</p>
+<h4 id="max-poll-interval-ms"><a href="#max-poll-interval-ms" class="headerlink" title="max.poll.interval.ms"></a><code>max.poll.interval.ms</code></h4><p>设置成实际的逻辑处理时间.</p>
+<h4 id="auto-offset-reset"><a href="#auto-offset-reset" class="headerlink" title="auto.offset.reset"></a><code>auto.offset.reset</code></h4><p>earliest/latest/none.</p>
+<p>首次运行一个consumer group并且指定从头消费.<br>显然该group会从头消费所有数据,因为此时该group还没有任何位移信息.<br>一旦该group成功提交位移后,重启了group,依然指定从头消费.<br>此时会发现该group并不会真的从头消费,因为Kafka已经保存了该group的位移信息,因此它会无视<code>auto.offset.reset</code>的设置.</p>
+<h4 id="enable-auto-commit"><a href="#enable-auto-commit" class="headerlink" title="enable.auto.commit"></a><code>enable.auto.commit</code></h4><h4 id="fetch-max-bytes"><a href="#fetch-max-bytes" class="headerlink" title="fetch.max.bytes"></a><code>fetch.max.bytes</code></h4><p>指定了consumer端单次获取数据的最大字节数.<br>若实际业务消息很大,则必须要设置该参数为一个较大的值,否则consumer将无法消费这些消息.</p>
+<h4 id="max-poll-records"><a href="#max-poll-records" class="headerlink" title="max.poll.records"></a><code>max.poll.records</code></h4><p>默认500,控制单次poll调用返回的最大消息数,比较极端的做法是设置该参数为1,那么每次poll只会返回1条消息.</p>
+<h4 id="heartbeat-interval-ms"><a href="#heartbeat-interval-ms" class="headerlink" title="heartbeat.interval.ms"></a><code>heartbeat.interval.ms</code></h4><p>当coordinator决定开启新一轮rebalance时,它会将这个决定以REBALANCE_IN_PROGRESS异常的形式塞进consumer心跳请求的response中,这样其他成员拿到response后才能知道它需要重新加入group.<br>显然这个过程越快越好,而<code>heartbeat.interval.ms</code>就是用来做这件事情的.</p>
+<p>设置一个比较低的值,让group下的其他consumer成员能够更快地感知新一轮rebalance开启了.<br>注意,该值必须小于<code>session.timeout.ms</code>.</p>
+<h4 id="connections-max-idle-ms"><a href="#connections-max-idle-ms" class="headerlink" title="connections.max.idle.ms"></a><code>connections.max.idle.ms</code></h4><p>Kafka会定期地关闭空闲Socket连接导致下次consumer处理请求时需要重新创建连向broker的 Socket连接.<br>当前默认值是9分钟,如果用户实际环境中不在乎这些Socket资源开销,比较推荐设置该参数值为-1,即不要关闭这些空闲连接.</p>
+<h3 id="订阅topic"><a href="#订阅topic" class="headerlink" title="订阅topic"></a>订阅topic</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">consumer.subscribe(Pattern.compile(<span class="string">&quot;kafka-.*&quot;</span>), <span class="keyword">new</span> NoOpConsumerRebalanceListener());</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>subscribe方法不是增量式的,这意味着后续的subscribe调用会完全覆盖之前的订阅语句,支持正则.</p>
+</blockquote>
+<p>使用基于正则表达式的订阅就必须指定ConsumerRebalanceListener.<br>该类是一个回调接口,用户需要通过实现这个接口来实现consumer分区分配方案发生变更时的逻辑.<br>如果使用的是自动提交,则通常不用理会这个类(使用NoOpConsumerRebalanceListener即可).</p>
+<p>如果是手动提交位移的,则至少要在ConsumerRebalanceListener实现类的onPartitionsRevoked方法中处理分区分配方案变更时的位移提交.</p>
+<h3 id="消息轮询"><a href="#消息轮询" class="headerlink" title="消息轮询"></a>消息轮询</h3><blockquote>
+<p>consumer是一个多线程或者说是一个双线程的Java进程</p>
+<p>创建KafkaConsumer的线程被称为用户主线程,同时consumer在后台会创建一个心跳线程,该线程被称为后台心跳线程.<br>KafkaConsumer的poll方法在用户主线程中运行.<br>这也同时表明消费者组执行rebalance/消息获取/coordinator管理/异步任务结果的处理甚至位移提交等操作都是运行在用户主线程中的.</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">boolean</span> isRunning = <span class="keyword">true</span>;</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">  <span class="keyword">while</span> (isRunning) &#123;</span><br><span class="line">    ConsumerRecords&lt;String, String&gt; records = consumer.poll(<span class="number">100</span>);</span><br><span class="line">    <span class="keyword">for</span> (ConsumerRecord&lt;String, String&gt; record : records) &#123;</span><br><span class="line">      String key = record.key(), value = record.value();</span><br><span class="line">      System.out.println(value);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">  consumer.close();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>poll方法根据当前consumer的消费位移返回消息集合.<br>当poll首次被调用时,新的消费者组会被创建并根据对应的位移重设策略(auto.offset.reset)来设定消费者组的位移.<br>一旦consumer开始提交位移,每个后续的rebalance完成后都会将位置设置为上次已提交的位移.<br>传递给poll方法的超时设定参数用于控制consumer等待消息的最大阻塞时间.</p>
+<p>由于某些原因,broker端有时候无法立即满足consumer端的获取请求(比如consumer要求至少一次获取1MB的数据,但broker端无法立即全部给出),那么此时consumer端将会阻塞以等待数据不断累积并最终满足 consumer需求.<br>如果用户不想让consumer一直处于阻塞状态,则需要给定一个超时时间.</p>
+<blockquote>
+<p>因此poll方法返回满足以下任意一个条件即可返回,</p>
+<p>要么获取了足够多的可用数据.<br>要么等待时间超过了指定的超时设置.</p>
+</blockquote>
+<blockquote>
+<p>consumer不是线程安全的</p>
+<p>如果没有显式地同步锁保护机制,Kafka会抛出<code>KafkaConsumer is not safe for multi-threaded access</code>异常.<br>如果在调用poll方法时看到了这样的报错,通常说明用户将同一个KafkaConsumer实例用在了多个线程中.</p>
+</blockquote>
+<p>将isRunning标识为volatile型,然后在其他线程中设置<code>isRunning = false</code>来控制consumer的结束.<br>最后千万不要忘记关闭consumer.<br>这不仅会清除consumer创建的各种Socket资源,还会通知消费者组coordinator主动离组从而更快地开启新一轮rebalance.<br>比较推荐的做法是,在finally代码块中显式调用consumer.close(),从而保证consumer总是能够被关闭的.</p>
+<p>假设consumer程序除了消费之外还需要定期地执行其他的常规任务(比如每隔10秒需要将消费情况记录到日志中),那么就<br>可以使用consumer.poll(10000)来让consumer有机会在等待Kafka消息的同时还能够定期执行其他任务.</p>
+<p>若用consumer程序除了消费消息之外没有其他的定时任务需要执行,即consumer程序唯一的目的就是从Kafka获取消息然后进行处理,那么可采用与上面代码完全不同的poll调用方法.</p>
+<p>让consumer程序在未获取到足够多数据时无限等待,然后通过捕获WakupException异常来判断consumer是否结束.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">  <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">    ConsumerRecords&lt;String, String&gt; records = consumer.poll(Long.MAX_VALUE);</span><br><span class="line">    <span class="keyword">for</span> (ConsumerRecord&lt;String, String&gt; record : records) &#123;</span><br><span class="line">      String key = record.key(), value = record.value();</span><br><span class="line">      System.out.println(value);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125; <span class="keyword">catch</span> (WakeupException ignored) &#123;</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">  consumer.close();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果使用这种方式调用poll,那么需要在另一个线程中调用consumer.wakeup()方法来触发consumer的关闭.</p>
+<p>WakeupException异常是在poll方法中被抛出的,因此如果当前事件循环代码正在执行poll之后的消息处理逻辑,则它并不会马上响应wakeup,只会等待下次poll调用时才进行响应.</p>
+<blockquote>
+<p>poll的使用方法总结:</p>
+<p>consumer需要定期执行其他子任务:推荐poll(较小超时时间) + 运行标识布尔变量的方式</p>
+<p>consumer不需要定期执行子任务:推荐poll(MAX_VALUE) + 捕获WakeupException的方式</p>
+</blockquote>
+<h3 id="位移管理"><a href="#位移管理" class="headerlink" title="位移管理"></a>位移管理</h3><p>consumer端需要为每个它要读取的分区保存消费进度,即分区中当前最新消费消息的位置,该位置就被称为位移(offset).<br>consumer需要定期地向Kafka提交自己的位置信息,实际上,这里的位移值通常是下一条待消费的消息的位置.</p>
+<p>假设consumer已经读取了某个分区中的第N条消息,那么它应该提交位移值为N,因为位移是从0开始的,位移为N的消息是第N+1条消息.<br>这样下次consumer重启时会从第N+1条消息开始消费.</p>
+<img src="/images/kafka_consumer4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p><code>上次提交位移(last committed offset)</code><br>consumer最近一次提交的offset值.</p>
+<p><code>当前位置(current position)</code><br>consumer已读取但尚未提交时的位置.</p>
+<p><code>水位(watermark)</code><br>也被称为高水位(high watermark),严格来说它不属于consumer管理的范围,而是属于分区日志的概念.<br>对于处于水位之下(图中位于水位左边)的所有消息,consumer都是可以读取的,consumer无法读取水位以上(图中位于水位右边)的消息.</p>
+<p><code>日志终端位移(Log End Offset,LEO)</code><br>也被称为日志最新位移.<br>同样不属于consumer范畴,而是属于分区日志管辖.<br>它表示了某个分区副本当前保存消息对应的最大的位移值.<br>值得注意的是,正常情况下LEO不会比水位值小.<br>事实上,只有分区所有副本都保存了某条消息,该分区的leader副本才会向上移动水位值.</p>
+<blockquote>
+<p>consumer最多只能读取到水位值标记的消息,而不能读取尚未完全被&quot;写入成功&quot;的消息,即位于水位值之上的消息.</p>
+</blockquote>
+<h4 id="手动提交"><a href="#手动提交" class="headerlink" title="手动提交"></a>手动提交</h4><p>设置<code>enable.auto.commit=false</code>,</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> <span class="keyword">int</span> minBatchSize = <span class="number">500</span>;</span><br><span class="line">List&lt;ConsumerRecord&lt;String, String&gt;&gt; buffer = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">  <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">    ConsumerRecords&lt;String, String&gt; records = consumer.poll(<span class="number">1000</span>);</span><br><span class="line">    <span class="keyword">for</span> (ConsumerRecord&lt;String, String&gt; record : records) &#123;</span><br><span class="line">      buffer.add(record);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (buffer.size() &gt;= minBatchSize) &#123;</span><br><span class="line">      <span class="comment">//do...</span></span><br><span class="line">      consumer.commitSync();</span><br><span class="line">      buffer.clear();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125; <span class="keyword">catch</span> (WakeupException ignored) &#123;</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">  consumer.close();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>手动提交当前分区位移,</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">  <span class="keyword">while</span> (running) &#123;</span><br><span class="line">    ConsumerRecords&lt;String, String&gt; records = consumer.poll(<span class="number">1000</span>);</span><br><span class="line">    <span class="keyword">for</span> (TopicPartition partition : records.partitions()) &#123;</span><br><span class="line">      List&lt;ConsumerRecord&lt;String, String&gt;&gt; partitionRecords = records.records(partition);</span><br><span class="line">      <span class="keyword">for</span> (ConsumerRecord&lt;String, String&gt; record : partitionRecords)</span><br><span class="line">        System.out.println(record.offset() + <span class="string">&quot;: &quot;</span> + record.value());</span><br><span class="line"></span><br><span class="line">      <span class="keyword">long</span> lastoffset = partitionRecords.get(partitionRecords.size() - <span class="number">1</span>).offset();</span><br><span class="line">      consumer.commitSync(Collections.singletonMap(partition, <span class="keyword">new</span> OffsetAndMetadata(lastoffset + <span class="number">1</span>)));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">  consumer.close();</span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
+
+<p>按照分区级别进行位移提交.<br>它首先对poll方法返回的消息集合按照分区进行分组.<br>然后每个分区下的消息待处理完成后构造一个Map对象统一提交位移,从而实现了细粒度控制位移提交.<br>这里需要特别注意的是,提交的位移一定是consumer下一条待读取消息的位移.</p>
+<h4 id="自动提交"><a href="#自动提交" class="headerlink" title="自动提交"></a>自动提交</h4><p>默认情况下,consumer是自动提交位移的,自动提交间隔是5秒.<br>这就是说若不做特定的设置,consumer程序在后台自动提交位移.<br>通过设置<code>auto.commit.interval.ms</code>参数可以控制自动提交的间隔.</p>
+<h3 id="rebalance-1"><a href="#rebalance-1" class="headerlink" title="rebalance"></a>rebalance</h3><h4 id="触发条件"><a href="#触发条件" class="headerlink" title="触发条件"></a>触发条件</h4><p><code>组成员发生变更</code><br>比如新consumer加入组,或已有consumer主动离开组,再或是已有consumer崩溃时则触发rebalance.</p>
+<p><code>组订阅 topic 数发生变更</code><br>比如使用基于正则表达式的订阅,当匹配正则表达式的新topic被创建时则会触发rebalance.</p>
+<p><code>组订阅topic的分区数发生变更</code><br>比如使用命令行脚本增加了订阅topic的分区数.</p>
+<h4 id="分配策略"><a href="#分配策略" class="headerlink" title="分配策略"></a>分配策略</h4><p>分配策略决定了订阅topic的每个分区会被分配给哪个consumer.<br>通过consumer参数<code>partition.assignment.strategy</code>来进行设置.</p>
+<p><code>range策略</code><br>默认策略,主要是基于范围的思想,它将单个topic的所有分区按照顺序排列,然后把这些分区划分成固定大小的分区段并依次分配给每个consumer.</p>
+<p><code>round-robin策略</code><br>把所有topic的所有分区顺序摆开,然后轮询式地分配给各个consumer.</p>
+<p><code>sticky策略</code><br>有效地避免了上述两种策略完全无视历史分配方案的缺陷,采用了有黏性的策略,对所有consumer实例进行分配,可以规避极端情况下的数据倾斜,并且在两次rebalance间最大限度地维持了之前的分配方案.</p>
+<h4 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h4><p>consumer group在执行rebalance之前必须首先确定coordinator所在的broker,并创建与该broker相互通信的Socket连接.<br>确定coordinator的算法与确定offset被提交到<code>__consumer_offsets</code>目标分区的算法是相同的.<br>算法如下,</p>
+<p>计算<code>Math.abs(groupID.hashCode) % offsets.topic.num.partitions</code>参数值(默认是50),假设是10.<br>寻找<code>__consumer_offsets</code>分区10的leader副本所在的broker,该broker即为这个group的coordinator.</p>
+<p>成功连接coordinator之后便可以执行rebalance操作.<br>目前rebalance主要分为两步:加入组和同步更新分配方案.</p>
+<p><code>加入组</code><br>这一步中组内所有consumer(即group.id相同的所有consumer实例)向coordinator发送JoinGroup请求.<br>当收集全JoinGroup请求后,coordinator从中选择一个consumer担任group的leader,并把所有成员信息以及它们的订阅信息发送给leader.<br>特别需要注意的是,group的leader和coordinator不是一个概念.<br>leader是某个consumer实例,coordinator通常是Kafka集群中的一个broker.<br>另外leader而非coordinator负责为整个group的所有成员制定分配方案.</p>
+<img src="/images/kafka_consumer5.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p><code>同步更新分配方案</code><br>这一步中leader开始制定分配方案,即根据前面提到的分配策略决定每个consumer都负责哪些topic的哪些分区.<br>一旦分配完成,leader会把这个分配方案封装进SyncGroup请求并发送给coordinator.<br>比较有意思的是,组内所有成员都会发送SyncGroup请求,不过只有leader发送的SyncGroup请求中包含了分配方案.</p>
+<p>coordinator接收到分配方案后把属于每个consumer的方案单独抽取出来作为SyncGroup请求的response返还给各自的consumer.</p>
+<img src="/images/kafka_consumer6.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="rebalance监听器"><a href="#rebalance监听器" class="headerlink" title="rebalance监听器"></a>rebalance监听器</h4><p>手动提交位移到第三方存储以及在rebalance前后执行一些必要的审计操作.</p>
+<h3 id="解序列化"><a href="#解序列化" class="headerlink" title="解序列化"></a>解序列化</h3><p>ByteArrayDeserializer:本质上什么都不做,因为已然是字节数组.<br>ByteBufferDeserializer:解序列化成ByteBuffer.<br>BytesDeserializer:解序列化Kafka自定义的Bytes类.<br>DoubleDeserializer:解序列化Double类型.<br>IntegerDeserializer:解序列化Integer类型.<br>LongDeserializer:解序列化Long类型.<br>StringDeserializer:解序列化String类型.</p>
+<h4 id="自定义解序列化器"><a href="#自定义解序列化器" class="headerlink" title="自定义解序列化器"></a>自定义解序列化器</h4><p>实现<code>org.apache.kafka.common.serialization.Deserializer</code>接口,在deserializer方法中实现deserialize逻辑.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.kafka.common.serialization.Deserializer;</span><br><span class="line"><span class="keyword">import</span> org.codehaus.jackson.map.ObjectMapper;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.Map;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserDeserializer</span> <span class="keyword">implements</span> <span class="title">Deserializer</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> ObjectMapper object;</span><br><span class="line">  </span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(Map map, <span class="keyword">boolean</span> b)</span> </span>&#123;</span><br><span class="line">    object = <span class="keyword">new</span> ObjectMapper();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Object <span class="title">deserialize</span><span class="params">(String topic, <span class="keyword">byte</span>[] data)</span> </span>&#123;</span><br><span class="line">    User user = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      user = object.readValue(data, User.class);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">      <span class="comment">//</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> user;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">close</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">props.put(<span class="string">&quot;value.deserializer&quot;</span>,<span class="string">&quot;com.dftt.seri.UserDeserializer&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<h2 id="多线程消费实例"><a href="#多线程消费实例" class="headerlink" title="多线程消费实例"></a>多线程消费实例</h2><p>KafkaConsumer是非线程安全的.<br>它和KafkaProducer不同,后者是线程安全的,因此用户可以在多个线程中放心地使用同一个KafkaProducer实例.</p>
+<h3 id="每个线程维护一个实例"><a href="#每个线程维护一个实例" class="headerlink" title="每个线程维护一个实例"></a>每个线程维护一个实例</h3><p>创建多个线程来消费topic数据,每个线程都会创建专属于该线程的KafkaConsumer实例,负责消费固定数目的分区.</p>
+<h4 id="ConsumerRunnable"><a href="#ConsumerRunnable" class="headerlink" title="ConsumerRunnable"></a>ConsumerRunnable</h4><p>消费线程类,执行真正的消费任务.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ConsumerLoop</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> KafkaConsumer&lt;String, String&gt; consumer;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> List&lt;String&gt; topics;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> id;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">ConsumerLoop</span><span class="params">(<span class="keyword">int</span> id, String groupId, List&lt;String&gt; topics)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.id = id;</span><br><span class="line">    <span class="keyword">this</span>.topics = topics;</span><br><span class="line">    Properties props = <span class="keyword">new</span> Properties();</span><br><span class="line">    props.put(<span class="string">&quot;bootstrap.servers&quot;</span>, <span class="string">&quot;localhost:9092&quot;</span>);</span><br><span class="line">    props.put(<span class="string">&quot;group.id&quot;</span>, groupId);</span><br><span class="line">    props.put(<span class="string">&quot;key.deserializer&quot;</span>, StringDeserializer.class.getName());</span><br><span class="line">    props.put(<span class="string">&quot;value.deserializer&quot;</span>, StringDeserializer.class.getName());</span><br><span class="line">    <span class="keyword">this</span>.consumer = <span class="keyword">new</span> KafkaConsumer&lt;&gt;(props);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      consumer.subscribe(topics);</span><br><span class="line"></span><br><span class="line">      <span class="comment">//noinspection InfiniteLoopStatement</span></span><br><span class="line">      <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">        ConsumerRecords&lt;String, String&gt; records = consumer.poll(Long.MAX_VALUE);</span><br><span class="line">        <span class="keyword">for</span> (ConsumerRecord&lt;String, String&gt; record : records) &#123;</span><br><span class="line">          Map&lt;String, Object&gt; data = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">          data.put(<span class="string">&quot;partition&quot;</span>, record.partition());</span><br><span class="line">          data.put(<span class="string">&quot;offset&quot;</span>, record.offset());</span><br><span class="line">          data.put(<span class="string">&quot;value&quot;</span>, record.value());</span><br><span class="line">          System.out.println(<span class="keyword">this</span>.id + <span class="string">&quot;: &quot;</span> + data);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (WakeupException e) &#123;</span><br><span class="line">      <span class="comment">// ignore for shutdown</span></span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      consumer.close();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">shutdown</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    consumer.wakeup();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="ConsumerGroup"><a href="#ConsumerGroup" class="headerlink" title="ConsumerGroup"></a>ConsumerGroup</h4><p>消费线程管理类,创建多个线程类执行消费任务.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">App</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> numConsumers = <span class="number">3</span>;</span><br><span class="line">    String groupId = <span class="string">&quot;consumer-tutorial-group&quot;</span>;</span><br><span class="line">    List&lt;String&gt; topics = Collections.singletonList(<span class="string">&quot;consumer-tutorial&quot;</span>);</span><br><span class="line">    ExecutorService executor = Executors.newFixedThreadPool(numConsumers);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">final</span> List&lt;ConsumerLoop&gt; consumers = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; numConsumers; i++) &#123;</span><br><span class="line">      ConsumerLoop consumer = <span class="keyword">new</span> ConsumerLoop(i, groupId, topics);</span><br><span class="line">      consumers.add(consumer);</span><br><span class="line">      executor.submit(consumer);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Runtime.getRuntime().addShutdownHook(<span class="keyword">new</span> Thread() &#123;</span><br><span class="line">      <span class="meta">@Override</span></span><br><span class="line">      <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (ConsumerLoop consumer : consumers) &#123;</span><br><span class="line">          consumer.shutdown();</span><br><span class="line">        &#125;</span><br><span class="line">        executor.shutdown();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">          <span class="keyword">boolean</span> result = executor.awaitTermination(<span class="number">5000</span>, TimeUnit.MILLISECONDS);</span><br><span class="line">          System.out.println(result);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">          e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="单实例-多worker线程"><a href="#单实例-多worker线程" class="headerlink" title="单实例+多worker线程"></a>单实例+多worker线程</h3><p>将消息的获取与消息的处理解耦,把后者放入单独的工作者线程中,即所谓的worker线程中.<br>同时在全局维护一个或若干个consumer实例执行消息获取任务.</p>
+<h4 id="ConsumerThreadHandler"><a href="#ConsumerThreadHandler" class="headerlink" title="ConsumerThreadHandler"></a>ConsumerThreadHandler</h4><p>consumer多线程管理类,用于创建线程池以及为每个线程分配消息集合,consumer位移提交也在该类中完成.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.kafka.clients.consumer.*;</span><br><span class="line"><span class="keyword">import</span> org.apache.kafka.common.TopicPartition;</span><br><span class="line"><span class="keyword">import</span> org.apache.kafka.common.errors.WakeupException;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.ArrayBlockingQueue;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.ExecutorService;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.ThreadPoolExecutor;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.TimeUnit;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ConsumerThreadHandler</span>&lt;<span class="title">K</span>, <span class="title">V</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> KafkaConsumer&lt;K, V&gt; consumer;</span><br><span class="line">  <span class="keyword">private</span> ExecutorService executorService;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> Map&lt;TopicPartition, OffsetAndMetadata&gt; offsets = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">ConsumerThreadHandler</span><span class="params">(String brokerList, String groupId, String topic)</span> </span>&#123;</span><br><span class="line">    Properties props = <span class="keyword">new</span> Properties();</span><br><span class="line">    props.put(<span class="string">&quot;bootstrap.servers&quot;</span>, <span class="string">&quot;oceanbase004:9092&quot;</span>);</span><br><span class="line">    props.put(<span class="string">&quot;group.id&quot;</span>, <span class="string">&quot;xxx&quot;</span>);</span><br><span class="line">    props.put(<span class="string">&quot;enable.auto.commit&quot;</span>, <span class="string">&quot;false&quot;</span>);</span><br><span class="line">    props.put(<span class="string">&quot;auto.offset.reset&quot;</span>, <span class="string">&quot;latest&quot;</span>);</span><br><span class="line">    props.put(<span class="string">&quot;key.deserializer&quot;</span>, <span class="string">&quot;org.apache.kafka.common.serialization.StringDeserializer&quot;</span>);</span><br><span class="line">    props.put(<span class="string">&quot;value.deserializer&quot;</span>, <span class="string">&quot;org.apache.kafka.common.serialization.StringDeserializer&quot;</span>);</span><br><span class="line">    consumer = <span class="keyword">new</span> KafkaConsumer&lt;&gt;(props);</span><br><span class="line">    consumer.subscribe(Collections.singletonList(topic), <span class="keyword">new</span> ConsumerRebalanceListener() &#123;</span><br><span class="line">      <span class="meta">@Override</span></span><br><span class="line">      <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onPartitionsRevoked</span><span class="params">(Collection&lt;TopicPartition&gt; partitions)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//提交位移</span></span><br><span class="line">        consumer.commitSync(offsets);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="meta">@Override</span></span><br><span class="line">      <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onPartitionsAssigned</span><span class="params">(Collection&lt;TopicPartition&gt; partitions)</span> </span>&#123;</span><br><span class="line">        offsets.clear();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">comsume</span><span class="params">(<span class="keyword">int</span> threadNum)</span> </span>&#123;</span><br><span class="line">    executorService = <span class="keyword">new</span> ThreadPoolExecutor(</span><br><span class="line">        threadNum, threadNum, <span class="number">0L</span>, TimeUnit.MILLISECONDS,</span><br><span class="line">        <span class="keyword">new</span> ArrayBlockingQueue&lt;&gt;(<span class="number">1000</span>),</span><br><span class="line">        <span class="keyword">new</span> ThreadPoolExecutor.CallerRunsPolicy()</span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">//noinspection InfiniteLoopStatement</span></span><br><span class="line">      <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">        ConsumerRecords&lt;K, V&gt; records = consumer.poll(<span class="number">1000</span>);</span><br><span class="line">        <span class="keyword">if</span> (!records.isEmpty()) &#123;</span><br><span class="line">          executorService.submit(<span class="keyword">new</span> ConsumerWorker&lt;&gt;(records, offsets));</span><br><span class="line">        &#125;</span><br><span class="line">        commitOffsets();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (WakeupException ignored) &#123;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      commitOffsets();</span><br><span class="line">      consumer.close();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">commitOffsets</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">//尽量降低synchronized块对offsets锁定的时间</span></span><br><span class="line">    Map&lt;TopicPartition, OffsetAndMetadata&gt; unmodfiedMap;</span><br><span class="line">    <span class="keyword">synchronized</span> (offsets) &#123;</span><br><span class="line">      <span class="keyword">if</span> (offsets.isEmpty()) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line">      unmodfiedMap = Collections.unmodifiableMap(<span class="keyword">new</span> HashMap&lt;&gt;(offsets));</span><br><span class="line">      offsets.clear();</span><br><span class="line">    &#125;</span><br><span class="line">    consumer.commitSync(unmodfiedMap);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">close</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    consumer.wakeup();</span><br><span class="line">    executorService.shutdown();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="ConsumerWorker"><a href="#ConsumerWorker" class="headerlink" title="ConsumerWorker"></a>ConsumerWorker</h4><p>本质上是一个Runnable,执行真正的消费逻辑并上报位移信息给ConsumerThreadHandler.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.kafka.clients.consumer.ConsumerRecord;</span><br><span class="line"><span class="keyword">import</span> org.apache.kafka.clients.consumer.ConsumerRecords;</span><br><span class="line"><span class="keyword">import</span> org.apache.kafka.clients.consumer.OffsetAndMetadata;</span><br><span class="line"><span class="keyword">import</span> org.apache.kafka.common.TopicPartition;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.List;</span><br><span class="line"><span class="keyword">import</span> java.util.Map;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ConsumerWorker</span>&lt;<span class="title">K</span>, <span class="title">V</span>&gt; <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> ConsumerRecords&lt;K, V&gt; records;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> Map&lt;TopicPartition, OffsetAndMetadata&gt; offsets;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">ConsumerWorker</span><span class="params">(ConsumerRecords&lt;K, V&gt; record, Map&lt;TopicPartition, OffsetAndMetadata&gt; offsets)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.records = record;</span><br><span class="line">    <span class="keyword">this</span>.offsets = offsets;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (TopicPartition partition : records.partitions()) &#123;</span><br><span class="line">      List&lt;ConsumerRecord&lt;K, V&gt;&gt; partitionRecords = records.records(partition);</span><br><span class="line">      <span class="keyword">for</span> (ConsumerRecord&lt;K, V&gt; record : partitionRecords) &#123;</span><br><span class="line">        <span class="comment">//do</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">//上报位移信息</span></span><br><span class="line">        <span class="keyword">long</span> lastOffset = partitionRecords.get(partitionRecords.size() - <span class="number">1</span>).offset();</span><br><span class="line">        <span class="keyword">synchronized</span> (offsets) &#123;</span><br><span class="line">          <span class="keyword">if</span> (!offsets.containsKey(partition)) &#123;</span><br><span class="line">            offsets.put(partition, <span class="keyword">new</span> OffsetAndMetadata(lastOffset + <span class="number">1</span>));</span><br><span class="line">          &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">long</span> curr = offsets.get(partition).offset();</span><br><span class="line">            <span class="keyword">if</span> (curr &lt;= lastOffset + <span class="number">1</span>) &#123;</span><br><span class="line">              offsets.put(partition, <span class="keyword">new</span> OffsetAndMetadata(lastOffset + <span class="number">1</span>));</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="App"><a href="#App" class="headerlink" title="App"></a>App</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">String brokerList = <span class="string">&quot;localhost:9092&quot;</span>;</span><br><span class="line">String topic = <span class="string">&quot;xxx&quot;</span>;</span><br><span class="line">String groupid = <span class="string">&quot;xxx&quot;</span>;</span><br><span class="line"><span class="keyword">final</span> ConsumerThreadHandler&lt;<span class="keyword">byte</span>[], <span class="keyword">byte</span>[]&gt; handler = <span class="keyword">new</span> ConsumerThreadHandler&lt;&gt;(brokerList, groupid, topic);</span><br><span class="line"><span class="keyword">final</span> <span class="keyword">int</span> cpuCount = Runtime.getRuntime().availableProcessors();</span><br><span class="line"></span><br><span class="line">Runnable runnable = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    handler.comsume(cpuCount);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">new</span> Thread(runnable).start();</span><br><span class="line"></span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">  Thread.sleep(<span class="number">20000</span>);</span><br><span class="line">&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">  <span class="comment">//</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">handler.close();</span><br></pre></td></tr></table></figure>
+
+<h3 id="独立消费者"><a href="#独立消费者" class="headerlink" title="独立消费者"></a>独立消费者</h3><p>使用standalone consumer的方法就是调用KafkaConsumer.assign方法.</p>
+<p>assign方法则接收一个分区列表,直接赋予该consumer访问这些分区的权力.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">Properties props = <span class="keyword">new</span> Properties();</span><br><span class="line">props.put(<span class="string">&quot;bootstrap.servers&quot;</span>, <span class="string">&quot;oceanbase004:9092&quot;</span>);</span><br><span class="line">props.put(<span class="string">&quot;enable.auto.commit&quot;</span>, <span class="string">&quot;false&quot;</span>);</span><br><span class="line">props.put(<span class="string">&quot;auto.offset.reset&quot;</span>, <span class="string">&quot;latest&quot;</span>);</span><br><span class="line">props.put(<span class="string">&quot;key.deserializer&quot;</span>, <span class="string">&quot;org.apache.kafka.common.serialization.StringDeserializer&quot;</span>);</span><br><span class="line">props.put(<span class="string">&quot;value.deserializer&quot;</span>, <span class="string">&quot;org.apache.kafka.common.serialization.StringDeserializer&quot;</span>);</span><br><span class="line"></span><br><span class="line">KafkaConsumer&lt;String, String&gt; consumer = <span class="keyword">new</span> KafkaConsumer&lt;&gt;(props);</span><br><span class="line">String topic = <span class="string">&quot;xxx&quot;</span>;</span><br><span class="line"></span><br><span class="line">List&lt;TopicPartition&gt; partitions = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">List&lt;PartitionInfo&gt; partitionInfos = consumer.partitionsFor(topic);</span><br><span class="line"><span class="keyword">if</span> (partitionInfos != <span class="keyword">null</span> &amp;&amp; !partitionInfos.isEmpty()) &#123;</span><br><span class="line">  <span class="keyword">for</span> (PartitionInfo partitionInfo : partitionInfos) &#123;</span><br><span class="line">    partitions.add(<span class="keyword">new</span> TopicPartition(partitionInfo.topic(), partitionInfo.partition()));</span><br><span class="line">  &#125;</span><br><span class="line">  consumer.assign(partitions);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">  <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">    ConsumerRecords&lt;String, String&gt; records = consumer.poll(<span class="number">1000</span>);</span><br><span class="line">    <span class="keyword">for</span> (ConsumerRecord&lt;String, String&gt; record : records) &#123;</span><br><span class="line">      <span class="comment">//do</span></span><br><span class="line">    &#125;</span><br><span class="line">    consumer.commitSync();</span><br><span class="line">  &#125;</span><br><span class="line">&#125; <span class="keyword">catch</span> (WakeupException ignored) &#123;</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">  consumer.commitSync();</span><br><span class="line">  consumer.close();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用assign固定地为consumer指定要消费的分区.<br>如果发生多次assign调用,最后一次assign调用的分配生效,之前的都会被覆盖掉.<br>还有一个值得注意的是,assign和subscribe一定不要混用,即不能在一个consumer应用中同时使用consumer group和独立consumer.</p>
+<h2 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> KafkaConsumer&lt;String, String&gt; consumer = <span class="keyword">new</span> KafkaConsumer&lt;&gt;(kafkaProperties);</span><br><span class="line">consumer.subscribe(topics);</span><br><span class="line"></span><br><span class="line"><span class="keyword">final</span> Thread mainThread = Thread.currentThread();</span><br><span class="line">Runtime.getRuntime().addShutdownHook(<span class="keyword">new</span> Thread() &#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    consumer.wakeup();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      mainThread.join();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">      SystemDataLog.error(<span class="string">&quot;stop fail.&quot;</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">  <span class="comment">//noinspection InfiniteLoopStatement</span></span><br><span class="line">  <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">    ConsumerRecords&lt;String, String&gt; records = consumer.poll(<span class="number">100</span>);</span><br><span class="line">    <span class="keyword">for</span> (ConsumerRecord&lt;String, String&gt; record : records) &#123;</span><br><span class="line">      <span class="comment">//todo</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125; <span class="keyword">catch</span> (WakeupException ignored) &#123;</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">  consumer.commitSync();</span><br><span class="line">  consumer.close();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/kafka/" rel="tag"># kafka</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/03/01/yaml%E4%BD%BF%E7%94%A8/" rel="prev" title="yaml使用">
+                  <i class="fa fa-chevron-left"></i> yaml使用
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/03/01/hive%20sql%E8%A1%8C%E5%88%97%E8%BD%AC%E6%8D%A2/" rel="next" title="hive sql行列转换">
+                  hive sql行列转换 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

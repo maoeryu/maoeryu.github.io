@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="spark.executor.memory &#x3D; reserved memory(300MB) + usable memoryusable memory &#x3D; unified memory(60%,spark.memory.fraction) + other(40%,1-spark.memory.fraction)unified memory &#x3D; storage memory(50%,spark.me">
+<meta property="og:type" content="article">
+<meta property="og:title" content="spark内存模型">
+<meta property="og:url" content="https://maoeryu.github.io/2022/11/16/spark%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="spark.executor.memory &#x3D; reserved memory(300MB) + usable memoryusable memory &#x3D; unified memory(60%,spark.memory.fraction) + other(40%,1-spark.memory.fraction)unified memory &#x3D; storage memory(50%,spark.me">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1312.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1313.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1338.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1314.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1315.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1339.jpg">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1318.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1316.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1319.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1317.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1320.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1321.png">
+<meta property="article:published_time" content="2022-11-15T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-11-18T09:52:50.578Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="spark">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1312.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/11/16/spark%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>spark内存模型 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#spark%E5%86%85%E5%AD%98%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">spark内存概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#spark%E8%BF%90%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="nav-number">1.1.</span> <span class="nav-text">spark运行流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spark%E7%9A%84%E5%A0%86%E5%86%85%E5%86%85%E5%AD%98"><span class="nav-number">1.2.</span> <span class="nav-text">spark的堆内内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spark%E7%9A%84%E5%A0%86%E5%A4%96%E5%86%85%E5%AD%98"><span class="nav-number">1.3.</span> <span class="nav-text">spark的堆外内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-number">1.4.</span> <span class="nav-text">存储内存管理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#RDD%E7%9A%84%E6%8C%81%E4%B9%85%E5%8C%96%E6%9C%BA%E5%88%B6"><span class="nav-number">1.4.1.</span> <span class="nav-text">RDD的持久化机制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#RDD%E7%9A%84%E7%BC%93%E5%AD%98%E8%BF%87%E7%A8%8B"><span class="nav-number">1.4.2.</span> <span class="nav-text">RDD的缓存过程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B7%98%E6%B1%B0%E4%B8%8E%E8%90%BD%E7%9B%98"><span class="nav-number">1.4.3.</span> <span class="nav-text">淘汰与落盘</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-number">1.5.</span> <span class="nav-text">执行内存管理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%9A%E4%BB%BB%E5%8A%A1%E9%97%B4%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D"><span class="nav-number">1.5.1.</span> <span class="nav-text">多任务间内存分配</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Shuffle-%E7%9A%84%E5%86%85%E5%AD%98%E5%8D%A0%E7%94%A8"><span class="nav-number">1.5.2.</span> <span class="nav-text">Shuffle 的内存占用</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Shuffle-Write"><span class="nav-number">1.5.2.1.</span> <span class="nav-text">Shuffle Write</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Shuffle-Read"><span class="nav-number">1.5.2.2.</span> <span class="nav-text">Shuffle Read</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#spark%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E6%9C%BA%E5%88%B6"><span class="nav-number">2.</span> <span class="nav-text">spark内存管理机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9D%99%E6%80%81%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86-Static-Memory-Manager"><span class="nav-number">2.1.</span> <span class="nav-text">静态内存管理(Static Memory Manager)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A0%86%E5%86%85%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D"><span class="nav-number">2.1.1.</span> <span class="nav-text">堆内内存分配</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A0%86%E5%A4%96%E5%86%85%E5%AD%98"><span class="nav-number">2.1.2.</span> <span class="nav-text">堆外内存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">2.1.3.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%9F%E4%B8%80%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86-Unified-Memory-Manager"><span class="nav-number">2.2.</span> <span class="nav-text">统一内存管理(Unified Memory Manager)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A0%86%E5%86%85%E5%86%85%E5%AD%98"><span class="nav-number">2.2.1.</span> <span class="nav-text">堆内内存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A0%86%E5%A4%96%E5%86%85%E5%AD%98-1"><span class="nav-number">2.2.2.</span> <span class="nav-text">堆外内存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93-1"><span class="nav-number">2.2.3.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.2.4.</span> <span class="nav-text">示例</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%8F%AA%E7%94%A8%E5%A0%86%E5%86%85%E5%86%85%E5%AD%98"><span class="nav-number">2.2.4.1.</span> <span class="nav-text">只用堆内内存</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%94%A8%E4%BA%86%E5%A0%86%E5%86%85%E5%92%8C%E5%A0%86%E5%A4%96%E5%86%85%E5%AD%98"><span class="nav-number">2.2.4.2.</span> <span class="nav-text">用了堆内和堆外内存</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#yarn%E6%A8%A1%E5%BC%8F%E7%9A%84%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D"><span class="nav-number">3.</span> <span class="nav-text">yarn模式的内存分配</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Yarn%E7%9A%84%E8%B5%84%E6%BA%90%E8%A7%84%E6%95%B4%E5%8C%96"><span class="nav-number">3.1.</span> <span class="nav-text">Yarn的资源规整化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89"><span class="nav-number">3.1.1.</span> <span class="nav-text">定义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E9%85%8D%E7%BD%AE"><span class="nav-number">3.1.2.</span> <span class="nav-text">相关配置</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Yarn%E6%A8%A1%E5%BC%8F%E7%9A%84Driver%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E5%B7%AE%E5%BC%82"><span class="nav-number">3.2.</span> <span class="nav-text">Yarn模式的Driver内存分配差异</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93-2"><span class="nav-number">3.3.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%99%85%E9%83%A8%E7%BD%B2"><span class="nav-number">4.</span> <span class="nav-text">实际部署</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#spark-memory-fraction-0-6"><span class="nav-number">4.1.</span> <span class="nav-text">spark.memory.fraction&#x3D;0.6</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spark-memory-storageFraction-0-5"><span class="nav-number">4.2.</span> <span class="nav-text">spark.memory.storageFraction&#x3D;0.5</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spark-executor-memoryOverhead-1024M"><span class="nav-number">4.3.</span> <span class="nav-text">spark.executor.memoryOverhead&#x3D;1024M</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/11/16/spark%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          spark内存模型
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-11-16 00:00:00" itemprop="dateCreated datePublished" datetime="2022-11-16T00:00:00+08:00">2022-11-16</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-11-18 17:52:50" itemprop="dateModified" datetime="2022-11-18T17:52:50+08:00">2022-11-18</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>spark.executor.memory = reserved memory(300MB) + usable memory<br>usable memory = unified memory(60%,spark.memory.fraction) + other(40%,1-spark.memory.fraction)<br>unified memory = storage memory(50%,spark.memory.storageFraction) + execution memory (1-spark.memory.storageFraction)</p>
+<blockquote>
+<p>堆外内存<br>通过 spark.memory.offHeap.enabled 参数开启,并由 spark.memory.offHeap.size 指定堆外内存的大小,单位是字节(占用的空间划归 JVM OffHeap 内存)</p>
+</blockquote>
+<p>堆外内存只区分 Execution 内存和 Storage 内存:<br>spark.memory.offHeap.size = storage memory(50%,spark.memory.storageFraction) + execution memory (1-spark.memory.storageFraction)</p>
+<p>storage memory = 堆内storage memory + 堆外storage memory<br>execution memory = 堆内execution memory + 堆外execution memory</p>
+<span id="more"></span>
+<h2 id="spark内存概述"><a href="#spark内存概述" class="headerlink" title="spark内存概述"></a>spark内存概述</h2><h3 id="spark运行流程"><a href="#spark运行流程" class="headerlink" title="spark运行流程"></a>spark运行流程</h3><ol>
+<li>用户在Driver端提交任务,初始化运行环境(sparkContext等).</li>
+<li>Driver根据配置向ResoureManager申请资源(executors及内存资源).</li>
+<li>ResoureManager资源管理器选择合适的worker节点创建executor进程.</li>
+<li>Executor向Driver注册,并等待其分配task任务.</li>
+<li>Driver端完成sparkContext初始化,创建DAG,分配taskset到Executor上执行.</li>
+<li>Executor启动线程执行task任务,返回结果.</li>
+</ol>
+<img src="/images/fly1312.png" width="400" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>spark在任务运行过程中,会启动Driver和Executor两个进程.<br>其中Driver进程除了作为spark提交任务的执行节点外,还负责申请Executor资源/注册Executor/提交Task等,完成整个任务的协调调度工作.<br>而Executor进程负责在工作节点上执行具体的task任务,并与Driver保持通信,返回结果.</p>
+<p>由上可见,spark的数据计算主要在Executor进程内完成,而Executor对于RDD的持久化存储以及Shuffle运行过程,均在spark内存管理机制下统一进行,其内运行的task任务也共享Executor内存.</p>
+<p>spark内存分为<strong>堆内内存</strong>(On-heap Memory)和<strong>堆外内存</strong>(Off-heap Memory).<br>其中堆内内存基于JVM内存模型,而堆外内存则通过调用底层JDK Unsafe API.<br>两种内存类型统一由spark内存管理模块接口实现.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">acquireStorageMemory</span></span>(...): <span class="type">Boolean</span>  <span class="comment">//申请存储内存</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">acquireExecutionMemory</span></span>(...): <span class="type">Long</span>   <span class="comment">//申请执行内存</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">releaseStorageMemory</span></span>(...): <span class="type">Unit</span>     <span class="comment">//释放执行内存</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">releaseStorageMemory</span></span>(...): <span class="type">Unit</span>     <span class="comment">//释放存储内存</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="spark的堆内内存"><a href="#spark的堆内内存" class="headerlink" title="spark的堆内内存"></a>spark的堆内内存</h3><p>Executor作为一个JVM进程,其内部基于JVM的内存管理模型.</p>
+<p>spark在其之上封装了统一的内存管理接口MemoryManager,通过对JVM堆空间进行合理的规划(逻辑上),完成对象实例内存空间的申请和释放.<br>保证满足spark运行机制的前提下,最大化利用内存空间.</p>
+<img src="/images/fly1313.png" width="400" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>spark程序在创建对象后,JVM会在堆内内存中分配一定大小的空间,创建Class对象并返回对象引用,spark保存对象引用,同时记录占用的内存信息.</p>
+</blockquote>
+<p>spark中堆内内存参数有: <code>-executor-memory</code>/<code>-spark-executor-memory</code>.<br>通常是任务提交时在参数中进行定义,且与<code>-executor-cores</code>等相关配置一起被提交至ResourceManager中进行Executor的资源申请.</p>
+<p>在Worker节点创建一定数目的Executor,每个Executor被分配-executor-memory大小的堆内内存.<br>Executor的堆内内存被所有的Task线程任务共享,多线程在内存中进行数据交换.</p>
+<p>spark堆内内存主要分为Storage(存储内存)/Execution(执行内存)和Other(其他) 几部分.</p>
+<ul>
+<li>Storage用于缓存RDD数据和broadcast广播变量的内存使用</li>
+<li>Execution仅提供shuffle过程的内存使用</li>
+<li>Other提供spark内部对象/用户自定义对象的内存空间</li>
+</ul>
+<p>spark支持多种内存管理模式,在不同的管理模式下,以上堆内内存划分区域的占比会有所不同.</p>
+<h3 id="spark的堆外内存"><a href="#spark的堆外内存" class="headerlink" title="spark的堆外内存"></a>spark的堆外内存</h3><p>spark1.6在堆内内存的基础上引入了堆外内存,进一步优化了spark内存的使用率.</p>
+<blockquote>
+<p>堆外内存<br>其底层调用基于C的JDK Unsafe类方法,通过指针直接进行内存的操作,包括内存空间的申请/使用/删除释放等.</p>
+</blockquote>
+<p>spark在2.x之后,摒弃了之前版本的Tachyon,采用Java中常见的基于JDK Unsafe API来对堆外内存进行管理.<br>此模式不在JVM中申请内存,而是直接操作系统内存,减少了JVM中内存空间切换的开销,降低了GC回收占用的消耗,实现对内存的精确管控.</p>
+<p>堆外内存默认情况下是不开启的,需要在配置中将<code>spark.memory.offHeap.enabled</code>设为True,同时配置<code>spark.memory.offHeap.size</code>参数设置堆大小.</p>
+<p>对于堆外内存的划分,仅包含Execution(执行内存)和Storage(存储内存)两块区域,且被所有task线程任务共享.</p>
+<h3 id="存储内存管理"><a href="#存储内存管理" class="headerlink" title="存储内存管理"></a>存储内存管理</h3><h4 id="RDD的持久化机制"><a href="#RDD的持久化机制" class="headerlink" title="RDD的持久化机制"></a>RDD的持久化机制</h4><p>弹性分布式数据集(RDD)作为 Spark 最根本的数据抽象,是只读的分区记录(Partition)的集合,只能基于在稳定物理存储中的数据集上创建,或者在其他已有的 RDD 上执行转换(Transformation)操作产生一个新的 RDD.<br>转换后的 RDD 与原始的 RDD 之间产生的依赖关系,构成了血统(Lineage).<br>凭借血统,Spark 保证了每一个 RDD 都可以被重新恢复.<br>但 RDD 的所有转换都是惰性的,即只有当一个返回结果给 Driver 的行动(Action)发生时,Spark 才会创建任务读取 RDD,然后真正触发转换的执行.</p>
+<p>Task 在启动之初读取一个分区时,会先判断这个分区是否已经被持久化,如果没有则需要检查 Checkpoint 或按照血统重新计算.<br>所以如果一个 RDD 上要执行多次行动,可以在第一次行动中使用 persist 或 cache 方法,在内存或磁盘中持久化或缓存这个 RDD,从而在后面的行动时提升计算速度.</p>
+<p>事实上,cache 方法是使用默认的 MEMORY_ONLY 的存储级别将 RDD 持久化到内存,故缓存是一种特殊的持久化.<br><font color="#dd00">堆内和堆外存储内存的设计,便可以对缓存 RDD 时使用的内存做统一的规划和管理.</font></p>
+<p>RDD 的持久化由 Spark 的 Storage 模块负责,实现了 RDD 与物理存储的解耦合.<br>Storage 模块负责管理 Spark 在计算过程中产生的数据,将那些在内存或磁盘/在本地或远程存取数据的功能封装了起来.<br>在具体实现时 Driver 端和 Executor 端的 Storage 模块构成了主从式的架构,即 Driver 端的 BlockManager 为 Master,Executor 端的 BlockManager 为 Slave.</p>
+<p>Storage 模块在逻辑上以 Block 为基本存储单位,<font color="#dd00">RDD 的每个 Partition 经过处理后唯一对应一个 Block</font>(BlockId 的格式为 rdd_RDD-ID_PARTITION-ID ).<br>Driver端的Master 负责整个 Spark 应用程序的 Block 的元数据信息的管理和维护,而Executor端的 Slave 需要将 Block 的更新等状态上报到 Master,同时接收 Master 的命令,例如新增或删除一个 RDD.</p>
+<p>在对 RDD 持久化时,Spark 规定了 MEMORY_ONLY/MEMORY_AND_DISK 等 7 种不同的 存储级别 ,而存储级别是以下 5 个变量的组合:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">StorageLevel</span> <span class="title">private</span>(</span></span><br><span class="line">private var _useDisk: Boolean, //磁盘</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">var</span> _useMemory: Boolean, <span class="comment">//这里其实是指堆内内存</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">var</span> _useOffHeap: Boolean, <span class="comment">//堆外内存</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">var</span> _deserialized: Boolean, <span class="comment">//是否为非序列化</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">var</span> _replication: Int = <span class="number">1</span> <span class="comment">//副本个数</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>Spark中7种存储级别如下:</p>
+<table>
+<thead>
+<tr>
+<th align="left">持久化级别</th>
+<th align="left">含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">MEMORY_ONLY</td>
+<td align="left">以非序列化的Java对象的方式持久化在JVM内存中.如果内存无法完全存储RDD所有的partition,那么那些没有持久化的partition就会在下一次需要使用它们的时候,重新被计算</td>
+</tr>
+<tr>
+<td align="left">MEMORY_AND_DISK</td>
+<td align="left">同上,但是当某些partition无法存储在内存中时,会持久化到磁盘中.下次需要使用这些partition时,需要从磁盘上读取</td>
+</tr>
+<tr>
+<td align="left">MEMORY_ONLY_SER</td>
+<td align="left">同MEMORY_ONLY,但是会使用Java序列化方式,将Java对象序列化后进行持久化.可以减少内存开销,但是需要进行反序列化,因此会加大CPU开销</td>
+</tr>
+<tr>
+<td align="left">MEMORY_AND_DISK_SER</td>
+<td align="left">同MEMORY_AND_DISK,但是使用序列化方式持久化Java对象</td>
+</tr>
+<tr>
+<td align="left">DISK_ONLY</td>
+<td align="left">使用非序列化Java对象的方式持久化,完全存储到磁盘上</td>
+</tr>
+<tr>
+<td align="left">MEMORY_ONLY_2,MEMORY_AND_DISK_2</td>
+<td align="left">如果是尾部加了2的持久化级别,表示将持久化数据复用一份,保存到其他节点,从而在数据丢失时,不需要再次计算,只需要使用备份数据即可</td>
+</tr>
+</tbody></table>
+<p>通过对数据结构的分析,可以看出存储级别从三个维度定义了 RDD 的 Partition(同时也就是 Block)的存储方式:</p>
+<ol>
+<li>存储位置:磁盘／堆内内存／堆外内存.<br>如 MEMORY_AND_DISK 是同时在磁盘和堆内内存上存储,实现了冗余备份.<br>OFF_HEAP 则是只在堆外内存存储,目前选择堆外内存时不能同时存储到其他位置.</li>
+<li>存储形式:Block 缓存到存储内存后,是否为非序列化的形式.<br>如 MEMORY_ONLY 是非序列化方式存储,OFF_HEAP 是序列化方式存储.</li>
+<li>副本数量:大于 1 时需要远程冗余备份到其他节点.<br>如 DISK_ONLY_2 需要远程备份 1 个副本.</li>
+</ol>
+<h4 id="RDD的缓存过程"><a href="#RDD的缓存过程" class="headerlink" title="RDD的缓存过程"></a>RDD的缓存过程</h4><p>RDD 在缓存到存储内存之前,Partition 中的数据一般以迭代器( Iterator)的数据结构来访问,这是 Scala 语言中一种遍历数据集合的方法.<br>通过 Iterator 可以获取分区中每一条序列化或者非序列化的数据项(Record),这些 Record 的对象实例在逻辑上占用了 JVM 堆内内存的 other 部分的空间,<font color="blue">同一 Partition 的不同 Record 的存储空间并不连续</font>.</p>
+<p>RDD 在缓存到存储内存之后,Partition 被转换成 Block,Record 在堆内或堆外存储内存中占用一块连续的空间.<br><font color="green">将Partition由不连续的存储空间转换为连续存储空间的过程,Spark称之为&quot;展开&quot;(Unroll)</font>.</p>
+<p>Block 有序列化和非序列化两种存储格式,具体以哪种方式取决于该 RDD 的存储级别.<br>非序列化的 Block 以一种 DeserializedMemoryEntry 的数据结构定义,用一个数组存储所有的对象实例,序列化的 Block 则以 SerializedMemoryEntry的数据结构定义,用字节缓冲区(ByteBuffer)来存储二进制数据.<br>每个 Executor 的 Storage 模块用一个链式 Map 结构(LinkedHashMap)来管理堆内和堆外存储内存中所有的 Block 对象的实例,对这个 LinkedHashMap 新增和删除间接记录了内存的申请和释放.</p>
+<p><font color="green">因为不能保证存储空间可以一次容纳 Iterator 中的所有数据,当前的计算任务在 Unroll 时要向 MemoryManager 申请足够的 Unroll 空间来临时占位,空间不足则 Unroll 失败,空间足够时可以继续进行</font>.</p>
+<p>对于序列化的 Partition,其所需的 Unroll 空间可以直接累加计算,一次申请.</p>
+<p>对于非序列化的 Partition 则要在遍历 Record 的过程中依次申请,即每读取一条 Record,采样估算其所需的 Unroll 空间并进行申请,空间不足时可以中断,释放已占用的 Unroll 空间.</p>
+<p>如果最终 Unroll 成功,当前 Partition 所占用的 Unroll 空间被转换为正常的缓存 RDD 的存储空间,如下图所示.</p>
+<img src="/images/fly1338.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>在静态内存管理时,Spark 在存储内存中专门划分了一块 Unroll 空间,其大小是固定的,统一内存管理时则没有对 Unroll 空间进行特别区分,当存储空间不足时会根据动态占用机制进行处理.</p>
+<h4 id="淘汰与落盘"><a href="#淘汰与落盘" class="headerlink" title="淘汰与落盘"></a>淘汰与落盘</h4><p>由于同一个 Executor 的所有的计算任务共享有限的存储内存空间,当有新的 Block 需要缓存但是剩余空间不足且无法动态占用时,就要对 LinkedHashMap 中的旧 Block 进行淘汰(Eviction),而被淘汰的 Block 如果其存储级别中同时包含存储到磁盘的要求,则要对其进行落盘(Drop),否则直接删除该 Block.</p>
+<p>存储内存的淘汰规则为:</p>
+<ol>
+<li>被淘汰的旧 Block 要与新 Block 的 MemoryMode 相同,即同属于堆外或堆内内存.</li>
+<li>新旧 Block 不能属于同一个 RDD,避免循环淘汰.</li>
+<li>旧 Block 所属 RDD 不能处于被读状态,避免引发一致性问题.</li>
+<li>遍历 LinkedHashMap 中 Block,按照最近最少使用(LRU)的顺序淘汰,直到满足新 Block 所需的空间.<br>其中 LRU 是 LinkedHashMap 的特性.</li>
+</ol>
+<p>落盘的流程则比较简单,如果其存储级别符合_useDisk 为 true 的条件,再根据其_deserialized 判断是否是非序列化的形式,若是则对其进行序列化,最后将数据存储到磁盘,在 Storage 模块中更新其信息.</p>
+<h3 id="执行内存管理"><a href="#执行内存管理" class="headerlink" title="执行内存管理"></a>执行内存管理</h3><h4 id="多任务间内存分配"><a href="#多任务间内存分配" class="headerlink" title="多任务间内存分配"></a>多任务间内存分配</h4><p>为了更好地使用使用内存,Executor 内运行的 Task 之间共享着 Execution 内存.<br>具体的,Spark 内部维护了一个 HashMap 用于记录每个 Task 占用的内存.<br>当 Task 需要在 Execution 内存区域申请 numBytes 内存,其先判断 HashMap 里面是否维护着这个 Task 的内存使用情况,如果没有,则将这个 Task 内存使用置为0,并且以 TaskId 为 key,内存使用为 value 加入到 HashMap 里面.<br>之后为这个 Task 申请 numBytes 内存,如果 Execution 内存区域正好有大于 numBytes 的空闲内存,则在 HashMap 里面将当前 Task 使用的内存加上 numBytes,然后返回.<br>如果当前 Execution 内存区域无法申请到每个 Task 最小可申请的内存,则当前 Task 被阻塞,直到有其他任务释放了足够的执行内存,该任务才可以被唤醒.<br>每个 Task 可以使用 Execution 内存大小范围为 <code>1/2N ~ 1/N</code>,其中 N 为当前 Executor 内正在运行的 Task 个数.<br>一个 Task 能够运行必须申请到最小内存为 (1/2N * Execution 内存).<br>当 N = 1 的时候,Task 可以使用全部的 Execution 内存.</p>
+<p>比如如果 Execution 内存大小为 10GB,当前 Executor 内正在运行的 Task 个数为5,则该 Task 可以申请的内存范围为 <code>10 / (2 * 5) ~ 10 / 5</code>,也就是 1GB ~ 2GB的范围.</p>
+<h4 id="Shuffle-的内存占用"><a href="#Shuffle-的内存占用" class="headerlink" title="Shuffle 的内存占用"></a>Shuffle 的内存占用</h4><p>执行内存主要用来存储任务在执行 Shuffle 时占用的内存,Shuffle 是按照一定规则对 RDD 数据重新分区的过程,我们来看 Shuffle 的 Write 和 Read 两阶段对执行内存的使用.</p>
+<h5 id="Shuffle-Write"><a href="#Shuffle-Write" class="headerlink" title="Shuffle Write"></a>Shuffle Write</h5><ol>
+<li>若在 map 端选择普通的排序方式,会采用 ExternalSorter 进行外排,在内存中存储数据时主要占用堆内执行空间.</li>
+<li>若在 map 端选择 Tungsten 的排序方式,则采用 ShuffleExternalSorter 直接对以序列化形式存储的数据排序,在内存中存储数据时可以占用堆外或堆内执行空间,取决于用户是否开启了堆外内存以及堆外执行内存是否足够.</li>
+</ol>
+<h5 id="Shuffle-Read"><a href="#Shuffle-Read" class="headerlink" title="Shuffle Read"></a>Shuffle Read</h5><ol>
+<li>在对 reduce 端的数据进行聚合时,要将数据交给 Aggregator 处理,在内存中存储数据时占用堆内执行空间.</li>
+<li>如果需要进行最终结果排序,则要将再次将数据交给 ExternalSorter 处理,占用堆内执行空间.</li>
+</ol>
+<p>在 ExternalSorter 和 Aggregator 中,Spark 会使用一种叫 AppendOnlyMap 的哈希表在堆内执行内存中存储数据,但在 Shuffle 过程中所有数据并不能都保存到该哈希表中,当这个哈希表占用的内存会进行周期性地采样估算,当其大到一定程度,无法再从 MemoryManager 申请到新的执行内存时,Spark 就会将其全部内容存储到磁盘文件中,这个过程被称为溢存(Spill),溢存到磁盘的文件最后会被归并(Merge).</p>
+<p>Shuffle Write 阶段中用到的 Tungsten 是 Databricks 公司提出的对 Spark 优化内存和 CPU 使用的计划(钨丝计划),解决了一些 JVM 在性能上的限制和弊端.<br>Spark 会根据 Shuffle 的情况来自动选择是否采用 Tungsten 排序.</p>
+<p>Tungsten 采用的页式内存管理机制建立在 MemoryManager 之上,即 Tungsten 对执行内存的使用进行了一步的抽象,这样在 Shuffle 过程中无需关心数据具体存储在堆内还是堆外.</p>
+<p>每个内存页用一个 MemoryBlock 来定义,并用 Object obj 和 long offset 这两个变量统一标识一个内存页在系统内存中的地址.</p>
+<p>堆内的 MemoryBlock 是以 long 型数组的形式分配的内存,其 obj 的值为是这个数组的对象引用,offset 是 long 型数组的在 JVM 中的初始偏移地址,两者配合使用可以定位这个数组在堆内的绝对地址.堆外的 MemoryBlock 是直接申请到的内存块,其 obj 为 null,offset 是这个内存块在系统内存中的 64 位绝对地址.<br><font color="green">Spark 用 MemoryBlock 巧妙地将堆内和堆外内存页统一抽象封装,并用页表(pageTable)管理每个 Task 申请到的内存页</font>.</p>
+<p>Tungsten 页式管理下的所有内存用 64 位的逻辑地址表示,由页号和页内偏移量组成:</p>
+<ol>
+<li>页号:占 13 位,唯一标识一个内存页,Spark 在申请内存页之前要先申请空闲页号.</li>
+<li>页内偏移量:占 51 位,是在使用内存页存储数据时,数据在页内的偏移地址.</li>
+</ol>
+<p>有了统一的寻址方式,Spark 可以用 64 位逻辑地址的指针定位到堆内或堆外的内存,整个 Shuffle Write 排序的过程只需要对指针进行排序,并且无需反序列化,整个过程非常高效,对于内存访问效率和 CPU 使用效率带来了明显的提升.</p>
+<p>Spark 的存储内存和执行内存有着截然不同的管理方式:对于存储内存来说,Spark 用一个 LinkedHashMap 来集中管理所有的 Block,Block 由需要缓存的 RDD 的 Partition 转化而成.而对于执行内存,Spark 用 AppendOnlyMap 来存储 Shuffle 过程中的数据,在 Tungsten 排序中甚至抽象成为页式内存管理,开辟了全新的 JVM 内存管理机制.</p>
+<h2 id="spark内存管理机制"><a href="#spark内存管理机制" class="headerlink" title="spark内存管理机制"></a>spark内存管理机制</h2><p>不同模式下的spark堆内/堆外内存区域划分占比是不同的.</p>
+<p>在spark1.6之前,spark采用的是静态管理(Static Memory Manager)模式,Execution内存和Storage内存的分配占比全部是静态的,其值为系统预先设置的默认参数.</p>
+<p>在spark1.6后,为了考虑内存管理的动态灵活性,spark的内存管理改为<strong>统一管理</strong>(Unified Memory Manager)模式,支持Storage和Execution内存动态占用.<br>至于静态管理方式仍然被保留,可通过<code>spark.memory.useLegacyMode</code>参数启用.</p>
+<h3 id="静态内存管理-Static-Memory-Manager"><a href="#静态内存管理-Static-Memory-Manager" class="headerlink" title="静态内存管理(Static Memory Manager)"></a>静态内存管理(Static Memory Manager)</h3><p>spark最原始的内存管理模式,默认通过系统固定的内存配置参数,分配相应的Storage/Execution等内存空间,支持用户自定义修改配置.</p>
+<h4 id="堆内内存分配"><a href="#堆内内存分配" class="headerlink" title="堆内内存分配"></a>堆内内存分配</h4><img src="/images/fly1314.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>堆内内存空间整体被分为Storage(存储内存)/Execution(执行内存)/Other(其他内存)三部分,默认按照6:2:2的比率划分.<br>其中Storage内存区域参数: <code>spark.storage.memoryFraction</code>(默认为0.6),<br>Execution内存区域参数: <code>spark.shuffle.memoryFraction</code>(默认为0.2).<br>Other内存区域主要用来存储用户定义的数据结构/spark内部元数据,占系统内存的20%.</p>
+<p>在Storage内存区域中,10%的大小被用作Reserved预留空间,防止内存溢出情况,由参数: <code>spark.shuffle.safetyFraction</code>(默认0.1)控制.<br>90%的空间当作可用的Storage内存,这里是Executor进行RDD数据缓存和broadcast数据的内存区域,参数和Reserved一致.<br>还有一部分Unroll区域,这一块主要存储Unroll过程的数据,占用20%的可用Storage空间.</p>
+<blockquote>
+<p>Unroll过程<br>RDD在缓存到内存之前,partition中record对象实例在堆内other内存区域中的不连续空间中存储.<br>RDD的缓存过程中,不连续存储空间内的partition被转换为连续存储空间的Block对象,并在Storage内存区域存储,此过程被称作为Unroll(展开).</p>
+</blockquote>
+<p>Execution内存区域中,20%的大小被用作Reserved预留空间,防止OOM和其他内存不够的情况,由参数: <code>spark.shuffle.safetyFraction</code>(默认0.2)控制.<br>80%的空间当作可用的Execution内存,缓存shuffle过程的中间数据,参数: <code>spark.shuffle.safetyFraction</code>(默认0.8).</p>
+<blockquote>
+<p>计算公式</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">可用的存储内存 &#x3D; </span><br><span class="line">      systemMaxMemory </span><br><span class="line">      * spark.storage.memoryFraction</span><br><span class="line">      * spark.storage.safetyFraction</span><br><span class="line">可用的执行内存 &#x3D;</span><br><span class="line">     systemMaxMemory </span><br><span class="line">     * spark.shuffle.memoryFraction </span><br><span class="line">     * spark.shuffle.safetyFraction</span><br></pre></td></tr></table></figure>
+
+<h4 id="堆外内存"><a href="#堆外内存" class="headerlink" title="堆外内存"></a>堆外内存</h4><img src="/images/fly1315.png" width="400" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>相较于堆内内存,堆外内存的分配较为简单.<br>堆外内存默认为384M,由系统参数<code>spark.yarn.executor.memoryOverhead</code>设定.<br>整体内存分为Storage和Execution两部分,此部分分配和堆内内存一致,由参数: <code>spark.memory.storageFaction</code>决定.<br>堆外内存一般存储序列化后的二进制数据(字节流),在存储空间中是一段连续的内存区域,其大小可精确计算,故此时无需设置预留空间.</p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ul>
+<li>实现机制简单,易理解</li>
+<li>容易出现内存失衡的问题,即Storage/Execution一方内存过剩,一方内容不足</li>
+<li>需要开发人员充分了解存储机制,调优不便</li>
+</ul>
+<h3 id="统一内存管理-Unified-Memory-Manager"><a href="#统一内存管理-Unified-Memory-Manager" class="headerlink" title="统一内存管理(Unified Memory Manager)"></a>统一内存管理(Unified Memory Manager)</h3><p>为了解决(Static Memory Manager)静态内存管理的内存失衡等问题,spark在1.6之后使用了一种新的内存管理模式:<br>Unified Memory Manager(统一内存管理).<br>在新模式下,移除了旧模式下的Executor内存静态占比分配,启用了内存动态占比机制,并将Storage和Execution划分为统一共享内存区域.</p>
+<h4 id="堆内内存"><a href="#堆内内存" class="headerlink" title="堆内内存"></a>堆内内存</h4><ul>
+<li>Execution 内存:主要用于存放 Shuffle/Join/Sort/Aggregation 等计算过程中的临时数据</li>
+<li>Storage 内存:主要用于存储 spark 的 cache 数据,例如RDD的缓存/unroll数据</li>
+<li>用户内存(User Memory):主要用于存储 RDD 转换操作所需要的数据,例如 RDD 依赖等信息</li>
+<li>预留内存(Reserved Memory):系统预留内存,会用来存储Spark内部对象</li>
+</ul>
+<img src="/images/fly1339.jpg" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1318.png" width="400" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>systemMemory = Runtime.getRuntime.maxMemory,其实就是通过参数<code>spark.executor.memory</code> 或 <code>--executor-memory</code> 配置的.<br>reservedMemory 在 Spark 2 中是写死的,其值等于300MB,这个值是不能修改的.(如果在测试环境下,可以通过 <code>spark.testing.reservedMemory</code> 参数进行修改).<br>usableMemory = systemMemory - reservedMemory,这个就是 Spark可用内存.</p>
+<img src="/images/fly1316.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>堆内内存整体划分为Usable Memory(可用内存)和Reversed Memory(预留内存)两大部分.<br>其中预留内存作为OOM等异常情况的内存使用区域,默认被分配300M的空间.<br>可用内存可进一步分为(Unified Memory)统一内存和Other内存其他两部分,默认占比为6:4.</p>
+<p>统一内存中的Storage(存储内存)和Execution(执行内存)以及Other内存,其参数及使用范围均与静态内存模式一致.<br>只是此时的Storage/Execution之间启用了动态内存占用机制.</p>
+<blockquote>
+<p>动态内存占用机制</p>
+</blockquote>
+<ol>
+<li>设置内存的初始值,即Execution和Storage均需设定各自的内存区域范围(默认参数0.5)</li>
+<li>若存在一方内存不足,另一方内存空余时,可占用对方内存空间</li>
+<li>双方内存均不足时,需落盘处理</li>
+<li>Execution内存被占用时,Storage需将此部分转存硬盘并归还空间</li>
+<li>Storage内存被占用时,Execution无需归还</li>
+</ol>
+<h4 id="堆外内存-1"><a href="#堆外内存-1" class="headerlink" title="堆外内存"></a>堆外内存</h4><p>堆外内存在Spark中可以从逻辑上分成两种: DirectMemory/JVM Overhead(off heap).<br>默认情况下,堆外内存是关闭的,可以通过 <code>spark.memory.offHeap.enabled</code> 参数启用,并且通过 <code>spark.memory.offHeap.size</code> 设置堆外内存大小,单位为字节.</p>
+<p>如果堆外内存被启用,那么 Executor 内将同时存在堆内和堆外内存,两者的使用互补影响,这个时候 Executor 中的 Execution 内存是堆内的 Execution 内存和堆外的 Execution 内存之和,同理,Storage 内存也一样.<br>相比堆内内存,堆外内存只区分 Execution 内存和 Storage 内存.</p>
+<img src="/images/fly1319.png" width="400" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>maxOffHeapMemory 等于 <code>spark.memory.offHeap.size</code> 参数配置的值.</p>
+<img src="/images/fly1317.png" width="400" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>和静态管理模式分配一致,堆外内存默认值为384M.<br>整体分为Storage和Execution两部分,且启用动态内存占用机制,其中默认的初始化占比值均为0.5.</p>
+<blockquote>
+<p>计算公式</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">可用的存储&amp;执行内存 &#x3D; </span><br><span class="line">   (systemMaxMemory -ReservedMemory) </span><br><span class="line">    * spark.memoryFraction </span><br><span class="line">    * spark.storage.storageFraction</span><br><span class="line">(启用内存动态分配机制,己方内存不足时可占用对方)</span><br></pre></td></tr></table></figure>
+
+<h4 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h4><ul>
+<li>动态内存占比,提升内存的合理利用率</li>
+<li>统一管理Storage和Execution内存,便于调优和维护</li>
+<li>由于Execution占用Storage内存可不规划,存在Storage内存不够频繁GC的情况</li>
+</ul>
+<h4 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;spark-submit \</span><br><span class="line">--class org.apache.spark.examples.SparkPi \</span><br><span class="line">.&#x2F;examples&#x2F;jars&#x2F;spark-examples_2.11-2.4.8.jar \</span><br><span class="line">100</span><br></pre></td></tr></table></figure>
+
+<h5 id="只用堆内内存"><a href="#只用堆内内存" class="headerlink" title="只用堆内内存"></a>只用堆内内存</h5><p>提交的 Spark 作业关于内存的配置如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--executor-memory 18g</span><br></pre></td></tr></table></figure>
+<p>由于没有设置 <code>spark.memory.fraction</code> 和 <code>spark.memory.storageFraction</code> 参数,可以看到 Spark UI 关于 Storage Memory 的显示如下:</p>
+<img src="/images/fly1320.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>上图看到 Storage Memory 的可用内存是 10.1GB.<br>根据前面的规则,可以得出以下的计算:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">systemMemory &#x3D; spark.executor.memory</span><br><span class="line">reservedMemory &#x3D; 300MB</span><br><span class="line">usableMemory &#x3D; systemMemory - reservedMemory</span><br><span class="line">StorageMemory&#x3D; usableMemory * spark.memory.fraction * spark.memory.storageFraction</span><br></pre></td></tr></table></figure>
+
+<p>如果把数据代进去,得出以下的结果:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">systemMemory &#x3D; 18Gb &#x3D; 19327352832 字节</span><br><span class="line">reservedMemory &#x3D; 300MB &#x3D; 300 * 1024 * 1024 &#x3D; 314572800</span><br><span class="line">usableMemory &#x3D; systemMemory - reservedMemory &#x3D; 19327352832 - 314572800 &#x3D; 19012780032</span><br><span class="line">StorageMemory&#x3D; usableMemory * spark.memory.fraction * spark.memory.storageFraction</span><br><span class="line">             &#x3D; 19012780032 * 0.6 * 0.5 &#x3D; 5703834009.6 &#x3D; 5.312109375GB</span><br></pre></td></tr></table></figure>
+
+<p>和上面的 10.1GB 对不上.<br>这是因为 Spark UI 上面显示的 Storage Memory 可用内存其实等于 Execution 内存和 Storage 内存之和,也就是 <code>usableMemory * spark.memory.fraction</code>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">StorageMemory&#x3D; usableMemory * spark.memory.fraction</span><br><span class="line">             &#x3D; 19012780032 * 0.6 &#x3D; 11407668019.2 &#x3D; 10.62421GB</span><br></pre></td></tr></table></figure>
+
+<p>还是不对,这是因为虽然设置了 <code>--executor-memory 18g</code>,但是 Spark 的 Executor 端通过 <code>Runtime.getRuntime.maxMemory</code> 拿到的内存其实没这么大,只有 17179869184 字节,所以 systemMemory = 17179869184,然后计算的数据如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">systemMemory &#x3D; 17179869184 字节</span><br><span class="line">reservedMemory &#x3D; 300MB &#x3D; 300 * 1024 * 1024 &#x3D; 314572800</span><br><span class="line">usableMemory &#x3D; systemMemory - reservedMemory &#x3D; 17179869184 - 314572800 &#x3D; 16865296384</span><br><span class="line">StorageMemory&#x3D; usableMemory * spark.memory.fraction</span><br><span class="line">             &#x3D; 16865296384 * 0.6 &#x3D; 9.42421875 GB</span><br></pre></td></tr></table></figure>
+
+<p>通过将上面的 16865296384 * 0.6 字节除于 1024 * 1024 * 1024 转换成 9.42421875 GB,和 UI 上显示的还是对不上,这是因为 Spark UI 是通过除于 1000 * 1000 * 1000 将字节转换成 GB,如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">systemMemory &#x3D; 17179869184 字节</span><br><span class="line">reservedMemory &#x3D; 300MB &#x3D; 300 * 1024 * 1024 &#x3D; 314572800</span><br><span class="line">usableMemory &#x3D; systemMemory - reservedMemory &#x3D; 17179869184 - 314572800 &#x3D; 16865296384</span><br><span class="line">StorageMemory&#x3D; usableMemory * spark.memory.fraction</span><br><span class="line">             &#x3D; 16865296384 * 0.6 字节 &#x3D;  16865296384 * 0.6 &#x2F; (1000 * 1000 * 1000) &#x3D; 10.1GB</span><br></pre></td></tr></table></figure>
+
+<p>现在终于对上了.</p>
+<blockquote>
+<p>设置了 <code>--executor-memory 18g</code>,但是 Spark 的 Executor 端通过 Runtime.getRuntime.maxMemory 拿到的内存其实没这么大,只有 17179869184 字节,这个数据是怎么计算的?<br>Runtime.getRuntime.maxMemory 是程序能够使用的最大内存,其值会比实际配置的执行器内存的值小.<br>这是因为内存分配池的堆部分分为 Eden/Survivor/Tenured 三部分空间,而这里面一共包含了两个 Survivor 区域,而这两个 Survivor 区域在任何时候只能用到其中一个,所以可以使用下面的公式进行描述:</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ExecutorMemory &#x3D; Eden + 2 * Survivor + Tenured</span><br><span class="line">Runtime.getRuntime.maxMemory &#x3D; Eden + Survivor + Tenured</span><br></pre></td></tr></table></figure>
+<p>上面的 17179869184 字节可能因为GC 配置不一样得到的数据不一样,但是上面的计算公式是一样的.</p>
+<h5 id="用了堆内和堆外内存"><a href="#用了堆内和堆外内存" class="headerlink" title="用了堆内和堆外内存"></a>用了堆内和堆外内存</h5><p>现在如果启用了堆外内存,内存相关配置如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">spark.executor.memory           18g</span><br><span class="line">spark.memory.offHeap.enabled    true</span><br><span class="line">spark.memory.offHeap.size       10737418240</span><br></pre></td></tr></table></figure>
+
+<p>从上面可以看出,堆外内存为 10GB,现在 Spark UI 上面显示的 Storage Memory 可用内存为 20.9GB,如下:</p>
+<img src="/images/fly1321.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>其实 Spark UI 上面显示的 Storage Memory 可用内存等于堆内内存和堆外内存之和,计算公式如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;堆内</span><br><span class="line">systemMemory &#x3D; 17179869184 字节</span><br><span class="line">reservedMemory &#x3D; 300MB &#x3D; 300 * 1024 * 1024 &#x3D; 314572800</span><br><span class="line">usableMemory &#x3D; systemMemory - reservedMemory &#x3D; 17179869184 - 314572800 &#x3D; 16865296384</span><br><span class="line">totalOnHeapStorageMemory &#x3D; usableMemory * spark.memory.fraction</span><br><span class="line">                         &#x3D; 16865296384 * 0.6 &#x3D; 10119177830</span><br><span class="line"> </span><br><span class="line">&#x2F;&#x2F;堆外</span><br><span class="line">totalOffHeapStorageMemory &#x3D; spark.memory.offHeap.size &#x3D; 10737418240</span><br><span class="line"> </span><br><span class="line">StorageMemory &#x3D; totalOnHeapStorageMemory + totalOffHeapStorageMemory</span><br><span class="line">              &#x3D; (10119177830 + 10737418240) 字节</span><br><span class="line">              &#x3D; (20856596070 &#x2F; (1000 * 1000 * 1000)) GB</span><br><span class="line">              &#x3D; 20.9 GB</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Spark什么时候会申请堆外内存<br>Spark底层shuffle的传输方式是使用netty传输,netty在进行网络传输的过程会申请堆外内存(netty是零拷贝),所以使用了堆外内存.<br>默认情况下,这个堆外内存上限默认是每一个executor的内存大小的10%.<br>真正处理大数据的时候,这里都会出现问题,导致spark作业反复崩溃,无法运行.<br>此时就会去调节这个参数,到至少1G(1024M),甚至说2G/4G.</p>
+</blockquote>
+<h2 id="yarn模式的内存分配"><a href="#yarn模式的内存分配" class="headerlink" title="yarn模式的内存分配"></a>yarn模式的内存分配</h2><p>由于spark内存管理机制的健全,Executor能够高效的处理节点中RDD的内存运算和数据流转.<br>而作为分配Executor内存的资源管理器Yarn,如何在过程中保证内存的最合理化分配,也是一个值得关注的问题.</p>
+<blockquote>
+<p>首先看下spark On Yarn的基本流程:</p>
+</blockquote>
+<ol>
+<li>spark Driver端提交程序,并向Yarn申请Application</li>
+<li>Yarn接受请求响应,在NodeManager节点上创建AppMaster</li>
+<li>AppMaster向Yarn ResourceManager申请资源(Container)</li>
+<li>选择合适的节点创建Container(Executor进程)</li>
+<li>后续的Driver启动调度,运行任务</li>
+</ol>
+<p>Yarn Client/Yarn Cluster模式在某些环节会有差异,但是基本流程类似.<br>其中在整个过程中的涉及到的内存配置如下(源码默认配置):</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> executorMemory = <span class="number">1024</span>                    </span><br><span class="line"><span class="keyword">val</span> <span class="type">MEMORY_OVERHEAD_FACTOR</span> = <span class="number">0.10</span>   </span><br><span class="line"><span class="keyword">val</span> <span class="type">MEMORY_OVERHEAD_MIN</span> = <span class="number">384</span>   </span><br><span class="line"></span><br><span class="line"><span class="comment">// Executo堆外内存</span></span><br><span class="line"><span class="keyword">val</span> executorMemoryOverhead = </span><br><span class="line">    sparkConf.getInt(<span class="string">&quot;spark.yarn.executor.memoryOverhead&quot;</span>,</span><br><span class="line">    math.max((<span class="type">MEMORY_OVERHEAD_FACTOR</span></span><br><span class="line">       * executorMemory).toInt</span><br><span class="line">       , <span class="type">MEMORY_OVERHEAD_MIN</span>))</span><br><span class="line"></span><br><span class="line"><span class="comment">// Executor总分配内存</span></span><br><span class="line"><span class="keyword">val</span> executorMem = args.executorMemory</span><br><span class="line">       + executorMemoryOverhead </span><br></pre></td></tr></table></figure>
+
+<p>因此假设当我们提交一个spark程序时,如果设置<code>-executor-memory=5g</code>.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">spark-submit </span><br><span class="line">  --master yarn-cluster </span><br><span class="line">  --name test </span><br><span class="line">  --executor-memory 5g </span><br><span class="line">  --driver-memory 5g</span><br></pre></td></tr></table></figure>
+
+<p>根据源码中的计算公式可得:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">memoryMem&#x3D;</span><br><span class="line">args.executorMemory(5120) + executorMemoryOverhead(512)</span><br><span class="line">&#x3D; 5632M</span><br></pre></td></tr></table></figure>
+
+<p>然而事实上查看Yarn UI上的内存却不是这个数值?这是因为Yarn默认开启了资源规整化.</p>
+<h3 id="Yarn的资源规整化"><a href="#Yarn的资源规整化" class="headerlink" title="Yarn的资源规整化"></a>Yarn的资源规整化</h3><p>Yarn会根据最小可申请资源数/最大可申请资源数和规整化因子综合判断当前申请的资源数,从而合理规整化应用程序资源.</p>
+<h4 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h4><p>程序申请的资源如果不是该因子的整数倍,则将被修改为最小的整数倍对应的值.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">公式: ceil(a&#x2F;b)*b </span><br><span class="line">(a是程序申请资源,b为规整化因子)</span><br></pre></td></tr></table></figure>
+
+<h4 id="相关配置"><a href="#相关配置" class="headerlink" title="相关配置"></a>相关配置</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;最小可申请内存量,默认是1024</span><br><span class="line">yarn.scheduler.minimum-allocation-mb:</span><br><span class="line">&#x2F;&#x2F;最小可申请CPU数,默认是1</span><br><span class="line">yarn.scheduler.minimum-allocation-vcores:</span><br><span class="line">&#x2F;&#x2F;最大可申请内存量,默认是8096</span><br><span class="line">yarn.scheduler.maximum-allocation-mb:</span><br><span class="line">&#x2F;&#x2F;最大可申请CPU数,默认是4</span><br><span class="line">yarn.scheduler.maximum-allocation-vcores:</span><br></pre></td></tr></table></figure>
+
+<p>回到前面的内存计算:由于memoryMem计算完的值为5632,不是规整因子(1024)的整数倍,因此需要重新计算:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">memoryMem</span><br><span class="line">&#x3D; ceil(5632&#x2F;1024)*1024&#x3D;6144M</span><br></pre></td></tr></table></figure>
+
+<h3 id="Yarn模式的Driver内存分配差异"><a href="#Yarn模式的Driver内存分配差异" class="headerlink" title="Yarn模式的Driver内存分配差异"></a>Yarn模式的Driver内存分配差异</h3><p>Yarn Client 和 Cluster 两种方式提交,Executor和Driver的内存分配情况也是不同的.<br>Yarn中的ApplicationMaster都启用一个Container来运行.</p>
+<p>Client模式下的Container默认有1G内存,1个cpu核,Cluster模式的配置则由driver-memory和driver-cpu来指定,也就是说Client模式下的driver是默认的内存值.<br>Cluster模式下的dirver则是自定义的配置.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cluster模式(driver-memory:5g):</span><br><span class="line">ceil(a&#x2F;b)*b可得driver内存为6144M</span><br><span class="line"></span><br><span class="line">client模式(driver-memory:5g):</span><br><span class="line">ceil(a&#x2F;b)*b可得driver内存为5120M</span><br></pre></td></tr></table></figure>
+
+<h3 id="总结-2"><a href="#总结-2" class="headerlink" title="总结"></a>总结</h3><p>Apache Yarn作为分布式资源管理器,有自己内存管理优化机制.<br>当在Yarn部署spark程序时,需要同时考虑两者的内存处理机制.</p>
+<h2 id="实际部署"><a href="#实际部署" class="headerlink" title="实际部署"></a>实际部署</h2><p>部署spark应用时一般需要配置如下三个参数值.</p>
+<h3 id="spark-memory-fraction-0-6"><a href="#spark-memory-fraction-0-6" class="headerlink" title="spark.memory.fraction=0.6"></a>spark.memory.fraction=0.6</h3><p>该参数表示Spark内存比例.<br>如果代码逻辑中很少用到一些使用如List,Map等等你主动建立的数据结构(这些会在UserMemory部分),并且也只是存储少量的数据,那么适当提高这个参数值,比如提高到0.75等,这样一来更多的空间就能被Spark当做存储和执行使用.</p>
+<h3 id="spark-memory-storageFraction-0-5"><a href="#spark-memory-storageFraction-0-5" class="headerlink" title="spark.memory.storageFraction=0.5"></a>spark.memory.storageFraction=0.5</h3><p>这个参数的伸缩性很大,需要看执行过程会不会发生shuffle/join/sort/aggregation等操作.<br>如果代码只是很简单的转换操作,不存在任何shuffle操作,这时可以将<code>spark.memory.storageFraction</code>的值设置大一点(甚至1也可以,比如应用只是简单的map操作),这样可以更多的内存就可以容纳RDD,能避免一些落盘,反序列化等操作开销,也能提升些效率.<br>相反,对于涉及shuffle等执行逻辑的应用,对应执行内存可以多给点.<br>通常情况下,这个参数默认就可以.<br>另外一个原则是,在不知道一个参数的作用的情况下,就让它保持默认就可以,否则容易埋坑.</p>
+<h3 id="spark-executor-memoryOverhead-1024M"><a href="#spark-executor-memoryOverhead-1024M" class="headerlink" title="spark.executor.memoryOverhead=1024M"></a>spark.executor.memoryOverhead=1024M</h3><p>这个参数表示每个executor配备的可使用的堆外内存大小.<br>在调spark应用程序时可能经常会碰到OOM,然后错误日志中提示让提高这个参数指定的值的情况.<br>这种情况其实多发生在有数据倾斜的情况,这个调整经常是治标不治本,在某些稍微倾斜的情况下兴许有用,解决倾斜是根本.<br>当然,如果资源充足,这个配置大点当然有好处,默认情况是配置的executor内存容量的10%.</p>
+<blockquote>
+<p>先估出一个初始值,然后在测试运行时去看对应的web管理界面,看具体task执行时对应的GC时长和执行任务时长,如果执行GC所占时间比重过大,说明配置的内存容量不合理,系统频繁在做GC.</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/spark/" rel="tag"># spark</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/11/15/interview/" rel="prev" title="interview">
+                  <i class="fa fa-chevron-left"></i> interview
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/11/18/spark%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/" rel="next" title="spark默认配置参数">
+                  spark默认配置参数 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="region概念Region是表获取和分布的基本元素,由每个列族的一个Store组成,对象层级图如下:">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hbase region">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/02/hbase%20region/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="region概念Region是表获取和分布的基本元素,由每个列族的一个Store组成,对象层级图如下:">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbr111.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbr1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbr113.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbr112.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbr2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbr3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbr4.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbr5.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbr6.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbr7.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbr8.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbr9.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbr10.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbrit1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbrit2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbrit3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbrit4.png">
+<meta property="article:published_time" content="2022-08-01T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-09T06:28:46.330Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hbase">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/hbr111.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/02/hbase%20region/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hbase region | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#region%E6%A6%82%E5%BF%B5"><span class="nav-number">1.</span> <span class="nav-text">region概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8C%BA%E5%9F%9F%E5%88%86%E9%85%8D"><span class="nav-number">1.1.</span> <span class="nav-text">区域分配</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%85%E9%9A%9C%E8%BD%AC%E7%A7%BB"><span class="nav-number">1.2.</span> <span class="nav-text">故障转移</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#region%E5%88%87%E5%88%86"><span class="nav-number">2.</span> <span class="nav-text">region切分</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Region%E5%88%87%E5%88%86%E8%A7%A6%E5%8F%91%E7%AD%96%E7%95%A5"><span class="nav-number">2.1.</span> <span class="nav-text">Region切分触发策略</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ConstantSizeRegionSplitPolicy"><span class="nav-number">2.1.1.</span> <span class="nav-text">ConstantSizeRegionSplitPolicy</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IncreasingToUpperBoundRegionSplitPolicy"><span class="nav-number">2.1.2.</span> <span class="nav-text">IncreasingToUpperBoundRegionSplitPolicy</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SteppingSplitPolicy"><span class="nav-number">2.1.3.</span> <span class="nav-text">SteppingSplitPolicy</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#KeyPrefixRegionSplitPolicy"><span class="nav-number">2.1.4.</span> <span class="nav-text">KeyPrefixRegionSplitPolicy</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#DelimitedKeyPrefixRegionSplitPolicy"><span class="nav-number">2.1.5.</span> <span class="nav-text">DelimitedKeyPrefixRegionSplitPolicy</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A2%84%E5%88%86%E5%8C%BA%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.2.</span> <span class="nav-text">预分区示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Region%E5%88%87%E5%88%86%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C-%E5%AF%BB%E6%89%BESplitPoint"><span class="nav-number">2.3.</span> <span class="nav-text">Region切分准备工作(寻找SplitPoint)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Region%E6%A0%B8%E5%BF%83%E5%88%87%E5%88%86%E6%B5%81%E7%A8%8B"><span class="nav-number">2.4.</span> <span class="nav-text">Region核心切分流程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#prepare%E9%98%B6%E6%AE%B5"><span class="nav-number">2.4.1.</span> <span class="nav-text">prepare阶段</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#execute%E9%98%B6%E6%AE%B5"><span class="nav-number">2.4.2.</span> <span class="nav-text">execute阶段</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#rollback%E9%98%B6%E6%AE%B5"><span class="nav-number">2.4.3.</span> <span class="nav-text">rollback阶段</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Region%E5%88%87%E5%88%86%E4%BA%8B%E5%8A%A1%E6%80%A7%E4%BF%9D%E8%AF%81"><span class="nav-number">2.5.</span> <span class="nav-text">Region切分事务性保证</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Region%E5%88%87%E5%88%86%E5%AF%B9%E5%85%B6%E4%BB%96%E6%A8%A1%E5%9D%97%E7%9A%84%E5%BD%B1%E5%93%8D"><span class="nav-number">2.6.</span> <span class="nav-text">Region切分对其他模块的影响</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Region-In-Trasition"><span class="nav-number">3.</span> <span class="nav-text">Region-In-Trasition</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Region-In-Trasition%E6%9C%BA%E5%88%B6"><span class="nav-number">3.1.</span> <span class="nav-text">Region-In-Trasition机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8C%BA%E5%9F%9F%E7%8A%B6%E6%80%81%E8%BD%AC%E6%8D%A2"><span class="nav-number">3.2.</span> <span class="nav-text">区域状态转换</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8C%BA%E5%9F%9F%E7%8A%B6%E6%80%81%E5%88%97%E8%A1%A8"><span class="nav-number">3.2.1.</span> <span class="nav-text">区域状态列表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%87%E6%B8%A1%E7%8A%B6%E6%80%81%E6%8F%8F%E8%BF%B0"><span class="nav-number">3.2.2.</span> <span class="nav-text">过渡状态描述</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B0%B8%E4%B9%85RIT%E7%8A%B6%E6%80%81%E6%A1%88%E4%BE%8B%E5%88%86%E6%9E%90"><span class="nav-number">3.3.</span> <span class="nav-text">永久RIT状态案例分析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Compaction%E6%B0%B8%E4%B9%85%E9%98%BB%E5%A1%9E"><span class="nav-number">3.3.1.</span> <span class="nav-text">Compaction永久阻塞</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%8E%B0%E8%B1%A1"><span class="nav-number">3.3.1.1.</span> <span class="nav-text">现象</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%86%E6%9E%90"><span class="nav-number">3.3.1.2.</span> <span class="nav-text">分析</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%AF%8A%E6%96%AD"><span class="nav-number">3.3.1.3.</span> <span class="nav-text">诊断</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">3.3.1.4.</span> <span class="nav-text">解决方案</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HDFS%E6%96%87%E4%BB%B6%E5%BC%82%E5%B8%B8"><span class="nav-number">3.3.2.</span> <span class="nav-text">HDFS文件异常</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%8E%B0%E8%B1%A1-1"><span class="nav-number">3.3.2.1.</span> <span class="nav-text">现象</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%86%E6%9E%90%E8%AF%8A%E6%96%AD"><span class="nav-number">3.3.2.2.</span> <span class="nav-text">分析诊断</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88-1"><span class="nav-number">3.3.2.3.</span> <span class="nav-text">解决方案</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B%E5%88%86%E6%9E%90"><span class="nav-number">3.3.3.</span> <span class="nav-text">案例分析</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/02/hbase%20region/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hbase region
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-02 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-02T00:00:00+08:00">2022-08-02</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-09 14:28:46" itemprop="dateModified" datetime="2022-09-09T14:28:46+08:00">2022-09-09</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="region概念"><a href="#region概念" class="headerlink" title="region概念"></a>region概念</h2><p>Region是表获取和分布的基本元素,由每个列族的一个Store组成,对象层级图如下:</p>
+<span id="more"></span>
+
+<img src="/images/hbr111.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>region大小</p>
+</blockquote>
+<ol>
+<li><p>Region是HBase中分布式存储和负载均衡的最小单元.<br>不同Region分布到不同RegionServer上,但并不是存储的最小单元.</p>
+</li>
+<li><p>Region由一个或者多个Store组成,每个store保存一个columns family,每个Strore又由一个memStore和0至多个StoreFile 组成.<br>memStore存储在内存中, StoreFile存储在HDFS上.</p>
+</li>
+<li><p>HBase通过将region切分在许多机器上实现分布式.<br>也就是说,如果有16GB的数据,只分了2个region,却有20台机器,有18台就浪费了.</p>
+</li>
+<li><p>region数目太多就会造成性能下降,对于同样大小的数据,700个region比3000个要好.</p>
+</li>
+<li><p>region数目太少就会妨碍可扩展性,降低并行能力.<br>有的时候导致压力不够分散.向一个10节点的HBase集群导入200MB的数据,大部分的节点是idle的.<br>RegionServer中1个region和10个region索引需要的内存量没有太多的差别.</p>
+</li>
+</ol>
+<p>最好是使用默认的配置,可以把热的表配小一点(或者受到split热点的region把压力分散到集群中).<br>如果cell的大小比较大(100KB或更大),就可以把region的大小调到1GB.<br>region的最大大小在hbase配置文件中定义,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;hbase.hregion.max.filesize&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;10 * 1024 * 1024 * 1024&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
+
+<p>当region中的StoreFile大小超过了上面配置的值的时候,该region就会被拆分.<br>值也可以针对每个表单独设置,例如在hbase shell中设置,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">create &#39;t&#39;,&#39;f&#39;</span><br><span class="line">disable &#39;t&#39;</span><br><span class="line">alter &#39;t&#39;, METHOD &#x3D;&gt; &#39;table_att&#39;, MAX_FILESIZE &#x3D;&gt; &#39;134217728&#39;</span><br><span class="line">enable &#39;t&#39;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">hbase(main):006:0&gt; desc &#39;t&#39;</span><br><span class="line">Table t is ENABLED                                                                                                                                                                                             </span><br><span class="line">t, &#123;TABLE_ATTRIBUTES &#x3D;&gt; &#123;MAX_FILESIZE &#x3D;&gt; &#39;134217728&#39;&#125;                                                                                                                                                          </span><br><span class="line">COLUMN FAMILIES DESCRIPTION                                                                                                                                                                                    </span><br><span class="line">&#123;NAME &#x3D;&gt; &#39;f&#39;, BLOOMFILTER &#x3D;&gt; &#39;ROW&#39;, VERSIONS &#x3D;&gt; &#39;1&#39;, IN_MEMORY &#x3D;&gt; &#39;false&#39;, KEEP_DELETED_CELLS &#x3D;&gt; &#39;FALSE&#39;, DATA_BLOCK_ENCODING &#x3D;&gt; &#39;NONE&#39;, TTL &#x3D;&gt; &#39;FOREVER&#39;, COMPRESSION &#x3D;&gt; &#39;NONE&#39;, MIN_VERSIONS &#x3D;&gt; &#39;0&#39;, BLOCKCAC</span><br><span class="line">HE &#x3D;&gt; &#39;true&#39;, BLOCKSIZE &#x3D;&gt; &#39;65536&#39;, REPLICATION_SCOPE &#x3D;&gt; &#39;0&#39;&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="区域分配"><a href="#区域分配" class="headerlink" title="区域分配"></a>区域分配</h3><p>当HBase启动时,区域分配如下:<br>1)MasterAssignmentManager在启动时调用.<br>2)查看AssignmentManager中的现有区域分配hbase:meta.<br>3)如果区域分配仍然有效(即,如果RegionServer仍然在线),则保留分配.<br>4)如果分配无效,则LoadBalancerFactory调用来分配区域.负载均衡器将区域分配给RegionServer.<br>5)hbase:meta在RegionServer打开区域时使用RegionServer分配(如果需要)和RegionServer开始代码(RegionServer进程的开始时间)进行更新.</p>
+<h3 id="故障转移"><a href="#故障转移" class="headerlink" title="故障转移"></a>故障转移</h3><p>当RegionServer失败时:<br>1)由于RegionServer已关闭,这些区域立即变得不可用.<br>2)Master会检测到RegionServer出现故障.<br>3)区域分配将被视为无效,并将像启动顺序一样重新分配.<br>4)进行中的查询被重新尝试,并且不会丢失.<br>5)操作会在以下时间内切换到新的RegionServer:<br>ZooKeeper session timeout + split time + assignment/replay time</p>
+<h2 id="region切分"><a href="#region切分" class="headerlink" title="region切分"></a>region切分</h2><h3 id="Region切分触发策略"><a href="#Region切分触发策略" class="headerlink" title="Region切分触发策略"></a>Region切分触发策略</h3><p>Region的分割操作是不可见的,因为Master不会参与其中.<br>RegionServer拆分region的步骤是,先将该region下线,然后拆分,将其子region加入到META元信息中,再将他们加入到原本的RegionServer中,最后汇报Master.</p>
+<p>执行split的线程是CompactSplitThread.</p>
+<p>自定义拆分策略,可以通过设置RegionSplitPolicy的实现类来指定拆分策略.</p>
+<p>在最新稳定版(1.2.6)中,HBase已经有多达6种切分触发策略.<br>当然,每种触发策略都有各自的适用场景,用户可以根据业务在表级别选择不同的切分触发策略.<br>常见的切分策略如下图:</p>
+<img src="/images/hbr1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>在hbase配置文件中定义全局的拆分策略,设置<code>hbase.regionserver.region.split.policy</code>,或者在创建和修改表时候指定.</p>
+<p><strong>如果想关闭自动拆分改为手动拆分,建议同时修改<code>hbase.hregion.max.filesize</code>和<code>hbase.regionserver.region.split.policy</code>值.</strong></p>
+<h4 id="ConstantSizeRegionSplitPolicy"><a href="#ConstantSizeRegionSplitPolicy" class="headerlink" title="ConstantSizeRegionSplitPolicy"></a>ConstantSizeRegionSplitPolicy</h4><p>0.94版本前默认切分策略.<br>这是最容易理解但也最容易产生误解的切分策略,从字面意思来看,当region大小大于某个阈值(hbase.hregion.max.filesize)之后就会触发切分,实际上并不是这样,真正实现中这个阈值是对于某个store来说的,即一个region中最大store的大小大于设置阈值之后才会触发切分.<br>另外这里所说的store大小是压缩后的文件总大小还是未压缩文件总大小,实际实现中store大小为压缩后的文件大小(采用压缩的场景).</p>
+<p>弊端:<br>切分策略对于大表和小表没有明显的区分.<br>阈值(hbase.hregion.max.filesize)设置较大对大表比较友好,但是小表就有可能不会触发分裂,极端情况下可能就1个.<br>如果设置较小则对小表友好,但一个大表就会在整个集群产生大量的region,这对于集群的管理/资源使用/failover来说都不是一件好事.</p>
+<h4 id="IncreasingToUpperBoundRegionSplitPolicy"><a href="#IncreasingToUpperBoundRegionSplitPolicy" class="headerlink" title="IncreasingToUpperBoundRegionSplitPolicy"></a>IncreasingToUpperBoundRegionSplitPolicy</h4><p>0.94版本~2.0版本默认切分策略.<br>这种切分策略微微有些复杂,总体来看和ConstantSizeRegionSplitPolicy思路相同,一个region中最大store大小大于设置阈值就会触发切分.<br>但是这个阈值并不像ConstantSizeRegionSplitPolicy是一个固定的值,而是会在一定条件下不断调整,调整规则和region所属表在当前regionserver上的region个数有关系.</p>
+<p>根据公式<code>min(r^2*flushSize,maxFileSize)</code><br>确定split的maxFileSize,其中r为在线region个数,maxFileSize由hbase.hregion.max.filesize指定.</p>
+<p>当然阈值并不会无限增大,最大值为用户设置的MaxRegionFileSize.<br>这种切分策略很好的弥补了ConstantSizeRegionSplitPolicy的短板,能够自适应大表和小表.<br>而且在大集群条件下对于很多大表来说表现很优秀,但并不完美,这种策略下很多小表会在大集群中产生大量小region,分散在整个集群中.<br>而且在发生region迁移时也可能会触发region分裂.</p>
+<p>可以看到,只有在第五次之后的拆分大小才为10G.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">第一次拆分大小为:min(10G, 1*1*128M)&#x3D;128M</span><br><span class="line">第二次拆分大小为:min(10G, 3*3*128M)&#x3D;1152M</span><br><span class="line">第三次拆分大小为:min(10G, 5*5*128M)&#x3D;3200M</span><br><span class="line">第四次拆分大小为:min(10G, 7*7*128M)&#x3D;6272M</span><br><span class="line">第五次拆分大小为:min(10G, 9*9*128M)&#x3D;10G</span><br><span class="line">第五次拆分大小为:min(10G, 11*11*128M)&#x3D;10G</span><br></pre></td></tr></table></figure>
+
+<h4 id="SteppingSplitPolicy"><a href="#SteppingSplitPolicy" class="headerlink" title="SteppingSplitPolicy"></a>SteppingSplitPolicy</h4><p>2.0版本默认切分策略.<br>这种切分策略的切分阈值又发生了变化,相比IncreasingToUpperBoundRegionSplitPolicy简单了一些,依然和待分裂region所属表在当前regionserver上的region个数有关系,如果region个数等于1,切分阈值为flush size * 2,否则为MaxRegionFileSize.<br>这种切分策略对于大集群中的大表/小表会比IncreasingToUpperBoundRegionSplitPolicy更加友好,小表不会再产生大量的小region,而是适可而止.</p>
+<p>另外,还有一些其他分裂策略,比如使用DisableSplitPolicy,可以禁止region发生分裂.<br>而KeyPrefixRegionSplitPolicy,DelimitedKeyPrefixRegionSplitPolicy对于切分策略依然依据默认切分策略,但对于切分点有自己的看法,比如KeyPrefixRegionSplitPolicy要求必须让相同的PrefixKey待在一个region中.</p>
+<p>在用法上,一般情况下使用默认切分策略即可,也可以在cf级别设置region切分策略,命令为:</p>
+<p>create &#39;table&#39;, {NAME =&gt; &#39;cf&#39;, SPLIT_POLICY =&gt; &#39;org.apache.hadoop.hbase.regionserver.ConstantSizeRegionSplitPolicy&#39;}</p>
+<h4 id="KeyPrefixRegionSplitPolicy"><a href="#KeyPrefixRegionSplitPolicy" class="headerlink" title="KeyPrefixRegionSplitPolicy"></a>KeyPrefixRegionSplitPolicy</h4><p>保证具有相同前缀的row在一个region中(要求设计中前缀具有同样长度).<br>指定rowkey前缀位数划分region,通过读取table的<code>prefix_split_key_policy.prefix_length</code>属性,该属性为数字类型,表示前缀长度,在进行split时,按此长度对splitPoint进行截取.<br>此种策略比较适合固定前缀的rowkey.<br>当table中没有设置该属性,或其属性不为Integer类型时,指定此策略效果等同与使用IncreasingToUpperBoundRegionSplitPolicy.</p>
+<h4 id="DelimitedKeyPrefixRegionSplitPolicy"><a href="#DelimitedKeyPrefixRegionSplitPolicy" class="headerlink" title="DelimitedKeyPrefixRegionSplitPolicy"></a>DelimitedKeyPrefixRegionSplitPolicy</h4><p>保证以分隔符前面的前缀为splitPoint,保证相同RowKey前缀的数据在一个Region中.</p>
+<h3 id="预分区示例"><a href="#预分区示例" class="headerlink" title="预分区示例"></a>预分区示例</h3><img src="/images/hbr113.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>可以通过指定SPLITS_FILE的值指定分区文件,如果分区信息比较少,也可以直接用SPLITS分区.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#将分区的参数指定单独用一个大括号扩起来,因为分区是针对全表,而不是针对某一个column family</span><br><span class="line">#split_test.txt文件放在hbase安装目录下</span><br><span class="line">create &#39;split_table_test&#39;,&#123;NAME &#x3D;&gt;&#39;d&#39;, COMPRESSION &#x3D;&gt; &#39;SNAPPY&#39;&#125;, &#123;SPLITS_FILE &#x3D;&gt; &#39;split_test.txt&#39;&#125;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/hbr112.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="Region切分准备工作-寻找SplitPoint"><a href="#Region切分准备工作-寻找SplitPoint" class="headerlink" title="Region切分准备工作(寻找SplitPoint)"></a>Region切分准备工作(寻找SplitPoint)</h3><p>region切分策略会触发region切分,切分开始之后的第一件事是寻找切分点－splitpoint.<br>所有默认切分策略,无论是ConstantSizeRegionSplitPolicy/IncreasingToUpperBoundRegionSplitPolicy抑或是SteppingSplitPolicy,对于切分点的定义都是一致的.<br>当然,用户手动执行切分时是可以指定切分点进行切分的,这里并不讨论这种情况.</p>
+<blockquote>
+<p>那切分点是如何定位的呢?</p>
+</blockquote>
+<p>整个region中最大store中的最大文件中最中心的一个block的首个rowkey.<br>另外,HBase还规定,如果定位到的rowkey是整个文件的首个rowkey或者最后一个rowkey的话,就认为没有切分点.</p>
+<blockquote>
+<p>什么情况下会出现没有切分点的场景呢?</p>
+</blockquote>
+<p>最常见的就是一个文件只有一个block,执行split的时候就会发现无法切分.<br>在测试split的时候往往都是新建一张新表,然后往新表中插入几条数据并执行一下flush,再执行split,发现数据表并没有真正执行切分.<br>原因就在这里,这个时候仔细的话你翻看debug日志是可以看到这样的日志:</p>
+<img src="/images/hbr2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="Region核心切分流程"><a href="#Region核心切分流程" class="headerlink" title="Region核心切分流程"></a>Region核心切分流程</h3><p>HBase将整个切分过程包装成了一个事务,意图能够保证切分事务的原子性.<br>整个分裂事务过程分为三个阶段:prepare – execute – (rollback) ,操作模版如下:</p>
+<img src="/images/hbr3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="prepare阶段"><a href="#prepare阶段" class="headerlink" title="prepare阶段"></a>prepare阶段</h4><p>在内存中初始化两个子region,具体是生成两个HRegionInfo对象,包含tableName/regionName/startkey/endkey等.<br>同时会生成一个transaction journal,这个对象用来记录切分的进展,具体见rollback阶段.</p>
+<h4 id="execute阶段"><a href="#execute阶段" class="headerlink" title="execute阶段"></a>execute阶段</h4><p>切分的核心操作.</p>
+<img src="/images/hbr4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>1)RegionServer在表上获取共享读锁,以防止在拆分过程中修改模式.<br>然后它在Zookeeper下创建一个znode(/hbase/region-in-transition/region-name),并将znode的状态设置为SPLITTING.</p>
+<p>2)master通过watch节点/region-in-transition检测到region状态改变,并修改内存中region的状态,在master页面RIT模块就可以看到region执行split的状态信息.</p>
+<p>3)RegionServer在HDFS中.splits的父目录下创建一个名为region的子目录.</p>
+<p>4)RegionServer关闭父区域并在其本地数据结构中将该区域标记为离线,并触发flush操作,将写入region的数据全部持久化到磁盘.<br>此后短时间内客户端落在父region上的请求都会抛出异常NotServingRegionException,客户端将通过一些退避重试.</p>
+<p>5)核心分裂步骤<br>RegionServer在.split文件夹下新建两个子文件夹,称之为daughter A/daughter B,并在文件夹中生成reference文件,分别指向父region中对应文件.<br>这个步骤是所有步骤中最核心的一个环节,生成reference文件日志如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">2017-08-12 11:53:38,158 DEBUG [StoreOpener-0155388346c3c919d3f05d7188e885e0-1] regionserver.StoreFileInfo: reference &#39;hdfs:&#x2F;&#x2F;hdfscluster&#x2F;hbase-rsgroup&#x2F;data&#x2F;default&#x2F;music&#x2F;0155388346c3c919d3f05d7188e885e0&#x2F;cf&#x2F;d24415c4fb44427b8f698143e5c4d9dc.00bb6239169411e4d0ecb6ddfdbacf66&#39; to region&#x3D;00bb6239169411e4d0ecb6ddfdbacf66 hfile&#x3D;d24415c4fb44427b8f698143e5c4d9dc.</span><br></pre></td></tr></table></figure>
+
+<p>其中reference文件名为d24415c4fb44427b8f698143e5c4d9dc.00bb6239169411e4d0ecb6ddfdbacf66,格式看起来比较特殊,那这种文件名具体什么含义呢?<br>那来看看该reference文件指向的父region文件,根据日志可以看到,切分的父region是00bb6239169411e4d0ecb6ddfdbacf66,对应的切分文件是d24415c4fb44427b8f698143e5c4d9dc,可见reference文件名是个信息量很大的命名方式,如下所示:</p>
+<img src="/images/hbr5.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>除此之外,还需要关注reference文件的文件内容,reference文件是一个引用文件(并非linux链接文件),文件内容很显然不是用户数据.<br>文件内容其实非常简单,主要有两部分构成:其一是切分点splitkey,其二是一个boolean类型的变量(true或者false),true表示该reference文件引用的是父文件的上半部分(top),而false表示引用的是下半部分 (bottom).<br>为什么存储的是这两部分内容?</p>
+<p>可以使用hadoop命令亲自来查看reference文件的具体内容:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hadoop dfs -cat &#x2F;hbase-rsgroup&#x2F;data&#x2F;default&#x2F;music&#x2F;0155388346c3c919d3f05d7188e885e0&#x2F;cf&#x2F;d24415c4fb44427b8f698143e5c4d9dc.00bb6239169411e4d0ecb6ddfdbacf66 </span><br></pre></td></tr></table></figure>
+
+<p>6)父region分裂为两个子region后,将daughter A/daughter B拷贝到HBase根目录下,形成两个新的region.<br>7)parent region通知修改 hbase.meta 表后下线,不再提供服务.<br>下线后parent region在meta表中的信息并不会马上删除,而是标注split列/offline列为true,并记录两个子region.</p>
+<img src="/images/hbr6.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>8)开启daughter A/daughter B两个子region.<br>通知修改 hbase.meta 表,正式对外提供服务.</p>
+<img src="/images/hbr7.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>10)RegionServer将ZooKeeper中的znode更新/hbase/region-in-transition/region-name为state SPLIT,以便master可以了解它.<br>如有必要,平衡器可以自由地将子区域重新分配给其他区域服务器,拆分交易现已完成.</p>
+<p>11)拆分后,.META.HDFS仍将包含对父区域的引用.<br>当子区域中的压缩重写数据文件时,这些引用将被删除.<br>master中的垃圾收集任务会定期检查子区域是否仍然引用父区域的文件.<br>如果不是,则将删除父区域.</p>
+<h4 id="rollback阶段"><a href="#rollback阶段" class="headerlink" title="rollback阶段"></a>rollback阶段</h4><p>如果execute阶段出现异常,则执行rollback操作.<br>为了实现回滚,整个切分过程被分为很多子阶段,回滚程序会根据当前进展到哪个子阶段清理对应的垃圾数据.<br>代码中使用 JournalEntryType 来表征各个子阶段,具体见下图:</p>
+<img src="/images/hbr8.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="Region切分事务性保证"><a href="#Region切分事务性保证" class="headerlink" title="Region切分事务性保证"></a>Region切分事务性保证</h3><p>整个region切分是一个比较复杂的过程,涉及到父region中HFile文件的切分/两个子region的生成/系统meta元数据的更改等很多子步骤,因此必须保证整个切分过程的事务性,即要么切分完全成功,要么切分完全未开始,在任何情况下也不能出现切分只完成一半的情况.</p>
+<p>为了实现事务性,hbase设计了使用状态机(见SplitTransaction类)的方式保存切分过程中的每个子步骤状态,这样一旦出现异常,系统可以根据当前所处的状态决定是否回滚,以及如何回滚.<br>遗憾的是,目前实现中这些中间状态都只存储在内存中,因此一旦在切分过程中出现regionserver宕机的情况,有可能会出现切分处于中间状态的情况,也就是RIT状态.<br>这种情况下需要使用hbck工具进行具体查看并分析解决方案.<br>在2.0版本之后,HBase实现了新的分布式事务框架Procedure V2(HBASE-12439),新框架将会使用HLog存储这种单机事务(DDL操作/Split操作/Move操作等)的中间状态,因此可以保证即使在事务执行过程中参与者发生了宕机,依然可以使用HLog作为协调者对事务进行回滚操作或者重试提交,大大减少甚至杜绝RIT现象.</p>
+<h3 id="Region切分对其他模块的影响"><a href="#Region切分对其他模块的影响" class="headerlink" title="Region切分对其他模块的影响"></a>Region切分对其他模块的影响</h3><p>通过region切分流程的了解,我们知道整个region切分过程并没有涉及数据的移动,所以切分成本本身并不是很高,可以很快完成.<br>切分后子region的文件实际没有任何用户数据,文件中存储的仅是一些元数据信息－切分点rowkey等,那通过引用文件如何查找数据呢?<br>子region的数据实际在什么时候完成真正迁移?<br>数据迁移完成之后父region什么时候会被删掉?</p>
+<p>1)通过reference文件如何查找数据?</p>
+<p>整个流程如下图所示:</p>
+<img src="/images/hbr9.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>1.1)根据reference文件名(region名+真实文件名)定位到真实数据所在文件路径<br>1.2)定位到真实数据文件就可以在整个文件中扫描待查KV吗?<br>不行.<br>因为reference文件通常都只引用了数据文件的一半数据,以切分点为界,要么上半部分文件数据,要么下半部分数据.<br>那到底哪部分数据?<br>切分点又是哪个点?<br>还记得上文又提到reference文件的文件内容吧,没错,就记录在文件中.</p>
+<p>2)父region的数据什么时候会迁移到子region目录?<br>答案是子region发生major_compaction时.<br>我们知道compaction的执行实际上是将store中所有小文件一个KV一个KV从小到大读出来之后再顺序写入一个大文件,完成之后再将小文件删掉,因此compaction本身就需要读取并写入大量数据.<br>子region执行major_compaction后会将父目录中属于该子region的所有数据读出来并写入子region目录数据文件中.<br>可见将数据迁移放到compaction这个阶段来做,是一件顺便的事.</p>
+<p>3)父region什么时候会被删除?<br>实际上HMaster会启动一个线程定期遍历检查所有处于splitting状态的父region,确定检查父region是否可以被清理.<br>检测线程首先会在meta表中揪出所有split列为true的region,并加载出其分裂后生成的两个子region(meta表中splitA列和splitB列),只需要检查此两个子region是否还存在引用文件,如果都不存在引用文件就可以认为该父region对应的文件可以被删除.<br>现在再来看看上文中父目录在meta表中的信息,就大概可以理解为什么会存储这些信息了:</p>
+<img src="/images/hbr10.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>4)split模块在生产线的一些坑?<br>有些时候会有同学反馈说集群中部分region处于长时间RIT,region状态为spliting.<br>通常情况下都会建议使用hbck看下什么报错,然后再根据hbck提供的一些工具进行修复,hbck提供了部分命令对处于split状态的rit region进行修复,主要的命令如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-fixSplitParents  Try to force offline split parents to be online.</span><br><span class="line">-removeParents    Try to offline and sideline lingering parents and keep daughter regions.</span><br><span class="line">-fixReferenceFiles  Try to offline lingering reference store files</span><br></pre></td></tr></table></figure>
+
+<p>其中最常见的问题是:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ERROR: Found lingering reference file hdfs:&#x2F;&#x2F;mycluster&#x2F;hbase&#x2F;news_user_actions&#x2F;3b3ae24c65fc5094bc2acfebaa7a56de&#x2F;meta&#x2F;0f47cda55fa44cf9aa2599079894aed6.b7b3faab86527b88a92f2a248a54d3dc</span><br></pre></td></tr></table></figure>
+
+<p>简单解释一下,这个错误是说reference文件所引用的父region文件不存在了,如果查看日志的话有可能看到如下异常:</p>
+<p>java.io.IOException: java.io.IOException: java.io.FileNotFoundException: File does not exist:/hbase/news_user_actions/b7b3faab86527b88a92f2a248a54d3dc/meta/0f47cda55fa44cf9aa2599079894aed</p>
+<p>父region文件为什么会莫名其妙不存在?<br>经过和朋友的讨论,确认有可能是因为官方bug导致,详见HBASE-13331.<br>这个jira是说HMaster在确认父目录是否可以被删除时,如果检查引用文件(检查是否存在/检查是否可以正常打开)抛出IOException异常,函数就会返回没有引用文件,导致父region被删掉.<br>正常情况下应该保险起见返回存在引用文件,保留父region,并打印日志手工介入查看.</p>
+<h2 id="Region-In-Trasition"><a href="#Region-In-Trasition" class="headerlink" title="Region-In-Trasition"></a>Region-In-Trasition</h2><h3 id="Region-In-Trasition机制"><a href="#Region-In-Trasition机制" class="headerlink" title="Region-In-Trasition机制"></a>Region-In-Trasition机制</h3><p>从字面意思来看,Region-In-Transition说的是Region变迁机制,实际上是指在一次特定操作行为中Region状态的变迁,那这里就涉及这么几个问题:Region存在多少种状态?<br>HBase有哪些操作会触发Region状态变迁?<br>一次正常操作过程中Region状态变迁的完整流程是怎么样的?<br>如果Region状态在变迁的过程中出现异常又会怎么样?</p>
+<blockquote>
+<p>Region存在多少种状态?<br>有哪些操作会触发状态变迁?</p>
+</blockquote>
+<p>HBase在RegionState类中定义了Region的主要状态,主要有如下:</p>
+<img src="/images/hbrit1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>上图中实际上定义了四种会触发Region状态变迁的操作以及操作对应的Region状态.<br>其中特定操作行为通常包括assign/unassign/split以及merge等,而很多其他操作都可以拆成unassign和assign,比如move操作实际上是先unassign再assign.</p>
+<blockquote>
+<p>Region状态迁移是如何发生的?</p>
+</blockquote>
+<p>这个过程有点类似于状态机,也是通过事件驱动的.<br>和Region状态一样,HBase还定义了很多事件(具体见EventType类).<br>此处以unassign过程为例说明事件是如何驱动状态变迁的,见下图:</p>
+<img src="/images/hbrit2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>上图所示是Region在close时的状态变迁图,其中红字部分就是发生的各种事件.<br>可见,如果发生M_ZK_REGION_CLOSING事件,Region就会从OPEN状态迁移到PENDING_CLOSE状态,而发生RS_ZK_REGION_CLOSING事件,Region会从PENDING_CLOSE状态迁移到CLOSING状态,以此类推,发生RS_ZK_REGION_CLOSED事件,Region就会从CLOSING状态迁移到CLOSED状态.<br>当然,除了这些事件之外,HBase还定义了很多其他事件,在此就不一一列举.<br>截至到此,我们知道Region是一个有限状态机,那这个状态机是如何正常工作的,HMaster/RegionServer/Zookeeper又在状态机工作过程中扮演了什么角色?</p>
+<blockquote>
+<p>一次正常操作过程中Region状态变迁的完整流程是怎么样的?</p>
+</blockquote>
+<p>接下来本节以unassign操作为例对这个流程进行解析:<br>整个unassign操作是一个比较复杂的过程,涉及HMaster/RegionServer和Zookeeper三个组件:</p>
+<ol>
+<li><p>HMaster负责维护Region在整个操作过程中的状态变化,起到一个枢纽的作用.<br>它有两个重要的HashMap数据结构,分别为regionStates和regionsInTransition,前者用来存储整个集群中所有Region及其当时状态,而后者主要存储在变迁过程中的Region及其状态,后者是前者的一个子集,不包含OPEN状态的Regions.</p>
+</li>
+<li><p>RegionServer负责接收HMaster的指令执行具体unassign操作,实际上就是关闭region操作.</p>
+</li>
+<li><p>Zookeeper负责存储操作过程中的事件,它有一个路径为/hbase/region-in-transition的节点.<br>一旦一个Region发生unssign操作,就会在这个节点下生成一个子节点,子节点的内容是一个&quot;事件&quot;经过序列化的字符串,并且Master会监听在这个子节点上,一旦发生任何事件,Master就会监听到并更新Region的状态.</p>
+</li>
+</ol>
+<p>下图是整个流程示意图:</p>
+<img src="/images/hbrit3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<ol>
+<li><p>HMaster先执行事件M_ZK_REGION_CLOSING并更新RegionStates,将该Region的状态改为PENDING_CLOSE,并在regionsInTransition中插入一条记录.</p>
+</li>
+<li><p>发送一条RPC命令给拥有该Region的RegionServer,责令其关闭该Region;</p>
+</li>
+<li><p>RegionServer接收到HMaster发送过来的命令之后,首先生成一个RS_ZK_REGION_CLOSING事件,更新到Zookeeper,Master监听到ZK节点变动之后更新regionStates,将该Region的状态改为CLOSING;</p>
+</li>
+<li><p>RegionServer执行真正的Region关闭操作:如果该Region正在执行flush或者compaction,等待操作完成.<br>否则将该Region下的所有Memstore强制flush;</p>
+</li>
+<li><p>完成之后生成事件RS_ZK_REGION_CLOSED,更新到Zookeeper,Master监听到ZK节点变动之后更新regionStates,将该Region的状态改为CLOSED;</p>
+</li>
+</ol>
+<p>到这里,基本上将unssign操作过程中涉及到的Region状态变迁解释清楚了,当然,其他诸如assign操作基本类似,在此不再赘述.<br>这里其实还有一个问题,即关于HMaster上所有Region状态是否需要持久化的问题,刚开始接触这个问题的时候想想并不需要,这些处于RIT的状态信息完全可以通过Zookeeper上/region-in-transition的子节点信息构建出来.</p>
+<p>一方面Master更新hbase:meta是一个远程操作,代价相对很大.<br>另一方面Region状态内存更新和远程更新保证一致性比较困难.<br>再者,Zookeeper上已经有相应RIT信息,再持久化一份并没有太大意义.<br>为了对其进行确认,就查阅跟踪了一下源码,发现是否持久化取决于一个参数:hbase.assignment.usezk,默认情况下该参数为true,表示使用zk情况下并不会对Region状态进行持久化(详见RegionStateStore类).</p>
+<blockquote>
+<p>如果Region状态在变迁的过程中出现异常会怎么样?</p>
+</blockquote>
+<p>再回顾unassign的整个过程就会发现一次完整操作涉及太多流程,任何异常都可能会导致Region处于较长时间的RIT状态,好在HBase针对常见的异常做了最基本的容错处理:</p>
+<ol>
+<li><p>Master宕机重启<br>Master在宕机之后会丢失所有内存中的信息,也包括RIT信息以及Region状态信息,因此在重启之后会第一时间重建这些信息.<br>重启之后会遍历Zookeeper上/hbase/regions-in-transition节点下的所有子节点,解析所有子节点对应的最后一个&#39;事件&#39;,解析完成之后一方面借此重建全局的Region状态,另一方面根据状态机转移图对处于RIT状态的Region进行处理.<br>比如如果发现当前Region的状态是PENDING_CLOSE,Master就会再次据此向RegionServer发送&#39;关闭Region&#39;的RPC命令.</p>
+</li>
+<li><p>其他异常宕机<br>HBase会在后台开启一个线程定期检查内存中处于RIT中的Region,一旦这些Region处于RIT状态的时长超过一定的阈值(由参数hbase.master.assignment.timeoutmonitor.timeout定义,默认600000ms)就会重新执行unassign或者assign操作.<br>比如如果当前Region的状态是PENDING_CLOSE,而且处于该状态的时间超过了600000ms,Master就会重新执行unassign操作,向RegionServer再次发送&#39;关闭Region&#39;的RPC命令.</p>
+</li>
+</ol>
+<p>可见,HBase提供了基本的重试机制,保证在一些短暂异常的情况下能够通过不断重试拉起那些处于RIT状态的Region,进而保证操作的完整性和状态的一致性.<br>然而不幸的是,因为各种各样的原因,很多Region还是会掉入长时间的RIT状态,甚至是永久的RIT状态,必须人为干预才能解决,下面一节内容让我们看看都有哪些常见的场景会导致Region会处于永久RIT状态,以及遇到这类问题应该如何解决.</p>
+<h3 id="区域状态转换"><a href="#区域状态转换" class="headerlink" title="区域状态转换"></a>区域状态转换</h3><p>HBase为每个区域维护一个状态,并将状态保存在hbase:meta.<br>hbase:meta区域本身的状态保存在ZooKeeper中,可以在Master Web UI中查看过渡区域的状态.</p>
+<h4 id="区域状态列表"><a href="#区域状态列表" class="headerlink" title="区域状态列表"></a>区域状态列表</h4><p><code>OFFLINE</code>:区域离线,未开放<br><code>OPENING</code>:该地区正在开放中<br><code>OPEN</code>:区域开放,RegionServer已经通知master<br><code>FAILED_OPEN</code>:RegionServer未能打开区域<br><code>CLOSING</code>:该地区正在关闭中<br><code>CLOSED</code>:RegionServer已经关闭了region并通知了master<br><code>FAILED_CLOSE</code>:RegionServer关闭区域失败<br><code>SPLITTING</code>:RegionServer通知master区域正在分裂<br><code>SPLIT</code>:RegionServer通知master区域已经完成分裂<br><code>SPLITTING_NEW</code>:该区域是由正在进行的拆分创建的<br><code>MERGING</code>:RegionServer通知master该区域正在与另一个区域合并<br><code>MERGED</code>:RegionServer通知master这个region已经被合并<br><code>MERGING_NEW</code>:这个区域是由两个区域的合并创建的</p>
+<img src="/images/hbrit4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>棕色:离线状态,一种特殊的状态,可以是暂时的(在打开之前关闭之后)/终端(禁用表的区域)或初始(新创建的表的区域)<br>淡绿色:区域可以服务请求的在线状态<br>浅蓝色:瞬态状态<br>红色:需要 OPS 关注的故障状态<br>黄金:区域分裂/合并的终端状态<br>灰色:通过拆分/合并创建的区域的初始状态</p>
+<h4 id="过渡状态描述"><a href="#过渡状态描述" class="headerlink" title="过渡状态描述"></a>过渡状态描述</h4><p>1)master将一个区域从一个状态移动<strong>OFFLINE</strong>到另一个<strong>OPENING</strong>状态,并尝试将该区域分配给一个RegionServer.<br>RegionServer可能收到也可能没有收到开放区域请求.<br>master会重试向RegionServer发送开放区域请求,直到RPC通过或master重试次数用完.<br>RegionServer收到打开区域请求后,RegionServer开始打开区域.</p>
+<p>2)如果主服务器重试次数不多,主服务器通过将区域移动到状态并尝试关闭它来阻止RegionServer打开区域<strong>CLOSING</strong>,即使RegionServer正在开始打开该区域也是如此.</p>
+<p>3)RegionServer打开region后,会继续尝试通知master,直到master将region移到<strong>OPEN</strong> state并通知RegionServer.<br>该地区现已开放.</p>
+<p>4)如果RegionServer无法打开该区域,它会通知master.<br>master将region移动到<strong>CLOSED</strong> state并尝试在不同的RegionServer上打开region.</p>
+<p>5)如果主服务器无法在一定数量的区域中的任何一个上打开该区域,它将将该区域移动到<strong>FAILED_OPEN</strong>状态,并且在操作员从HBase shell干预或服务器死亡之前不采取进一步的行动.</p>
+<p>6)主控将一个区域从一个状态移动<strong>OPEN</strong>到另一个<strong>CLOSING</strong>状态.<br>持有该区域的RegionServer可能收到也可能没有收到关闭区域请求.<br>主服务器重试向服务器发送关闭请求,直到RPC通过或主服务器重试次数用完.</p>
+<p>7)如果RegionServer不在线,或者抛出异常<strong>NotServingRegionException</strong>,master将region移动到<strong>OFFLINE</strong> state并重新分配给不同的RegionServer.</p>
+<p>8)如果RegionServer在线,但在master重试次数用完后无法访问,则master将region移动到<strong>FAILED_CLOSE</strong> state并且不采取进一步的行动,直到操作员从HBase shell进行干预,或者服务器死亡.</p>
+<p>9)如果RegionServer收到关闭region请求,则关闭region并通知master.<br>master将region移动到<strong>CLOSED</strong> state并重新分配给不同的RegionServer.</p>
+<p>10)在分配区域之前,如果区域处于状态,主节点会<strong>OFFLINE</strong>自动将区域移动到<strong>CLOSED</strong>状态.</p>
+<p>11)当RegionServer即将拆分区域时,它会通知master.<br>master将要拆分的区域移动<strong>OPEN</strong>到<strong>SPLITTING</strong>状态,并将要创建的两个新区域添加到RegionServer.<br>这两个区域处于<strong>SPLITING_NEW</strong>初始状态.</p>
+<p>12)通知master后,RegionServer开始分裂region.<br>一旦过了不归路,RegionServer会再次通知主服务器,以便主服务器可以更新hbase:meta表.<br>但是,在服务器通知拆分完成之前,主服务器不会更新区域状态.<br>如果拆分成功,则拆分区域从<strong>SPLITTING</strong>一个<strong>SPLIT</strong>状态移动,两个新区域从<strong>SPLITTING_NEW</strong>一个<strong>OPEN</strong>状态移动.</p>
+<p>13)如果拆分失败,则拆分区域从<strong>SPLITTING</strong>返回<strong>OPEN</strong>状态移动,并且创建的两个新区域从<strong>SPLITTING_NEW</strong>状态移动<strong>OFFLINE</strong>.</p>
+<p>14)当一个RegionServer即将合并两个区域时,它首先通知master.<br>master将要合并的两个区域从状态移动<strong>OPEN</strong>到<strong>MERGING</strong>状态,并将保存合并区域区域内容的新区域添加到RegionServer.<br>新区域<strong>MERGING_NEW</strong>最初处于状态.</p>
+<p>15)通知master后,RegionServer开始合并两个Region.<br>一旦过了不归路,RegionServer会再次通知master,以便master可以更新META.<br>但是,在RegionServer通知合并已完成之前,master不会更新区域状态.<br>如果合并成功,则将两个合并区域从<strong>MERGING</strong>一个<strong>MERGED</strong>状态移出,并将新区域从<strong>MERGING_NEW</strong>一个<strong>OPEN</strong>状态移出.</p>
+<p>16)如果合并失败,则将两个合并区域从<strong>MERGING</strong>回移到<strong>OPEN</strong>状态,并且为保存合并区域的内容而创建的新区域从状态移到<strong>MERGING_NEW</strong>状态<strong>OFFLINE</strong>.</p>
+<p>17)对于处于<strong>FAILED_OPEN</strong>或<strong>FAILED_CLOSE</strong>状态的区域,当操作员通过HBase Shell重新分配它们时,master会尝试再次关闭它们.</p>
+<h3 id="永久RIT状态案例分析"><a href="#永久RIT状态案例分析" class="headerlink" title="永久RIT状态案例分析"></a>永久RIT状态案例分析</h3><p>通过RIT机制的了解,其实可以发现处于RIT状态Region并不是什么怪物,大部分处于RIT状态的Region都是短暂的,即使在大多数短暂异常的情况下HBase也提供了重试机制保证Region能够很快恢复正常.<br>然而在一些特别极端的场景下还是会发生一些异常导致部分Region掉入永久的RIT状态,进而会引起表读写阻塞甚至整个集群的读写阻塞.<br>下面我们举两个相关的案例进行说明:</p>
+<h4 id="Compaction永久阻塞"><a href="#Compaction永久阻塞" class="headerlink" title="Compaction永久阻塞"></a>Compaction永久阻塞</h4><h5 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h5><p>线上一个集群因为未知原因忽然就卡住了,读写完全进不来了.<br>另外还有很多处于PENDING_CLOSE状态的Region.</p>
+<h5 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h5><p>集群卡住常见原因无非两个,<br>一是Memstore总消耗内存大小超过了上限进而触发RegionServer级别flush,此时系统会阻塞集群执行长时间flush操作.<br>二是storefile数量过多超过设定的上限阈值(hbase.hstore.blockingStoreFiles),此时系统会阻塞所有flush请求而执行compaction.</p>
+<h5 id="诊断"><a href="#诊断" class="headerlink" title="诊断"></a>诊断</h5><p>1)首先查看了各个RegionServer上的Memstore使用大小,并没有达到设定的upperLimit.<br>2)再查看了一下所有RegionServer的storefile数量,瞬间石化了,store数为250的RegionServer上storefile数量竟然达到了1.5w+,很多单个store的storefile都超过了设定阈值100.</p>
+<p>3)初步怀疑是因为storefile数量过多引起的,看到这么多storefile的第一反应是手动执行major_compaction,然而所有的compact命令好像都没有起任何作用.</p>
+<p>4)无意中发现所有RegionServer的Compaction任务都是同一张表music_actions的,而且Compaction时间都基本持续了一两天.<br>到此基本可以确认是因为表music_actions的Compaction任务长时间阻塞,占用了所有的Compaction线程资源,导致集群中所有其他表都无法执行Compaction任务,最后导致StoreFile大量堆积.</p>
+<p>5)那为什么会存在PENDING_CLOSE状态的Region呢?<br>经查看,这些处于PENDING_CLOSE状态的Region全部来自于表music_actions,进一步诊断确认是由于在执行graceful_stop过程中unassign时遇到Compaction长时间阻塞导致RegionServer无法执行Region关闭,因而掉入了永久RIT.</p>
+<h5 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h5><p>1)这个问题中RIT和集群卡住原因都在于music_actions这张表的Compaction阻塞,因此需要定位Compaction阻塞的具体原因.<br>经过一段时间的定位初步怀疑是因为这张表的编码导致,一旦Compaction阻塞,好像是没办法通过正常命令解除这种阻塞的.<br>临时有用的办法是增大集群的Compaction线程,以期望有更多空闲线程可以处理集群中其他Compaction任务,消化大量堆积的StoreFiles</p>
+<p>2)而永久性消灭这种Compaction阻塞只能先将这张表数据迁移出来,然后将这张表暴力删除.<br>暴力删除就是先将HDFS对应文件删除,再将hbase:meta中该表对应的相关数据清除,最后重启整个集群即可.<br>这张表删除之后使用hbck检查一致性之后,集群Compaction阻塞现象就消失了,集群就完全恢复正常.</p>
+<h4 id="HDFS文件异常"><a href="#HDFS文件异常" class="headerlink" title="HDFS文件异常"></a>HDFS文件异常</h4><h5 id="现象-1"><a href="#现象-1" class="headerlink" title="现象"></a>现象</h5><p>线上集群很多RegionServer短时间内频频宕机,有几个Region处于FAILED_OPEN状态.</p>
+<h5 id="分析诊断"><a href="#分析诊断" class="headerlink" title="分析诊断"></a>分析诊断</h5><p>1)查看系统监控以及RegionServer日志,确认RegionServer频繁宕机是因为大量CLOSE_WAIT状态的短连接导致.<br>监控显示短时间内(4h)CLOSE_WAIT的数量从0增长到6w+.</p>
+<p>2)再查看RegionServer日志查看到如下日志:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">2016-07-27 09:42:14,932 [RS_OPEN_REGION-inspur250.photo.163.org,60020,1469581282053-0] ERROR org.apache.hadoop.hbase.regionserver.handler.OpenRegionHandler - Failed open of region&#x3D;news_user_actions,|u:cfcd208495d565ef66e7dff9f98764da</span><br><span class="line">|1462799167|30671473410714402,1469522128310.3b3ae24c65fc5094bc2acfebaa7a56de., starting to roll back the global memstore size.</span><br><span class="line">java.io.IOException: java.io.IOException: java.io.FileNotFoundException: File does not exist: &#x2F;hbase&#x2F;news_user_actions&#x2F;b7b3faab86527b88a92f2a248a54d3dc&#x2F;meta&#x2F;0f47cda55fa44cf9aa2599079894aed6</span><br><span class="line">2016-07-27 09:42:14,934 [RS_OPEN_REGION-inspur250.photo.163.org,60020,1469581282053-0] INFO  org.apache.hadoop.hbase.regionserver.handler.OpenRegionHandler - Opening of region &#123;NAME &#x3D;&gt; &#39;news_user_actions,|u:cfcd208495d565ef66e7dff9f9</span><br><span class="line">8764da|1462799167|30671473410714402,1469522128310.3b3ae24c65fc5094bc2acfebaa7a56de.&#39;, STARTKEY &#x3D;&gt; &#39;|u:cfcd208495d565ef66e7dff9f98764da|1462799167|30671473410714402&#39;, ENDKEY &#x3D;&gt; &#39;|u:d0&#39;, ENCODED &#x3D;&gt; 3b3ae24c65fc5094bc2acfebaa7a56de,&#125; faile</span><br><span class="line">d, marking as FAILED_OPEN in ZK</span><br></pre></td></tr></table></figure>
+
+<p>日志显示,Region &#39;3b3ae24c65fc5094bc2acfebaa7a56de&#39;打开失败,因此状态被设置为FAILED_OPEN,原因初步认为是FileNotFoundException导致,找不到的文件是Region &#39;b7b3faab86527b88a92f2a248a54d3dc&#39; 下的一个文件,这两者之间有什么联系呢?</p>
+<p>3)使用hbck检查了一把,得到如下错误信息:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ERROR: Found lingering reference file hdfs:&#x2F;&#x2F;mycluster&#x2F;hbase&#x2F;news_user_actions&#x2F;3b3ae24c65fc5094bc2acfebaa7a56de&#x2F;meta&#x2F;0f47cda55fa44cf9aa2599079894aed6.b7b3faab86527b88a92f2a248a54d3dc</span><br></pre></td></tr></table></figure>
+
+<p>看到这里就一下恍然大悟,从引用文件可以看出来,Region &#39;3b3ae24c65fc5094bc2acfebaa7a56de&#39;是&#39; b7b3faab86527b88a92f2a248a54d3dc&#39;的子Region,熟悉Split过程的童鞋就会知道,父Region分裂成两个子Region其实并没有涉及到数据文件的分裂,而是会在子Region的HDFS目录下生成一个指向父Region目录的引用文件,直到子Region执行Compaction操作才会将父Region的文件合并过来.</p>
+<p>到这里,就可以理解为什么子Region会长时间处于FAILED_OPEN状态:<br>因为子Region引用了父Region的文件,然而父Region的文件因为未知原因丢失了,所以子Region在打开的时候因为找不到引用文件因而会失败.<br>而这种异常并不能通过简单的重试可以解决,所以会长时间掉入RIT状态.</p>
+<p>4)现在基本可以通过RegionServer日志和hbck日志确定Region处于FAILED_OPEN的原因是因为子Region所引用的父Region的文件丢失导致.<br>那为什么会出现CLOSE_WAIT数量暴涨的问题呢?<br>经确认是因为Region在打开的时候会读取Region对应HDFS相关文件,但因为引用文件丢失所以读取失败,读取失败之后系统会不断重试,每次重试都会同datanode建立短连接,这些短连接因为hbase的bug一直得不到合理处理就会引起CLOSEE_WAIT数量暴涨.</p>
+<h5 id="解决方案-1"><a href="#解决方案-1" class="headerlink" title="解决方案"></a>解决方案</h5><p>删掉HDFS上所有检查出来的引用文件即可.</p>
+<p>简单来说下在split完成之后父region会在什么情况下被删除,实际上Master会启动一个线程定时检查完成split之后的父目录是否可以被有效删除,系统meta表中会记录该父region切分后的子region,只需要检查此两个子region是否还存在引用文件,如果都不存在引用文件就可以认为该父region对应的文件可以被删除.</p>
+<h4 id="案例分析"><a href="#案例分析" class="headerlink" title="案例分析"></a>案例分析</h4><p>经过上面两个案例的讲解其实看出得出这么几点:</p>
+<ol>
+<li>永久性掉入RIT状态其实出现的概率并不高,都是在一些极端情况下才会出现.绝大部分RIT状态都是暂时的.</li>
+<li>一旦掉入永久性RIT状态,说明一定有根本性的问题原因,只有定位出这些问题才能彻底解决问题.</li>
+<li>如果Region长时间处于PENDING_CLOSE或者CLOSING状态,一般是因为RegionServer在关闭Region的时候遇到了长时间Compaction任务或Flush任务,所以如果Region在做类似于Major_Compact的操作时尽量不要执行unassign操作,比如move操作/disable操作等.<br>而如果Region长时间处于FAILED_OPEN状态,一般是因为HDFS文件出现异常所致,可以通过RegionServer日志以及hbck定位出来.</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hbase/" rel="tag"># hbase</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/02/hbase%E5%AE%A2%E6%88%B7%E7%AB%AF%E9%87%8D%E8%AF%95-%E8%B6%85%E6%97%B6%E6%9C%BA%E5%88%B6/" rel="prev" title="hbase客户端重试-超时机制">
+                  <i class="fa fa-chevron-left"></i> hbase客户端重试-超时机制
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/02/hbase%20memstore%20flush/" rel="next" title="hbase memstore flush">
+                  hbase memstore flush <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

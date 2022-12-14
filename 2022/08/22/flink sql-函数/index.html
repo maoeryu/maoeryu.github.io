@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="函数Flink 允许用户在 Table API 和 SQL 中使用函数进行数据的转换.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="flink sql-函数">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/22/flink%20sql-%E5%87%BD%E6%95%B0/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="函数Flink 允许用户在 Table API 和 SQL 中使用函数进行数据的转换.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl61.png">
+<meta property="article:published_time" content="2022-08-21T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-12-02T06:10:09.748Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="flink">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/flgl61.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/22/flink%20sql-%E5%87%BD%E6%95%B0/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>flink sql-函数 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%BD%E6%95%B0"><span class="nav-number">1.</span> <span class="nav-text">函数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.1.</span> <span class="nav-text">函数类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E5%BC%95%E7%94%A8"><span class="nav-number">1.2.</span> <span class="nav-text">函数引用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B2%BE%E7%A1%AE%E5%87%BD%E6%95%B0%E5%BC%95%E7%94%A8"><span class="nav-number">1.2.1.</span> <span class="nav-text">精确函数引用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A8%A1%E7%B3%8A%E5%87%BD%E6%95%B0%E5%BC%95%E7%94%A8"><span class="nav-number">1.2.2.</span> <span class="nav-text">模糊函数引用</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E8%A7%A3%E6%9E%90%E9%A1%BA%E5%BA%8F"><span class="nav-number">1.3.</span> <span class="nav-text">函数解析顺序</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B2%BE%E7%A1%AE%E5%87%BD%E6%95%B0%E5%BC%95%E7%94%A8-1"><span class="nav-number">1.3.1.</span> <span class="nav-text">精确函数引用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A8%A1%E7%B3%8A%E5%87%BD%E6%95%B0%E5%BC%95%E7%94%A8-1"><span class="nav-number">1.3.2.</span> <span class="nav-text">模糊函数引用</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F-%E5%86%85%E7%BD%AE-%E5%87%BD%E6%95%B0"><span class="nav-number">2.</span> <span class="nav-text">系统(内置)函数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%87%E9%87%8F%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.</span> <span class="nav-text">标量函数</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%AF%94%E8%BE%83%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.1.</span> <span class="nav-text">比较函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%BB%E8%BE%91%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.2.</span> <span class="nav-text">逻辑函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AE%97%E6%9C%AF%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.3.</span> <span class="nav-text">算术函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.4.</span> <span class="nav-text">字符串函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.5.</span> <span class="nav-text">时间函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9D%A1%E4%BB%B6%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.6.</span> <span class="nav-text">条件函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.7.</span> <span class="nav-text">类型转换函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9B%86%E5%90%88%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.8.</span> <span class="nav-text">集合函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%80%BC%E6%9E%84%E5%BB%BA%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.9.</span> <span class="nav-text">值构建函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%80%BC%E8%8E%B7%E5%8F%96%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.10.</span> <span class="nav-text">值获取函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E7%BB%84%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.11.</span> <span class="nav-text">分组函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%93%88%E5%B8%8C%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.12.</span> <span class="nav-text">哈希函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#JSON%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.13.</span> <span class="nav-text">JSON函数</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%81%9A%E5%90%88%E5%87%BD%E6%95%B0"><span class="nav-number">2.2.</span> <span class="nav-text">聚合函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E9%97%B4%E9%9A%94%E5%8D%95%E4%BD%8D%E5%92%8C%E6%97%B6%E9%97%B4%E7%82%B9%E5%8D%95%E4%BD%8D%E6%A0%87%E8%AF%86%E7%AC%A6"><span class="nav-number">2.3.</span> <span class="nav-text">时间间隔单位和时间点单位标识符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%97%E5%87%BD%E6%95%B0"><span class="nav-number">2.4.</span> <span class="nav-text">列函数</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/22/flink%20sql-%E5%87%BD%E6%95%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          flink sql-函数
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-22 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-22T00:00:00+08:00">2022-08-22</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-12-02 14:10:09" itemprop="dateModified" datetime="2022-12-02T14:10:09+08:00">2022-12-02</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="函数"><a href="#函数" class="headerlink" title="函数"></a>函数</h2><p>Flink 允许用户在 Table API 和 SQL 中使用函数进行数据的转换.</p>
+<span id="more"></span>
+<h3 id="函数类型"><a href="#函数类型" class="headerlink" title="函数类型"></a>函数类型</h3><p>Flink 中的函数有两个划分标准.</p>
+<p>一个划分标准是:系统(内置)函数和 Catalog 函数.<br>系统函数没有名称空间,只能通过其名称来进行引用.<br>Catalog 函数属于 Catalog 和数据库,因此它们拥有 Catalog 和数据库命名空间.<br>用户可以通过全/部分限定名(catalog.db.func 或 db.func)或者函数名 来对 Catalog 函数进行引用.</p>
+<p>另一个划分标准是:临时函数和持久化函数.<br>临时函数始终由用户创建,它容易改变并且仅在会话的生命周期内有效.<br>持久化函数不是由系统提供,就是存储在 Catalog 中,它在会话的整个生命周期内都有效.</p>
+<p>这两个划分标准给 Flink 用户提供了 4 种函数:</p>
+<ol>
+<li>临时性系统函数</li>
+<li>系统函数</li>
+<li>临时性 Catalog 函数</li>
+<li>Catalog 函数</li>
+</ol>
+<p>请注意,系统函数始终优先于 Catalog 函数解析,临时函数始终优先于持久化函数解析, 函数解析优先级如下所述.</p>
+<h3 id="函数引用"><a href="#函数引用" class="headerlink" title="函数引用"></a>函数引用</h3><p>用户在 Flink 中可以通过精确/模糊两种引用方式引用函数.</p>
+<h4 id="精确函数引用"><a href="#精确函数引用" class="headerlink" title="精确函数引用"></a>精确函数引用</h4><p>精确函数引用允许用户跨 Catalog,跨数据库调用 Catalog 函数.<br>例如:select mycatalog.mydb.myfunc(x) from mytable 和 select mydb.myfunc(x) from mytable.</p>
+<p>仅 Flink 1.10 以上版本支持.</p>
+<h4 id="模糊函数引用"><a href="#模糊函数引用" class="headerlink" title="模糊函数引用"></a>模糊函数引用</h4><p>在模糊函数引用中,用户只需在 SQL 查询中指定函数名,例如: select myfunc(x) from mytable.</p>
+<h3 id="函数解析顺序"><a href="#函数解析顺序" class="headerlink" title="函数解析顺序"></a>函数解析顺序</h3><p>当函数名相同,函数类型不同时,函数解析顺序才有意义.<br>例如:当有三个都名为 &quot;myfunc&quot; 的临时性 Catalog 函数,Catalog 函数,和系统函数时, 如果没有命名冲突,三个函数将会被解析为一个函数.</p>
+<h4 id="精确函数引用-1"><a href="#精确函数引用-1" class="headerlink" title="精确函数引用"></a>精确函数引用</h4><p>由于系统函数没有命名空间,Flink 中的精确函数引用必须 指向临时性 Catalog 函数或 Catalog 函数.<br>解析顺序如下:<br>临时性 catalog 函数<br>Catalog 函数</p>
+<h4 id="模糊函数引用-1"><a href="#模糊函数引用-1" class="headerlink" title="模糊函数引用"></a>模糊函数引用</h4><p>解析顺序如下:<br>临时性系统函数<br>系统函数<br>临时性 Catalog 函数, 在会话的当前 Catalog 和当前数据库中<br>Catalog 函数, 在会话的当前 Catalog 和当前数据库中</p>
+<h2 id="系统-内置-函数"><a href="#系统-内置-函数" class="headerlink" title="系统(内置)函数"></a>系统(内置)函数</h2><p>Flink Table API &amp; SQL 为用户提供了一组内置的数据转换函数.<br>本页简要介绍了它们.<br>如果你需要的函数尚不支持,你可以实现 用户自定义函数.</p>
+<h3 id="标量函数"><a href="#标量函数" class="headerlink" title="标量函数"></a>标量函数</h3><p>标量函数将零/一个或多个值作为输入并返回单个值作为结果.</p>
+<h4 id="比较函数"><a href="#比较函数" class="headerlink" title="比较函数"></a>比较函数</h4><table>
+<thead>
+<tr>
+<th align="left">SQL 函数</th>
+<th align="left">Table 函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">a = b</td>
+<td align="left">a === b</td>
+<td align="left">如果 a 等于 b 返回TRUE.</br>如果 a 或者 b 为NULL返回UNKNOW.</td>
+</tr>
+<tr>
+<td align="left">a &lt;&gt; b</td>
+<td align="left">a !== b</td>
+<td align="left">如果 a 不等于 b 返回TRUE.</br>如果 a 或 b 为NULL返回UNKNOWN.</td>
+</tr>
+<tr>
+<td align="left">a &gt; b</td>
+<td align="left">a &gt; b</td>
+<td align="left">如果 a 大于 b 返回TRUE.</br>如果 a 或 b 为NULL返回UNKNOWN.</td>
+</tr>
+<tr>
+<td align="left">a &gt;= b</td>
+<td align="left">a &gt;= b</td>
+<td align="left">如果 a 大于或等于 b 返回TRUE.</br>如果 a 或 b 为NULL返回UNKNOWN.</td>
+</tr>
+<tr>
+<td align="left">a &lt; b</td>
+<td align="left">a &lt; b</td>
+<td align="left">如果 a 小于 b 返回TRUE.</br>如果 a 或 b 为NULL返回UNKNOWN.</td>
+</tr>
+<tr>
+<td align="left">a &lt;= b</td>
+<td align="left">a &lt;= b</td>
+<td align="left">如果 a 小于或等于 b 返回TRUE.</br>如果 a 或 b 为NULL返回UNKNOWN.</td>
+</tr>
+<tr>
+<td align="left">value IS NULL</td>
+<td align="left">value.isNull</td>
+<td align="left">如果值为NULL返回TRUE.</td>
+</tr>
+<tr>
+<td align="left">value IS NOT NULL</td>
+<td align="left">value.isNotNull</td>
+<td align="left">如果值不为NULL返回TRUE.</td>
+</tr>
+<tr>
+<td align="left">a IS DISTINCT FROM b</td>
+<td align="left">不适用</td>
+<td align="left">A 和 B 的数据类型和值不完全相同返回TRUE.</br>A 和 B 的数据类型和值都相同返回FALSE.</br>将NULL视为相同.</br> 例如1 IS DISTINCT FROM NULL返回TRUE.</br>NULL IS DISTINCT FROM NULL返回FALSE.</td>
+</tr>
+<tr>
+<td align="left">a IS NOT DISTINCT FROM b</td>
+<td align="left">不适用</td>
+<td align="left">A 和 B 的数据类型和值都相同返回TRUE.</br>A 和 B 的数据类型和值不完全相同则返回FALSE.</br>将NULL视为相同.</br> 例如1 IS NOT DISTINCT FROM NULL返回FALSE.</br>NULL IS NOT DISTINCT FROM NULL返回TRUE.</td>
+</tr>
+<tr>
+<td align="left">a BETWEEN <code>[ ASYMMETRIC | SYMMETRIC ]</code> b AND c</td>
+<td align="left">不适用</td>
+<td align="left">默认或使用ASYMMETRIC关键字的情况下,如果 a 大于等于 b 且小于等于 c 返回TRUE.</br> 使用SYMMETRIC关键字则 a 在 b 和 c 之间返回TRUE.</br> 当 b 或 c 为NULL时,返回FALSE或UNKNOWN.</br> 例如12 BETWEEN 15 AND 12返回FALSE.</br>12 BETWEEN SYMMETRIC 15 AND 12返回TRUE.</br>12 BETWEEN 10 AND NULL返回UNKNOWN.</br>12 BETWEEN NULL AND 10返回FALSE.</br>12 BETWEEN SYMMETRIC NULL AND 12返回UNKNOWN.</td>
+</tr>
+<tr>
+<td align="left">a NOT BETWEEN <code>[ ASYMMETRIC | SYMMETRIC ]</code> b AND c</td>
+<td align="left">不适用</td>
+<td align="left">默认或使用ASYMMETRIC关键字的情况下,如果 a 小于 b 或大于 c,则返回TRUE.</br> 使用SYMMETRIC关键字则 a 不在 b 和 c 之间返回TRUE.</br> 当 b 或 c 为NULL时,返回TRUE或UNKNOWN.</br> 例如12 NOT BETWEEN 15 AND 12返回TRUE.</br>12 NOT BETWEEN SYMMETRIC 15 AND 12返回FALSE.</br>12 NOT BETWEEN NULL AND 15返回UNKNOWN.</br>12 NOT BETWEEN 15 AND NULL返回TRUE.</br>12 NOT BETWEEN SYMMETRIC 12 AND NULL返回UNKNOWN.</td>
+</tr>
+<tr>
+<td align="left">a LIKE b <code>[ ESCAPE char ]</code></td>
+<td align="left">a.like(b)</td>
+<td align="left">如果 a 匹配 b 返回TRUE.</br>如果 a 或 b 为NULL返回UNKNOWN.</br> 如果需要可以定义转义字符.</br>尚不支持转义字符.</td>
+</tr>
+<tr>
+<td align="left">a NOT LIKE b <code>[ ESCAPE char ]</code></td>
+<td align="left">不适用</td>
+<td align="left">如果 a 与 b 不匹配返回TRUE.</br>如果 a 或 b 为NULL返回UNKNOWN.</br> 如果需要可以定义转义字符.</br>尚不支持转义字符.</td>
+</tr>
+<tr>
+<td align="left">a SIMILAR TO b <code>[ ESCAPE char ]</code></td>
+<td align="left">a.similar(b)</td>
+<td align="left">如果 a 匹配 SQL 正则表达式 b 返回TRUE.</br>如果 a 或 b 为NULL返回UNKNOWN.</br>如果需要可以定义转义字符.</br>尚不支持转义字符.</td>
+</tr>
+<tr>
+<td align="left">a NOT SIMILAR TO b <code>[ ESCAPE char ]</code></td>
+<td align="left">不适用</td>
+<td align="left">如果 a 与 SQL 正则表达式 b 不匹配返回TRUE.</br>如果 a 或 b 为NULL返回UNKNOWN.</br>如果需要可以定义转义字符.</br>尚不支持转义字符.</td>
+</tr>
+<tr>
+<td align="left">a IN (b <code>[, c]</code>* )</td>
+<td align="left">a.in(valu2)</td>
+<td align="left">在给定列表 (b, c, ...) 中存在 a 返回TRUE.</br>当列表包含NULL,如果可以找到 a 则返回TRUE,否则返回UNKNOWN.</br>如果 a 为NULL则始终返回UNKNOWN.</br>例如4 IN (1, 2, 3)返回FALSE.</br>1 IN (1, 2, NULL)返回TRUE.</br>4 IN (1, 2, NULL)返回UNKNOWN.</td>
+</tr>
+<tr>
+<td align="left">a NOT IN (b <code>[, c]</code>* )</td>
+<td align="left">不适用</td>
+<td align="left">在给定列表 (b, c, ...) 中不存在 a 返回TRUE.</br>当列表包含NULL,如果可以找到 a 则 返回FALSE,否则返回UNKNOWN.</br>如果 a 为NULL,则始终返回UNKNOWN.</br>例如4 NOT IN (1, 2, 3)返回TRUE.</br>1 NOT IN (1, 2, NULL)返回FALSE.</br>4 NOT IN (1, 2, NULL)返回UNKNOWN.</td>
+</tr>
+<tr>
+<td align="left">EXISTS (sub-query)</td>
+<td align="left">不适用</td>
+<td align="left">如果子查询至少返回一行则返回TRUE.</br> 仅支持可以在 join 和分组操作中可以被重写的操作.</br>对于流式查询,该操作在 join 和分组操作中被重写.</br>根据输入行的数量计算查询结果所需的状态可能会无限增长.</br>请提供具有有效保留间隔的查询配置,以防止状态过大.</td>
+</tr>
+<tr>
+<td align="left">value IN (sub-query)</td>
+<td align="left">a.in(TABLE)</td>
+<td align="left">如果 value 等于子查询结果集中的一行则返回TRUE.</td>
+</tr>
+<tr>
+<td align="left">value NOT IN (sub-query)</td>
+<td align="left">不适用</td>
+<td align="left">如果 value 不包含于子查询返回的行则返回TRUE.</td>
+</tr>
+<tr>
+<td align="left">不适用</td>
+<td align="left">a.between(b, c)</td>
+<td align="left">如果 a 大于或等于 b 且小于或等于 c 返回TRUE.</br>当 b 或 c 为NULL时, 返回FALSE或UNKNOWN.</td>
+</tr>
+<tr>
+<td align="left">不适用</td>
+<td align="left">a.notBetween(b, c)</td>
+<td align="left">如果 a 大于或等于 b 且小于或等于 c 返回FALSE.</br>当 b 或 c 为NULL时, 返回TRUE或UNKNOWN.</td>
+</tr>
+</tbody></table>
+<h4 id="逻辑函数"><a href="#逻辑函数" class="headerlink" title="逻辑函数"></a>逻辑函数</h4><table>
+<thead>
+<tr>
+<th align="left">SQL 函数</th>
+<th align="left">Table 函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">a OR b</td>
+<td align="left">a || b</td>
+<td align="left">如果 a 为TRUE或 b 为TRUE返回TRUE.</br>支持三值逻辑.</br> 例如true || Null(BOOLEAN)返回TRUE.</td>
+</tr>
+<tr>
+<td align="left">a AND b</td>
+<td align="left">a &amp;&amp; b</td>
+<td align="left">如果 a 和 b 都为TRUE返回TRUE.</br>支持三值逻辑.</br> 例如true &amp;&amp; Null(BOOLEAN)返回UNKNOWN.</td>
+</tr>
+<tr>
+<td align="left">NOT boolean</td>
+<td align="left">BOOLEAN.not(), not(BOOLEAN), or &#39;!BOOLEAN&#39; (Scala only)</td>
+<td align="left">如果布尔值为FALSE返回TRUE.</br>如果布尔值为TRUE返回FALSE.</br>如果布尔值为UNKNOWN返回UNKNOWN.</td>
+</tr>
+<tr>
+<td align="left">boolean IS FALSE</td>
+<td align="left">BOOLEAN.isFalse</td>
+<td align="left">如果布尔值为FALSE返回TRUE.</br>如果 boolean 为TRUE或UNKNOWN返回FALSE.</td>
+</tr>
+<tr>
+<td align="left">boolean IS NOT FALSE</td>
+<td align="left">BOOLEAN.isNotFalse</td>
+<td align="left">如果 boolean 为TRUE或UNKNOWN返回TRUE.</br>如果 boolean 为FALSE返回FALSE.</td>
+</tr>
+<tr>
+<td align="left">boolean IS TRUE</td>
+<td align="left">BOOLEAN.isTrue</td>
+<td align="left">如果 boolean 为TRUE返回TRUE.</br>如果 boolean 为FALSE或UNKNOWN返回FALSE.</td>
+</tr>
+<tr>
+<td align="left">boolean IS NOT TRUE</td>
+<td align="left">BOOLEAN.isNotTrue</td>
+<td align="left">如果 boolean 为FALSE或UNKNOWN返回TRUE.</br>如果布尔值为TRUE返回FALSE.</td>
+</tr>
+<tr>
+<td align="left">boolean IS UNKNOWN</td>
+<td align="left">不适用</td>
+<td align="left">如果布尔值为UNKNOWN返回TRUE.</br>如果 boolean 为TRUE或FALSE返回FALSE.</td>
+</tr>
+<tr>
+<td align="left">boolean IS NOT UNKNOWN</td>
+<td align="left">不适用</td>
+<td align="left">如果 boolean 为TRUE或FALSE返回TRUE.</br>如果布尔值为UNKNOWN返回FALSE.</td>
+</tr>
+</tbody></table>
+<h4 id="算术函数"><a href="#算术函数" class="headerlink" title="算术函数"></a>算术函数</h4><table>
+<thead>
+<tr>
+<th align="left">SQL 函数</th>
+<th align="left">Table 函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">+ numeric</td>
+<td align="left">+ NUMERIC</td>
+<td align="left">返回 numeric.</td>
+</tr>
+<tr>
+<td align="left">- numeric</td>
+<td align="left">- NUMERIC</td>
+<td align="left">返回 numeric 的相反数.</td>
+</tr>
+<tr>
+<td align="left">a + b</td>
+<td align="left">a + b</td>
+<td align="left">返回 a 加 b.</td>
+</tr>
+<tr>
+<td align="left">a - b</td>
+<td align="left">a + b</td>
+<td align="left">返回 a 减 b.</td>
+</tr>
+<tr>
+<td align="left">a * numberic2</td>
+<td align="left">a * b</td>
+<td align="left">返回 a 乘以 b.</td>
+</tr>
+<tr>
+<td align="left">a / b</td>
+<td align="left">a / b</td>
+<td align="left">返回 a 除以 b.</td>
+</tr>
+<tr>
+<td align="left">a % b</td>
+<td align="left">MOD(a, b)</td>
+<td align="left">返回 a 除以 b 的余数(模数).</br>仅当 a 为负时,结果才为负.</td>
+</tr>
+<tr>
+<td align="left">POWER(a, b)</td>
+<td align="left">a.power(b)</td>
+<td align="left">返回 a 的 b 次方.</td>
+</tr>
+<tr>
+<td align="left">ABS(numeric)</td>
+<td align="left">NUMERIC.abs()</td>
+<td align="left">返回 numeric 的绝对值.</td>
+</tr>
+<tr>
+<td align="left">SQRT(numeric)</td>
+<td align="left">NUMERIC.sqrt()</td>
+<td align="left">返回 numeric 的平方根.</td>
+</tr>
+<tr>
+<td align="left">LN(numeric)</td>
+<td align="left">NUMERIC.ln()</td>
+<td align="left">返回 numeric 的自然对数(以 e 为底).</td>
+</tr>
+<tr>
+<td align="left">LOG10(numeric)</td>
+<td align="left">NUMERIC.log10()</td>
+<td align="left">返回以 10 为底的 numeric 的对数.</td>
+</tr>
+<tr>
+<td align="left">LOG2(numeric)</td>
+<td align="left">NUMERIC.log2()</td>
+<td align="left">返回以 2 为底的 numeric 的对数.</td>
+</tr>
+<tr>
+<td align="left">LOG(b) LOG(a, b)</td>
+<td align="left">a.log() a.log(b)</td>
+<td align="left">当用一个参数调用时,返回 b 的自然对数.</br>当使用两个参数调用时,此函数返回 b 以 a 为底的对数.</br>b 必须大于 0,a 必须大于 1.</td>
+</tr>
+<tr>
+<td align="left">EXP(numeric)</td>
+<td align="left">NUMERIC.exp()</td>
+<td align="left">返回 e 的 numeric 次幂.</td>
+</tr>
+<tr>
+<td align="left">CEIL(numeric) CEILING(numeric)</td>
+<td align="left">NUMERIC.ceil() NUMERIC.ceiling()</td>
+<td align="left">向上取整,并返回大于或等于 numeric 的最小整数.</td>
+</tr>
+<tr>
+<td align="left">FLOOR(numeric)</td>
+<td align="left">NUMERIC.floor()</td>
+<td align="left">向下取整,并返回小于或等于 numeric 的最大整数.</td>
+</tr>
+<tr>
+<td align="left">SIN(numeric)</td>
+<td align="left">NUMERIC.sin()</td>
+<td align="left">返回 numeric 的正弦值.</td>
+</tr>
+<tr>
+<td align="left">SINH(numeric)</td>
+<td align="left">NUMERIC.sinh()</td>
+<td align="left">返回 numeric 的双曲正弦值.</br>返回类型为 DOUBLE.</td>
+</tr>
+<tr>
+<td align="left">COS(numeric)</td>
+<td align="left">NUMERIC.cos()</td>
+<td align="left">返回 numeric 的余弦值.</td>
+</tr>
+<tr>
+<td align="left">TAN(numeric)</td>
+<td align="left">NUMERIC.tan()</td>
+<td align="left">返回 numeric 的正切值.</td>
+</tr>
+<tr>
+<td align="left">TANH(numeric)</td>
+<td align="left">NUMERIC.tanh()</td>
+<td align="left">返回 numeric 的双曲正切值.</br>返回类型为 DOUBLE.</td>
+</tr>
+<tr>
+<td align="left">COT(numeric)</td>
+<td align="left">NUMERIC.cot()</td>
+<td align="left">返回 numeric 的余切值.</td>
+</tr>
+<tr>
+<td align="left">ASIN(numeric)</td>
+<td align="left">NUMERIC.asin()</td>
+<td align="left">返回 numeric 的反正弦值.</td>
+</tr>
+<tr>
+<td align="left">ACOS(numeric)</td>
+<td align="left">NUMERIC.acos()</td>
+<td align="left">返回 numeric 的反余弦值.</td>
+</tr>
+<tr>
+<td align="left">ATAN(numeric)</td>
+<td align="left">NUMERIC.atan()</td>
+<td align="left">返回 numeric 的反正切值.</td>
+</tr>
+<tr>
+<td align="left">ATAN2(a, b)</td>
+<td align="left">atan2(a, b)</td>
+<td align="left">返回坐标 (a, b) 的反正切.</td>
+</tr>
+<tr>
+<td align="left">COSH(numeric)</td>
+<td align="left">NUMERIC.cosh()</td>
+<td align="left">返回 numeric 的双曲余弦值.</br>返回值类型为 DOUBLE.</td>
+</tr>
+<tr>
+<td align="left">DEGREES(numeric)</td>
+<td align="left">NUMERIC.degrees()</td>
+<td align="left">返回弧度 numeric 的度数表示.</td>
+</tr>
+<tr>
+<td align="left">RADIANS(numeric)</td>
+<td align="left">NUMERIC.radians()</td>
+<td align="left">返回度数 numeric 的弧度表示.</td>
+</tr>
+<tr>
+<td align="left">SIGN(numeric)</td>
+<td align="left">NUMERIC.sign()</td>
+<td align="left">返回 numeric 的符号.</td>
+</tr>
+<tr>
+<td align="left">ROUND(numeric, INT)</td>
+<td align="left">NUMERIC.round(INT)</td>
+<td align="left">返回 numeric 四舍五入保留 INT 小数位的值.</td>
+</tr>
+<tr>
+<td align="left">PI()</td>
+<td align="left">pi()</td>
+<td align="left">返回无比接近 pi 的值.</td>
+</tr>
+<tr>
+<td align="left">E()</td>
+<td align="left">e()</td>
+<td align="left">返回无比接近 e 的值.</td>
+</tr>
+<tr>
+<td align="left">RAND()</td>
+<td align="left">rand()</td>
+<td align="left">返回 [0.0, 1.0) 范围内的伪随机双精度值.</td>
+</tr>
+<tr>
+<td align="left">RAND(INT)</td>
+<td align="left">rand(INT)</td>
+<td align="left">返回范围为 [0.0, 1.0) 的伪随机双精度值,初始种子为 INT.</br> 如果两个 RAND 函数具有相同的初始种子,它们将返回相同的数字序列.</td>
+</tr>
+<tr>
+<td align="left">RAND_INTEGER(INT)</td>
+<td align="left">randInteger(INT)</td>
+<td align="left">返回 [0, INT) 范围内的伪随机整数.</td>
+</tr>
+<tr>
+<td align="left">RAND_INTEGER(INT1, INT2)</td>
+<td align="left">randInteger(INT1, INT2)</td>
+<td align="left">返回范围为 [0, INT2) 的伪随机整数,初始种子为 INT1.</br> 如果两个 RAND_INTGER 函数具有相同的初始种子和边界,它们将返回相同的数字序列.</td>
+</tr>
+<tr>
+<td align="left">UUID()</td>
+<td align="left">uuid()</td>
+<td align="left">根据 RFC 4122 类型 4(伪随机生成)UUID,返回 UUID(通用唯一标识符)字符串.</br> 例如&quot;3d3c68f7-f608-473f-b60c-b0c44ad4cc4e&quot;,UUID 是使用加密强的伪随机数生成器生成的.</td>
+</tr>
+<tr>
+<td align="left">BIN(INT)</td>
+<td align="left">INT.bin()</td>
+<td align="left">以二进制格式返回 INTEGER 的字符串表示形式.</br>如果 INTEGER 为NULL,则返回NULL.</br> 例如 4.bin() 返回&quot;100&quot;,12.bin() 返回&quot;1100&quot;.</td>
+</tr>
+<tr>
+<td align="left">HEX(numeric) HEX(string)</td>
+<td align="left">NUMERIC.hex() string.hex()</td>
+<td align="left">以十六进制格式返回整数 numeric 值或 STRING 的字符串表示形式.</br>如果参数为NULL,则返回NULL.</br> 例如数字 20 返回&quot;14&quot;,数字 100 返回&quot;64&quot;,字符串&quot;hello,world&quot; 返回&quot;68656C6C6F2C776F726C64&quot;.</td>
+</tr>
+<tr>
+<td align="left">TRUNCATE(a, b)</td>
+<td align="left">a.truncate(b)</td>
+<td align="left">返回截取 b 位小数的数字.</br>如果 a 或 b 为NULL,则返回NULL.</br> 如果 b 为 0,则结果没有小数点或小数部分.</br>b 可以为负数,使值的小数点左边的 b 位变为零.</br> 此函数也可以传入只有一个 a 参数且不设置 b 以使用.</br>如果未设置 b 则 b 为 0.</br> 例如 42.324.truncate(2) 为 42.32,42.324.truncate() 为 42.0.</td>
+</tr>
+</tbody></table>
+<h4 id="字符串函数"><a href="#字符串函数" class="headerlink" title="字符串函数"></a>字符串函数</h4><table>
+<thead>
+<tr>
+<th align="left">SQL 函数</th>
+<th align="left">Table 函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">a || b</td>
+<td align="left">a + b</td>
+<td align="left">返回 a 和 b 的连接.</td>
+</tr>
+<tr>
+<td align="left">CHAR_LENGTH(string) CHARACTER_LENGTH(string)</td>
+<td align="left">STRING.charLength()</td>
+<td align="left">返回字符串中的字符数.</td>
+</tr>
+<tr>
+<td align="left">UPPER(string)</td>
+<td align="left">STRING.upperCase()</td>
+<td align="left">以大写形式返回字符串.</td>
+</tr>
+<tr>
+<td align="left">LOWER(string)</td>
+<td align="left">STRING.lowerCase()</td>
+<td align="left">以小写形式返回字符串.</td>
+</tr>
+<tr>
+<td align="left">POSITION(a IN b)</td>
+<td align="left">a.position(b)</td>
+<td align="left">返回 b 中第一次出现 a 的位置(从 1 开始).</br>如果在 b 中找不到 a 返回 0.</td>
+</tr>
+<tr>
+<td align="left">TRIM(<code>[ BOTH | LEADING | TRAILING ]</code> a FROM b)</td>
+<td align="left">a.trim(LEADING, b) a.trim(TRAILING, b) a.trim(BOTH, b) a.trim(BOTH) a.trim()</td>
+<td align="left">返回从 a 中删除以字符串 b </br>开头/结尾/开头且结尾的字符串的结果.</br>默认情况下,两边的空格都会被删除.</td>
+</tr>
+<tr>
+<td align="left">LTRIM(string)</td>
+<td align="left">STRING.ltrim()</td>
+<td align="left">返回从 STRING 中删除左边空格的字符串.</br> 例如&#39; This is a test String.&#39;.ltrim()</br>返回&#39;This is a test String.&#39;.</td>
+</tr>
+<tr>
+<td align="left">RTRIM(string)</td>
+<td align="left">STRING.rtrim()</td>
+<td align="left">返回从 STRING 中删除右边空格的字符串.</br> 例如&#39;This is a test String. &#39;.ltrim()</br>返回&#39;This is a test String.&#39;.</td>
+</tr>
+<tr>
+<td align="left">REPEAT(string, int)</td>
+<td align="left">STRING.repeat(INT)</td>
+<td align="left">返回 INT 个string连接的字符串.</br> 例如REPEAT(&#39;This is a test String.&#39;, 2)</br>返回&quot;This is a test String.This is a test String.&quot;.</td>
+</tr>
+<tr>
+<td align="left">REGEXP_REPLACE(a, b, c)</td>
+<td align="left">a.regexpReplace(b, c)</td>
+<td align="left">返回 a 所有与正则表达式 b </br>匹配的子字符串被 c 替换后的字符串.</br> 例如&#39;foobar&#39;.regexpReplace(&#39;oo|ar&#39;, &#39;&#39;)返回&quot;fb&quot;.</td>
+</tr>
+<tr>
+<td align="left">OVERLAY(a PLACING b FROM integer1 <code>[ FOR b ]</code>)</td>
+<td align="left">a.overlay(b, INT1) a.overlay(b, INT1, INT2)</td>
+<td align="left">返回一个字符串,该字符串从位置 INT1 用 b </br>替换 a 的 INT2(默认为 b 的长度)字符.</br> 例如&#39;xxxxxtest&#39;.overlay(&#39;xxxx&#39;, 6)返回&quot;xxxxxxxxx&quot;.</br>&#39;xxxxxtest&#39;.overlay(&#39;xxxx&#39;, 6, 2)返回&quot;xxxxxxxxxst&quot;.</td>
+</tr>
+<tr>
+<td align="left">SUBSTRING(string FROM integer1 <code>[ FOR b ]</code>)</td>
+<td align="left">STRING.substring(INT1) STRING.substring(INT1, INT2)</td>
+<td align="left">返回 STRING 从位置 INT1 开始,长度为</br> INT2(默认到结尾)的子字符串.</td>
+</tr>
+<tr>
+<td align="left">REPLACE(a, b, c)</td>
+<td align="left">a.replace(b, c)</td>
+<td align="left">返回一个新字符串,它用 a 中的</br> c(非重叠)替换所有出现的 b.</br> 例如&#39;hello world&#39;.replace(&#39;world&#39;, &#39;flink&#39;)</br>返回&#39;hello flink&#39;.</br>&#39;ababab&#39;.replace(&#39;abab&#39;, &#39;z&#39;)返回&#39;zab&#39;.</td>
+</tr>
+<tr>
+<td align="left">REGEXP_EXTRACT(a, b<code>[, integer]</code>)</td>
+<td align="left">a.regexpExtract(b<code>[, INTEGER1]</code>)</td>
+<td align="left">将字符串 a 按照 b </br>正则表达式的规则拆分,返回指定 INTEGER1</br> 处位置的字符串.</br>正则表达式匹配组索引从 1 开始, </br>0 表示匹配整个正则表达式.</br>此外,正则表达式匹配组索引不应超过定义的组数.</br> 例如REGEXP_EXTRACT</br>(&#39;foothebar&#39;, &#39;foo(.*?)(bar)&#39;, 2)返回&quot;bar&quot;.</td>
+</tr>
+<tr>
+<td align="left">INITCAP(string)</td>
+<td align="left">STRING.initCap()</td>
+<td align="left">返回新形式的 STRING,其中每个单词的</br>第一个字符转换为大写,</br>其余字符转换为小写.</br>这里的单词表示字母数字的字符序列.</td>
+</tr>
+<tr>
+<td align="left">CONCAT(a, b, ...)</td>
+<td align="left">concat(a, b, ...)</td>
+<td align="left">返回连接 a,b, ... 的字符串.</br>如果有任一参数为NULL,则返回NULL.</br> 例如CONCAT(&#39;AA&#39;, &#39;BB&#39;, &#39;CC&#39;)返回&quot;AABBCC&quot;.</td>
+</tr>
+<tr>
+<td align="left">CONCAT_WS(a, b, c, ...)</td>
+<td align="left">concat_ws(a, b, c, ...)</td>
+<td align="left">返回将 b, c, ... 与分隔符 a 连接起来的字符串.</br>在要连接的字符串之间添加分隔符.</br> 如果 a 为NULL,则返回NULL.</br>与 concat() 相比,concat_ws() </br>会自动跳过NULL参数.</br> 例如concat_ws(&#39;<del>&#39;, &#39;AA&#39;, </br>Null(STRING), &#39;BB&#39;, &#39;&#39;, &#39;CC&#39;)</br>返回&quot;AA</del>BB~~CC&quot;.</td>
+</tr>
+<tr>
+<td align="left">LPAD(a, integer, b)</td>
+<td align="left">a.lpad(INT, b)</td>
+<td align="left">返回从 a 靠左填充 b 到 INT 长度的新字符串.</br>如果 a 的长度小于 INT 值,</br>则返回 a 缩 短为整数字符.</br>例如LPAD(&#39;hi&#39;, 4, &#39;??&#39;)返回&quot;??hi&quot;.</br>LPAD(&#39;hi&#39;, 1, &#39;??&#39;)返回 &quot;h&quot;.</td>
+</tr>
+<tr>
+<td align="left">RPAD(a, integer, b)</td>
+<td align="left">a.rpad(INT, b)</td>
+<td align="left">返回从 a 靠右边填充 b 到 INT 长度的新字符串.</br>如果 a 的长度小于 INT 值,则返回 a </br>缩 短为长度为 INT 的新字符串.</br>例如RPAD(&#39;hi&#39;, 4, &#39;??&#39;)返回&quot;hi??&quot;,</br>RPAD(&#39;hi&#39;, 1, &#39;??&#39;)返回&quot;h&quot;.</td>
+</tr>
+<tr>
+<td align="left">FROM_BASE64(string)</td>
+<td align="left">STRING.fromBase64()</td>
+<td align="left">返回字符串 a 的 base64 解码的结果.</br>如果字符串为NULL,则返回NULL.</br> 例如FROM_BASE64(&#39;aGVsbG8gd29ybGQ=&#39;)</br>返回&quot;hello world&quot;.</td>
+</tr>
+<tr>
+<td align="left">TO_BASE64(string)</td>
+<td align="left">STRING.toBase64()</td>
+<td align="left">返回字符串 string 的 base64 编码的结果.</br>如果字符串为NULL,则返回NULL.</br> 例如TO_BASE64(&#39;hello world&#39;)</br>返回&quot;aGVsbG8gd29ybGQ=&quot;.</td>
+</tr>
+<tr>
+<td align="left">ASCII(string)</td>
+<td align="left">不适用</td>
+<td align="left">返回字符串 string 第一个字符的数值.</br>如果字符串为NULL则返回NULL.</br> 例如ascii(&#39;abc&#39;)返回97,</br>ascii(CAST(NULL AS VARCHAR))返回NULL.</td>
+</tr>
+<tr>
+<td align="left">CHR(integer)</td>
+<td align="left">不适用</td>
+<td align="left">返回二进制等于 integer 的 ASCII 字符.</br>如果整数 integer 大于 255,</br>我们先将得到整数对 255 取模数, </br>并返回模数的 CHR.</br>如果整数为NULL,则返回NULL.</br>例如chr(97)返回a,chr(353)返回a,</br>ascii(CAST(NULL AS VARCHAR))返回NULL.</td>
+</tr>
+<tr>
+<td align="left">DECODE(binary, string)</td>
+<td align="left">不适用</td>
+<td align="left">使用提供的字符集(&#39;US-ASCII&#39;,</br>&#39;ISO-8859-1&#39;,&#39;UTF-8&#39;,</br>&#39;UTF-16BE&#39;,&#39;UTF-16LE&#39;,&#39;UTF-16&#39;)解码.</br> 如果任一参数为空,则结果也将为空.</td>
+</tr>
+<tr>
+<td align="left">ENCODE(a, b)</td>
+<td align="left">不适用</td>
+<td align="left">使用提供的字符集(&#39;US-ASCII&#39;,</br>&#39;ISO-8859-1&#39;,&#39;UTF-8&#39;,</br>&#39;UTF-16BE&#39;,&#39;UTF-16LE&#39;,&#39;UTF-16&#39;)编码.</br> 如果任一参数为空,则结果也将为空.</td>
+</tr>
+<tr>
+<td align="left">INSTR(a, b)</td>
+<td align="left">不适用</td>
+<td align="left">返回 b 在 a 中第一次出现的位置.</br>如果有任一参数为NULL,则返回NULL.</td>
+</tr>
+<tr>
+<td align="left">LEFT(string, integer)</td>
+<td align="left">不适用</td>
+<td align="left">返回字符串中最左边的长度为 integer 值的字符串.</br>如果 integer 为负,则返回EMPTY字符串.</br>如果有任一参数 为NULL则返回NULL.</td>
+</tr>
+<tr>
+<td align="left">RIGHT(string, integer)</td>
+<td align="left">不适用</td>
+<td align="left">返回字符串中最右边的长度为 integer 值的字符串.</br>如果 integer 为负,则返回EMPTY字符串.</br>如果有任一参数 为NULL则返回NULL.</td>
+</tr>
+<tr>
+<td align="left">LOCATE(a, b<code>[, integer]</code>)</td>
+<td align="left">不适用</td>
+<td align="left">返回 b 中 a 在位置 integer 之后第一次出现的位置.</br>未找到返回 0.</br>如果有任一参数为NULL则返回NULL.</td>
+</tr>
+<tr>
+<td align="left">PARSE_URL(a, b<code>[, c]</code>)</td>
+<td align="left">不适用</td>
+<td align="left">从 URL 返回指定的部分.</br>b 的有效值包括&quot;HOST&quot;,</br>&quot;PATH&quot;,&quot;QUERY&quot;,&quot;REF&quot;,</br>&quot;PROTOCOL&quot;,&quot;AUTHORITY&quot;,&quot;FILE&quot;</br>和&quot;USERINFO&quot;.</br> 如果有任一参数为NULL,则返回NULL.</br>例如parse_url(&#39;<a target="_blank" rel="noopener" href="http://facebook.com/path1/">http://facebook.com/path1/</a></br>p.php?k1=v1&amp;k2=v2#Ref1&#39;, &#39;HOST&#39;)</br>返回&#39;facebook.com&#39;.</br> 还可以通过提供关键词 c 作为第三个参数来提取 QUERY 中特定键的值.</br>例如parse_url(&#39;<a target="_blank" rel="noopener" href="http://facebook.com/path1/">http://facebook.com/path1/</a></br>p.php?k1=v1&amp;k2=v2#Ref1&#39;, &#39;QUERY&#39;, &#39;k1&#39;)返回&#39;v1&#39;.</td>
+</tr>
+<tr>
+<td align="left">REGEXP(a, b)</td>
+<td align="left">不适用</td>
+<td align="left">如果 a 的任何(可能为空)子字符串与 </br>Java 正则表达式 b 匹配,</br>则返回 TRUE,否则返回 FALSE.</br> 如果有任一参数为NULL,则返回NULL.</td>
+</tr>
+<tr>
+<td align="left">REVERSE(string)</td>
+<td align="left">不适用</td>
+<td align="left">返回反转的字符串.</br>如果字符串为NULL,则返回NULL.</td>
+</tr>
+<tr>
+<td align="left">SPLIT_INDEX(a, b, integer1)</td>
+<td align="left">不适用</td>
+<td align="left">通过分隔符 b 拆分 a,</br>返回拆分字符串的第 integer(从零开始)个字符串.</br>如果整数为负,则返回NULL.</br> 如果有任一参数为NULL,则返回NULL.</td>
+</tr>
+<tr>
+<td align="left">STR_TO_MAP(a<code>[, b, c]</code>)</td>
+<td align="left">不适用</td>
+<td align="left">使用分隔符将 a 拆分为键值对后返回一个 map.</br>b 是 pair 分隔符,默认为 &#39;,&#39;.</br>c 是键值分隔符,默认为 &#39;=&#39;.</br> pair 分隔符与键值分隔符均为正则表达式,</br>当使用特殊字符作为分隔符时请提前进行转义,</br>例如&lt;(<code>[&#123;\^-=$!|]</code>})?*+.&gt;.</td>
+</tr>
+<tr>
+<td align="left">SUBSTR(string<code>[, integer1</code>[, b]<code>]</code>)</td>
+<td align="left">不适用</td>
+<td align="left">返回字符串的子字符串,</br>从位置 integer1 开始,长度为 </br>b(默认到末尾).</td>
+</tr>
+</tbody></table>
+<h4 id="时间函数"><a href="#时间函数" class="headerlink" title="时间函数"></a>时间函数</h4><table>
+<thead>
+<tr>
+<th align="left">SQL 函数</th>
+<th align="left">Table 函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">DATE string</td>
+<td align="left">STRING.toDate()</td>
+<td align="left">以&quot;yyyy-MM-dd&quot;的形式返回从字符串</br>解析的 SQL 日期.</td>
+</tr>
+<tr>
+<td align="left">TIME string</td>
+<td align="left">STRING.toTime()</td>
+<td align="left">以&quot;HH:mm:ss&quot;的形式返回从字符串</br>解析的 SQL 时间.</td>
+</tr>
+<tr>
+<td align="left">TIMESTAMP string</td>
+<td align="left">STRING.toTimestamp()</td>
+<td align="left">以&quot;yyyy-MM-dd HH:mm:ss<code>[.SSS]</code>&quot;</br>的形式返回从字符串解析的 SQL 时间戳.</td>
+</tr>
+<tr>
+<td align="left">INTERVAL string range</td>
+<td align="left">不适用</td>
+<td align="left">从&quot;dd hh:mm:ss.fff&quot;形式的字符串解析 </br>SQL 毫秒间隔或者从&quot;yyyy-mm&quot;形式的字符串解析 SQL 月数间隔.</br>间隔范围可以 是 DAY,MINUTE, DAY TO HOUR 或 DAY TO SECOND,</br>以毫秒为间隔.</br>YEAR 或 YEAR TO MONTH </br>表示几个月的间隔.</br>例如INTERVAL &#39;10 00:00:00.004&#39; DAY </br>TO SECOND,INTERVAL &#39;10&#39; DAY或</br>INTERVAL &#39;2-10&#39; YEAR TO MONTH</br>返回间隔.</td>
+</tr>
+<tr>
+<td align="left">不适用</td>
+<td align="left">numeric.year | </br>numeric.years</td>
+<td align="left">创建 numeric 年的月间隔.</td>
+</tr>
+<tr>
+<td align="left">不适用</td>
+<td align="left">numeric.quarter | </br>numeric.quarters</td>
+<td align="left">为 numeric 季度创建月间隔.</br>例如2.quarters返回6.</td>
+</tr>
+<tr>
+<td align="left">不适用</td>
+<td align="left">numeric.month | </br>numeric.months</td>
+<td align="left">创建 numeric 个月的间隔.</td>
+</tr>
+<tr>
+<td align="left">不适用</td>
+<td align="left">numeric.week | </br>numeric.weeks</td>
+<td align="left">为 numeric 周创建毫秒间隔.</br>例如 2.weeks 返回 1209600000.</td>
+</tr>
+<tr>
+<td align="left">不适用</td>
+<td align="left">numeric.day | </br>numeric.days</td>
+<td align="left">创建 numeric 天的毫秒间隔.</td>
+</tr>
+<tr>
+<td align="left">不适用</td>
+<td align="left">numeric.hour | </br>numeric.hours</td>
+<td align="left">创建 numeric 小时的毫秒间隔.</td>
+</tr>
+<tr>
+<td align="left">不适用</td>
+<td align="left">numeric.minute | </br>numeric.minutes</td>
+<td align="left">创建 numeric 分钟的毫秒间隔.</td>
+</tr>
+<tr>
+<td align="left">不适用</td>
+<td align="left">numeric.second | </br>numeric.seconds</td>
+<td align="left">创建 numeric 秒的毫秒间隔.</td>
+</tr>
+<tr>
+<td align="left">不适用</td>
+<td align="left">numeric.milli | </br>numeric.millis</td>
+<td align="left">创建 numeric 毫秒的毫秒间隔.</td>
+</tr>
+<tr>
+<td align="left">LOCALTIME</td>
+<td align="left">localTime()</td>
+<td align="left">返回本地时区的当前 SQL 时间,</br>返回类型为 TIME(0).</br>在流模式下为每条记录进行取值.</br> 但在批处理模式下,它在查询开始时计算一次,并对每一行使用相同的结果.</td>
+</tr>
+<tr>
+<td align="left">LOCALTIMESTAMP</td>
+<td align="left">localTimestamp()</td>
+<td align="left">返回本地时区的当前 SQL 时间,</br>返回类型为 TIMESTAMP(3).</br>在流模式下为每条记录进行取值.</br> 但在批处理模式下,它在查询开始时计算一次,并对每一行使用相同的结果.</td>
+</tr>
+<tr>
+<td align="left">CURRENT_TIME</td>
+<td align="left">currentTime()</td>
+<td align="left">返回本地时区的当前 SQL 时间,这是 LOCAL_TIME 的同义词.</td>
+</tr>
+<tr>
+<td align="left">CURRENT_DATE</td>
+<td align="left">currentDate()</td>
+<td align="left">返回本地时区中的当前 SQL 日期.</br>在流模式下为每条记录进行取值.</br> 但在批处理模式下,它在查询开始时计算一次,并对每一行使用相同的结果.</td>
+</tr>
+<tr>
+<td align="left">CURRENT_TIMESTAMP</td>
+<td align="left">currentTimestamp()</td>
+<td align="left">返回本地时区的当前 SQL 时间戳,</br>返回类型为 TIMESTAMP_LTZ(3).</br>在流模式下为每条记录进行取值.</br> 但在批处理模式下,它在查询开始时计算一次,并对每一行使用相同的结果.</td>
+</tr>
+<tr>
+<td align="left">NOW()</td>
+<td align="left">不适用</td>
+<td align="left">返回本地时区的当前 SQL 时间戳,这是 CURRENT_TIMESTAMP 的同义词.</td>
+</tr>
+<tr>
+<td align="left">CURRENT_</br>ROW_TIMESTAMP()</td>
+<td align="left">不适用</td>
+<td align="left">返回本地时区的当前 SQL 时间戳,</br>返回类型为 TIMESTAMP_LTZ(3).</br>无论是在批处理模式还是流模式下,</br>都会为每条记录进行取值.</td>
+</tr>
+<tr>
+<td align="left">EXTRACT(</br>timeinteravlunit </br>FROM temporal)</td>
+<td align="left">TEMPORAL.extract(</br>TIMEINTERVALUNIT)</td>
+<td align="left">返回从时间的时间间隔单位部分提取的 long 值.</br>例如EXTRACT(DAY FROM DATE &#39;2006-06-05&#39;)返回 5.</td>
+</tr>
+<tr>
+<td align="left">YEAR(date)</td>
+<td align="left">不适用</td>
+<td align="left">从 SQL 日期 date 返回年份.</br>相当于 EXTRACT(YEAR FROM date).</br>例如YEAR(DATE &#39;1994-09-27&#39;)返回 1994.</td>
+</tr>
+<tr>
+<td align="left">QUARTER(date)</td>
+<td align="left">不适用</td>
+<td align="left">从 SQL 日期 date 返回一年中的季度</br>(1 到 4 之间的整数).</br>相当于 EXTRACT(QUARTER FROM date).</br> 例如QUARTER(DATE &#39;1994-09-27&#39;)</br>返回 3.</td>
+</tr>
+<tr>
+<td align="left">MONTH(date)</td>
+<td align="left">不适用</td>
+<td align="left">从 SQL 日期 date 返回一年中的月份</br>(1 到 12 之间的整数).</br>相当于 EXTRACT(MONTH FROM date).</br> 例如MONTH(DATE &#39;1994-09-27&#39;)返回 9.</td>
+</tr>
+<tr>
+<td align="left">WEEK(date)</td>
+<td align="left">不适用</td>
+<td align="left">从 SQL 日期 date 返回一年中的第几周</br>(1 到 53 之间的整数).</br>相当于 EXTRACT(WEEK FROM date).</br> 例如WEEK(DATE &#39;1994-09-27&#39;)返回 39.</td>
+</tr>
+<tr>
+<td align="left">DAYOFYEAR(date)</td>
+<td align="left">不适用</td>
+<td align="left">从 SQL 日期 date 返回一年中的第几天</br>(1 到 366 之间的整数).</br>相当于 EXTRACT(DOY FROM date).</br> 例如DAYOFYEAR(DATE &#39;1994-09-27&#39;)</br>返回 270.</td>
+</tr>
+<tr>
+<td align="left">DAYOFMONTH</td>
+<td align="left">不适用</td>
+<td align="left">从 SQL 日期 date 返回一个月中的第几天</br>(1 到 31 之间的整数).</br>相当于 EXTRACT(DAY FROM date).</br> 例如DAYOFWEEK(DATE &#39;1994-09-27&#39;)</br>返回 3.</td>
+</tr>
+<tr>
+<td align="left">HOUR(timestamp)</td>
+<td align="left">不适用</td>
+<td align="left">从 SQL 时间戳 timestamp 返回小时单位部分的小时(0 到 23 之间的整数)数.</br>相当于 EXTRACT(HOUR FROM timestamp).</br> 例如MINUTE(TIMESTAMP &#39;1994-09-27 13:14:15&#39;)返回 14.</td>
+</tr>
+<tr>
+<td align="left">MINUTE(timestamp)</td>
+<td align="left">不适用</td>
+<td align="left">从 SQL 时间戳 timestamp 返回分钟单位的分钟数(0 到 59 之间的整数).</br>相当于 EXTRACT(MINUTE FROM timestamp).</br> 例如MINUTE(TIMESTAMP &#39;1994-09-27 13:14:15&#39;)返回 14.</td>
+</tr>
+<tr>
+<td align="left">SECOND(timestamp)</td>
+<td align="left">不适用</td>
+<td align="left">从 SQL 时间戳 timestamp 返回秒单位部分的秒数(0 到 59 之间的整数).</br>相当于 EXTRACT(SECOND FROM timestamp).</br> 例如SECOND(TIMESTAMP &#39;1994-09-27 13:14:15&#39;)返回 15.</td>
+</tr>
+<tr>
+<td align="left">FLOOR(timepoint TO</br> timeintervalunit)</td>
+<td align="left">TIMEPOINT.</br>floor(TIMEINTERVALUNIT)</td>
+<td align="left">返回将时间点 timepoint 向下取值到时间单位 timeintervalunit 的值.</br>例如FLOOR(TIME &#39;12:44:31&#39; TO MINUTE)返回 12:44:00.</td>
+</tr>
+<tr>
+<td align="left">CEIL(timespoint TO</br> timeintervaluntit)</td>
+<td align="left">TIMEPOINT.</br>ceil(TIMEINTERVALUNIT)</td>
+<td align="left">返回将时间点 timespoint 向上取值到时间单位 TIMEINTERVALUNIT 的值.</br>例如CEIL(TIME &#39;12:44:31&#39; TO MINUTE)返回 12:45:00.</td>
+</tr>
+<tr>
+<td align="left">(timepoint1, temporal1) OVERLAPS</br> (timepoint2, temporal2)</td>
+<td align="left">temporalOverlaps(TIMEPOINT1,</br> TEMPORAL1</br>, TIMEPOINT2, TEMPORAL2)</td>
+<td align="left">如果由 (timepoint1, temporal1) 和</br> (timepoint2, temporal2) </br>定义的两个时间间隔重叠,则返回 TRUE.</br> 时间值可以是时间点或时间间隔.</br>例如(TIME &#39;2:55:00&#39;, INTERVAL &#39;1&#39; HOUR) OVERLAPS (TIME &#39;3:30:00&#39;, INTERVAL &#39;2&#39; HOUR)返回 TRUE.</br>(TIME &#39;9:00:00&#39;, TIME &#39;10:00:00&#39;) </br>OVERLAPS (TIME &#39;10:15:00&#39;, </br>INTERVAL &#39;3&#39; HOUR)返回 FALSE.</td>
+</tr>
+<tr>
+<td align="left">DATE_FORMAT(</br>timestamp, string)</td>
+<td align="left">不适用</td>
+<td align="left">将时间戳 timestamp 转换为日期格式</br>字符串string 指定格式的字符串值.</br>格式字符串与 Java 的</br> SimpleDateFormat 兼容.</td>
+</tr>
+<tr>
+<td align="left">TIMESTAMPADD(</br>timeintervalunit, </br>interval, timepoint)</td>
+<td align="left">不适用</td>
+<td align="left">无</td>
+</tr>
+<tr>
+<td align="left">TIMESTAMPDIFF(</br>timepointunit, </br>timepoint1, timepoint2)</td>
+<td align="left">timestampDiff(</br>TIMEPOINTUNIT, </br>TIMEPOINT1</br>, TIMEPOINT2)</td>
+<td align="left">返回 timepoint1 和</br> timepoint2 之间时间间隔.</br>间隔的单位由第一个参数给出,</br>它应该是以下值之一: </br>SECOND,MINUTE,HOUR,DAY,MONTH 或 YEAR.</td>
+</tr>
+<tr>
+<td align="left">CONVERT_TZ(a, b, c)</td>
+<td align="left">不适用</td>
+<td align="left">将日期时间 a(具有默认 ISO 时间戳格式 &#39;yyyy-MM-dd HH:mm:ss&#39;)从时区 b 转换为时区 c 的值.</br> 时区的格式应该是缩写如&quot;PST&quot;,全名如&quot;America/Los_Angeles&quot;,或自定义 ID 如&quot;GMT-08:00&quot;.</br>例如CONVERT_TZ(&#39;1970-01-01 00:00:00&#39;, &#39;UTC&#39;, </br>&#39;America/Los_Angeles&#39;)</br>返回&#39;1969-12-31 16:00:00&#39;.</td>
+</tr>
+<tr>
+<td align="left">FROM_UNIXTIME(numeric<code>[, string]</code>)</td>
+<td align="left">不适用</td>
+<td align="left">以字符串格式 string 返回数字参数 numberic 的表示形式(</br>默认为 &#39;yyyy-MM-dd HH:mm:ss&#39;).</br>numeric 是一个内部 时间戳值,表示自&#39;1970-01-01 00:00:00&#39; UTC 以来的秒数,由 UNIX_TIMESTAMP() 函数生成.</br>返回值以会话时区表示 </br>(在 TableConfig 中指定).</br>例如,如果在 UTC 时区,FROM_UNIXTIME(44) </br>返回 &#39;1970-01-01 00:00:44&#39;,如果在 &#39;Asia/Tokyo&#39; 时区,</br>则返回 &#39;1970-01-01 09:00:44&#39;.</td>
+</tr>
+<tr>
+<td align="left">UNIX_TIMESTAMP()</td>
+<td align="left">不适用</td>
+<td align="left">以秒为单位获取当前的 Unix 时间戳.</br>此函数不是确定性的,</br>这意味着将为每个记录重新计算该值.</td>
+</tr>
+<tr>
+<td align="left">UNIX_TIMESTAMP(a<code>[, b]</code>)</td>
+<td align="left">不适用</td>
+<td align="left">使用表配置中指定的时区将格式为 </br>b 的日期时间字符串 a</br>(如果未指定默认情况下:</br>yyyy-MM-dd HH:mm:ss) 转换为 Unix 时间戳(以秒为单位).</td>
+</tr>
+<tr>
+<td align="left">TO_DATE(a<code>[, b]</code>)</td>
+<td align="left">不适用</td>
+<td align="left">将格式为 b(默认为 &#39;yyyy-MM-dd&#39;)的字符串 a 转换为日期.</td>
+</tr>
+<tr>
+<td align="left">TO_TIMESTAMP_LTZ</br>(numeric, precision)</td>
+<td align="left">toTimestampLtz(numeric, PRECISION)</td>
+<td align="left">将纪元秒或纪元毫秒转换为 TIMESTAMP_LTZ,有效精度为 0 或 3,</br>0 代表TO_TIMESTAMP_LTZ(</br>epochSeconds, 0), </br>3 代表TO_TIMESTAMP_LTZ(</br>epochMilliseconds, 3).</td>
+</tr>
+<tr>
+<td align="left">TO_TIMESTAMP(a<code>[, b]</code>)</td>
+<td align="left">不适用</td>
+<td align="left">将 &#39;UTC+0&#39; 时区下格式为 b</br>(默认为:&#39;yyyy-MM-dd HH:mm:ss&#39;)的字符串 a 转换为时间戳.</td>
+</tr>
+<tr>
+<td align="left">CURRENT_</br>WATERMARK(rowtime)</td>
+<td align="left">不适用</td>
+<td align="left">返回给定时间列属性 rowtime 的</br>当前水印,如果管道中的当前操作没有</br>可用的上游操作的公共水印时则为NULL.</br> 函数的返回类型被推断为</br>与提供的时间列属性匹配,但调整后的</br>精度为 3.例如时间列属性为 TIMESTAMP_LTZ(9),</br>则函数将返回 TIMESTAMP_LTZ(3).</br>请注意,此函数可以返回NULL,</br>您可能必须考虑这种情况.</br>例如,如果您想过滤掉后期数据,</br>可以使用:WHERE   CURRENT_WATERMARK(ts) </br>IS NULL  OR ts &gt; CURRENT_WATERMARK(ts)</td>
+</tr>
+</tbody></table>
+<h4 id="条件函数"><a href="#条件函数" class="headerlink" title="条件函数"></a>条件函数</h4><table>
+<thead>
+<tr>
+<th align="left">SQL 函数</th>
+<th align="left">Table 函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">CASE value WHEN a_1 <code>[, a_2]</code>* THEN RESULT1 (WHEN b_1 <code>[, b_2 ]</code>* THEN result_2)* (ELSE result_z) END</td>
+<td align="left">不适用</td>
+<td align="left">当第一个时间值包含在 (valueX_1, valueX_2, ...) 中时,返回 resultX.</br>当没有值匹配时,如果提供则返回 result_z, 否则返回NULL.</td>
+</tr>
+<tr>
+<td align="left">CASE WHEN condition1 THEN result1 (WHEN condition2 THEN result2)* (ELSE result_z) END</td>
+<td align="left">不适用</td>
+<td align="left">满足第一个条件 X 时返回 resultX.</br>当不满足任何条件时,如果提供则返回 result_z,否则返回NULL.</td>
+</tr>
+<tr>
+<td align="left">NULLIF(a, b)</td>
+<td align="left">不适用</td>
+<td align="left">如果 a 等于 b 返回NULL.</br>否则返回 a.</br>例如NULLIF(5, 5)返回NULL.</br>NULLIF(5, 0)返回 5.</td>
+</tr>
+<tr>
+<td align="left">COALESCE(a, b <code>[, c]</code>*)</td>
+<td align="left">不适用</td>
+<td align="left">从 a, b, ... 返回第一个不为NULL的值.</br>例如COALESCE(3, 5, 3)返回 3.</td>
+</tr>
+<tr>
+<td align="left">IF(condition, true_value, false_value)</td>
+<td align="left">不适用</td>
+<td align="left">如果满足条件,则返回 true_value,否则返回 false_value.</br>例如IF(5 &gt; 3, 5, 3)返回 5.</td>
+</tr>
+<tr>
+<td align="left">IFNULL(input, null_replacement)</td>
+<td align="left">input.ifNull(nullReplacement)</td>
+<td align="left">如果输入为NULL,则返回 null_replacement.</br>否则返回输入.</br>与 COALESCE 或 CASE WHEN 相比,此函数返回的数据类型 在是否为空方面非常明确.</br>.</br>返回的类型是两个参数的公共类型,但只有在 null_replacement 可为空时才能为空.</br>该函数允许将可 为空的列传递到使用 NOT NULL 约束声明的函数或表中.</br>例如IFNULL(nullable_column, 5)一定不返回NULL.</td>
+</tr>
+<tr>
+<td align="left">IS_ALPHA(string)</td>
+<td align="left">不适用</td>
+<td align="left">如果字符串中的所有字符都是字母,则返回true,否则返回false.</td>
+</tr>
+<tr>
+<td align="left">IS_DECIMAL(string)</td>
+<td align="left">不适用</td>
+<td align="left">如果 string 可以解析为有效数字,则返回true,否则返回false.</td>
+</tr>
+<tr>
+<td align="left">IS_DIGIT(string)</td>
+<td align="left">不适用</td>
+<td align="left">如果字符串中的所有字符都是数字,则返回true,否则返回false.</td>
+</tr>
+<tr>
+<td align="left">不适用</td>
+<td align="left">BOOLEAN.?(a, b)</td>
+<td align="left">如果 BOOLEAN 计算结果为 TRUE,则返回 a.</br>否则返回 b.</br>例如(42 &gt; 5).?(&#39;A&#39;, &#39;B&#39;)返回&quot;A&quot;.</td>
+</tr>
+<tr>
+<td align="left">GREATEST(a<code>[, b]</code>*)</td>
+<td align="left">不适用</td>
+<td align="left">返回所有输入参数的最大值,如果输入参数中包含 NULL,则返回 NULL.</td>
+</tr>
+<tr>
+<td align="left">LEAST(a<code>[, b]</code>*)</td>
+<td align="left">不适用</td>
+<td align="left">返回所有输入参数的最小值,如果输入参数中包含 NULL,则返回 NULL.</td>
+</tr>
+</tbody></table>
+<h4 id="类型转换函数"><a href="#类型转换函数" class="headerlink" title="类型转换函数"></a>类型转换函数</h4><table>
+<thead>
+<tr>
+<th align="left">SQL 函数</th>
+<th align="left">Table 函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">CAST(value AS type)</td>
+<td align="left">ANY.cast(TYPE)</td>
+<td align="left">返回被强制转换为类型 type 的新值.</br>例如CAST(&#39;42&#39; AS INT)返回 42.</br>CAST(NULL AS VARCHAR)返回 VARCHAR 类型的NULL.</td>
+</tr>
+<tr>
+<td align="left">TYPEOF(input) | TYPEOF(input, force_serializable)</td>
+<td align="left">call(&quot;TYPEOF&quot;, input) | call(&quot;TYPEOF&quot;, input, force_serializable)</td>
+<td align="left">返回输入表达式的数据类型的字符串表示形式.</br>默认情况下返回的字符串是一个摘要字符串,可能会为了可读性而省略某些细节.</br> 如果 force_serializable 设置为 TRUE,则字符串表示可以保留在目录中的完整数据类型.</br>请注意, 特别是匿名的内联数据类型没有可序列化的字符串表示.</br>在这种情况下返回NULL.</td>
+</tr>
+</tbody></table>
+<h4 id="集合函数"><a href="#集合函数" class="headerlink" title="集合函数"></a>集合函数</h4><table>
+<thead>
+<tr>
+<th align="left">SQL 函数</th>
+<th align="left">Table 函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">CARDINALITY(array)</td>
+<td align="left">ARRAY.cardinality()</td>
+<td align="left">返回数组中元素的数量.</td>
+</tr>
+<tr>
+<td align="left">array &#39;<code>[&#39; INT &#39;]</code>&#39;</td>
+<td align="left">ARRAY.at(INT)</td>
+<td align="left">返回数组中 INT 位置的元素.</br>索引从 1 开始.</td>
+</tr>
+<tr>
+<td align="left">ELEMENT(array)</td>
+<td align="left">ARRAY.element()</td>
+<td align="left">返回数组的唯一元素(其基数应为 1).</br>如果数组为空,则返回NULL.</br>如果数组有多个元素,则抛出异常.</td>
+</tr>
+<tr>
+<td align="left">CARDINALITY(map)</td>
+<td align="left">MAP.cardinality()</td>
+<td align="left">返回 map 中的 entries 数量.</td>
+</tr>
+<tr>
+<td align="left">map &#39;<code>[&#39; value &#39;]</code>&#39;</td>
+<td align="left">MAP.at(ANY)</td>
+<td align="left">返回 map 中指定 key 对应的值.</td>
+</tr>
+</tbody></table>
+<h4 id="值构建函数"><a href="#值构建函数" class="headerlink" title="值构建函数"></a>值构建函数</h4><table>
+<thead>
+<tr>
+<th align="left">SQL 函数</th>
+<th align="left">Table 函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">-- implicit constructor with parenthesis (a <code>[, b]</code>*)</td>
+<td align="left">row(ANY1, ANY2, ...)</td>
+<td align="left">返回从值列表 (a, b, ...) 创建的行.</br>隐式行构造函数支持任意表达式作为字段,但至少需要两个字段.</br> 显式行构造函数可以处理任意数量的字段,但目前还不能很好地支持所有类型的字段表达式.</td>
+</tr>
+<tr>
+<td align="left">ARRAY &#39;<code>[&#39; a </code>[, b ]<code>* &#39;]</code>&#39;</td>
+<td align="left">array(ANY1, ANY2, ...)</td>
+<td align="left">返回从值列表 (a, b, ...) 创建的数组.</td>
+</tr>
+<tr>
+<td align="left">MAP &#39;<code>[&#39; a, b </code>[, c, d ]<code>* &#39;]</code>&#39;</td>
+<td align="left">map(ANY1, ANY2, ANY3, ANY4, ...)</td>
+<td align="left">返回从键值对列表 ((a, b), (c, d), ...) 创建的 map.</td>
+</tr>
+<tr>
+<td align="left">不适用</td>
+<td align="left">numeric.rows</td>
+<td align="left">创建一个 numeric 行间隔(通常用于窗口创建).</td>
+</tr>
+</tbody></table>
+<h4 id="值获取函数"><a href="#值获取函数" class="headerlink" title="值获取函数"></a>值获取函数</h4><table>
+<thead>
+<tr>
+<th align="left">SQL 函数</th>
+<th align="left">Table 函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">tableName.compositeType.field</td>
+<td align="left">COMPOSITE.get(STRING) | COMPOSITE.get(INT)</td>
+<td align="left">按名称从 Flink 复合类型(例如,Tuple,POJO)返回字段的值.</td>
+</tr>
+<tr>
+<td align="left">tableName.compositeType.*</td>
+<td align="left">ANY.flatten()</td>
+<td align="left">返回 Flink 复合类型(例如,Tuple,POJO)的平面表示,将其每个直接子类型转换为单独的字段.</br>在大多数情况下,平面表示 的字段与原始字段的命名类似,但使用$分隔符(例如 mypojo$mytuple$f0).</td>
+</tr>
+</tbody></table>
+<h4 id="分组函数"><a href="#分组函数" class="headerlink" title="分组函数"></a>分组函数</h4><table>
+<thead>
+<tr>
+<th align="left">SQL 函数</th>
+<th align="left">Table 函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">GROUP_ID()</td>
+<td align="left">不适用</td>
+<td align="left">返回唯一标识分组键组合的整数.</td>
+</tr>
+<tr>
+<td align="left">GROUPING(expression1 <code>[, expression2]</code>* ) |</br> GROUPING_ID(expression1 <code>[, expression2]</code>* )</td>
+<td align="left">不适用</td>
+<td align="left">返回给定分组表达式的位向量.</td>
+</tr>
+</tbody></table>
+<h4 id="哈希函数"><a href="#哈希函数" class="headerlink" title="哈希函数"></a>哈希函数</h4><table>
+<thead>
+<tr>
+<th align="left">SQL 函数</th>
+<th align="left">Table 函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">MD5(string)</td>
+<td align="left">STRING.md5()</td>
+<td align="left">以 32 个十六进制数字的字符串形式返回 string 的 MD5 哈希值.</br>如果字符串为NULL,则返回NULL.</td>
+</tr>
+<tr>
+<td align="left">SHA1(string)</td>
+<td align="left">STRING.sha1()</td>
+<td align="left">以 40 个十六进制数字的字符串形式返回 string 的 SHA-1 哈希值.</br>如果字符串为NULL,则返回NULL.</td>
+</tr>
+<tr>
+<td align="left">SHA224(string)</td>
+<td align="left">STRING.sha224()</td>
+<td align="left">以 56 个十六进制数字的字符串形式返回 string 的 SHA-224 哈希值.</br>如果字符串为NULL,则返回NULL.</td>
+</tr>
+<tr>
+<td align="left">SHA256(string)</td>
+<td align="left">STRING.sha256()</td>
+<td align="left">以 64 个十六进制数字的字符串形式返回 string 的 SHA-256 哈希值.</br>如果字符串为NULL,则返回NULL.</td>
+</tr>
+<tr>
+<td align="left">SHA384(string)</td>
+<td align="left">STRING.sha384()</td>
+<td align="left">以 96 个十六进制数字的字符串形式返回 string 的 SHA-384 哈希值.</br>如果字符串为NULL,则返回NULL.</td>
+</tr>
+<tr>
+<td align="left">SHA512(string)</td>
+<td align="left">STRING.sha512()</td>
+<td align="left">以 128 个十六进制数字的字符串形式返回 string 的 SHA-512 哈希值.</br>如果字符串为NULL,则返回NULL.</td>
+</tr>
+<tr>
+<td align="left">SHA2(string, hashLength)</td>
+<td align="left">STRING.sha2(INT)</td>
+<td align="left">使用 SHA-2 系列散列函数(SHA-224,SHA-256,SHA-384 或 SHA-512)返回散列值.</br>第一个参数字符串是要散列的字符串, 第二个参数 hashLength 是结果的位长(224,256,384 或 512).</br>如果 string 或 hashLength 为NULL,则返回NULL.</td>
+</tr>
+</tbody></table>
+<h4 id="JSON函数"><a href="#JSON函数" class="headerlink" title="JSON函数"></a>JSON函数</h4><p>特殊字符<code>$</code>表示 JSON 路径中的根节点.<br>路径可以访问属性 (<code>$.a</code>)/数组元素 (<code>$.a[0].b</code>)/对数组中的所有元素进行分支 (<code>$.a[*].b</code>).</p>
+<p><code>IS JSON [ &#123; VALUE | SCALAR | ARRAY | OBJECT &#125; ]</code><br><code>STRING.isJson([JsonType type])</code><br>确定给定的字符串是否是有效的 JSON.<br>指定可选类型参数会对允许使用的 JSON 对象类型进行限制.<br>如果字符串是有效的 JSON,但不是该类型,false则返回.<br>默认值为 VALUE.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">-- TRUE</span><br><span class="line">&#39;1&#39; IS JSON</span><br><span class="line">&#39;[]&#39; IS JSON</span><br><span class="line">&#39;&#123;&#125;&#39; IS JSON</span><br><span class="line"></span><br><span class="line">-- TRUE</span><br><span class="line">&#39;&quot;abc&quot;&#39; IS JSON</span><br><span class="line">-- FALSE</span><br><span class="line">&#39;abc&#39; IS JSON</span><br><span class="line">NULL IS JSON</span><br><span class="line"></span><br><span class="line">-- TRUE</span><br><span class="line">&#39;1&#39; IS JSON SCALAR</span><br><span class="line">-- FALSE</span><br><span class="line">&#39;1&#39; IS JSON ARRAY</span><br><span class="line">-- FALSE</span><br><span class="line">&#39;1&#39; IS JSON OBJECT</span><br><span class="line"></span><br><span class="line">-- FALSE</span><br><span class="line">&#39;&#123;&#125;&#39; IS JSON SCALAR</span><br><span class="line">-- FALSE</span><br><span class="line">&#39;&#123;&#125;&#39; IS JSON ARRAY</span><br><span class="line">-- TRUE</span><br><span class="line">&#39;&#123;&#125;&#39; IS JSON OBJECT</span><br></pre></td></tr></table></figure>
+
+<p><code>JSON_EXISTS(jsonValue, path [ &#123; TRUE | FALSE | UNKNOWN | ERROR &#125; ON ERROR ])</code><br><code>STRING.jsonExists(STRING path [, JsonExistsOnError onError])</code><br>确定 JSON 字符串是否满足给定的路径搜索条件.<br>如果省略错误行为,FALSE ON ERROR则假定为默认值.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">-- TRUE</span><br><span class="line">SELECT JSON_EXISTS(&#39;&#123;&quot;a&quot;: true&#125;&#39;, &#39;$.a&#39;);</span><br><span class="line">-- FALSE</span><br><span class="line">SELECT JSON_EXISTS(&#39;&#123;&quot;a&quot;: true&#125;&#39;, &#39;$.b&#39;);</span><br><span class="line">-- TRUE</span><br><span class="line">SELECT JSON_EXISTS(&#39;&#123;&quot;a&quot;: [&#123; &quot;b&quot;: 1 &#125;]&#125;&#39;,</span><br><span class="line">  &#39;$.a[0].b&#39;);</span><br><span class="line"></span><br><span class="line">-- TRUE</span><br><span class="line">SELECT JSON_EXISTS(&#39;&#123;&quot;a&quot;: true&#125;&#39;,</span><br><span class="line">  &#39;strict $.b&#39; TRUE ON ERROR);</span><br><span class="line">-- FALSE</span><br><span class="line">SELECT JSON_EXISTS(&#39;&#123;&quot;a&quot;: true&#125;&#39;,</span><br><span class="line">  &#39;strict $.b&#39; FALSE ON ERROR);</span><br></pre></td></tr></table></figure>
+
+<p><code>JSON_STRING(value)</code><br><code>jsonString(value)</code><br>将值序列化为 JSON.<br>此函数返回一个包含序列化值的 JSON 字符串.<br>如果值为NULL,则函数返回NULL.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">-- NULL</span><br><span class="line">JSON_STRING(CAST(NULL AS INT))</span><br><span class="line"></span><br><span class="line">-- &#39;1&#39;</span><br><span class="line">JSON_STRING(1)</span><br><span class="line">-- &#39;true&#39;</span><br><span class="line">JSON_STRING(TRUE)</span><br><span class="line">-- &#39;&quot;Hello, World!&quot;&#39;</span><br><span class="line">JSON_STRING(&#39;Hello, World!&#39;)</span><br><span class="line">-- &#39;[1,2]&#39;</span><br><span class="line">JSON_STRING(ARRAY[1, 2])</span><br></pre></td></tr></table></figure>
+
+<p><code>JSON_VALUE(jsonValue, path [RETURNING &lt;dataType&gt;] [ &#123; NULL | ERROR | DEFAULT &lt;defaultExpr&gt; &#125; ON EMPTY ] [ &#123; NULL | ERROR | DEFAULT &lt;defaultExpr&gt; &#125; ON ERROR ])</code><br><code>STRING.jsonValue(STRING path [, returnType, onEmpty, defaultOnEmpty, onError, defaultOnError])</code><br>从 JSON 字符串中提取标量.<br>此方法在 JSON 字符串中搜索给定的路径表达式,如果该路径的值为标量,则返回该值.<br>不能返回非标量值.<br>默认情况下,该值返回为STRING. returningType可以选择使用不同的类型,支持以下类型:<br>VARCHAR / STRING<br>BOOLEAN<br>INTEGER<br>DOUBLE</p>
+<p>对于空路径表达式或错误,可以将行为定义为返回null/引发错误或返回定义的默认值.<br>省略时,默认分别为 NULL ON EMPTY或NULL ON ERROR.<br>默认值可以是文字或表达式.<br>如果默认值本身引发错误,它会陷入 的错误行为ON EMPTY,并引发的错误ON ERROR.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">-- &quot;true&quot;</span><br><span class="line">JSON_VALUE(&#39;&#123;&quot;a&quot;: true&#125;&#39;, &#39;$.a&#39;)</span><br><span class="line"></span><br><span class="line">-- TRUE</span><br><span class="line">JSON_VALUE(&#39;&#123;&quot;a&quot;: true&#125;&#39;, &#39;$.a&#39; RETURNING BOOLEAN)</span><br><span class="line"></span><br><span class="line">-- &quot;false&quot;</span><br><span class="line">JSON_VALUE(&#39;&#123;&quot;a&quot;: true&#125;&#39;, &#39;lax $.b&#39;</span><br><span class="line">    DEFAULT FALSE ON EMPTY)</span><br><span class="line"></span><br><span class="line">-- &quot;false&quot;</span><br><span class="line">JSON_VALUE(&#39;&#123;&quot;a&quot;: true&#125;&#39;, &#39;strict $.b&#39;</span><br><span class="line">    DEFAULT FALSE ON ERROR)</span><br><span class="line"></span><br><span class="line">-- 0.998D</span><br><span class="line">JSON_VALUE(&#39;&#123;&quot;a.b&quot;: [0.998,0.996]&#125;&#39;,&#39;$.[&quot;a.b&quot;][0]&#39; </span><br><span class="line">    RETURNING DOUBLE)</span><br></pre></td></tr></table></figure>
+
+<p><code>JSON_QUERY(jsonValue, path [ &#123; WITHOUT | WITH CONDITIONAL | WITH UNCONDITIONAL &#125; [ ARRAY ] WRAPPER ] [ &#123; NULL | EMPTY ARRAY | EMPTY OBJECT | ERROR &#125; ON EMPTY ] [ &#123; NULL | EMPTY ARRAY | EMPTY OBJECT | ERROR &#125; ON ERROR ])</code><br><code>STRING.jsonQuery(path [, JsonQueryWrapper [, JsonQueryOnEmptyOrError, JsonQueryOnEmptyOrError ] ])</code><br>从 JSON 字符串中提取 JSON 值.<br>结果始终以STRING. RETURNING目前不支持该子句.<br>确定是否应将提取的wrappingBehavior值包装到数组中,以及是否无条件地这样做或仅当值本身不是数组时才这样做.</p>
+<p>onEmpty并onError分别确定路径表达式为空或引发错误时的行为.<br>默认情况下,在这两种情况下null都会返回.<br>其他选择是使用空数组/空对象或引发错误.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">-- &#39;&#123; &quot;b&quot;: 1 &#125;&#39;</span><br><span class="line">JSON_QUERY(&#39;&#123; &quot;a&quot;: &#123; &quot;b&quot;: 1 &#125; &#125;&#39;, &#39;$.a&#39;)</span><br><span class="line">-- &#39;[1, 2]&#39;</span><br><span class="line">JSON_QUERY(&#39;[1, 2]&#39;, &#39;$&#39;)</span><br><span class="line">-- NULL</span><br><span class="line">JSON_QUERY(CAST(NULL AS STRING), &#39;$&#39;)</span><br><span class="line">-- &#39;[&quot;c1&quot;,&quot;c2&quot;]&#39;</span><br><span class="line">JSON_QUERY(&#39;&#123;&quot;a&quot;:[&#123;&quot;c&quot;:&quot;c1&quot;&#125;,&#123;&quot;c&quot;:&quot;c2&quot;&#125;]&#125;&#39;, &#39;lax $.a[*].c&#39;)</span><br><span class="line"></span><br><span class="line">-- Wrap result into an array</span><br><span class="line">-- &#39;[&#123;&#125;]&#39;</span><br><span class="line">JSON_QUERY(&#39;&#123;&#125;&#39;, &#39;$&#39; WITH CONDITIONAL ARRAY WRAPPER)</span><br><span class="line">-- &#39;[1, 2]&#39;</span><br><span class="line">JSON_QUERY(&#39;[1, 2]&#39;, &#39;$&#39; WITH CONDITIONAL ARRAY WRAPPER)</span><br><span class="line">-- &#39;[[1, 2]]&#39;</span><br><span class="line">JSON_QUERY(&#39;[1, 2]&#39;, &#39;$&#39; WITH UNCONDITIONAL ARRAY WRAPPER)</span><br><span class="line"></span><br><span class="line">-- Scalars must be wrapped to be returned</span><br><span class="line">-- NULL</span><br><span class="line">JSON_QUERY(1, &#39;$&#39;)</span><br><span class="line">-- &#39;[1]&#39;</span><br><span class="line">JSON_QUERY(1, &#39;$&#39; WITH CONDITIONAL ARRAY WRAPPER)</span><br><span class="line"></span><br><span class="line">-- Behavior if path expression is empty &#x2F; there is an error</span><br><span class="line">-- &#39;&#123;&#125;&#39;</span><br><span class="line">JSON_QUERY(&#39;&#123;&#125;&#39;, &#39;lax $.invalid&#39; EMPTY OBJECT ON EMPTY)</span><br><span class="line">-- &#39;[]&#39;</span><br><span class="line">JSON_QUERY(&#39;&#123;&#125;&#39;, &#39;strict $.invalid&#39; EMPTY ARRAY ON ERROR)</span><br></pre></td></tr></table></figure>
+
+<p><code>JSON_OBJECT([[KEY] key VALUE value]* [ &#123; NULL | ABSENT &#125; ON NULL ])</code><br><code>jsonObject(JsonOnNull, keyValues...)</code><br>从键值对列表构建 JSON 对象字符串.<br>请注意,键必须是非NULL字符串文字,而值可以是任意表达式.<br>此函数返回一个 JSON 字符串.<br>行为定义了ON NULL如何处理NULL 值.<br>如果省略,NULL ON NULL则默认采用.</p>
+<p>从另一个 JSON 构造函数调用 ( JSON_OBJECT, JSON_ARRAY) 创建的值直接插入而不是作为字符串插入.<br>这允许构建嵌套的 JSON 结构.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">-- &#39;&#123;&#125;&#39;</span><br><span class="line">JSON_OBJECT()</span><br><span class="line"></span><br><span class="line">-- &#39;&#123;&quot;K1&quot;:&quot;V1&quot;,&quot;K2&quot;:&quot;V2&quot;&#125;&#39;</span><br><span class="line">JSON_OBJECT(&#39;K1&#39; VALUE &#39;V1&#39;, &#39;K2&#39; VALUE &#39;V2&#39;)</span><br><span class="line"></span><br><span class="line">-- Expressions as values</span><br><span class="line">JSON_OBJECT(&#39;orderNo&#39; VALUE orders.orderId)</span><br><span class="line"></span><br><span class="line">-- ON NULL</span><br><span class="line">JSON_OBJECT(KEY &#39;K1&#39; VALUE CAST(NULL AS STRING) NULL ON NULL)   -- &#39;&#123;&quot;K1&quot;:null&#125;&#39;</span><br><span class="line">JSON_OBJECT(KEY &#39;K1&#39; VALUE CAST(NULL AS STRING) ABSENT ON NULL) -- &#39;&#123;&#125;&#39;</span><br><span class="line"></span><br><span class="line">-- &#39;&#123;&quot;K1&quot;:&#123;&quot;K2&quot;:&quot;V&quot;&#125;&#125;&#39;</span><br><span class="line">JSON_OBJECT(</span><br><span class="line">  KEY &#39;K1&#39;</span><br><span class="line">  VALUE JSON_OBJECT(</span><br><span class="line">    KEY &#39;K2&#39;</span><br><span class="line">    VALUE &#39;V&#39;</span><br><span class="line">  )</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p><code>JSON_OBJECTAGG([KEY] key VALUE value [ &#123; NULL | ABSENT &#125; ON NULL ])</code><br><code>jsonObjectAgg(JsonOnNull, keyExpression, valueExpression)</code><br>通过将键值表达式聚合到单个 JSON 对象中来构建 JSON 对象字符串.</p>
+<p>键表达式必须返回一个不可为空的字符串.<br>值表达式可以是任意的,包括其他 JSON 函数.<br>如果值为NULL,则ON NULL行为定义要做什么.<br>如果省略,NULL ON NULL则默认采用.</p>
+<p>请注意,键必须是唯一的.<br>如果一个键多次出现,则会抛出错误.<br>OVERwindows目前不支持此功能.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">-- &#39;&#123;&quot;Apple&quot;:2,&quot;Banana&quot;:17,&quot;Orange&quot;:0&#125;&#39;</span><br><span class="line">SELECT</span><br><span class="line">  JSON_OBJECTAGG(KEY product VALUE cnt)</span><br><span class="line">FROM orders</span><br></pre></td></tr></table></figure>
+
+<p><code>JSON_ARRAY([value]* [ &#123; NULL | ABSENT &#125; ON NULL ])</code><br><code>jsonArray(JsonOnNull, values...)</code><br>从值列表构建 JSON 数组字符串.<br>此函数返回一个 JSON 字符串.<br>这些值可以是任意表达式.<br>行为定义了ON NULL 如何处理NULL值.<br>如果省略,ABSENT ON NULL则默认采用.</p>
+<p>从另一个 JSON 构造函数调用 (JSON_OBJECT, JSON_ARRAY) 创建的元素直接插入,而不是作为字符串插入.<br>这允许构建嵌套的 JSON 结构.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">-- &#39;[]&#39;</span><br><span class="line">JSON_ARRAY()</span><br><span class="line">-- &#39;[1,&quot;2&quot;]&#39;</span><br><span class="line">JSON_ARRAY(1, &#39;2&#39;)</span><br><span class="line"></span><br><span class="line">-- Expressions as values</span><br><span class="line">JSON_ARRAY(orders.orderId)</span><br><span class="line"></span><br><span class="line">-- ON NULL</span><br><span class="line">JSON_ARRAY(CAST(NULL AS STRING) NULL ON NULL) -- &#39;[null]&#39;</span><br><span class="line">JSON_ARRAY(CAST(NULL AS STRING) ABSENT ON NULL) -- &#39;[]&#39;</span><br><span class="line"></span><br><span class="line">-- &#39;[[1]]&#39;</span><br><span class="line">JSON_ARRAY(JSON_ARRAY(1))</span><br></pre></td></tr></table></figure>
+
+<p><code>JSON_ARRAYAGG(items [ &#123; NULL | ABSENT &#125; ON NULL ])</code><br><code>jsonArrayAgg(JsonOnNull, itemExpression)</code><br>通过将项目聚合到数组中来构建 JSON 对象字符串.<br>项目表达式可以是任意的,包括其他 JSON 函数.<br>如果值为NULL,则 ON NULL行为定义要做什么.<br>如果省略,ABSENT ON NULL则默认采用.</p>
+<p>目前在OVER窗口/无界会话窗口或跳窗口中不支持此功能.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">-- &#39;[&quot;Apple&quot;,&quot;Banana&quot;,&quot;Orange&quot;]&#39;</span><br><span class="line">SELECT</span><br><span class="line">  JSON_ARRAYAGG(product)</span><br><span class="line">FROM orders</span><br></pre></td></tr></table></figure>
+
+<h3 id="聚合函数"><a href="#聚合函数" class="headerlink" title="聚合函数"></a>聚合函数</h3><p>聚合函数将所有的行作为输入,并返回单个聚合值作为结果.</p>
+<table>
+<thead>
+<tr>
+<th align="left">SQL 函数</th>
+<th align="left">Table 函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">COUNT(<code>[ ALL ]</code> expression | DISTINCT expression1 <code>[, expression2]</code>*)</td>
+<td align="left">不适用</td>
+<td align="left">默认情况下或使用关键字ALL,返回不为NULL的表达式的输入行数.</br>使用DISTINCT则对所有值去重后计算.</td>
+</tr>
+<tr>
+<td align="left">COUNT(*) | COUNT(1)</td>
+<td align="left">FIELD.count</td>
+<td align="left">返回输入行数.</td>
+</tr>
+<tr>
+<td align="left">AVG(<code>[ ALL | DISTINCT ]</code> expression)</td>
+<td align="left">FIELD.avg</td>
+<td align="left">默认情况下或使用关键字ALL,返回所有输入行中表达式的平均值(算术平均值).</br>使用DISTINCT则对所有值去重后计算.</td>
+</tr>
+<tr>
+<td align="left">SUM(<code>[ ALL | DISTINCT ]</code> expression)</td>
+<td align="left">FIELD.sum</td>
+<td align="left">默认情况下或使用关键字ALL,返回所有输入行的表达式总和.</br>使用DISTINCT则对所有值去重后计算.</td>
+</tr>
+<tr>
+<td align="left">不适用</td>
+<td align="left">FIELD.sum0</td>
+<td align="left">返回所有输入行的数字字段的总和.</br>如果所有值都为NULL,则返回 0.</td>
+</tr>
+<tr>
+<td align="left">MAX(<code>[ ALL | DISTINCT ]</code> expression)</td>
+<td align="left">FIELD.max</td>
+<td align="left">默认情况下或使用关键字ALL,返回所有输入行中表达式的最大值.</br>使用DISTINCT则对所有值去重后计算.</td>
+</tr>
+<tr>
+<td align="left">MIN(<code>[ ALL | DISTINCT ]</code> expression )</td>
+<td align="left">FIELD.min</td>
+<td align="left">默认情况下或使用关键字ALL,返回所有输入行中表达式的最小值.</br>使用DISTINCT则对所有值去重后计算.</td>
+</tr>
+<tr>
+<td align="left">STDDEV_POP(<code>[ ALL | DISTINCT ]</code> expression)</td>
+<td align="left">FIELD.stddevPop</td>
+<td align="left">默认情况下或使用关键字ALL,返回所有输入行中表达式的总体标准偏差.</br>使用DISTINCT则对所有值去重后计算.</td>
+</tr>
+<tr>
+<td align="left">STDDEV_SAMP(<code>[ ALL | DISTINCT ]</code> expression)</td>
+<td align="left">FIELD.stddevSamp</td>
+<td align="left">默认情况下或使用关键字ALL,返回所有输入行中表达式的样本标准偏差.</br>使用DISTINCT则对所有值去重后计算.</td>
+</tr>
+<tr>
+<td align="left">VAR_POP(<code>[ ALL | DISTINCT ]</code> expression)</td>
+<td align="left">FIELD.varPop</td>
+<td align="left">默认情况下或使用关键字ALL,返回所有输入行中表达式的总体方差(总体标准差的平方).</br>使用DISTINCT则对所有值去重后计算.</td>
+</tr>
+<tr>
+<td align="left">VAR_SAMP(<code>[ ALL | DISTINCT ]</code> expression)</td>
+<td align="left">FIELD.varSamp</td>
+<td align="left">默认情况下或使用关键字ALL,返回所有输入行中表达式的样本方差(样本标准差的平方).</br>使用DISTINCT则对所有值去重后计算.</td>
+</tr>
+<tr>
+<td align="left">COLLECT(<code>[ ALL | DISTINCT ]</code> expression)</td>
+<td align="left">FIELD.collect</td>
+<td align="left">默认情况下或使用关键字ALL,返回跨所有输入行的多组表达式.</br>NULL值将被忽略.</br>使用DISTINCT则对所有值去重后计算.</td>
+</tr>
+<tr>
+<td align="left">VARIANCE(<code>[ ALL | DISTINCT ]</code> expression)</td>
+<td align="left">不适用</td>
+<td align="left">VAR_SAMP() 的同义方法.</td>
+</tr>
+<tr>
+<td align="left">RANK()</td>
+<td align="left">不适用</td>
+<td align="left">返回值在一组值中的排名.</br>结果是 1 加上分区顺序中当前行之前或等于当前行的行数.</br>排名在序列中不一定连续.</td>
+</tr>
+<tr>
+<td align="left">DENSE_RANK()</td>
+<td align="left">不适用</td>
+<td align="left">返回值在一组值中的排名.</br>结果是一加先前分配的等级值.</br>与函数 rank 不同,dense_rank 不会在排名序列中产生间隙.</td>
+</tr>
+<tr>
+<td align="left">ROW_NUMBER()</td>
+<td align="left">不适用</td>
+<td align="left">在窗口分区内根据 rows 的排序为每一行分配一个唯一的序列号,从一开始.</br>ROW_NUMBER 和 RANK 相似.</br>ROW_NUMBER 按 顺序对所有行进行编号(例如 1,2,3,4,5).</br>RANK 为等值 row 提供相同的序列值(例如 1,2,2,4,5).</td>
+</tr>
+<tr>
+<td align="left">LEAD(expression <code>[, offset]</code> <code>[, default]</code>)</td>
+<td align="left">不适用</td>
+<td align="left">返回窗口中当前行之后第 offset 行处的表达式值.</br>offset 的默认值为 1,default 的默认值为NULL.</td>
+</tr>
+<tr>
+<td align="left">LAG(expression <code>[, offset]</code> <code>[, default]</code>)</td>
+<td align="left">不适用</td>
+<td align="left">返回窗口中当前行之前第 offset 行处的表达式值.</br>offset 的默认值为 1,default 的默认值为NULL.</td>
+</tr>
+<tr>
+<td align="left">FIRST_VALUE(expression)</td>
+<td align="left">不适用</td>
+<td align="left">返回一组有序值中的第一个值.</td>
+</tr>
+<tr>
+<td align="left">LAST_VALUE(expression)</td>
+<td align="left">不适用</td>
+<td align="left">返回一组有序值中的最后一个值.</td>
+</tr>
+<tr>
+<td align="left">LISTAGG(expression <code>[, separator]</code>)</td>
+<td align="left">不适用</td>
+<td align="left">连接字符串表达式的值并在它们之间放置分隔符值.</br>字符串末尾不添加分隔符时则分隔符的默认值为&quot;,&quot;.</td>
+</tr>
+</tbody></table>
+<h3 id="时间间隔单位和时间点单位标识符"><a href="#时间间隔单位和时间点单位标识符" class="headerlink" title="时间间隔单位和时间点单位标识符"></a>时间间隔单位和时间点单位标识符</h3><p>下表列出了时间间隔单位和时间点单位标识符.<br>对于 Table API,请使用 _ 代替空格(例如 DAY_TO_HOUR)</p>
+<table>
+<thead>
+<tr>
+<th align="left">时间间隔单位</th>
+<th align="left">时间点单位</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">MILLENIUM(仅适用SQL)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">CENTURY(仅适用SQL)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">YEAR</td>
+<td align="left">YEAR</td>
+</tr>
+<tr>
+<td align="left">YEAR TO MONTH</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">QUARTER</td>
+<td align="left">QUARTER</td>
+</tr>
+<tr>
+<td align="left">MONTH</td>
+<td align="left">MONTH</td>
+</tr>
+<tr>
+<td align="left">WEEK</td>
+<td align="left">WEEK</td>
+</tr>
+<tr>
+<td align="left">DAY</td>
+<td align="left">DAY</td>
+</tr>
+<tr>
+<td align="left">DAY TO HOUR</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">DAY TO MINUTE</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">DAY TO SECOND</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">HOUR</td>
+<td align="left">HOUR</td>
+</tr>
+<tr>
+<td align="left">HOUR TO MINUTE</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">HOUR TO SECOND</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">MINUTE</td>
+<td align="left">MINUTE</td>
+</tr>
+<tr>
+<td align="left">MINUTE TO SECOND</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">SECOND</td>
+<td align="left">SECOND</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left">MILLISECOND</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left">MICROSECOND</td>
+</tr>
+<tr>
+<td align="left">DOY(仅适用SQL)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">DOW(仅适用SQL)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left">SQL_TSI_YEAR(仅适用SQL)</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left">SQL_TSI_QUARTER(仅适用SQL)</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left">SQL_TSI_MONTH(仅适用SQL)</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left">SQL_TSI_WEEK(仅适用SQL)</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left">SQL_TSI_DAY(仅适用SQL)</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left">SQL_TSI_HOUR(仅适用SQL)</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left">SQL_TSI_MINUTE(仅适用SQL)</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left">SQL_TSI_SECOND(仅适用SQL)</td>
+</tr>
+</tbody></table>
+<h3 id="列函数"><a href="#列函数" class="headerlink" title="列函数"></a>列函数</h3><p>列函数用于选择或丢弃表的列.<br>列函数仅在 Table API 中使用.</p>
+<table>
+<thead>
+<tr>
+<th align="left">语法</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">withColumns(...)</td>
+<td align="left">选择指定的列</td>
+</tr>
+<tr>
+<td align="left">withoutColumns(...)</td>
+<td align="left">选择除指定列以外的列</td>
+</tr>
+</tbody></table>
+<p>详细语法如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">列函数:</span><br><span class="line">withColumns(columnExprs)</span><br><span class="line">withoutColumns(columnExprs)</span><br><span class="line"></span><br><span class="line">多列表达式:</span><br><span class="line">columnExpr [, columnExpr]*</span><br><span class="line"></span><br><span class="line">单列表达式:</span><br><span class="line">columnRef | columnIndex to columnIndex | columnName to columnName</span><br><span class="line"></span><br><span class="line">列引用:</span><br><span class="line">columnName(The field name that exists in the table) | columnIndex(a positive integer starting from 1)</span><br></pre></td></tr></table></figure>
+
+<p>列函数的用法如下表所示(假设我们有一个包含 5 列的表:(a: Int, b: Long, c: String, d:String, e: String)):</p>
+<img src="/images/flgl61.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>列函数可用于所有需要列字段的地方,例如 select/groupBy/orderBy/UDFs 等函数,例如:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">table</span><br><span class="line">    .groupBy(withColumns(range(1, 3)))</span><br><span class="line">    .select(withColumns(range(&quot;a&quot;, &quot;b&quot;)), myUDAgg(myUDF(withColumns(range(5, 20)))));</span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/flink/" rel="tag"># flink</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/22/flink%20sql/" rel="prev" title="flink sql">
+                  <i class="fa fa-chevron-left"></i> flink sql
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/22/flink%20sql-queries%E6%9F%A5%E8%AF%A2/" rel="next" title="flink sql-queries查询">
+                  flink sql-queries查询 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

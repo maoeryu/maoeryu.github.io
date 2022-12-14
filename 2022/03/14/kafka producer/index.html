@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="producer首先使用一个线程(用户主线程,也就是用户启动producer的线程)将待发送的消息封装进一个ProducerRecord类实例,然后将其序列化之后发送给partitioner,再由后者确定了目标分区后一同发送到位于producer程序中的一块内存缓冲区中.而producer的另一个工作线程(I&#x2F;O发送线程,也称Sender线程)则负责实时地从该缓冲区中提取出准备就绪的消息封装进一个">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kafka producer">
+<meta property="og:url" content="https://maoeryu.github.io/2022/03/14/kafka%20producer/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="producer首先使用一个线程(用户主线程,也就是用户启动producer的线程)将待发送的消息封装进一个ProducerRecord类实例,然后将其序列化之后发送给partitioner,再由后者确定了目标分区后一同发送到位于producer程序中的一块内存缓冲区中.而producer的另一个工作线程(I&#x2F;O发送线程,也称Sender线程)则负责实时地从该缓冲区中提取出准备就绪的消息封装进一个">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_producer1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_producer4.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_producer5.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_producer6.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_producer7.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_producer2.png">
+<meta property="article:published_time" content="2022-03-13T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-08-25T03:20:56.712Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="kafka">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/kafka_producer1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/03/14/kafka%20producer/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>kafka producer | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">设计原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ProducerRecord"><span class="nav-number">1.1.</span> <span class="nav-text">ProducerRecord</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RecordMetadata"><span class="nav-number">1.2.</span> <span class="nav-text">RecordMetadata</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="nav-number">1.3.</span> <span class="nav-text">工作原理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%8F%91"><span class="nav-number">2.</span> <span class="nav-text">开发</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E4%BE%8B%E7%A8%8B%E5%BA%8F"><span class="nav-number">2.1.</span> <span class="nav-text">实例程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E5%8F%91%E9%80%81"><span class="nav-number">2.2.</span> <span class="nav-text">同步发送</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E5%8F%91%E9%80%81"><span class="nav-number">2.3.</span> <span class="nav-text">异步发送</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8"><span class="nav-number">2.4.</span> <span class="nav-text">异常</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B3%E9%97%ADproducer"><span class="nav-number">2.5.</span> <span class="nav-text">关闭producer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0"><span class="nav-number">2.6.</span> <span class="nav-text">配置参数</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#acks"><span class="nav-number">2.6.1.</span> <span class="nav-text">acks</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#buffer-memory"><span class="nav-number">2.6.2.</span> <span class="nav-text">buffer.memory</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#compression-type"><span class="nav-number">2.6.3.</span> <span class="nav-text">compression.type</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#retries"><span class="nav-number">2.6.4.</span> <span class="nav-text">retries</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#client-id"><span class="nav-number">2.6.5.</span> <span class="nav-text">client.id</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#max-in-flight-requests-per-connection"><span class="nav-number">2.6.6.</span> <span class="nav-text">max.in.flight.requests.per.connection</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#retry-backoff-ms"><span class="nav-number">2.6.7.</span> <span class="nav-text">retry.backoff.ms</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#batch-size"><span class="nav-number">2.6.8.</span> <span class="nav-text">batch.size</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#linger-ms"><span class="nav-number">2.6.9.</span> <span class="nav-text">linger.ms</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#max-request-size"><span class="nav-number">2.6.10.</span> <span class="nav-text">max.request.size</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#request-timeout-ms"><span class="nav-number">2.6.11.</span> <span class="nav-text">request.timeout.ms</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#timeout-ms-metadata-fetch-timeout-ms"><span class="nav-number">2.6.12.</span> <span class="nav-text">timeout.ms&#x2F;metadata.fetch.timeout.ms</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#max-block-ms"><span class="nav-number">2.6.13.</span> <span class="nav-text">max.block.ms</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#receive-buffer-bytes-send-buffer-bytes"><span class="nav-number">2.6.14.</span> <span class="nav-text">receive.buffer.bytes&#x2F;send.buffer.bytes</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E5%88%86%E5%8C%BA%E6%9C%BA%E5%88%B6"><span class="nav-number">3.</span> <span class="nav-text">消息分区机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E5%8C%BA%E7%AD%96%E7%95%A5"><span class="nav-number">3.1.</span> <span class="nav-text">分区策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%88%86%E5%8C%BA"><span class="nav-number">3.2.</span> <span class="nav-text">自定义分区</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E8%87%AA%E5%AE%9A%E4%B9%89%E5%88%86%E5%8C%BA"><span class="nav-number">3.3.</span> <span class="nav-text">使用自定义分区</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%8F%E5%88%97%E5%8C%96"><span class="nav-number">4.</span> <span class="nav-text">序列化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%BB%98%E8%AE%A4%E5%BA%8F%E5%88%97%E5%8C%96%E5%99%A8"><span class="nav-number">4.1.</span> <span class="nav-text">默认序列化器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%BA%8F%E5%88%97%E5%8C%96"><span class="nav-number">4.2.</span> <span class="nav-text">自定义序列化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8B%A6%E6%88%AA%E5%99%A8"><span class="nav-number">5.</span> <span class="nav-text">拦截器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8B%A6%E6%88%AA%E5%99%A8"><span class="nav-number">5.1.</span> <span class="nav-text">自定义拦截器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%87%E5%AE%9A%E6%8B%A6%E6%88%AA%E5%99%A8"><span class="nav-number">5.2.</span> <span class="nav-text">指定拦截器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A0%E6%B6%88%E6%81%AF%E4%B8%A2%E5%A4%B1%E9%85%8D%E7%BD%AE"><span class="nav-number">6.</span> <span class="nav-text">无消息丢失配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#block-on-buffer-full"><span class="nav-number">6.1.</span> <span class="nav-text">block.on.buffer.full</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#acks-all"><span class="nav-number">6.2.</span> <span class="nav-text">acks &#x3D; all</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#retries-1"><span class="nav-number">6.3.</span> <span class="nav-text">retries</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#max-in-flight-requests-per-connection-1"><span class="nav-number">6.4.</span> <span class="nav-text">max.in.flight.requests.per.connection</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E5%B8%A6%E6%9C%89%E5%9B%9E%E8%B0%83%E6%9C%BA%E5%88%B6%E7%9A%84send"><span class="nav-number">6.5.</span> <span class="nav-text">使用带有回调机制的send</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Callback%E9%80%BB%E8%BE%91%E4%B8%AD%E6%98%BE%E5%BC%8F%E7%AB%8B%E5%8D%B3%E5%85%B3%E9%97%ADproducer"><span class="nav-number">6.6.</span> <span class="nav-text">Callback逻辑中显式立即关闭producer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#unclean-leader-election-enable"><span class="nav-number">6.7.</span> <span class="nav-text">unclean.leader.election.enable</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#replication-factor-%EF%BC%9E-3"><span class="nav-number">6.8.</span> <span class="nav-text">replication.factor ＞&#x3D; 3</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#min-insync-replicas-%EF%BC%9E-1"><span class="nav-number">6.9.</span> <span class="nav-text">min.insync.replicas ＞ 1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A1%AE%E4%BF%9Dreplication-factor-%EF%BC%9E-min-insync-replicas"><span class="nav-number">6.10.</span> <span class="nav-text">确保replication.factor ＞ min.insync.replicas</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E5%8E%8B%E7%BC%A9"><span class="nav-number">7.</span> <span class="nav-text">消息压缩</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%A4%84%E7%90%86"><span class="nav-number">8.</span> <span class="nav-text">多线程处理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%8D%95KafkaProducer%E5%AE%9E%E4%BE%8B"><span class="nav-number">8.1.</span> <span class="nav-text">多线程单KafkaProducer实例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%A4%9AKafkaProducer%E5%AE%9E%E4%BE%8B"><span class="nav-number">8.2.</span> <span class="nav-text">多线程多KafkaProducer实例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B2%BE%E7%A1%AE%E8%AF%AD%E4%B9%89"><span class="nav-number">9.</span> <span class="nav-text">精确语义</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%82%E7%AD%89%E6%80%A7"><span class="nav-number">9.1.</span> <span class="nav-text">幂等性</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/03/14/kafka%20producer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          kafka producer
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-03-14 00:00:00" itemprop="dateCreated datePublished" datetime="2022-03-14T00:00:00+08:00">2022-03-14</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-08-25 11:20:56" itemprop="dateModified" datetime="2022-08-25T11:20:56+08:00">2022-08-25</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>producer首先使用一个线程(用户主线程,也就是用户启动producer的线程)将待发送的消息封装进一个ProducerRecord类实例,然后将其序列化之后发送给partitioner,再由后者确定了目标分区后一同发送到位于producer程序中的一块内存缓冲区中.<br>而producer的另一个工作线程(I/O发送线程,也称Sender线程)则负责实时地从该缓冲区中提取出准备就绪的消息封装进一个批次(batch),统一发送给对应的broker.</p>
+<img src="/images/kafka_producer1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<span id="more"></span>
+
+<h2 id="设计原理"><a href="#设计原理" class="headerlink" title="设计原理"></a>设计原理</h2><h3 id="ProducerRecord"><a href="#ProducerRecord" class="headerlink" title="ProducerRecord"></a>ProducerRecord</h3><p>一个ProducerRecord封装了一条待发送的消息,由5个字段构成,分别如下,</p>
+<p><code>topic</code>:该消息所属的topic.<br><code>partition</code>:该消息所属的分区.<br><code>key</code>:消息key.<br><code>value</code>:消息体.<br><code>timestamp</code>:消息时间戳.</p>
+<p>ProducerRecord允许用户在创建消息对象的时候直接指定要发送的分区,这样producer后续发送该消息时可以直接发送到指定分区,而不用先通过Partitioner计算目标分区.<br>另外,还可以直接指定消息的时间戳,但一定要慎重使用这个功能,因为它有可能会令时间戳索引机制失效.</p>
+<h3 id="RecordMetadata"><a href="#RecordMetadata" class="headerlink" title="RecordMetadata"></a>RecordMetadata</h3><p>Kafka服务器端返回给客户端的消息的元数据信息,包含如下内容,</p>
+<p><code>offset</code>:消息在分区日志中的位移信息.<br><code>timestamp</code>:消息时间戳.<br><code>topic/partition</code>:所属topic的分区.<br><code>checksum</code>:消息CRC32码.<br><code>serializedKeySize</code>:序列化后的消息key字节数.<br><code>serializedValueSize</code>:序列化后的消息value字节数.</p>
+<h3 id="工作原理"><a href="#工作原理" class="headerlink" title="工作原理"></a>工作原理</h3><p>用户首先构建待发送的消息对象ProducerRecord,然后调用KafkaProducer#send方法进行发送.<br>KafkaProducer接收到消息后首先对其进行序列化,然后结合本地缓存的元数据信息一起发送给partitioner去确定目标分区,最后追加写入内存中的消息缓冲池(accumulator).<br>此时KafkaProducer#send方法成功返回.</p>
+<p>KafkaProducer中还有一个专门的Sender I/O线程负责将缓冲池中的消息分批次发送给对应的broker,完成真正的消息发送逻辑.</p>
+<blockquote>
+<p>调用send时kafka内部发生了什么?</p>
+</blockquote>
+<p>1.序列化+计算目标分区<br>为待发送消息进行序列化并计算目标分区.</p>
+<img src="/images/kafka_producer4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>一条所属topic是&quot;test&quot;,消息体是&quot;message&quot;的消息被序列化之后结合KafkaProducer缓存的元数据(比如该topic分区数信息等)共同传给后面的 Partitioner实现类进行目标分区的计算.</p>
+<p>2.追加写入消息缓冲区(accumulator)<br>producer创建时会创建一个默认32MB(由<code>buffer.memory</code>参数指定)的accumulator缓冲区,专门保存待发送的消息.<br>除了<code>linger.ms/batch.size</code>等参数之外,该数据结构中还包含了一个特别重要的集合信息:消息批次信息(batches).<br>该集合本质上是一个 HashMap,里面分别保存了每个topic分区下的batch队列,即前面说的批次是按照topic分区进行分组的.<br>这样发往不同分区的消息保存在对应分区下的batch队列中.</p>
+<p>举一个简单的例子,假设消息M1/M2被发送到test的0分区但属于不同的batch,M3被发送到test的1分区,那么batches中包含的信息就是<code>&#123;＂test-0＂-&gt;[batch1,batch2],＂test-1＂-&gt;[batch3]&#125;</code>.</p>
+<p>单个topic分区下的batch队列中保存的是若干个消息批次,每个batch中最重要的3个组件如下,</p>
+<p><code>compressor</code>:负责执行追加写入操作.<br><code>batch缓冲区</code>:由batch.size参数控制,消息被真正追加写入的地方.<br><code>thunks</code>:保存消息回调逻辑的集合.</p>
+<p>这一步的目的就是将待发送的消息写入消息缓冲池中,之后用户主线程所做的事情就是等待Sender线程发送消息并执行返回结果.</p>
+<img src="/images/kafka_producer5.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>3.Sender线程预处理及消息发送<br>不断轮询缓冲区寻找已做好发送准备的分区.<br>将轮询获得的各个batch按照目标分区所在的leader broker进行分组.<br>将分组后的batch通过底层创建的Socket连接发送给各个broker.<br>等待服务器端发送response回来.<br>Sender线程处理response.</p>
+<img src="/images/kafka_producer6.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>Sender线程会发送 PRODUCE请求给对应的 broker,broker处理完毕之后发送对应的PRODUCE response.<br>一旦Sender线程接收到response,将依次(按照消息发送顺序)调用batch中的回调方法.</p>
+<img src="/images/kafka_producer7.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="开发"><a href="#开发" class="headerlink" title="开发"></a>开发</h2><h3 id="实例程序"><a href="#实例程序" class="headerlink" title="实例程序"></a>实例程序</h3><p>构造待发送的消息对象ProducerRecord,指定消息要被发送到的topic/分区以及对应的key和value.<br>分区和key信息可以不用指定,由Kafka自行确定目标分区.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">Properties props = <span class="keyword">new</span> Properties();</span><br><span class="line">props.put(<span class="string">&quot;bootstrap.servers&quot;</span>, <span class="string">&quot;localhost:9092&quot;</span>);</span><br><span class="line">props.put(<span class="string">&quot;key.serializer&quot;</span>, <span class="string">&quot;org.apache.kafka.common.serialization.StringSerializer&quot;</span>);</span><br><span class="line">props.put(<span class="string">&quot;value.serializer&quot;</span>, <span class="string">&quot;org.apache.kafka.common.serialization.StringSerializer&quot;</span>);</span><br><span class="line">props.put(<span class="string">&quot;acks&quot;</span>, <span class="string">&quot;-1&quot;</span>);</span><br><span class="line">props.put(<span class="string">&quot;retries&quot;</span>, <span class="number">3</span>);</span><br><span class="line">props.put(<span class="string">&quot;batch.size&quot;</span>, <span class="number">323840</span>);</span><br><span class="line">props.put(<span class="string">&quot;linger.ms&quot;</span>, <span class="number">10</span>);</span><br><span class="line">props.put(<span class="string">&quot;buffer.memory&quot;</span>, <span class="number">33554432</span>);</span><br><span class="line">props.put(<span class="string">&quot;max.block.ms&quot;</span>, <span class="number">3000</span>);</span><br><span class="line"></span><br><span class="line">String topic = <span class="string">&quot;xx1&quot;</span>;</span><br><span class="line">Producer&lt;String, String&gt; producer = <span class="keyword">new</span> KafkaProducer&lt;&gt;(props);</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">  producer.send(<span class="keyword">new</span> ProducerRecord&lt;&gt;(topic, i + <span class="string">&quot;&quot;</span>, i + <span class="string">&quot;&quot;</span>));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">producer.close();</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>参数配置</p>
+</blockquote>
+<p><code>bootstrap.servers</code><br>如果Kafka集群中机器数很多,那么只需要指定部分broker即可,不需要列出所有的机器.<br>因为不管指定几台机器,producer都会通过该参数找到并发现集群中所有的broker.<br>另外,如果broker端没有显式配置listeners使用IP地址,那么最好将该参数也配置成主机名,而不是IP地址.</p>
+<p><code>key.serializer</code><br>这个参数指定的是实现了<code>org.apache.kafka.common.serialization.Serializer</code>接口的类的全限定名称.<br>可以自定义序列化器,只要实现Serializer接口即可.</p>
+<p><code>value.serializer</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">StringSerializer keySerializer = <span class="keyword">new</span> StringSerializer();</span><br><span class="line">StringSerializer valueSerializer = <span class="keyword">new</span> StringSerializer();</span><br><span class="line">Producer&lt;String, String&gt; producer = <span class="keyword">new</span> KafkaProducer&lt;&gt;(props, keySerializer, valueSerializer);</span><br></pre></td></tr></table></figure>
+
+<h3 id="同步发送"><a href="#同步发送" class="headerlink" title="同步发送"></a>同步发送</h3><h3 id="异步发送"><a href="#异步发送" class="headerlink" title="异步发送"></a>异步发送</h3><p>该方法的两个输入参数metadata和exception不会同时非空,也就是说至少有一个是null.<br>当消息发送成功时,exception是null.<br>反之,若消息发送失败,metadata就是null.<br>因此在写producer程序时,最好写if语句进行判断.</p>
+<p>另外,上面的Callback实际上是一个Java接口,用户可以创建自定义的Callback实现类来处理消息发送后的逻辑,只要该具体类实现<code>org.apache.kafka.clients.producer.Callback</code>接口即可.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">producer.send(<span class="keyword">new</span> ProducerRecord&lt;&gt;(topic, i + <span class="string">&quot;&quot;</span>, i + <span class="string">&quot;&quot;</span>), <span class="keyword">new</span> Callback() &#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onCompletion</span><span class="params">(RecordMetadata recordMetadata, Exception e)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (e == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="comment">//消息发送成功</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">//执行错误处理逻辑</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<h3 id="异常"><a href="#异常" class="headerlink" title="异常"></a>异常</h3><p>不管是同步发送还是异步发送,发送都有可能失败,导致返回异常错误,当前Kafka的错误类型包含了两类,可重试异常和不可重试异<br>常.</p>
+<blockquote>
+<p>常见的可重试异常</p>
+</blockquote>
+<p><code>LeaderNotAvailableException</code><br>分区的leader副本不可用,这通常出现在leader换届选举期间,因此通常是瞬时的异常,重试之后可以自行恢复.</p>
+<p><code>NotControllerException</code><br>controller当前不可用,这通常表明controller在经历新一轮的选举,这也是可以通过重试机制自行恢复的.</p>
+<p><code>NetworkException</code><br>网络瞬时故障导致的异常,可重试.<br>对于这种可重试的异常,如果在producer程序中配置了重试次数,那么只要在规定的重试次数内自行恢复了,便不会出现在onCompletion的exception中.不过若超过了重试次数仍没有成功,则仍然会被封装进exception中.此时就需要producer程序自行处理这种异常.</p>
+<p>所有可重试异常都继承自<code>org.apache.kafka.common.errors.RetriableException</code>抽象类.<br>理论上讲所有未继承自RetriableException类的其他异常都属于不可重试异常,这类异常通常都表明了一些非常严重或Kafka无法处理的问题,与producer相关的如下,</p>
+<p><code>RecordTooLargeException</code><br>发送的消息尺寸过大,超过了规定的大小上限.显然这种异常无论如何重试都是无法成功的.</p>
+<p><code>SerializationException</code><br>序列化失败异常,这也是无法恢复的.</p>
+<p><code>KafkaException</code><br>其他类型的异常.<br>所有这些不可重试异常一旦被捕获都会被封装进Future的计算结果并返回给producer程序,用户需要自行处理这些异常.<br>由于不可重试异常和可重试异常在producer程序端可能有不同的处理逻辑,因此可以使用下面的代码进行区分.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">producer.send(<span class="keyword">new</span> ProducerRecord&lt;&gt;(topic, i + <span class="string">&quot;&quot;</span>, i + <span class="string">&quot;&quot;</span>), <span class="keyword">new</span> Callback() &#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onCompletion</span><span class="params">(RecordMetadata recordMetadata, Exception e)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (e == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="comment">//消息发送成功</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (e <span class="keyword">instanceof</span> RetriableException) &#123;</span><br><span class="line">        <span class="comment">//处理可重试瞬时异常</span></span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">//处理不可重试异常</span></span><br><span class="line">      &#125; </span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<h3 id="关闭producer"><a href="#关闭producer" class="headerlink" title="关闭producer"></a>关闭producer</h3><p>如果是调用普通的无参数close方法,producer会被允许先处理完之前的发送请求后再关闭,即所谓的&quot;优雅&quot;关闭退出(gracefulshutdown).<br>同时,KafkaProducer还提供了一个带超时参数的close方法close(timeout).<br>如果调用此方法,producer会等待timeout时间来完成所有处理中的请求,然后强行退出.<br>这就是说,若timeout超时,则producer会强制结束,并立即丢弃所有未发送以及未应答的发送请求.</p>
+<h3 id="配置参数"><a href="#配置参数" class="headerlink" title="配置参数"></a>配置参数</h3><h4 id="acks"><a href="#acks" class="headerlink" title="acks"></a><code>acks</code></h4><p>参数类型为字符串,否则程序报错.</p>
+<p>设置成0表示producer完全不理睬leader broker端的处理结果.此时,producer发送消息后立即开启下一条消息的发送.</p>
+<p>acks = all或者-1,表示当发送消息时,leader broker不仅会将消息写入本地日志,同时还会等待ISR中所有其他副本都成功写入它们各自的本地日志后,才发送响应结果给producer.</p>
+<p>acks = 1,是0和all折中的方案,也是默认的参数值.<br>producer发送消息后leader broker仅将该消息写入本地日志,然后便发送响应结果给producer,而无须等待ISR中其他副本写入该消息.</p>
+<h4 id="buffer-memory"><a href="#buffer-memory" class="headerlink" title="buffer.memory"></a><code>buffer.memory</code></h4><p>指定了producer端用于缓存消息的缓冲区大小,单位是字节,默认值是 33554432,即32MB.<br>如前所述,由于采用了异步发送消息的设计架构,producer启动时会首先创建一块内存缓冲区用于保存待发送的消息,然后由另一个专属线程负责从缓冲区中读取消息执行真正的发送,这部分内存空间的大小即是由其指定的.<br>若producer向缓冲区写消息的速度超过了专属I/O线程发送消息的速度,那么必然造成该缓冲区空间的不断增大.<br>此时producer会停止手头的工作等待I/O线程追上来,若一段时间之后I/O线程还是无法追上producer的进度,那么producer就会抛出异常并期望用户介入进行处理.</p>
+<h4 id="compression-type"><a href="#compression-type" class="headerlink" title="compression.type"></a><code>compression.type</code></h4><p>设置producer端是否压缩消息,默认值是none,即不压缩消息.<br>目前Kafka支持3种压缩算法:snappy/gzip/lz4.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">props.put(<span class="string">&quot;compression.type&quot;</span>, <span class="string">&quot;lz4&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="retries"><a href="#retries" class="headerlink" title="retries"></a><code>retries</code></h4><p>进行重试的次数,默认值是0,表示不进行重试.</p>
+<p>重试可能造成消息的重复发送.<br>重试可能造成消息的乱序,当前producer会将多个消息发送请求(默认是5个)缓存在内存中,如果由于某种原因发生了消息发送的重试,就可能造成消息流的乱序.<br>为了避免乱序发生,producer提供了<code>max.in.flight.requets.per.connection</code>参数.<br>将此参数设置成1,producer将确保某一时刻只能发送一个请求.<br>另外,producer两次重试之间会停顿一段时间,以防止频繁地重试对系统带来冲击.这段时间是可以配置的,由参数<code>retry.backoff.ms</code>指<br>定,默认是100毫秒.</p>
+<h4 id="client-id"><a href="#client-id" class="headerlink" title="client.id"></a><code>client.id</code></h4><p>该参数可以是任意的字符串,服务器会用它来识别消息的来源,还可以用在日志和配额指标里.</p>
+<h4 id="max-in-flight-requests-per-connection"><a href="#max-in-flight-requests-per-connection" class="headerlink" title="max.in.flight.requests.per.connection"></a><code>max.in.flight.requests.per.connection</code></h4><p>该参数指定了生产者在收到服务器响应之前可以发送多少个消息,默认为5.</p>
+<p>默认情况下,如果第一个批次消息写入失败,而第二个批次写入成功,Broker会重试写入第一个批次.<br>如果此时第一个批次也写入成功,那么两个批次的顺序就反过来了.</p>
+<p>它的值越高,就会占用越多的内存,不过也会提升吞吐量.<br>把它设为1可以保证消息是按照发送的顺序写入服务器的,即使发生了重试.<br>该参数配置为1,则一次只能发送1个请求,如果失败继续重试(retries参数),直到成功,才会进行下一个请求的发送,这样就保证了消息的有序性.</p>
+<blockquote>
+<p>顺序保证</p>
+<p>Kafka可以保证同一个分区里的消息是有序的.<br>也就是说,如果生产者按照一定的顺序发送消息,broker就会按照这个顺序把它们写入分区,消费者也会按照同样的顺序读取它们.<br>在某些情况下,顺序是非常重要的.<br>例如,往一个账户存入100元再取出来,这个与先取钱再存钱是截然不同的.<br>不过,有些场景对顺序不是很敏感.</p>
+</blockquote>
+<p>如果把retries设为非零整数,同时把<code>max.in.flight.requests.per.connection</code>设为比1大的数,那么,如果第一个批次消息写入失败,而第二个批次写入成功,broker会重试写入第一个批次.<br>如果此时第一个批次也写入成功,那么两个批次的顺序就反过来了.</p>
+<p>一般来说,如果某些场景要求消息是有序的,那么消息是否写入成功也是很关键的,所以不建议把retries设为0.<br>可以把max.in.flight.requests.per.connection设为1,这样在生产者尝试发送第一批消息时,就不会有其他的消息发送给broker.</p>
+<p>不过这样会严重影响生产者的吞吐量,所以只有在对消息的顺序有严格要求的情况下才能这么做.</p>
+<p>kafka可以通过设置做到分区有序,如果要全局有序,则可以设置一个分区,实现变相的全局有序.</p>
+<h4 id="retry-backoff-ms"><a href="#retry-backoff-ms" class="headerlink" title="retry.backoff.ms"></a><code>retry.backoff.ms</code></h4><h4 id="batch-size"><a href="#batch-size" class="headerlink" title="batch.size"></a><code>batch.size</code></h4><p>producer会将发往同一分区的多条消息封装进一个batch中.<br>当batch满了的时候d,producer会发送batch中的所有消息.<br>不过d,producer并不总是等待batch满了才发送消息.</p>
+<p>默认值是16384,即16KB.</p>
+<h4 id="linger-ms"><a href="#linger-ms" class="headerlink" title="linger.ms"></a><code>linger.ms</code></h4><p>控制消息发送延时行为的,默认值是0,表示消息需要被立即发送,无须关心batch是否已被填满.</p>
+<h4 id="max-request-size"><a href="#max-request-size" class="headerlink" title="max.request.size"></a><code>max.request.size</code></h4><p>该参数用于控制生产者发送的请求大小.<br>它可以指能发送的单个消息的最大值,也可以指单个请求里所有消息总的大小.<br>例如,假设这个值为1MB,那么可以发送的单个最大消息为1MB,或者生产者可以在单个请求里发送一个批次,该批次包含了1000个消息,每个消息大小为1KB.<br>另外,broker对可接收的消息最大值也有自己的限制(message.max.bytes),所以两边的配置最好可以匹配,避免生产者发送的消息被broker拒绝.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">props.put(<span class="string">&quot;max.request.size&quot;</span>, <span class="number">10485760</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="request-timeout-ms"><a href="#request-timeout-ms" class="headerlink" title="request.timeout.ms"></a><code>request.timeout.ms</code></h4><p>当producer发送请求给broker后,broker需要在规定的时间范围内将处理结果返还给producer,默认是30秒.<br>这就是说,如果broker在30秒内都没有给producer发送响应,那么producer就会认为该请求超时了,并在回调函数中显式地抛出TimeoutException异常交由用户处理.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">props.put(<span class="string">&quot;request.timeout.ms&quot;</span>, <span class="number">60000</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="timeout-ms-metadata-fetch-timeout-ms"><a href="#timeout-ms-metadata-fetch-timeout-ms" class="headerlink" title="timeout.ms/metadata.fetch.timeout.ms"></a><code>timeout.ms/metadata.fetch.timeout.ms</code></h4><p><code>metadata.fetch.timeout.ms</code>指定了生产者在获取元数据(比如目标分区的首领是谁)时等待服务器返回响应的时间.<br>如果等待响应超时,那么生产者要么重试发送数据,要么返回一个错误(抛出异常或执行回调).<br><code>timeout.ms</code>指定了broker等待同步副本返回消息确认的时间,与asks的配置相匹配,如果在指定时间内没有收到同步副本的确认,那么broker就会返回一个<br>错误.</p>
+<h4 id="max-block-ms"><a href="#max-block-ms" class="headerlink" title="max.block.ms"></a><code>max.block.ms</code></h4><p>该参数指定了在调用send()方法或使用partitionsFor()方法获取元数据时生产者的阻塞时间.<br>当生产者的发送缓冲区已满,或者没有可用的元数据时,这些方法就会阻塞.<br>在阻塞时间达到max.block.ms时,生产者会抛出超时异常.</p>
+<h4 id="receive-buffer-bytes-send-buffer-bytes"><a href="#receive-buffer-bytes-send-buffer-bytes" class="headerlink" title="receive.buffer.bytes/send.buffer.bytes"></a><code>receive.buffer.bytes/send.buffer.bytes</code></h4><p>这两个参数分别指定了TCPsocket接收和发送数据包的缓冲区大小.<br>如果它们被设为-1,就使用操作系统的默认值.<br>如果生产者或消费者与broker处于不同的数据中心,那么可以适当增大这些值,因为跨数据中心的网络一般都有比较高的延迟和比较低的带宽.</p>
+<h2 id="消息分区机制"><a href="#消息分区机制" class="headerlink" title="消息分区机制"></a>消息分区机制</h2><h3 id="分区策略"><a href="#分区策略" class="headerlink" title="分区策略"></a>分区策略</h3><p>默认partitioner会尽力确保具有相同key的所有消息都会被发送到相同的分区上.<br>若没有为消息指定key,则该partitioner会选择轮询的方式来确保消息在topic的所有分区上均匀分配.</p>
+<p>对于有key的消息而言,partitioner会根据murmur2算法计算消息key的哈希值,然后对总分区数求模得到消息要被发送到的目标分区号.</p>
+<h3 id="自定义分区"><a href="#自定义分区" class="headerlink" title="自定义分区"></a>自定义分区</h3><p>partitioner接口的主要方法是partition方法,该方法接收消息所属的topic/key和value,还有集群的元数据信息,一起来确定目标分区.<br>而close方法是用于关闭partitioner的,主要是为了关闭那些创建partitioner时初始化的系统资源等.</p>
+<p>创建一个类,实现<code>org.apache.kafka.clients.producer.Partitioner</code>接口,主要分区逻辑在Partitioner.partition中实现.<br>在用于构造KafkaProducer的Properties对象中设置partitioner.class参数.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.kafka.clients.producer.Partitioner;</span><br><span class="line"><span class="keyword">import</span> org.apache.kafka.common.Cluster;</span><br><span class="line"><span class="keyword">import</span> org.apache.kafka.common.PartitionInfo;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.List;</span><br><span class="line"><span class="keyword">import</span> java.util.Map;</span><br><span class="line"><span class="keyword">import</span> java.util.Random;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AuditPartitioner</span> <span class="keyword">implements</span> <span class="title">Partitioner</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> Random random;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">partition</span><span class="params">(String topic, Object keyObj, <span class="keyword">byte</span>[] keyBytes, Object value, <span class="keyword">byte</span>[] valueBytes, Cluster cluster)</span> </span>&#123;</span><br><span class="line">    String key = (String) keyObj;</span><br><span class="line">    <span class="comment">//从集群元数据中把属于该topic的所有分区信息都读取出来以供分区策略使用</span></span><br><span class="line">    List&lt;PartitionInfo&gt; partitionInfos = cluster.availablePartitionsForTopic(topic);</span><br><span class="line">    <span class="keyword">int</span> partitionCount = partitionInfos.size();</span><br><span class="line">    <span class="keyword">int</span> auditPartition = partitionCount - <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">return</span> key == <span class="keyword">null</span> || !key.contains(<span class="string">&quot;audit&quot;</span>) ? random.nextInt(auditPartition) : auditPartition;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">close</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">//实现资源清理工作</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(Map&lt;String, ?&gt; map)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//实现必要的资源初始化工作</span></span><br><span class="line">    random = <span class="keyword">new</span> Random();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="使用自定义分区"><a href="#使用自定义分区" class="headerlink" title="使用自定义分区"></a>使用自定义分区</h3><p>给出完整的类路径,不能只是单纯的类名.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">props.put(<span class="string">&quot;partitioner.class&quot;</span>, <span class="string">&quot;com.dftt.echo.AuditPartitioner&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<h2 id="序列化"><a href="#序列化" class="headerlink" title="序列化"></a>序列化</h2><p>Kafka支持用户给broker发送各种类型的消息,它可以是一个字符串/整数/数组,或是其他任意的对象类型.<br>序列化器(serializer)负责在producer发送前将消息转换成字节数组.<br>而与之相反,解序列化器(deserializer)则用于将consumer收到的字节数组转换成相应的对象.</p>
+<h3 id="默认序列化器"><a href="#默认序列化器" class="headerlink" title="默认序列化器"></a>默认序列化器</h3><p>ByteArraySerializer:本质上什么都不用做,因为已经是字节数组了.<br>ByteBufferSerializer:序列化ByteBuffer.<br>BytesSerializer:序列化Kafka自定义的Bytes类.<br>DoubleSerializer:序列化Double类型.<br>IntegerSerializer:序列化Integer类型.<br>LongSerializer:序列化Long类型.<br>StringSerializer:序列化String类型.</p>
+<p>可以为消息的key和value指定不同类型的serializer,只要与解序列类型分别保持一致就可以.</p>
+<h3 id="自定义序列化"><a href="#自定义序列化" class="headerlink" title="自定义序列化"></a>自定义序列化</h3><p>定义数据对象格式.<br>创建自定义序列化类,实现<code>org.apache.kafka.common.serialization.Serializer</code>接口,在serializer方法中实现序列化逻辑.<br>在用于构造KafkaProducer的Properties对象中设置<code>key.serializer</code>或<code>value.serializer</code>,取决于是为消息key还是value做自定义序列化.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">User</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> String firstName;</span><br><span class="line">  <span class="keyword">private</span> String lastName;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">int</span> age;</span><br><span class="line">  <span class="keyword">private</span> String address;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">User</span><span class="params">(String firstName, String lastName, <span class="keyword">int</span> age, String address)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.firstName = firstName;</span><br><span class="line">    <span class="keyword">this</span>.lastName = lastName;</span><br><span class="line">    <span class="keyword">this</span>.age = age;</span><br><span class="line">    <span class="keyword">this</span>.address = address;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> firstName + <span class="string">&quot;\t&quot;</span> + lastName + <span class="string">&quot;\t&quot;</span> + age + <span class="string">&quot;\t&quot;</span> + address;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.kafka.common.serialization.Serializer;</span><br><span class="line"><span class="keyword">import</span> org.codehaus.jackson.map.ObjectMapper;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.nio.charset.StandardCharsets;</span><br><span class="line"><span class="keyword">import</span> java.util.Map;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserSerializer</span> <span class="keyword">implements</span> <span class="title">Serializer</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> ObjectMapper object;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(Map map, <span class="keyword">boolean</span> b)</span> </span>&#123;</span><br><span class="line">    object = <span class="keyword">new</span> ObjectMapper();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">byte</span>[] serialize(String topic, Object data) &#123;</span><br><span class="line">    <span class="keyword">byte</span>[] ret = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      ret = object.writeValueAsString(data).getBytes(StandardCharsets.UTF_8);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">      e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">close</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>指定serializer,</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">props.put(<span class="string">&quot;key.serializer&quot;</span>, <span class="string">&quot;org.apache.kafka.common.serialization.StringSerializer&quot;</span>);</span><br><span class="line">props.put(<span class="string">&quot;value.serializer&quot;</span>, <span class="string">&quot;com.dftt.seri.UserSerializer&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Producer&lt;String, User&gt; producer = <span class="keyword">new</span> KafkaProducer&lt;&gt;(props);</span><br><span class="line">User user = <span class="keyword">new</span> User(<span class="string">&quot;aaa&quot;</span>, <span class="string">&quot;bbb&quot;</span>, <span class="number">22</span>, <span class="string">&quot;xxx&quot;</span>);</span><br><span class="line">ProducerRecord&lt;String, User&gt; record = <span class="keyword">new</span> ProducerRecord&lt;&gt;(topic, user);</span><br><span class="line">producer.send(record).get();</span><br></pre></td></tr></table></figure>
+
+<h2 id="拦截器"><a href="#拦截器" class="headerlink" title="拦截器"></a>拦截器</h2><p>interceptor使得用户在消息发送前以及producer回调逻辑前有机会对消息做一些定制化需求,比如修改消息等.<br>同时,producer允许用户指定多个interceptor按序作用于同一条消息从而形成一个拦截链(interceptor chain).</p>
+<p>intercetpor的实现接口是<code>org.apache.kafka.clients.producer.ProducerInterceptor</code>,其定义的方法如下,</p>
+<p><code>onSend(ProducerRecord)</code><br>该方法封装进KafkaProducer.send方法中,即它运行在用户主线程中.<br>producer确保在消息被序列化以计算分区前调用该方法.<br>用户可以在该方法中对消息做任何操作,但最好保证不要修改消息所属的topic和分区,否则会影响目标分区的计算.</p>
+<p><code>onAcknowledgement(RecordMetadata,Exception)</code><br>该方法会在消息被应答之前或消息发送失败时调用,并且通常都是在producer回调逻辑触发之前.<br>onAcknowledgement运行在producer的I/O线程中,因此不要在该方法中放入很&quot;重&quot;的逻辑,否则会拖慢producer的消息发送效率.</p>
+<p><code>close</code><br>关闭interceptor,主要用于执行一些资源清理工作.</p>
+<p>如前所述,interceptor可能运行在多个线程中,因此在具体实现时用户需要自行确保线程安全.<br>另外,若指定了多个interceptor,则producer将按照指定顺序调用它们,同时把每个interceptor中捕获的异常记录到错误日志中而不是向上传递.</p>
+<h3 id="自定义拦截器"><a href="#自定义拦截器" class="headerlink" title="自定义拦截器"></a>自定义拦截器</h3><p>在onSend方法中会创建一个新的record,把时间戳写入消息体的最前部.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.kafka.clients.producer.ProducerInterceptor;</span><br><span class="line"><span class="keyword">import</span> org.apache.kafka.clients.producer.ProducerRecord;</span><br><span class="line"><span class="keyword">import</span> org.apache.kafka.clients.producer.RecordMetadata;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.Map;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TimeStampPrependerInterceptor</span> <span class="keyword">implements</span> <span class="title">ProducerInterceptor</span>&lt;<span class="title">String</span>, <span class="title">String</span>&gt; </span>&#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> ProducerRecord&lt;String, String&gt; <span class="title">onSend</span><span class="params">(ProducerRecord&lt;String, String&gt; record)</span> </span>&#123;</span><br><span class="line">    String topic = record.topic();</span><br><span class="line">    Integer partition = record.partition();</span><br><span class="line">    Long timestamp = record.timestamp();</span><br><span class="line">    String key = record.key();</span><br><span class="line">    String value = record.value();</span><br><span class="line">    String prefix = System.currentTimeMillis() + <span class="string">&quot;\t&quot;</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> ProducerRecord&lt;&gt;(topic, partition, timestamp, key, prefix + value);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onAcknowledgement</span><span class="params">(RecordMetadata recordMetadata, Exception e)</span> </span>&#123;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">close</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(Map&lt;String, ?&gt; map)</span> </span>&#123;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在消息发送后更新&quot;发送成功消息数&quot;和&quot;发送失败消息数&quot;两个计数器,并在producer关闭时打印这两个计数器.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.kafka.clients.producer.ProducerInterceptor;</span><br><span class="line"><span class="keyword">import</span> org.apache.kafka.clients.producer.ProducerRecord;</span><br><span class="line"><span class="keyword">import</span> org.apache.kafka.clients.producer.RecordMetadata;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.Map;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CountInterceptor</span> <span class="keyword">implements</span> <span class="title">ProducerInterceptor</span>&lt;<span class="title">String</span>, <span class="title">String</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">int</span> errorCounter = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">int</span> successCounter = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> ProducerRecord&lt;String, String&gt; <span class="title">onSend</span><span class="params">(ProducerRecord&lt;String, String&gt; record)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> record;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onAcknowledgement</span><span class="params">(RecordMetadata recordMetadata, Exception e)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (e == <span class="keyword">null</span>) &#123;</span><br><span class="line">      successCounter++;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      errorCounter ++;</span><br><span class="line">    &#125; </span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">close</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">&quot;Successful sent: &quot;</span> + successCounter);</span><br><span class="line">    System.out.println(<span class="string">&quot;Failed sent: &quot;</span> + errorCounter);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(Map&lt;String, ?&gt; map)</span> </span>&#123;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="指定拦截器"><a href="#指定拦截器" class="headerlink" title="指定拦截器"></a>指定拦截器</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">List&lt;String&gt; interceptors = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">interceptors.add(<span class="string">&quot;com.dftt.seri.TimeStampPrependerInterceptor&quot;</span>);</span><br><span class="line">interceptors.add(<span class="string">&quot;com.dftt.seri.CountInterceptor&quot;</span>);</span><br><span class="line">props.put(<span class="string">&quot;interceptor.classes&quot;</span>, interceptors);</span><br></pre></td></tr></table></figure>
+
+<h2 id="无消息丢失配置"><a href="#无消息丢失配置" class="headerlink" title="无消息丢失配置"></a>无消息丢失配置</h2><p>采用异步发送机制,KafkaProducer.send方法仅仅把消息放入缓冲区中,由一个专属I/O线程负责从缓冲区中提取消息并封装进消息 batch中,然后发送出去.<br>显然,这个过程中存在着数据丢失的窗口,若 I/O线程发送之前producer崩溃,则存储缓冲区中的消息全部丢失了.</p>
+<p>依次发送两个消息,由于某些原因(比如瞬时的网络抖动)导致record1未发送成功,同时Kafka又配置了重试机制以及<code>max.in.flight.requests.per.connection</code>大于1(默认值是5),那么producer重试record1成功后,record1在日志中的位置反而位于 record2之后,这样造成了消息的乱序.</p>
+<blockquote>
+<p>解决方法</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">block.on.buffer.full &#x3D; true</span><br><span class="line">acks &#x3D; all or -1</span><br><span class="line">retries &#x3D; Integer.MAX_VALUE</span><br><span class="line">max.in.flight.requests.per.connection &#x3D; 1</span><br><span class="line">使用带回调机制的send发送消息,即KafkaProducer.send(record,callback)</span><br><span class="line">Callback逻辑中显式地立即关闭producer,使用close(0)</span><br><span class="line">unclean.leader.election.enable &#x3D; false</span><br><span class="line">replication.factor &#x3D; 3</span><br><span class="line">min.insync.replicas &#x3D; 2</span><br><span class="line">replication.factor &gt; min.insync.replicas</span><br><span class="line">enable.auto.commit &#x3D; false</span><br></pre></td></tr></table></figure>
+
+<h3 id="block-on-buffer-full"><a href="#block-on-buffer-full" class="headerlink" title="block.on.buffer.full"></a><code>block.on.buffer.full</code></h3><p>已过时,使用<code>max.block.ms</code>参数替代,但这里还是推荐显式地设置它为true,使得内存缓冲区被填满时producer处于阻塞状态并停止接收新的消息而不是抛出异常,否则producer生产速度过快会耗尽缓冲区.</p>
+<h3 id="acks-all"><a href="#acks-all" class="headerlink" title="acks = all"></a><code>acks = all</code></h3><p>必须要等到所有follower都响应了发送消息才能认为提交成功,这是producer端最强程度的持久化保证.</p>
+<h3 id="retries-1"><a href="#retries-1" class="headerlink" title="retries"></a><code>retries</code></h3><p>开启无限重试,用户不必担心producer会重试那些肯定无法恢复的错误,当前producer只会重试那些可恢复的异常情况,所以放心地设置一个比较大的值通常能很好地保证消息不丢失.</p>
+<h3 id="max-in-flight-requests-per-connection-1"><a href="#max-in-flight-requests-per-connection-1" class="headerlink" title="max.in.flight.requests.per.connection"></a><code>max.in.flight.requests.per.connection</code></h3><p>设置该参数为1主要是为了防止topic同分区下的消息乱序问题.<br>这个参数的实际效果其实限制了producer在单个broker连接上能够发送的未响应请求的数量.<br>因此,如果设置成1,则producer在某个broker发送响应之前将无法再给该broker发送PRODUCE请求.</p>
+<h3 id="使用带有回调机制的send"><a href="#使用带有回调机制的send" class="headerlink" title="使用带有回调机制的send"></a>使用带有回调机制的send</h3><p>不要使用KafkaProducer中单参数的send方法,因为该send调用仅仅是把消息发出而不会理会消息发送的结果.<br>如果消息发送失败,该方法不会得到任何通知,故可能造成数据的丢失.<br>实际环境中一定要使用带回调机制的send版本,即KafkaProducer.send(record,callback).</p>
+<h3 id="Callback逻辑中显式立即关闭producer"><a href="#Callback逻辑中显式立即关闭producer" class="headerlink" title="Callback逻辑中显式立即关闭producer"></a>Callback逻辑中显式立即关闭producer</h3><p>在Callback的失败处理逻辑中显式调用KafkaProducer.close(0).<br>这样做的目的是为了处理消息的乱序问题.<br>若不使用close(0),默认情况下producer会被允许将未完成的消息发送出去,这样就有可能造成消息乱序.</p>
+<blockquote>
+<p>broker端配置</p>
+</blockquote>
+<h3 id="unclean-leader-election-enable"><a href="#unclean-leader-election-enable" class="headerlink" title="unclean.leader.election.enable"></a><code>unclean.leader.election.enable</code></h3><p>关闭unclean leader选举,即不允许非ISR中的副本被选举为leader,从而避免broker端因日志水位截断而造成的消息丢失.</p>
+<h3 id="replication-factor-＞-3"><a href="#replication-factor-＞-3" class="headerlink" title="replication.factor ＞= 3"></a><code>replication.factor ＞= 3</code></h3><p>使用多个副本来保存分区的消息.</p>
+<h3 id="min-insync-replicas-＞-1"><a href="#min-insync-replicas-＞-1" class="headerlink" title="min.insync.replicas ＞ 1"></a><code>min.insync.replicas ＞ 1</code></h3><p>用于控制某条消息至少被写入到ISR中的多少个副本才算成功,设置成大于1是为了提升producer端发送语义的持久性.<br>只有在producer端acks被设置成all或-1时,这个参数才有意义.<br>在实际使用时,不要使用默认值.</p>
+<h3 id="确保replication-factor-＞-min-insync-replicas"><a href="#确保replication-factor-＞-min-insync-replicas" class="headerlink" title="确保replication.factor ＞ min.insync.replicas"></a>确保<code>replication.factor ＞ min.insync.replicas</code></h3><p>若两者相等,那么只要有一个副本挂掉,分区就无法正常工作,虽然有很高的持久性但可用性被极大地降低了.<br>推荐配置成<code>replication.factor = min.insyn.replicas + 1</code>.</p>
+<h2 id="消息压缩"><a href="#消息压缩" class="headerlink" title="消息压缩"></a>消息压缩</h2><h2 id="多线程处理"><a href="#多线程处理" class="headerlink" title="多线程处理"></a>多线程处理</h2><h3 id="多线程单KafkaProducer实例"><a href="#多线程单KafkaProducer实例" class="headerlink" title="多线程单KafkaProducer实例"></a>多线程单KafkaProducer实例</h3><p>在全局构造一个KafkaProducer实例,然后在多个线程中共享使用,由于KafkaProducer是线程安全的,所以这种使用方式也是线程安全的.</p>
+<h3 id="多线程多KafkaProducer实例"><a href="#多线程多KafkaProducer实例" class="headerlink" title="多线程多KafkaProducer实例"></a>多线程多KafkaProducer实例</h3><p>可以在每个producer主线程中都构造一个KafkaProducer实例,并且保证此实例在该线程中封闭.</p>
+<img src="/images/kafka_producer2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="精确语义"><a href="#精确语义" class="headerlink" title="精确语义"></a>精确语义</h2><p>Kafka producer默认提供的就是<code>at least once</code>语义.</p>
+<h3 id="幂等性"><a href="#幂等性" class="headerlink" title="幂等性"></a>幂等性</h3><p>若一个操作执行多次的结果与只运行一次的结果是相同的,那么我们称该操作为幂等操作.<br>比如将变量a的值设置成1这个操作就是幂等操作,无论该操作执行多少次,a的值始终是1,与只运行一次该操作的效果是相同的.<br>反之,将当前金额加100这样的操作就不是幂等的,因为该操作依赖于之前的金额,即操作有前置状态.</p>
+<p>0.11.0.0版本引入的幂等性producer表示它的发送操作是幂等的.<br>瞬时的发送错误可能导致producer端出现重试,同一条消息被producer发送多次,但在broker端这条消息只会被写入日志一次.<br>对于单个topic分区而言,这种producer提供的幂等性消除了各种错误导致的重复消息.<br>启用幂等性,设置producer端的新参数<code>enable.idempotence为</code>true.</p>
+<p>幂等性producer的设计思路类似于TCP的工作方式.<br>发送到broker端的每批消息都会被赋予一个序列号(sequence number)用于消息去重.<br>但是和TCP不同的是,这个序列号不会被丢弃,相反 Kafka会把它们保存在底层日志中,这样即使分区的leader副本挂掉,新选出来的leaderbroker也能执行消息去重工作.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/kafka/" rel="tag"># kafka</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/03/14/kafka%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/" rel="prev" title="kafka集群部署">
+                  <i class="fa fa-chevron-left"></i> kafka集群部署
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/03/17/kafka%20broker/" rel="next" title="kafka broker">
+                  kafka broker <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

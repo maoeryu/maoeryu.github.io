@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="Flink中的APIFlink 为流式&#x2F;批式处理应用程序的开发提供了不同级别的抽象.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="flink概念透析">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/19/flink%E6%A6%82%E5%BF%B5%E9%80%8F%E6%9E%90/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="Flink中的APIFlink 为流式&#x2F;批式处理应用程序的开发提供了不同级别的抽象.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl1.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl2.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl3.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl4.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl5.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl6.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl7.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl8.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl9.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl10.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl12.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl11.svg">
+<meta property="article:published_time" content="2022-08-18T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-06T06:23:41.051Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="flink">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/flgl1.svg">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/19/flink%E6%A6%82%E5%BF%B5%E9%80%8F%E6%9E%90/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>flink概念透析 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Flink%E4%B8%AD%E7%9A%84API"><span class="nav-number">1.</span> <span class="nav-text">Flink中的API</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%89%E7%8A%B6%E6%80%81%E5%AE%9E%E6%97%B6%E6%B5%81%E5%A4%84%E7%90%86"><span class="nav-number">1.1.</span> <span class="nav-text">有状态实时流处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Core-APIs"><span class="nav-number">1.2.</span> <span class="nav-text">Core APIs</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Table-API"><span class="nav-number">1.3.</span> <span class="nav-text">Table API</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SQL"><span class="nav-number">1.4.</span> <span class="nav-text">SQL</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%89%E7%8A%B6%E6%80%81%E6%B5%81%E5%A4%84%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">有状态流处理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E7%8A%B6%E6%80%81"><span class="nav-number">2.1.</span> <span class="nav-text">什么是状态</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Keyed-State"><span class="nav-number">2.2.</span> <span class="nav-text">Keyed State</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8A%B6%E6%80%81%E6%8C%81%E4%B9%85%E6%80%A7"><span class="nav-number">2.3.</span> <span class="nav-text">状态持久性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5%E7%82%B9"><span class="nav-number">2.4.</span> <span class="nav-text">检查点</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Barriers-%E9%9A%9C%E7%A2%8D"><span class="nav-number">2.4.1.</span> <span class="nav-text">Barriers(障碍)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Snapshotting-Operator-State-%E5%BF%AB%E7%85%A7%E6%93%8D%E4%BD%9C%E5%91%98%E7%8A%B6%E6%80%81"><span class="nav-number">2.4.2.</span> <span class="nav-text">Snapshotting Operator State(快照操作员状态)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Recovery-%E6%81%A2%E5%A4%8D"><span class="nav-number">2.4.3.</span> <span class="nav-text">Recovery(恢复)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Unaligned-Checkpointing-%E6%9C%AA%E5%AF%B9%E9%BD%90%E7%9A%84%E6%A3%80%E6%9F%A5%E7%82%B9"><span class="nav-number">2.5.</span> <span class="nav-text">Unaligned Checkpointing(未对齐的检查点)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Unaligned-Recovery-%E6%9C%AA%E7%BB%93%E7%9B%9F%E6%81%A2%E5%A4%8D"><span class="nav-number">2.5.1.</span> <span class="nav-text">Unaligned Recovery(未结盟恢复)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8A%B6%E6%80%81%E5%90%8E%E7%AB%AF"><span class="nav-number">2.6.</span> <span class="nav-text">状态后端</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%9D%E5%AD%98%E7%82%B9"><span class="nav-number">2.7.</span> <span class="nav-text">保存点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%81%B0%E5%A5%BD%E4%B8%80%E6%AC%A1%E4%B8%8E%E8%87%B3%E5%B0%91%E4%B8%80%E6%AC%A1"><span class="nav-number">2.8.</span> <span class="nav-text">恰好一次与至少一次</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%B9%E5%A4%84%E7%90%86%E7%A8%8B%E5%BA%8F%E4%B8%AD%E7%9A%84%E7%8A%B6%E6%80%81%E5%92%8C%E5%AE%B9%E9%94%99"><span class="nav-number">2.9.</span> <span class="nav-text">批处理程序中的状态和容错</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%8A%E6%97%B6%E6%B5%81%E5%A4%84%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">及时流处理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E6%A6%82%E5%BF%B5-%E4%BA%8B%E4%BB%B6%E6%97%B6%E9%97%B4-%E5%A4%84%E7%90%86%E6%97%B6%E9%97%B4"><span class="nav-number">3.1.</span> <span class="nav-text">时间概念(事件时间&#x2F;处理时间)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E6%97%B6%E9%97%B4-Processing-Time"><span class="nav-number">3.1.1.</span> <span class="nav-text">处理时间(Processing Time)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E6%97%B6%E9%97%B4-Event-Time"><span class="nav-number">3.1.2.</span> <span class="nav-text">事件时间(Event Time)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E6%97%B6%E9%97%B4%E5%92%8C%E6%B0%B4%E5%8D%B0-Watermarks"><span class="nav-number">3.2.</span> <span class="nav-text">事件时间和水印(Watermarks)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B6%E8%A1%8C%E6%B5%81%E4%B8%AD%E7%9A%84%E6%B0%B4%E5%8D%B0"><span class="nav-number">3.3.</span> <span class="nav-text">并行流中的水印</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9F%E5%88%B0-Lateness"><span class="nav-number">3.4.</span> <span class="nav-text">迟到(Lateness)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E7%AA%97-Windowing"><span class="nav-number">3.5.</span> <span class="nav-text">开窗(Windowing)</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/19/flink%E6%A6%82%E5%BF%B5%E9%80%8F%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          flink概念透析
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-19 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-19T00:00:00+08:00">2022-08-19</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-06 14:23:41" itemprop="dateModified" datetime="2022-09-06T14:23:41+08:00">2022-09-06</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="Flink中的API"><a href="#Flink中的API" class="headerlink" title="Flink中的API"></a>Flink中的API</h2><p>Flink 为流式/批式处理应用程序的开发提供了不同级别的抽象.</p>
+<img src="/images/flgl1.svg" width="400" style="margin-left: 0px; padding-bottom: 10px;">
+
+<span id="more"></span>
+<h3 id="有状态实时流处理"><a href="#有状态实时流处理" class="headerlink" title="有状态实时流处理"></a>有状态实时流处理</h3><p>Flink API 最底层的抽象为有状态实时流处理.<br>其抽象实现是 Process Function,并且 Process Function 被 Flink 框架集成到了 DataStream API 中来为我们使用.<br>它允许用户在应用程序中自由地处理来自单流或多流的事件(数据),并提供具有全局一致性和容错保障的状态.<br>此外,用户可以在此层抽象中注册事件时间(event time)和处理时间(processing time)回调方法,从而允许程序可以实现复杂计算.</p>
+<h3 id="Core-APIs"><a href="#Core-APIs" class="headerlink" title="Core APIs"></a>Core APIs</h3><p>Flink API 第二层抽象是 Core APIs.<br>实际上,许多应用程序不需要使用到上述最底层抽象的 API,而是可以使用 Core APIs 进行编程:<br>其中包含 DataStream API(应用于有界/无界数据流场景)和 DataSet API(应用于有界数据集场景)两部分.<br>Core APIs 提供的流式 API(Fluent API)为数据处理提供了通用的模块组件,例如各种形式的用户自定义转换(transformations)/联接(joins)/聚合(aggregations)/窗口(windows)和状态(state)操作等.<br>此层 API 中处理的数据类型在每种编程语言中都有其对应的类.</p>
+<p>Process Function 这类底层抽象和 DataStream API 的相互集成使得用户可以选择使用更底层的抽象 API 来实现自己的需求.<br>DataSet API 还额外提供了一些原语,比如循环/迭代(loop/iteration)操作.</p>
+<h3 id="Table-API"><a href="#Table-API" class="headerlink" title="Table API"></a>Table API</h3><p>Flink API 第三层抽象是 Table API.<br>Table API 是以表(Table)为中心的声明式编程(DSL)API,例如在流式数据场景下,它可以表示一张正在动态改变的表.<br>Table API 遵循(扩展)关系模型:<br>即表拥有 schema(类似于关系型数据库中的 schema),并且 Table API 也提供了类似于关系模型中的操作,比如 select/project/join/group-by 和 aggregate 等.<br>Table API 程序是以声明的方式定义应执行的逻辑操作,而不是确切地指定程序应该执行的代码.<br>尽管 Table API 使用起来很简洁并且可以由各种类型的用户自定义函数扩展功能,但还是比 Core API 的表达能力差.<br>此外,Table API 程序在执行之前还会使用优化器中的优化规则对用户编写的表达式进行优化.</p>
+<p>表和 DataStream/DataSet 可以进行无缝切换,Flink 允许用户在编写应用程序时将 Table API 与 DataStream/DataSet API 混合使用.</p>
+<h3 id="SQL"><a href="#SQL" class="headerlink" title="SQL"></a>SQL</h3><p>Flink API 最顶层抽象是 SQL.<br>这层抽象在语义和程序表达式上都类似于 Table API,但是其程序实现都是 SQL 查询表达式.<br>SQL 抽象与 Table API 抽象之间的关联是非常紧密的,并且 SQL 查询语句可以在 Table API 中定义的表上执行.</p>
+<h2 id="有状态流处理"><a href="#有状态流处理" class="headerlink" title="有状态流处理"></a>有状态流处理</h2><h3 id="什么是状态"><a href="#什么是状态" class="headerlink" title="什么是状态"></a>什么是状态</h3><p>虽然数据流中的许多操作一次只查看一个单独的事件(例如事件解析器),但有些操作会记住跨多个事件的信息(例如窗口操作符).<br>这些操作称为<strong>有状态</strong>的.</p>
+<p>有状态操作的一些示例:</p>
+<ol>
+<li>当应用程序搜索某些事件模式时,状态将存储迄今为止遇到的事件序列.</li>
+<li>在每分钟/小时/天聚合事件时,状态会保存待处理的聚合.</li>
+<li>在数据点流上训练机器学习模型时,状态会保存模型参数的当前版本.</li>
+<li>当需要管理历史数据时,状态允许有效访问过去发生的事件.</li>
+</ol>
+<p>Flink 需要知道状态以便使用 检查点 和保存点使其容错.<br>有关状态的知识还允许重新缩放 Flink 应用程序,这意味着 Flink 负责在并行实例之间重新分配状态.<br>可查询状态允许您在运行时从 Flink 外部访问状态.<br>Flink 提供了不同的状态后端来指定状态的存储方式和位置.</p>
+<h3 id="Keyed-State"><a href="#Keyed-State" class="headerlink" title="Keyed State"></a>Keyed State</h3><p>Keyed state在可以被认为是嵌入式键/值存储的地方维护.<br>状态与有状态运算符读取的流一起严格分区和分布.<br>因此,只能在键控流上访问键/值状态,即在键控/分区数据交换之后,并且仅限于与当前事件键关联的值.<br>对齐流和状态的键确保所有状态更新都是本地操作,保证一致性而没有事务开销.<br>这种对齐还允许 Flink 重新分配状态并透明地调整流分区.</p>
+<img src="/images/flgl2.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>Keyed State 被进一步组织成所谓的Key Groups.<br>Key Groups 是 Flink 可以重新分配 Keyed State 的原子单元.<br>关键组的数量与定义的最大并行度完全相同.<br>在执行期间,键控运算符的每个并行实例都与一个或多个键组的键一起工作.</p>
+<h3 id="状态持久性"><a href="#状态持久性" class="headerlink" title="状态持久性"></a>状态持久性</h3><p>Flink 使用<strong>流重放</strong>和 <strong>检查点</strong>的组合来实现容错.<br>检查点标记每个输入流中的特定点以及每个运算符的相应状态.<br>流式数据流可以从检查点恢复,同时通过恢复操作符的状态并从检查点重放记录来保持一致性(恰好一次处理语义) .</p>
+<p>检查点间隔是一种权衡执行期间容错开销和恢复时间(需要重放的记录数)的方法.</p>
+<p>容错机制不断绘制分布式流数据流的快照.<br>对于状态较小的流式应用,这些快照非常轻量级,可以频繁绘制,对性能影响不大.<br>流应用程序的状态存储在可配置的位置,通常在分布式文件系统中.</p>
+<p>如果出现程序故障(由于机器/网络或软件故障),Flink 会停止分布式流式数据流.<br>然后系统重新启动操作员并将它们重置为最新的成功检查点.<br>输入流被重置到状态快照点.<br>作为重新启动的并行数据流的一部分处理的任何记录都保证不会影响先前的检查点状态.</p>
+<h3 id="检查点"><a href="#检查点" class="headerlink" title="检查点"></a>检查点</h3><p>Flink 容错机制的核心部分是绘制分布式数据流和算子状态的一致快照.<br>这些快照充当一致的检查点,系统可以在发生故障时回退到这些检查点.<br>Flink 绘制这些快照的机制受到分布式快照的标准 Chandy-Lamport 算法 的启发,专门针对 Flink 的执行模型量身定制.</p>
+<p>请记住,与检查点有关的所有事情都可以异步完成.<br>检查点屏障不会以锁定步骤移动,操作可以异步快照它们的状态.</p>
+<h4 id="Barriers-障碍"><a href="#Barriers-障碍" class="headerlink" title="Barriers(障碍)"></a>Barriers(障碍)</h4><p>Flink 分布式快照的一个核心元素是流屏障.<br>这些障碍被注入到数据流中,并作为数据流的一部分与记录一起流动.<br>障碍永远不会超过记录,它们严格按照规定流动.<br>屏障将数据流中的记录分成进入当前快照的记录集和进入下一个快照的记录.<br>每个屏障都带有将其记录推送到其前面的快照的 ID.<br>屏障不会中断流的流动,因此非常轻巧.<br>来自不同快照的多个屏障可以同时在流中,这意味着各种快照可能同时发生.</p>
+<img src="/images/flgl3.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>流屏障被注入到流源的并行数据流中.<br>快照n的屏障注入点(我们称之为 S n)是源流中快照覆盖数据的位置.<br>例如,在 Apache Kafka 中,此位置将是分区中最后一条记录的偏移量.<br>这个位置S n 被报告给检查点协调器(Flink 的 JobManager).</p>
+<p>然后障碍物向下游流动.<br>当中间算子从其所有输入流中接收到快照n的屏障时,它会向其所有传出流发出快照n的屏障.<br>一旦接收器操作员(流式 DAG 的末端)从其所有输入流中接收到屏障n ,它就会向检查点协调器确认快照n .<br>在所有接收器都确认快照后,它被认为已完成.</p>
+<p>一旦快照n完成,作业将不再向源请求S n之前的记录,因为此时这些记录(及其后代记录)将通过整个数据流拓扑.</p>
+<img src="/images/flgl4.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>接收多个输入流的算子需要在快照屏障上对齐输入流.<br>上图说明了这一点:</p>
+<ol>
+<li>一旦操作员从传入流接收到快照屏障n,它就不能处理来自该流的任何进一步的记录,直到它也从其他输入接收到屏障n .否则,它将混合属于快照n的记录和属于快照n+1的记录.</li>
+<li>一旦最后一个流接收到屏障n,操作员就会发出所有待处理的传出记录,然后自己发出快照n屏障.</li>
+<li>它对状态进行快照并继续处理来自所有输入流的记录,在处理来自流的记录之前处理来自输入缓冲区的记录.</li>
+<li>最后,操作员将状态异步写入状态后端.</li>
+</ol>
+<p>请注意,所有具有多个输入的算子以及经过洗牌后的算子在消耗多个上游子任务的输出流时都需要对齐.</p>
+<h4 id="Snapshotting-Operator-State-快照操作员状态"><a href="#Snapshotting-Operator-State-快照操作员状态" class="headerlink" title="Snapshotting Operator State(快照操作员状态)"></a>Snapshotting Operator State(快照操作员状态)</h4><p>当操作符包含任何形式的状态时,该状态也必须是快照的一部分.</p>
+<p>操作员在从其输入流接收到所有快照屏障的时间点以及在将屏障发射到其输出流之前的时间点对它们的状态进行快照.<br>此时,所有在障碍之前的记录对状态的更新都已经完成,并且没有任何依赖于障碍之后的记录的更新.<br>因为快照的状态可能很大,所以它存储在一个可配置的状态后端.<br>默认情况下,这是 JobManager 的内存,但对于生产用途,应配置分布式可靠存储(例如 HDFS).<br>存储状态后,操作员确认检查点,将快照屏障发送到输出流中,然后继续.</p>
+<p>生成的快照现在包含:</p>
+<ol>
+<li>对于每个并行流数据源,启动快照时流中的偏移量/位置</li>
+<li>对于每个运算符,指向作为快照的一部分存储的状态的指针.</li>
+</ol>
+<img src="/images/flgl5.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="Recovery-恢复"><a href="#Recovery-恢复" class="headerlink" title="Recovery(恢复)"></a>Recovery(恢复)</h4><p>这种机制下的恢复很简单:<br>一旦发生故障,Flink 会选择最近完成的检查点k.<br>然后系统重新部署整个分布式数据流,并为每个操作员提供作为检查点k的一部分快照的状态.<br>源设置为从位置S k开始读取流.<br>例如在 Apache Kafka 中,这意味着告诉消费者从偏移量S k开始获取.</p>
+<p>如果状态是增量快照,则操作员从最新的完整快照的状态开始,然后将一系列增量快照更新应用于该状态.</p>
+<h3 id="Unaligned-Checkpointing-未对齐的检查点"><a href="#Unaligned-Checkpointing-未对齐的检查点" class="headerlink" title="Unaligned Checkpointing(未对齐的检查点)"></a>Unaligned Checkpointing(未对齐的检查点)</h3><p>检查点也可以在未对齐的情况下执行.<br>基本思想是,只要飞行中的数据成为运营商状态的一部分,检查点就可以超越所有飞行中的数据.</p>
+<p>请注意,这种方法实际上更接近Chandy-Lamport 算法 ,但 Flink 仍然在源中插入屏障以避免检查点协调器过载.</p>
+<img src="/images/flgl6.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>该图描述了操作员如何处理未对齐的检查点障碍:</p>
+<ol>
+<li>操作员对存储在其输入缓冲区中的第一个屏障做出反应.</li>
+<li>它通过将屏障添加到输出缓冲区的末尾,立即将屏障转发给下游操作员.</li>
+<li>操作员将所有被超越的记录标记为异步存储,并创建自己状态的快照.</li>
+</ol>
+<p>因此,操作员只需短暂停止输入处理以标记缓冲区/转发屏障并创建其他状态的快照.</p>
+<p>未对齐的检查点可确保障碍物尽快到达接收器.<br>它特别适用于具有至少一个缓慢移动数据路径的应用程序,其中对齐时间可能长达数小时.<br>但是,由于它增加了额外的 I/O 压力,因此当状态后端的 I/O 成为瓶颈时,它也无济于事.</p>
+<p>请注意,保存点将始终对齐.</p>
+<h4 id="Unaligned-Recovery-未结盟恢复"><a href="#Unaligned-Recovery-未结盟恢复" class="headerlink" title="Unaligned Recovery(未结盟恢复)"></a>Unaligned Recovery(未结盟恢复)</h4><p>操作员首先在未对齐的检查点中开始处理来自上游操作员的任何数据之前恢复飞行中的数据.<br>除此之外,它执行与对齐检查点恢复期间相同的步骤.</p>
+<h3 id="状态后端"><a href="#状态后端" class="headerlink" title="状态后端"></a>状态后端</h3><p>存储键/值索引的确切数据结构取决于所选的状态后端.<br>一个状态后端将数据存储在内存中的哈希映射中,另一个状态后端使用<code>RocksDB</code>作为键/值存储.<br>除了定义保存状态的数据结构外,状态后端还实现了获取键/值状态的时间点快照并将该快照存储为检查点的一部分的逻辑.<br>可以在不更改应用程序逻辑的情况下配置状态后端.</p>
+<img src="/images/flgl7.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="保存点"><a href="#保存点" class="headerlink" title="保存点"></a>保存点</h3><p>所有使用<strong>检查点</strong>的程序都可以从保存点恢复执行.<br>Savepoints 允许在不丢失任何状态的情况下更新你的程序和你的 Flink 集群.</p>
+<p>保存点是<strong>手动触发的检查点</strong>,它拍摄程序的快照并将其写入状态后端.<br>他们为此依靠常规检查点机制.</p>
+<p>保存点类似于检查点,不同之处在于它们 <strong>由用户触发并且在更新的检查点完成时不会自动过期</strong>.</p>
+<h3 id="恰好一次与至少一次"><a href="#恰好一次与至少一次" class="headerlink" title="恰好一次与至少一次"></a>恰好一次与至少一次</h3><p>对齐步骤可能会增加流式传输程序的延迟.<br>通常,这种额外的延迟大约为几毫秒,但我们已经看到一些异常值的延迟显着增加的情况.<br>对于所有记录都需要持续超低延迟(几毫秒)的应用程序,Flink 有一个开关可以在检查点期间跳过流对齐.<br>一旦操作员从每个输入中看到检查点屏障,仍然会绘制检查点快照.</p>
+<p>当对齐被跳过时,操作员继续处理所有输入,即使在检查点n的一些检查点障碍到达之后.<br>这样,操作员还可以在为检查点n拍摄状态快照之前处理属于检查点n+1的元素.<br>在还原时,这些记录将作为重复记录出现,因为它们都包含在检查点n的状态快照中,并且将在检查点n之后作为数据的一部分重放.</p>
+<h3 id="批处理程序中的状态和容错"><a href="#批处理程序中的状态和容错" class="headerlink" title="批处理程序中的状态和容错"></a>批处理程序中的状态和容错</h3><p>Flink将批处理程序作为流程序的一种特殊情况执行,其中流是有界的(元素数量有限).<br>DataSet在内部被视为数据流.<br>因此,上述概念以相同的方式适用于批处理程序,也适用于流式程序,但有一些例外:</p>
+<ol>
+<li>批处理程序的容错 不使用检查点.通过完全重播流来进行恢复.这是可能的,因为输入是有界的.这将成本更多地推向恢复,但使常规处理更便宜,因为它避免了检查点.</li>
+<li>DataSet API 中的有状态操作使用简化的内存内/核外数据结构,而不是键/值索引.</li>
+<li>DataSet API 引入了特殊的同步(基于超步)迭代,这仅在有界流上才有可能.</li>
+</ol>
+<h2 id="及时流处理"><a href="#及时流处理" class="headerlink" title="及时流处理"></a>及时流处理</h2><p>及时流处理是有状态流处理的扩展,其中时间在计算中起一定作用.<br>除其他外,当您进行时间序列分析/基于特定时间段(通常称为窗口)进行聚合时,或者在事件发生的时间很重要的情况下进行事件处理时,就会出现这种情况.</p>
+<h3 id="时间概念-事件时间-处理时间"><a href="#时间概念-事件时间-处理时间" class="headerlink" title="时间概念(事件时间/处理时间)"></a>时间概念(事件时间/处理时间)</h3><p>当在流式程序中引用时间(例如定义窗口)时,可以引用不同的时间概念.</p>
+<h4 id="处理时间-Processing-Time"><a href="#处理时间-Processing-Time" class="headerlink" title="处理时间(Processing Time)"></a>处理时间(Processing Time)</h4><p><strong>处理时间是指执行相应操作的机器的系统时间</strong>.</p>
+<p>当流程序在处理时间上运行时,所有基于时间的操作(如时间窗口)将使用运行相应操作符的机器的系统时钟.<br>每小时处理时间窗口将包括在系统时钟指示整点时间之间到达特定操作员的所有记录.<br>例如,如果应用程序在上午 9:15 开始运行,则第一个每小时处理时间窗口将包括在上午 9:15 和上午 10:00 之间处理的事件,下一个窗口将包括在上午 10:00 和上午 11:00 之间处理的事件.</p>
+<p>处理时间是最简单的时间概念,不需要流和机器之间的协调.<br>它提供最佳性能和最低延迟.<br>然而,在分布式和异步环境中,处理时间并不能提供确定性,因为它容易受到记录到达系统(例如从消息队列)的速度,以及记录在系统内操作员之间流动的速度的影响,以及中断(计划的或其他的).</p>
+<h4 id="事件时间-Event-Time"><a href="#事件时间-Event-Time" class="headerlink" title="事件时间(Event Time)"></a>事件时间(Event Time)</h4><p><strong>事件时间是每个单独事件在其生产设备上发生的时间</strong>.</p>
+<p>这个时间通常在记录进入 Flink 之前嵌入到记录中,并且可以从每条记录中提取该事件时间戳.<br>在事件时间中,时间的进展取决于数据,而不是任何挂钟.<br>事件时间程序必须指定如何生成事件时间水印,这是在事件时间发出进度信号的机制.</p>
+<p>在一个完美的世界中,事件时间处理将产生完全一致和确定性的结果,无论事件何时到达或它们的顺序如何.<br>但是,除非已知事件按顺序(按时间戳)到达,否则事件时间处理在等待无序事件时会产生一些延迟.<br>由于只能等待有限的时间段,这限制了事件时间应用程序的确定性.</p>
+<p>假设所有数据都已到达,事件时间操作将按预期运行,并产生正确且一致的结果,即使在处理无序或延迟事件时,或者在重新处理历史数据时也是如此.<br>例如,每小时的事件时间窗口将包含所有带有属于该小时的事件时间戳的记录,无论它们到达的顺序或处理时间.</p>
+<p>请注意,有时当事件时间程序实时处理实时数据时,它们会使用一些处理时间操作以保证它们及时进行.</p>
+<img src="/images/flgl8.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="事件时间和水印-Watermarks"><a href="#事件时间和水印-Watermarks" class="headerlink" title="事件时间和水印(Watermarks)"></a>事件时间和水印(Watermarks)</h3><p>支持事件时间的流处理器需要一种测量事件时间进度的方法.<br>例如,构建每小时窗口的窗口操作员需要在事件时间超过一小时结束时得到通知,以便操作员可以关闭正在进行的窗口.</p>
+<p>事件时间可以独立于处理时间(由挂钟测量)进行.<br>例如,在一个程序中,操作员的当前事件时间可能稍微落后于处理时间(考虑到接收事件的延迟),而两者以相同的速度进行.<br>另一方面,另一个流程序可能会通过几个星期的事件时间进行处理,只需几秒钟的处理,通过快速转发已经在 Kafka 主题(或另一个消息队列)中缓冲的一些历史数据.</p>
+<p>Flink 中衡量事件时间进度的机制是watermarks.<br>水印作为数据流的一部分流动并带有时间戳t.<br>Watermark(t)声明事件时间已达到该流中的时间t ,这意味着流中不应再有时间戳 t&#39; &lt;= t 的元素(即时间戳早于或等于水印的事件).</p>
+<p>下图显示了带有(逻辑)时间戳的事件流,以及内联流动的水印.<br>在此示例中,事件是有序的(相对于它们的时间戳),这意味着水印只是流中的周期性标记.</p>
+<img src="/images/flgl9.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>水印对于<strong>无序流</strong>至关重要,如下图所示,其中事件不按时间戳排序.<br>一般来说,水印是一个声明,即到流中的那个点,直到某个时间戳的所有事件都应该已经到达.<br>一旦水印到达操作员,操作员可以将其内部事件时钟提前到水印的值.</p>
+<img src="/images/flgl10.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>请注意,事件时间由新创建的流元素(或多个元素)从生成它们的事件或触发创建这些元素的水印继承.</p>
+<h3 id="并行流中的水印"><a href="#并行流中的水印" class="headerlink" title="并行流中的水印"></a>并行流中的水印</h3><p>水印在源函数处或之后直接生成.<br>源函数的每个并行子任务通常独立生成其水印.<br>这些水印定义了该特定并行源的事件时间.</p>
+<p>当水印流经流媒体程序时,它们会在它们到达的操作员处提前事件时间.<br>每当运营商提前其事件时间时,它就会为其后续运营商在下游生成一个新的水印.</p>
+<p>一些算子消耗多个输入流.<br>例如,联合,或keyBy(...)或partition(...)函数后面的运算符.<br>这样一个算子的当前事件时间是其输入流事件时间的最小值.<br>随着它的输入流更新它们的事件时间,操作符也是如此.</p>
+<p>下图显示了流经并行流的事件和水印示例,以及操作员跟踪事件时间的示例.</p>
+<img src="/images/flgl12.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="迟到-Lateness"><a href="#迟到-Lateness" class="headerlink" title="迟到(Lateness)"></a>迟到(Lateness)</h3><p>某些元素可能会违反水印条件,这意味着即使在Watermark(t)发生之后,还会出现更多时间戳t&#39; &lt;= t 的元素.<br>事实上,在许多现实世界的设置中,某些元素可以任意延迟,因此无法指定某个事件时间戳的所有元素都发生的时间.<br>此外,即使可以限制延迟时间,将水印延迟太多通常也是不可取的,因为它会导致事件时间窗口的评估延迟太多.</p>
+<p>出于这个原因,流媒体程序可能会明确地期望一些后期元素.<br>迟到的元素是在系统的事件时间时钟(由水印表示)已经超过迟到元素的时间戳的时间之后到达的元素.</p>
+<h3 id="开窗-Windowing"><a href="#开窗-Windowing" class="headerlink" title="开窗(Windowing)"></a>开窗(Windowing)</h3><p>聚合事件(例如,计数/总和)在流上的工作方式与批处理不同.<br>例如,不可能计算流中的所有元素,因为流通常是无限的(无界).<br>相反,流上的聚合(计数/总和等)由窗口限定,例如 &quot;过去 5 分钟的计数&quot;或&quot;最后 100 个元素的总和&quot;.</p>
+<p>Windows 可以是时间驱动的(例如:每 30 秒)或数据驱动的 (例如:每 100 个元素).<br>人们通常区分不同类型的窗口,例如翻滚窗口(无重叠)/滑动窗口(有重叠)和会话窗口(由不活动间隙打断).</p>
+<img src="/images/flgl11.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+
+
+
+
+
+
+
+
+
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/flink/" rel="tag"># flink</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/19/flink%E6%9E%B6%E6%9E%84/" rel="prev" title="flink架构">
+                  <i class="fa fa-chevron-left"></i> flink架构
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/19/flink%E5%AE%9E%E8%B7%B5%E7%BB%83%E4%B9%A0/" rel="next" title="flink实践练习">
+                  flink实践练习 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

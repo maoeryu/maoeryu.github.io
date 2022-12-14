@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="https:&#x2F;&#x2F;cwiki.apache.org&#x2F;confluence&#x2F;pages&#x2F;reorderpages.action?key&#x3D;Hive 123456789101112131415161718set hiveconf:hive.cli.print.current.db; --打印当前数据库名set hive.cli.print.header; --打印字段头set hive.map.aggr&#x3D;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hive语言手册">
+<meta property="og:url" content="https://maoeryu.github.io/2021/02/26/hive%E8%AF%AD%E8%A8%80%E6%89%8B%E5%86%8C/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="https:&#x2F;&#x2F;cwiki.apache.org&#x2F;confluence&#x2F;pages&#x2F;reorderpages.action?key&#x3D;Hive 123456789101112131415161718set hiveconf:hive.cli.print.current.db; --打印当前数据库名set hive.cli.print.header; --打印字段头set hive.map.aggr&#x3D;">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/hive_架构.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1379.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1377.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1378.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hive_隐式转换.png">
+<meta property="article:published_time" content="2021-02-25T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-12-07T02:27:05.497Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hive">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/hive_架构.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/02/26/hive%E8%AF%AD%E8%A8%80%E6%89%8B%E5%86%8C/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hive语言手册 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%91%BD%E4%BB%A4-cli"><span class="nav-number">1.</span> <span class="nav-text">命令&#x2F;cli</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%91%BD%E4%BB%A4"><span class="nav-number">1.1.</span> <span class="nav-text">命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hive-cli"><span class="nav-number">1.2.</span> <span class="nav-text">hive cli</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#hiverc%E6%96%87%E4%BB%B6"><span class="nav-number">1.2.1.</span> <span class="nav-text">hiverc文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#logging"><span class="nav-number">1.2.2.</span> <span class="nav-text">logging</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#beeline-cli"><span class="nav-number">1.3.</span> <span class="nav-text">beeline cli</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#hiveserver2%E9%A1%B5%E9%9D%A2"><span class="nav-number">1.3.1.</span> <span class="nav-text">hiveserver2页面</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#beeline-hive-commands"><span class="nav-number">1.3.2.</span> <span class="nav-text">beeline hive commands</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#command-options"><span class="nav-number">1.3.3.</span> <span class="nav-text">command options</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#logging-1"><span class="nav-number">1.3.4.</span> <span class="nav-text">logging</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%98%E9%87%8F%E6%9B%BF%E6%8D%A2"><span class="nav-number">1.4.</span> <span class="nav-text">变量替换</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4"><span class="nav-number">1.4.1.</span> <span class="nav-text">命名空间</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="nav-number">2.</span> <span class="nav-text">数据类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Dates"><span class="nav-number">2.1.</span> <span class="nav-text">Dates</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Casting-Dates"><span class="nav-number">2.1.1.</span> <span class="nav-text">Casting Dates</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#interval"><span class="nav-number">2.1.2.</span> <span class="nav-text">interval</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Decimals"><span class="nav-number">2.2.</span> <span class="nav-text">Decimals</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Decimal-Literals"><span class="nav-number">2.2.1.</span> <span class="nav-text">Decimal Literals</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9Decimal-Columns"><span class="nav-number">2.2.2.</span> <span class="nav-text">修改Decimal Columns</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9A%90%E5%BC%8F%E8%BD%AC%E6%8D%A2"><span class="nav-number">2.3.</span> <span class="nav-text">隐式转换</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E6%A0%BC%E5%BC%8F"><span class="nav-number">3.</span> <span class="nav-text">文件格式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#avro"><span class="nav-number">3.1.</span> <span class="nav-text">avro</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2"><span class="nav-number">3.1.1.</span> <span class="nav-text">数据类型转换</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%AD%E6%B3%95"><span class="nav-number">3.1.2.</span> <span class="nav-text">语法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#avro%E6%96%87%E4%BB%B6%E6%89%A9%E5%B1%95"><span class="nav-number">3.1.3.</span> <span class="nav-text">avro文件扩展</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orc"><span class="nav-number">3.2.</span> <span class="nav-text">orc</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%98%E7%82%B9"><span class="nav-number">3.2.1.</span> <span class="nav-text">优点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%AD%E6%B3%95-1"><span class="nav-number">3.2.2.</span> <span class="nav-text">语法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BA%8F%E5%88%97%E5%8C%96"><span class="nav-number">3.2.3.</span> <span class="nav-text">序列化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8E%8B%E7%BC%A9"><span class="nav-number">3.2.4.</span> <span class="nav-text">压缩</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#orc%E6%96%87%E4%BB%B6%E8%BD%AC%E5%82%A8"><span class="nav-number">3.2.5.</span> <span class="nav-text">orc文件转储</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#parquet"><span class="nav-number">3.3.</span> <span class="nav-text">parquet</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%AD%E6%B3%95-2"><span class="nav-number">3.3.1.</span> <span class="nav-text">语法</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sequencefile"><span class="nav-number">3.4.</span> <span class="nav-text">sequencefile</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8E%8B%E7%BC%A9%E5%AD%98%E5%82%A8"><span class="nav-number">3.4.1.</span> <span class="nav-text">压缩存储</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#lzo%E5%8E%8B%E7%BC%A9"><span class="nav-number">3.5.</span> <span class="nav-text">lzo压缩</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ddl"><span class="nav-number">4.</span> <span class="nav-text">ddl</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#create-drop-alter-use-database"><span class="nav-number">4.1.</span> <span class="nav-text">create&#x2F;drop&#x2F;alter&#x2F;use database</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#create-database"><span class="nav-number">4.1.1.</span> <span class="nav-text">create database</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#drop-database"><span class="nav-number">4.1.2.</span> <span class="nav-text">drop database</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#alter-use-database"><span class="nav-number">4.1.3.</span> <span class="nav-text">alter&#x2F;use database</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#create-drop-truncate-table"><span class="nav-number">4.2.</span> <span class="nav-text">create&#x2F;drop&#x2F;truncate table</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#create-table"><span class="nav-number">4.2.1.</span> <span class="nav-text">create table</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#data-type"><span class="nav-number">4.2.1.1.</span> <span class="nav-text">data_type</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#primitive-type"><span class="nav-number">4.2.1.1.1.</span> <span class="nav-text">primitive_type</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#array-type"><span class="nav-number">4.2.1.1.2.</span> <span class="nav-text">array_type</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#map-type"><span class="nav-number">4.2.1.1.3.</span> <span class="nav-text">map_type</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#struct-type"><span class="nav-number">4.2.1.1.4.</span> <span class="nav-text">struct_type</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#union-type"><span class="nav-number">4.2.1.1.5.</span> <span class="nav-text">union_type</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#row-format"><span class="nav-number">4.2.1.2.</span> <span class="nav-text">row_format</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#file-format"><span class="nav-number">4.2.1.3.</span> <span class="nav-text">file_format</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#column-constraint-specification"><span class="nav-number">4.2.1.4.</span> <span class="nav-text">column_constraint_specification</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#default-value"><span class="nav-number">4.2.1.5.</span> <span class="nav-text">default_value</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#constraint-specification"><span class="nav-number">4.2.1.6.</span> <span class="nav-text">constraint_specification</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#create-table-as-select"><span class="nav-number">4.2.2.</span> <span class="nav-text">create table as select</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#create-table-like"><span class="nav-number">4.2.3.</span> <span class="nav-text">create table like</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A1%8C%E6%A0%BC%E5%BC%8F%E5%92%8Cserde"><span class="nav-number">4.2.4.</span> <span class="nav-text">行格式和serde</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#regex"><span class="nav-number">4.2.4.1.</span> <span class="nav-text">regex</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#json"><span class="nav-number">4.2.4.2.</span> <span class="nav-text">json</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#csv-tsv"><span class="nav-number">4.2.4.3.</span> <span class="nav-text">csv&#x2F;tsv</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AE%A1%E7%90%86%E8%A1%A8-%E5%A4%96%E9%83%A8%E8%A1%A8"><span class="nav-number">4.2.5.</span> <span class="nav-text">管理表&#x2F;外部表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E5%8C%BA%E8%A1%A8"><span class="nav-number">4.2.6.</span> <span class="nav-text">分区表</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%8A%A8%E6%80%81%E5%88%86%E5%8C%BA"><span class="nav-number">4.2.6.1.</span> <span class="nav-text">动态分区</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A1%B6%E8%A1%A8"><span class="nav-number">4.2.7.</span> <span class="nav-text">桶表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#skewed-tables"><span class="nav-number">4.2.8.</span> <span class="nav-text">skewed tables</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#temporary-tables"><span class="nav-number">4.2.9.</span> <span class="nav-text">temporary tables</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#drop-table"><span class="nav-number">4.2.10.</span> <span class="nav-text">drop table</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#truncate-table"><span class="nav-number">4.2.11.</span> <span class="nav-text">truncate table</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#alter-table-partition-column"><span class="nav-number">4.3.</span> <span class="nav-text">alter table&#x2F;partition&#x2F;column</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#rename"><span class="nav-number">4.3.1.</span> <span class="nav-text">rename</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9B%B4%E6%94%B9%E8%A1%A8%E5%B1%9E%E6%80%A7"><span class="nav-number">4.3.2.</span> <span class="nav-text">更改表属性</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0serde%E5%B1%9E%E6%80%A7"><span class="nav-number">4.3.3.</span> <span class="nav-text">添加serde属性</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9B%B4%E6%94%B9%E8%A1%A8%E5%AD%98%E5%82%A8%E5%B1%9E%E6%80%A7"><span class="nav-number">4.3.4.</span> <span class="nav-text">更改表存储属性</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9B%B4%E6%94%B9%E5%80%BE%E6%96%9C%E8%A1%A8%E5%B1%9E%E6%80%A7"><span class="nav-number">4.3.5.</span> <span class="nav-text">更改倾斜表属性</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9B%B4%E6%94%B9%E8%A1%A8%E7%BA%A6%E6%9D%9F"><span class="nav-number">4.3.6.</span> <span class="nav-text">更改表约束</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E5%88%86%E5%8C%BA"><span class="nav-number">4.3.7.</span> <span class="nav-text">添加分区</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E5%88%86%E5%8C%BA"><span class="nav-number">4.3.8.</span> <span class="nav-text">删除分区</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%87%8D%E5%91%BD%E5%90%8D%E5%88%86%E5%8C%BA"><span class="nav-number">4.3.9.</span> <span class="nav-text">重命名分区</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%A4%E6%8D%A2%E5%88%86%E5%8C%BA"><span class="nav-number">4.3.10.</span> <span class="nav-text">交换分区</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#msck%E4%BF%AE%E5%A4%8D%E8%A1%A8"><span class="nav-number">4.3.11.</span> <span class="nav-text">msck修复表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%98%E6%A1%A3%E5%88%86%E5%8C%BA"><span class="nav-number">4.3.12.</span> <span class="nav-text">存档分区</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9B%B4%E6%94%B9%E8%A1%A8%E6%88%96%E5%88%86%E5%8C%BA"><span class="nav-number">4.3.13.</span> <span class="nav-text">更改表或分区</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9B%B4%E6%94%B9%E5%88%97%E5%90%8D%E7%A7%B0-%E4%BD%8D%E7%BD%AE-%E7%B1%BB%E5%9E%8B"><span class="nav-number">4.3.14.</span> <span class="nav-text">更改列名称&#x2F;位置&#x2F;类型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0-%E6%9B%BF%E6%8D%A2%E5%88%97"><span class="nav-number">4.3.15.</span> <span class="nav-text">添加&#x2F;替换列</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#create-drop-alter-index"><span class="nav-number">4.4.</span> <span class="nav-text">create&#x2F;drop&#x2F;alter index</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA-%E5%88%A0%E9%99%A4%E8%A7%86%E5%9B%BE"><span class="nav-number">4.4.1.</span> <span class="nav-text">创建&#x2F;删除视图</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#create-drop-reload-function"><span class="nav-number">4.5.</span> <span class="nav-text">create&#x2F;drop&#x2F;reload function</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%B4%E6%97%B6%E5%87%BD%E6%95%B0"><span class="nav-number">4.5.1.</span> <span class="nav-text">临时函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B0%B8%E4%B9%85%E5%87%BD%E6%95%B0"><span class="nav-number">4.5.2.</span> <span class="nav-text">永久函数</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#show"><span class="nav-number">4.6.</span> <span class="nav-text">show</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#desc"><span class="nav-number">4.7.</span> <span class="nav-text">desc</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#dml"><span class="nav-number">5.</span> <span class="nav-text">dml</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#load-data"><span class="nav-number">5.1.</span> <span class="nav-text">load data</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#insert-data-from-select"><span class="nav-number">5.2.</span> <span class="nav-text">insert data from select</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%BC%E5%87%BA%E6%95%B0%E6%8D%AE"><span class="nav-number">5.3.</span> <span class="nav-text">导出数据</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#query"><span class="nav-number">6.</span> <span class="nav-text">query</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#select"><span class="nav-number">6.1.</span> <span class="nav-text">select</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%AD%E6%B3%95-3"><span class="nav-number">6.1.1.</span> <span class="nav-text">语法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#where-distinct"><span class="nav-number">6.1.2.</span> <span class="nav-text">where&#x2F;distinct</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%B0%93%E8%AF%8D%E6%93%8D%E4%BD%9C%E7%AC%A6"><span class="nav-number">6.1.2.1.</span> <span class="nav-text">谓词操作符</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#partition-filter"><span class="nav-number">6.1.2.2.</span> <span class="nav-text">partition filter</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#from%E5%AD%90%E6%9F%A5%E8%AF%A2"><span class="nav-number">6.1.3.</span> <span class="nav-text">from子查询</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#where%E5%AD%90%E6%9F%A5%E8%AF%A2"><span class="nav-number">6.1.4.</span> <span class="nav-text">where子查询</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#having"><span class="nav-number">6.1.5.</span> <span class="nav-text">having</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#limit"><span class="nav-number">6.1.6.</span> <span class="nav-text">limit</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#union-all"><span class="nav-number">6.1.7.</span> <span class="nav-text">union all</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#cte"><span class="nav-number">6.1.8.</span> <span class="nav-text">cte</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%AF%AD%E6%B3%95-4"><span class="nav-number">6.1.8.1.</span> <span class="nav-text">语法</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#select%E8%AF%AD%E5%8F%A5"><span class="nav-number">6.1.8.2.</span> <span class="nav-text">select语句</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#view-ctas-insert%E8%AF%AD%E5%8F%A5"><span class="nav-number">6.1.8.3.</span> <span class="nav-text">view&#x2F;ctas&#x2F;insert语句</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%99%9A%E6%8B%9F%E5%88%97"><span class="nav-number">6.2.</span> <span class="nav-text">虚拟列</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#explain"><span class="nav-number">6.3.</span> <span class="nav-text">explain</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/02/26/hive%E8%AF%AD%E8%A8%80%E6%89%8B%E5%86%8C/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hive语言手册
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-02-26 00:00:00" itemprop="dateCreated datePublished" datetime="2021-02-26T00:00:00+08:00">2021-02-26</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-12-07 10:27:05" itemprop="dateModified" datetime="2022-12-07T10:27:05+08:00">2022-12-07</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p><a target="_blank" rel="noopener" href="https://cwiki.apache.org/confluence/pages/reorderpages.action?key=Hive">https://cwiki.apache.org/confluence/pages/reorderpages.action?key=Hive</a></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> hiveconf:hive.cli.print.current.db; <span class="comment">--打印当前数据库名</span></span><br><span class="line"><span class="keyword">set</span> hive.cli.print.header; <span class="comment">--打印字段头</span></span><br><span class="line"><span class="keyword">set</span> hive.map.aggr<span class="operator">=</span><span class="literal">true</span>; <span class="comment">--在map端优先聚合,需要更多内存</span></span><br><span class="line"><span class="keyword">set</span> hive.exec.mode.local.auto<span class="operator">=</span><span class="literal">true</span>; <span class="comment">--默认false,使用本地模式执行,避免mr</span></span><br><span class="line"><span class="keyword">set</span> hive.exec.mode.local.auto.input.files.max<span class="operator">=</span><span class="number">4</span>; <span class="comment">--</span></span><br><span class="line"><span class="keyword">set</span> hive.exec.mode.local.auto.inputbytes.max<span class="operator">=</span><span class="number">134217728</span>; <span class="comment">--job总输入大小</span></span><br><span class="line"><span class="keyword">set</span> hive.mapred.local.mem<span class="operator">=</span><span class="number">0</span>; <span class="comment">--默认0,由hadoop确定子jvm的默认内存限制</span></span><br><span class="line"><span class="keyword">set</span> hive.exec.parallel<span class="operator">=</span><span class="literal">false</span>; <span class="comment">--默认false,设置为true,并行执行多个阶段</span></span><br><span class="line"><span class="comment">--调整map和reduce个数</span></span><br><span class="line"><span class="keyword">set</span> hive.exec.reducers.bytes.per.reducer<span class="operator">=</span><span class="number">256000000</span>; <span class="comment">--默认256m</span></span><br><span class="line"><span class="keyword">set</span> hive.exec.reducers.max<span class="operator">=</span><span class="number">1009</span>; <span class="comment">--集群中map和reduce个数</span></span><br><span class="line"><span class="keyword">set</span> mapreduce.job.reduces<span class="operator">=</span><span class="number">-1</span>; <span class="comment">--</span></span><br><span class="line"><span class="comment">--压缩</span></span><br><span class="line"><span class="keyword">set</span> hive.exec.compress.intermediate<span class="operator">=</span><span class="literal">true</span>; <span class="comment">--默认false,开启中间压缩,减少数据传输量</span></span><br><span class="line"><span class="keyword">set</span> hive.exec.compress.output<span class="operator">=</span><span class="literal">true</span>; <span class="comment">--默认false,最终结果压缩</span></span><br><span class="line"><span class="keyword">set</span> hive.optimize.correlation<span class="operator">=</span><span class="literal">true</span>; <span class="comment">--开启关联优化</span></span><br><span class="line"><span class="keyword">set</span> hive.groupby.skewindata<span class="operator">=</span><span class="literal">false</span>; <span class="comment">--默认false,表示不存在数据倾斜</span></span><br><span class="line"><span class="keyword">set</span> hive.execution.engine<span class="operator">=</span>mr; <span class="comment">--默认mr,可改为spark</span></span><br></pre></td></tr></table></figure>
+
+<img src="/images/hive_架构.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<span id="more"></span>
+<h2 id="命令-cli"><a href="#命令-cli" class="headerlink" title="命令/cli"></a>命令/cli</h2><h3 id="命令"><a href="#命令" class="headerlink" title="命令"></a>命令</h3><table>
+<thead>
+<tr>
+<th align="left">command</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">quit/exit</td>
+<td align="left">退出shell</td>
+</tr>
+<tr>
+<td align="left">set</td>
+<td align="left">打印由用户或 Hive 覆盖的配置变量列表</td>
+</tr>
+<tr>
+<td align="left">set -v</td>
+<td align="left">打印所有 Hadoop 和 Hive 配置变量</td>
+</tr>
+<tr>
+<td align="left">set key=value</td>
+<td align="left">设置变量值</td>
+</tr>
+<tr>
+<td align="left">reset</td>
+<td align="left">重置临时配置为默认值</td>
+</tr>
+<tr>
+<td align="left">reset <code>&lt;key&gt;</code></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">! <code>&lt;command&gt;</code></td>
+<td align="left">执行shell命令</td>
+</tr>
+<tr>
+<td align="left">dfs <code>&lt;dfs command&gt;</code></td>
+<td align="left">执行dfs命令</td>
+</tr>
+<tr>
+<td align="left"><code>&lt;query string&gt;</code></td>
+<td align="left">执行hive查询</td>
+</tr>
+<tr>
+<td align="left">source file <code>&lt;filepath&gt;</code></td>
+<td align="left">执行脚本</td>
+</tr>
+</tbody></table>
+<p>hive可向管理会话中添加资源,任何本地可访问的文件/jar/归档都可以添加到会话中.<br>添加后,hive查询可通过其名称在map/reduce/transform子句中对其进行引用,并且该资源在hadoop集群上的执行都可以在本地使用,hive使用hadoop的distributed cache在查询执行时将添加的资源分配给集群中的所有节点.<br>归档资源会自动取消归档.</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">add/list/delete &#123;file[s]/jar[s]/archive[s]&#125; &lt;file1&gt; [&lt;file2&gt;]*</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>sample</p>
+</blockquote>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> hive.test.mode<span class="operator">=</span><span class="literal">true</span>;</span><br><span class="line"><span class="keyword">set</span>;</span><br><span class="line">reset;</span><br><span class="line"><span class="operator">!</span>ls;</span><br><span class="line">dfs <span class="operator">-</span>ls <span class="operator">/</span>;</span><br><span class="line"><span class="keyword">add</span> file udf.txt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="hive-cli"><a href="#hive-cli" class="headerlink" title="hive cli"></a>hive cli</h3><p>run &quot;hive -H&quot; or &quot;hive --help&quot;<br>&quot;-hiveconf&quot;与&quot;--hiveconf&quot;一样受支持.</p>
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">-d,--define <code>&lt;key=value&gt;</code></td>
+<td align="left">定义变量,例:-d A=B/--define A=B</td>
+</tr>
+<tr>
+<td align="left">-e <code>&lt;query-string&gt;</code></td>
+<td align="left">在命令行执行sql</td>
+</tr>
+<tr>
+<td align="left">-f <code>&lt;file&gt;</code></td>
+<td align="left">执行sql文件</td>
+</tr>
+<tr>
+<td align="left">-i <code>&lt;file&gt;</code></td>
+<td align="left">初始化sql文件</td>
+</tr>
+<tr>
+<td align="left">-S,--silent</td>
+<td align="left">静音模式</td>
+</tr>
+<tr>
+<td align="left">-v,--verbose</td>
+<td align="left">打印执行的sql</td>
+</tr>
+<tr>
+<td align="left">-h <code>&lt;hostname&gt;</code></td>
+<td align="left">remote host</td>
+</tr>
+<tr>
+<td align="left">-p <code>&lt;port&gt;</code></td>
+<td align="left">port</td>
+</tr>
+<tr>
+<td align="left">--database <code>&lt;dbname&gt;</code></td>
+<td align="left">指定database</td>
+</tr>
+<tr>
+<td align="left">--hiveconf <code>&lt;property=value&gt;</code></td>
+<td align="left">配置变量</td>
+</tr>
+<tr>
+<td align="left">--hivevar <code>&lt;key=value&gt;</code></td>
+<td align="left">替换变量,例:--hivevar A=B</td>
+</tr>
+<tr>
+<td align="left">-H,--help</td>
+<td align="left">打印帮助信息</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>example</p>
+</blockquote>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">hive <span class="operator">-</span>e <span class="string">&#x27;select a.col from tab1 a&#x27;</span></span><br><span class="line">hive <span class="operator">-</span>e <span class="string">&#x27;select a.col from tab1 a&#x27;</span> <span class="comment">--hiveconf xxx=xxx --hiveconf mapred.reduce.tasks=32</span></span><br><span class="line">hive <span class="operator">-</span>S <span class="operator">-</span>e <span class="string">&#x27;select a.col from tab1 a&#x27;</span> <span class="operator">&gt;</span> a.txt</span><br><span class="line">hive <span class="operator">-</span>f <span class="operator">/</span>home<span class="operator">/</span>my<span class="operator">/</span>hive<span class="operator">-</span>script.sql</span><br><span class="line">hive <span class="operator">-</span>f hdfs:<span class="operator">/</span><span class="operator">/</span><span class="operator">&lt;</span>namenode<span class="operator">&gt;</span>:<span class="operator">&lt;</span>port<span class="operator">&gt;</span><span class="operator">/</span>hive<span class="operator">-</span>script.sql</span><br><span class="line">hive <span class="operator">-</span>i <span class="operator">/</span>home<span class="operator">/</span>my<span class="operator">/</span>hive<span class="operator">-</span>init.sql</span><br></pre></td></tr></table></figure>
+
+<h4 id="hiverc文件"><a href="#hiverc文件" class="headerlink" title="hiverc文件"></a>hiverc文件</h4><p>不指定-i时,将尝试加载$HIVE_HOME/bin/.hiverc和$HOME/.hiverc作为初始化文件</p>
+<h4 id="logging"><a href="#logging" class="headerlink" title="logging"></a>logging</h4><p>默认情况下,hive日志记录在/tmp/<code>&lt;userid&gt;</code>/hive.log下,使用warn级别.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hive <span class="comment">--hiveconf hive.root.logger=info,console</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="beeline-cli"><a href="#beeline-cli" class="headerlink" title="beeline cli"></a>beeline cli</h3><p>使用hiveserver2服务器,实现client以jdbc协议远程访问hive.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hiveserver2 //启动命令,使用nohup放后台,需要使用配置的用户下启动</span><br><span class="line">netstat -lnp | grep 10000 //默认10000端口</span><br><span class="line">beeline -u jdbc:hive2://localhost:10000/default -n user -w passwd</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">beeline <span class="operator">/</span><span class="operator">/</span>开启beeline</span><br><span class="line"><span class="operator">!</span>help <span class="operator">/</span><span class="operator">/</span>帮助信息</span><br><span class="line"><span class="operator">!</span><span class="keyword">connect</span> jdbc:hive2:<span class="operator">/</span><span class="operator">/</span>localhost:<span class="number">10000</span><span class="operator">/</span><span class="keyword">default</span> <span class="comment">--回车</span></span><br><span class="line"><span class="operator">!</span><span class="keyword">connect</span> jdbc:hive2:<span class="operator">/</span><span class="operator">/</span>localhost:<span class="number">10000</span><span class="operator">/</span><span class="keyword">default</span>;auth<span class="operator">=</span>noSasl <span class="keyword">user</span> passwd <span class="comment">--noSasl</span></span><br><span class="line"><span class="operator">!</span>quit</span><br></pre></td></tr></table></figure>
+
+<h4 id="hiveserver2页面"><a href="#hiveserver2页面" class="headerlink" title="hiveserver2页面"></a>hiveserver2页面</h4><p>localhost:10002</p>
+<h4 id="beeline-hive-commands"><a href="#beeline-hive-commands" class="headerlink" title="beeline hive commands"></a>beeline hive commands</h4><p>同hive commands.<br>增加一个<code>reload</code>,使配置参数<code>hive.reloadable.aux.jars.path</code>指定的路径中任何jar添加/删除/更新时,无需重启hiveserver2.</p>
+<h4 id="command-options"><a href="#command-options" class="headerlink" title="command options"></a>command options</h4><table>
+<thead>
+<tr>
+<th align="left">option</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">-u db_url</td>
+<td align="left">jdbc url,可指定characters</td>
+</tr>
+<tr>
+<td align="left">-r</td>
+<td align="left">重新连接,前提是使用了!connect和!save</td>
+</tr>
+<tr>
+<td align="left">-n user</td>
+<td align="left">连接用户名</td>
+</tr>
+<tr>
+<td align="left">-p passwd</td>
+<td align="left">连接密码</td>
+</tr>
+<tr>
+<td align="left">-d device_class</td>
+<td align="left">使用的驱动类</td>
+</tr>
+<tr>
+<td align="left">-e query</td>
+<td align="left">指定查询语句</td>
+</tr>
+<tr>
+<td align="left">-f file</td>
+<td align="left">指定查询脚本</td>
+</tr>
+<tr>
+<td align="left">-i/--init <code>&lt;file/files&gt;</code></td>
+<td align="left">指定初始化文件</td>
+</tr>
+<tr>
+<td align="left">-w/--password-file <code>&lt;passwd file&gt;</code></td>
+<td align="left">指定密码文件</td>
+</tr>
+<tr>
+<td align="left">-a/--authType <code>&lt;auth type&gt;</code></td>
+<td align="left">指定认证类型</td>
+</tr>
+<tr>
+<td align="left">--property-file <code>&lt;file&gt;</code></td>
+<td align="left">指定配置文件</td>
+</tr>
+<tr>
+<td align="left">--hiveconf property=value</td>
+<td align="left">指定配置参数</td>
+</tr>
+<tr>
+<td align="left">--hivevar name=value</td>
+<td align="left">指定变量名和值</td>
+</tr>
+<tr>
+<td align="left">--color=[true/false]</td>
+<td align="left">是否显示颜色</td>
+</tr>
+<tr>
+<td align="left">--showHeader=[true/false]</td>
+<td align="left">是否显示列名</td>
+</tr>
+<tr>
+<td align="left">--headerInterval=ROWS</td>
+<td align="left">当输出为表时,重新显示列标题的时间间隔,以行数为单位,默认值为100</td>
+</tr>
+<tr>
+<td align="left">--fastConnect=[true/false]</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">--autoCommit=[true/false]</td>
+<td align="left">启用自动提交,默认false</td>
+</tr>
+<tr>
+<td align="left">--verbose=[true/false]</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">--showWarnings=[true/false]</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">--showDbInPrompt=[true/false]</td>
+<td align="left">在提示中显示当前数据库名称</td>
+</tr>
+<tr>
+<td align="left">--showNestedErrs=[true/false]</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">--numberFormat=[pattern]</td>
+<td align="left">使用decimalFormat格式数字,例--numberFormat=&quot;#,###,##0.00&quot;</td>
+</tr>
+<tr>
+<td align="left">--force=[true/false]</td>
+<td align="left">出现错误时继续运行脚本</td>
+</tr>
+<tr>
+<td align="left">--maxWidth=MAXWIDTH</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">--maxColumnWidth=MAXCOLWIDTH</td>
+<td align="left">当输出格式为表时,最大列宽</td>
+</tr>
+<tr>
+<td align="left">--silent=[true/false]</td>
+<td align="left">安静模式</td>
+</tr>
+<tr>
+<td align="left">--autosave=[true/false]</td>
+<td align="left">自动保存</td>
+</tr>
+<tr>
+<td align="left">--outputformat=[table/vertical/csv/tsv/dsv/csv2/tsv2]</td>
+<td align="left">结果显示模式,默认表</td>
+</tr>
+<tr>
+<td align="left">--truncateTable=[true/false]</td>
+<td align="left">超过控制台长度时截断表</td>
+</tr>
+<tr>
+<td align="left">--delimiterForDSV=DELIMITER</td>
+<td align="left">分隔符输出格式,默认&#39;|&#39;</td>
+</tr>
+<tr>
+<td align="left">--isolation=LEVEL</td>
+<td align="left">设置事务隔离级别</td>
+</tr>
+<tr>
+<td align="left">--nullemptystring=[true/false]</td>
+<td align="left">将null打印为空字符串</td>
+</tr>
+<tr>
+<td align="left">--incremental=[true/false]</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">--incrementalBufferRows=NUMROWS</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">--maxHistoryRows=NUMROWS</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">--delimiter=;</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">--convertBinaryArrayToString=[true/false]</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">--help</td>
+<td align="left">帮助</td>
+</tr>
+</tbody></table>
+<h4 id="logging-1"><a href="#logging-1" class="headerlink" title="logging"></a>logging</h4><p>hive.server2.logging.operation.enabled<br>hive.server2.logging.operation.log.location<br>hive.server2.logging.operation.level<br>hive.server2.logging.operation.verbose</p>
+<h3 id="变量替换"><a href="#变量替换" class="headerlink" title="变量替换"></a>变量替换</h3><p>默认情况下,变量替换处于启动状态,可禁用.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> hive.variable.substitute<span class="operator">=</span><span class="literal">false</span>;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>example</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">a=b</span><br><span class="line">hive -e <span class="string">&quot; describe <span class="variable">$a</span> &quot;</span></span><br><span class="line">hive --hiveconf a=b -e <span class="string">&#x27;set a; set hiveconf:a; \</span></span><br><span class="line"><span class="string">create table if not exists b (col int); describe $&#123;hiveconf:a&#125;&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> zzz<span class="operator">=</span><span class="number">5</span>;</span><br><span class="line"><span class="comment">--  sets zzz=5</span></span><br><span class="line"><span class="keyword">set</span> zzz;</span><br><span class="line"> </span><br><span class="line"><span class="keyword">set</span> <span class="keyword">system</span>:xxx<span class="operator">=</span><span class="number">5</span>;</span><br><span class="line"><span class="keyword">set</span> <span class="keyword">system</span>:xxx;</span><br><span class="line"><span class="comment">-- sets a system property xxx to 5</span></span><br><span class="line"> </span><br><span class="line">set system:yyy=$&#123;system:xxx&#125;;</span><br><span class="line"><span class="keyword">set</span> <span class="keyword">system</span>:yyy;</span><br><span class="line"><span class="comment">-- sets yyy with value of xxx</span></span><br><span class="line"> </span><br><span class="line">set go=$&#123;hiveconf:zzz&#125;;</span><br><span class="line"><span class="keyword">set</span> go;</span><br><span class="line"><span class="comment">-- sets go base on value on zzz</span></span><br><span class="line"> </span><br><span class="line"><span class="keyword">set</span> hive.variable.substitute<span class="operator">=</span><span class="literal">false</span>;</span><br><span class="line">set raw=$&#123;hiveconf:zzz&#125;;</span><br><span class="line"><span class="keyword">set</span> raw;</span><br><span class="line"><span class="comment">-- disable substitution set a value to the literal</span></span><br><span class="line"> </span><br><span class="line"><span class="keyword">set</span> hive.variable.substitute<span class="operator">=</span><span class="literal">true</span>;</span><br><span class="line"> </span><br><span class="line">EXPLAIN SELECT * FROM src where key=$&#123;hiveconf:zzz&#125;;</span><br><span class="line">SELECT * FROM src where key=$&#123;hiveconf:zzz&#125;;</span><br><span class="line"><span class="comment">--use a variable in a query</span></span><br><span class="line"> </span><br><span class="line"><span class="keyword">set</span> a<span class="operator">=</span><span class="number">1</span>;</span><br><span class="line"><span class="keyword">set</span> b<span class="operator">=</span>a;</span><br><span class="line">set c=$&#123;hiveconf:$&#123;hiveconf:b&#125;&#125;;</span><br><span class="line"><span class="keyword">set</span> c;</span><br><span class="line"><span class="comment">--uses nested variables.</span></span><br><span class="line"> </span><br><span class="line"><span class="keyword">set</span> jar<span class="operator">=</span>..<span class="operator">/</span>lib<span class="operator">/</span>derby.jar;</span><br><span class="line"></span><br><span class="line">add file $&#123;hiveconf:jar&#125;;</span><br><span class="line">list file;</span><br><span class="line">delete file $&#123;hiveconf:jar&#125;;</span><br><span class="line">list file;</span><br></pre></td></tr></table></figure>
+
+<h4 id="命名空间"><a href="#命名空间" class="headerlink" title="命名空间"></a>命名空间</h4><table>
+<thead>
+<tr>
+<th align="left">空间</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">hiveconf</td>
+<td align="left">可读可写,hive相关配置属性</td>
+</tr>
+<tr>
+<td align="left">system</td>
+<td align="left">可读可写,java定义的配置属性</td>
+</tr>
+<tr>
+<td align="left">env</td>
+<td align="left">只可读,shell定义的环境变量</td>
+</tr>
+<tr>
+<td align="left">hivevar</td>
+<td align="left">可读可写,用户自定义变量</td>
+</tr>
+</tbody></table>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> env:HOME; <span class="comment">--显示home值</span></span><br><span class="line"><span class="keyword">set</span> <span class="keyword">system</span>:user.name;</span><br><span class="line"><span class="keyword">set</span> hivevar:foo; <span class="comment">--同set foo</span></span><br><span class="line">create table t1(i int, $&#123;hivevar:foo&#125; string); --引用变量foo,hivevar可省略</span><br><span class="line">hive <span class="comment">--hiveconf y=5; --增加新的conf</span></span><br><span class="line">select * from myhive.student limit $&#123;hiveconf:y&#125;; --使用y,其中$和hiveconf:不可少</span><br></pre></td></tr></table></figure>
+
+<h2 id="数据类型"><a href="#数据类型" class="headerlink" title="数据类型"></a>数据类型</h2><p>其中array/map/struct/union为复杂类型,其它为原始类型.</p>
+<table>
+<thead>
+<tr>
+<th align="left">类型</th>
+<th align="left">java类型</th>
+<th align="left">描述</th>
+<th align="left">示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">tinyint</td>
+<td align="left">byte</td>
+<td align="left">有符号1字节整数,-128~127</td>
+<td align="left">1Y</td>
+</tr>
+<tr>
+<td align="left">smallint</td>
+<td align="left">short</td>
+<td align="left">有符号2字节整数,-32768~32767</td>
+<td align="left">1S</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">int</td>
+<td align="left">有符号4字节整数,-2,147,483,648~2,147,483,647</td>
+<td align="left">1</td>
+</tr>
+<tr>
+<td align="left">bigint</td>
+<td align="left">long</td>
+<td align="left">有符号8字节整数,</br>-9,223,372,036,854,775,808</br>~9,223,372,036,854,775,807</td>
+<td align="left">1L</td>
+</tr>
+<tr>
+<td align="left">float</td>
+<td align="left">double</td>
+<td align="left">4字节单精度数字,大约7位数字</td>
+<td align="left">1.0</td>
+</tr>
+<tr>
+<td align="left">double</td>
+<td align="left">double</td>
+<td align="left">8字节双精度数字,大约15位数字</td>
+<td align="left">1.0</td>
+</tr>
+<tr>
+<td align="left">decimal</td>
+<td align="left">java.math.bigdecimal</td>
+<td align="left">固定精度的十进制值</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">string</td>
+<td align="left">字符串,变长,使用单/双引号</td>
+<td align="left">&quot;a&quot;,&#39;b&#39;</td>
+</tr>
+<tr>
+<td align="left">varchar</td>
+<td align="left"></td>
+<td align="left">变长字符串,1~65535</td>
+<td align="left">&quot;a&quot;,&#39;b&#39;</td>
+</tr>
+<tr>
+<td align="left">char</td>
+<td align="left"></td>
+<td align="left">固定长度字符串,最大为255,<code>bar CHAR(10)</code></td>
+<td align="left">&quot;a&quot;,&#39;b&#39;</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">timestamp</td>
+<td align="left">java.sql.timestamp</td>
+<td align="left">日期和时间值,毫秒值</td>
+<td align="left">122327493795</td>
+</tr>
+<tr>
+<td align="left">date</td>
+<td align="left"></td>
+<td align="left">日期</td>
+<td align="left">&#39;2016-03-29&#39;</td>
+</tr>
+<tr>
+<td align="left">interval</td>
+<td align="left"></td>
+<td align="left">时间频率间隔</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">boolean</td>
+<td align="left">boolean</td>
+<td align="left">一位,0或1,true/false</td>
+<td align="left">TRUE</td>
+</tr>
+<tr>
+<td align="left">binary</td>
+<td align="left">string</td>
+<td align="left">二进制数据,字节数组</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">array</td>
+<td align="left">string – json encoded</td>
+<td align="left">有序同类型集合</td>
+<td align="left">array(1,2)</td>
+</tr>
+<tr>
+<td align="left">map</td>
+<td align="left">string – json encoded</td>
+<td align="left">键值对,key必须为原始类型,value可为任意类型</td>
+<td align="left">map(&#39;a&#39;,1,&#39;b&#39;,2)</td>
+</tr>
+<tr>
+<td align="left">struct</td>
+<td align="left">string – json encoded</td>
+<td align="left">字段集合,类型可以不同</td>
+<td align="left">struct(&#39;1&#39;,1,9)</td>
+</tr>
+<tr>
+<td align="left">union</td>
+<td align="left"></td>
+<td align="left">在有限取值范围内的一个值</td>
+<td align="left">create_union(1,&#39;a&#39;,63)</td>
+</tr>
+</tbody></table>
+<h3 id="Dates"><a href="#Dates" class="headerlink" title="Dates"></a>Dates</h3><h4 id="Casting-Dates"><a href="#Casting-Dates" class="headerlink" title="Casting Dates"></a>Casting Dates</h4><p>日期类型只能与日期/时间戳/字符串类型相互转换.</p>
+<img src="/images/fly1379.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">CAST</span>(<span class="operator">&lt;</span><span class="type">timestamp</span><span class="operator">/</span><span class="type">date</span><span class="operator">&gt;</span> <span class="keyword">AS</span> <span class="operator">&lt;</span><span class="type">varchar</span><span class="operator">/</span><span class="type">char</span><span class="operator">/</span>string<span class="operator">&gt;</span> [FORMAT <span class="operator">&lt;</span>template<span class="operator">&gt;</span>])</span><br><span class="line"><span class="built_in">CAST</span>(<span class="operator">&lt;</span><span class="type">varchar</span><span class="operator">/</span><span class="type">char</span><span class="operator">/</span>string<span class="operator">&gt;</span> <span class="keyword">AS</span> <span class="operator">&lt;</span><span class="type">timestamp</span><span class="operator">/</span><span class="type">date</span><span class="operator">&gt;</span> [FORMAT <span class="operator">&lt;</span>template<span class="operator">&gt;</span>])</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="built_in">cast</span>(dt <span class="keyword">as</span> string format <span class="string">&#x27;DD-MM-YYYY&#x27;</span>)</span><br><span class="line"><span class="keyword">select</span> <span class="built_in">cast</span>(<span class="string">&#x27;01-05-2017&#x27;</span> <span class="keyword">as</span> <span class="type">date</span> format <span class="string">&#x27;DD-MM-YYYY&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<h4 id="interval"><a href="#interval" class="headerlink" title="interval"></a>interval</h4><img src="/images/fly1377.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1378.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="Decimals"><a href="#Decimals" class="headerlink" title="Decimals"></a>Decimals</h3><p>Hive中的DECIMAL类型是基于Java的BigDecimal,在Java中用于表示不可变的任意精度小数.<br>所有常规数字运算(例如 +/-/*//)和相关 UDF(例如 Floor/Ceil/Round 等)都处理小数类型.<br>您可以像处理其他数字类型一样转换为小数类型或从小数类型转换.<br>decimal 类型的持久化格式支持科学计数法和非科学计数法.<br>因此,无论您的数据集是否包含 4.004E+3(科学计数法)或 4004(非科学计数法)或两者的组合之类的数据,DECIMAL都可以用于它.</p>
+<p>使用DECIMAL(precision, scale)语法创建具有数据类型的表时指定比例和精度.<br>如果未指定比例,则默认为 0(无小数位).<br>如果未指定精度,则默认为 10.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> foo (</span><br><span class="line">  a <span class="type">DECIMAL</span>, <span class="comment">-- Defaults to decimal(10,0)</span></span><br><span class="line">  b <span class="type">DECIMAL</span>(<span class="number">9</span>, <span class="number">7</span>)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h4 id="Decimal-Literals"><a href="#Decimal-Literals" class="headerlink" title="Decimal Literals"></a>Decimal Literals</h4><p>大于 BIGINT 的整数文字必须用 Decimal(38,0) 处理,需要后缀BD.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="built_in">CAST</span>(<span class="number">18446744073709001000</span>BD <span class="keyword">AS</span> <span class="type">DECIMAL</span>(<span class="number">38</span>,<span class="number">0</span>)) <span class="keyword">from</span> my_table limit <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+
+<h4 id="修改Decimal-Columns"><a href="#修改Decimal-Columns" class="headerlink" title="修改Decimal Columns"></a>修改Decimal Columns</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--确定要为表中的小数列设置的精度/小数位数</span></span><br><span class="line"><span class="comment">--使用ALTER TABLE命令将列定义更新为所需的精度/小数位数</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> foo CHANGE <span class="keyword">COLUMN</span> dec_column_name dec_column_name <span class="type">DECIMAL</span>(<span class="number">38</span>,<span class="number">18</span>);</span><br></pre></td></tr></table></figure>
+
+<p>如果该表是分区表,则找到该表的分区列表.<br>表中的每个现有分区还必须更改其 DECIMAL 列以添加所需的精度/小数位数,可以通过使用动态分区使用单个 ALTER TABLE CHANGE COLUMN来完成.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--hive.exec.dynamic.partition needs to be set to true to enable dynamic partitioning with ALTER PARTITION</span></span><br><span class="line"><span class="keyword">SET</span> hive.exec.dynamic.partition <span class="operator">=</span> <span class="literal">true</span>;</span><br><span class="line">  </span><br><span class="line"><span class="comment">--This will alter all existing partitions in the table with ds=&#x27;2008-04-08&#x27; -- be sure you know what you are doing!</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> foo <span class="keyword">PARTITION</span> (ds<span class="operator">=</span><span class="string">&#x27;2008-04-08&#x27;</span>, hr) CHANGE <span class="keyword">COLUMN</span> dec_column_name dec_column_name <span class="type">DECIMAL</span>(<span class="number">38</span>,<span class="number">18</span>);</span><br><span class="line"> </span><br><span class="line"><span class="comment">--This will alter all existing partitions in the table -- be sure you know what you are doing!</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> foo <span class="keyword">PARTITION</span> (ds, hr) CHANGE <span class="keyword">COLUMN</span> dec_column_name dec_column_name <span class="type">DECIMAL</span>(<span class="number">38</span>,<span class="number">18</span>);</span><br></pre></td></tr></table></figure>
+
+<p>或者,这可以使用 ALTER TABLE CHANGE COLUMN 一次完成一个分区,方法是为每个语句指定一个分区.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> foo <span class="keyword">PARTITION</span> (ds<span class="operator">=</span><span class="string">&#x27;2008-04-08&#x27;</span>, hr<span class="operator">=</span><span class="number">11</span>) CHANGE <span class="keyword">COLUMN</span> dec_column_name dec_column_name <span class="type">DECIMAL</span>(<span class="number">38</span>,<span class="number">18</span>);</span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> foo <span class="keyword">PARTITION</span> (ds<span class="operator">=</span><span class="string">&#x27;2008-04-08&#x27;</span>, hr<span class="operator">=</span><span class="number">12</span>) CHANGE <span class="keyword">COLUMN</span> dec_column_name dec_column_name <span class="type">DECIMAL</span>(<span class="number">38</span>,<span class="number">18</span>);</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>decimal(11,2) 代表最多有11位数字,其中后2位是小数,整数部分是9位.<br>如果整数部分超过9位,则这个字段就会变成null.<br>如果小数部分不足2位,则后面用0补齐两位,如果小数部分超过两位,则超出部分四舍五入.<br>也可直接写 decimal,后面不指定位数,默认是 decimal(10,0) 整数10位,没有小数.</p>
+</blockquote>
+<h3 id="隐式转换"><a href="#隐式转换" class="headerlink" title="隐式转换"></a>隐式转换</h3><p>当<code>hive.metastore.disallow.incompatible.col.type.changes</code>为false时,类型间可转换,转换失败时显示NULL,默认为true.</p>
+<img src="/images/hive_隐式转换.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="文件格式"><a href="#文件格式" class="headerlink" title="文件格式"></a>文件格式</h2><h3 id="avro"><a href="#avro" class="headerlink" title="avro"></a>avro</h3><h4 id="数据类型转换"><a href="#数据类型转换" class="headerlink" title="数据类型转换"></a>数据类型转换</h4><table>
+<thead>
+<tr>
+<th align="left">avro</th>
+<th align="left">hive</th>
+<th></th>
+<th align="left">avro</th>
+<th align="left">hive</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">null</td>
+<td align="left">void</td>
+<td></td>
+<td align="left">string</td>
+<td align="left">string</td>
+</tr>
+<tr>
+<td align="left">boolean</td>
+<td align="left">boolean</td>
+<td></td>
+<td align="left">record</td>
+<td align="left">struct</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">int</td>
+<td></td>
+<td align="left">map</td>
+<td align="left">map</td>
+</tr>
+<tr>
+<td align="left">long</td>
+<td align="left">bigint</td>
+<td></td>
+<td align="left">list</td>
+<td align="left">array</td>
+</tr>
+<tr>
+<td align="left">float</td>
+<td align="left">float</td>
+<td></td>
+<td align="left">union</td>
+<td align="left">union</td>
+</tr>
+<tr>
+<td align="left">double</td>
+<td align="left">double</td>
+<td></td>
+<td align="left">enum</td>
+<td align="left">string</td>
+</tr>
+<tr>
+<td align="left">bytes</td>
+<td align="left">binary</td>
+<td></td>
+<td align="left">fixed</td>
+<td align="left">binary</td>
+</tr>
+</tbody></table>
+<h4 id="语法"><a href="#语法" class="headerlink" title="语法"></a>语法</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> myhive.avrotest (</span><br><span class="line">  id <span class="type">int</span>,</span><br><span class="line">  name string,</span><br><span class="line">  sex string,</span><br><span class="line">  city string,</span><br><span class="line">  age <span class="type">int</span></span><br><span class="line">) stored <span class="keyword">as</span> avro;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>example</p>
+</blockquote>
+<p>模拟数据如下<br>why hello there,42,3,100,1412341,TRUE,42.43,85.23423424,alpha:beta:gamma,Earth#42:Control#86:Bob#31,17:true:Abe Linkedin,00:03.1,BLUE,72,^A^B^C,^A^B^C<br>another record,98,4,101,9999999,FALSE,99.89,0.00000009,beta,Earth#101,1134:false:wazzup,1:true,RED,NULL,^D^E^F^G,^D^E^F<br>third record,45,5,102,999999999,TRUE,89.99,9E-14,alpha:gamma,Earth#237:Bob#723,102:false:BNL,2:Time to go home,GREEN,NULL,^H,^G^H^I</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--创建普通表</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_serializer(</span><br><span class="line">string1 string,</span><br><span class="line">int1 <span class="type">int</span>,</span><br><span class="line">tinyint1 tinyint,</span><br><span class="line">smallint1 <span class="type">smallint</span>,</span><br><span class="line">bigint1 <span class="type">bigint</span>,</span><br><span class="line">boolean1 <span class="type">boolean</span>,</span><br><span class="line">float1 <span class="type">float</span>,</span><br><span class="line">double1 <span class="keyword">double</span>,</span><br><span class="line">list1 <span class="keyword">array</span><span class="operator">&lt;</span>string<span class="operator">&gt;</span>,</span><br><span class="line">map1 map<span class="operator">&lt;</span>string,<span class="type">int</span><span class="operator">&gt;</span>,</span><br><span class="line">struct1 struct<span class="operator">&lt;</span>sint:<span class="type">int</span>,sboolean:<span class="type">boolean</span>,sstring:string<span class="operator">&gt;</span>,</span><br><span class="line">union1 uniontype<span class="operator">&lt;</span><span class="type">float</span>, <span class="type">boolean</span>, string<span class="operator">&gt;</span>,</span><br><span class="line">enum1 string,</span><br><span class="line">nullableint <span class="type">int</span>,</span><br><span class="line">bytes1 <span class="type">binary</span>,</span><br><span class="line">fixed1 <span class="type">binary</span>)</span><br><span class="line"><span class="type">row</span> format delimited </span><br><span class="line">fields terminated <span class="keyword">by</span> <span class="string">&#x27;,&#x27;</span> </span><br><span class="line">collection items terminated <span class="keyword">by</span> <span class="string">&#x27;:&#x27;</span> </span><br><span class="line">map keys terminated <span class="keyword">by</span> <span class="string">&#x27;#&#x27;</span> </span><br><span class="line">lines terminated <span class="keyword">by</span> <span class="string">&#x27;\n&#x27;</span></span><br><span class="line">stored <span class="keyword">as</span> textfile;</span><br><span class="line"></span><br><span class="line"><span class="comment">--创建对应avro表</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> as_avro(</span><br><span class="line">string1 string,</span><br><span class="line">int1 <span class="type">int</span>,</span><br><span class="line">tinyint1 tinyint,</span><br><span class="line">smallint1 <span class="type">smallint</span>,</span><br><span class="line">bigint1 <span class="type">bigint</span>,</span><br><span class="line">boolean1 <span class="type">boolean</span>,</span><br><span class="line">float1 <span class="type">float</span>,</span><br><span class="line">double1 <span class="keyword">double</span>,</span><br><span class="line">list1 <span class="keyword">array</span><span class="operator">&lt;</span>string<span class="operator">&gt;</span>,</span><br><span class="line">map1 map<span class="operator">&lt;</span>string,<span class="type">int</span><span class="operator">&gt;</span>,</span><br><span class="line">struct1 struct<span class="operator">&lt;</span>sint:<span class="type">int</span>,sboolean:<span class="type">boolean</span>,sstring:string<span class="operator">&gt;</span>,</span><br><span class="line">union1 uniontype<span class="operator">&lt;</span><span class="type">float</span>, <span class="type">boolean</span>, string<span class="operator">&gt;</span>,</span><br><span class="line">enum1 string,</span><br><span class="line">nullableint <span class="type">int</span>,</span><br><span class="line">bytes1 <span class="type">binary</span>,</span><br><span class="line">fixed1 <span class="type">binary</span>)</span><br><span class="line">stored <span class="keyword">as</span> avro;</span><br><span class="line"></span><br><span class="line"><span class="comment">--插入数据</span></span><br><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">table</span> as_avro <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test_serializer;</span><br></pre></td></tr></table></figure>
+
+<h4 id="avro文件扩展"><a href="#avro文件扩展" class="headerlink" title="avro文件扩展"></a>avro文件扩展</h4><p>Hive作业写入的文件是有效的Avro文件,但是MapReduce没有添加标准的.avro扩展名.如果将这些文件复制出来,则可能需要使用.avro重命名.</p>
+<h3 id="orc"><a href="#orc" class="headerlink" title="orc"></a>orc</h3><p>Optimized Row Columnar,支持acid事务和基于成本的优化器,存储列级元数据.</p>
+<h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><p>1.支持各种复杂的数据类型,比如:datetime,decimal,以及一些复杂类型(struct,list,map,and union).<br>2.通过存储在文件中的轻量级索引,跳过不通过谓词过滤的行.<br>3.限制读取或写入的内存量.<br>4.使用Protocol Buffers存储元数据,允许添加和删除字段.<br>5.每个task只输出单个文件,这样可以减少NameNode的负载.<br>6.基于数据类型的块模式压缩.</p>
+<ul>
+<li>integer类型的列用行程长度编码(run-length encoding);</li>
+<li>String类型的列用字典编码(dictionary encoding).</li>
+</ul>
+<p>7.用多个互相独立的RecordReaders并行读相同的文件.<br>8.无需扫描markers就可以分割文件.</p>
+<h4 id="语法-1"><a href="#语法-1" class="headerlink" title="语法"></a>语法</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> ... stored <span class="keyword">as</span> orc;</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> ... [<span class="keyword">partition</span> partition_spec] <span class="keyword">set</span> fileformat orc;</span><br><span class="line"><span class="keyword">set</span> hive.default.fileformat<span class="operator">=</span>orc;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>TBLPROPERTIES</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th align="left">key</th>
+<th align="left">default</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">orc.bloom.filter.columns</td>
+<td align="left">&quot;&quot;</td>
+<td align="left">逗号分隔的列名称列表,应为其创建bloom过滤器</td>
+</tr>
+<tr>
+<td align="left">orc.bloom.filter.fpp</td>
+<td align="left">0.05</td>
+<td align="left">布隆过滤器的假正概率,0和1之间</td>
+</tr>
+<tr>
+<td align="left">orc.compress</td>
+<td align="left">ZLIB</td>
+<td align="left">高级压缩,NONE/ZLIB/SNAPPY</td>
+</tr>
+<tr>
+<td align="left">orc.compress.size</td>
+<td align="left">262,144</td>
+<td align="left">每个压缩块中的字节数</td>
+</tr>
+<tr>
+<td align="left">orc.create.index</td>
+<td align="left">true</td>
+<td align="left">是否创建行索引</td>
+</tr>
+<tr>
+<td align="left">orc.row.index.stride</td>
+<td align="left">10,000</td>
+<td align="left">索引条目之间的行数,必须&gt;=1000</td>
+</tr>
+<tr>
+<td align="left">orc.stripe.size</td>
+<td align="left">67,108,864</td>
+<td align="left">每个条带中的字节数</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>example</p>
+</blockquote>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> myhive.orctest (</span><br><span class="line">  id <span class="type">int</span>,</span><br><span class="line">  name string,</span><br><span class="line">  sex string,</span><br><span class="line">  city string,</span><br><span class="line">  age <span class="type">int</span></span><br><span class="line">) stored <span class="keyword">as</span> orc tblproperties (&quot;orc.compress&quot;<span class="operator">=</span>&quot;NONE&quot;);</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name [<span class="keyword">partition</span> partition_spec] concatenate;</span><br></pre></td></tr></table></figure>
+<p>用于将较小的ORC文件合并为较大的文件.<br>合并发生在条带级别,这避免了对数据进行解压缩和解码.</p>
+<h4 id="序列化"><a href="#序列化" class="headerlink" title="序列化"></a>序列化</h4><p>ORC文件中列数据的序列化取决于数据类型是整数还是字符串.<br>字符串列的序列化使用字典来形成唯一的列值,对字典进行排序可加快谓词过滤速度并提高压缩率.</p>
+<h4 id="压缩"><a href="#压缩" class="headerlink" title="压缩"></a>压缩</h4><p>使用编解码器压缩流,该编解码器被指定为该表中所有流的表属性.为了优化内存使用,在生成每个块时,将逐步进行压缩.压缩块可以跳过,而无需首先将其解压缩以进行扫描.流中的位置由块的起始位置和块中的偏移量表示.<br>编解码器可以是Snappy/Zlib/none.</p>
+<h4 id="orc文件转储"><a href="#orc文件转储" class="headerlink" title="orc文件转储"></a>orc文件转储</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hive --orcfiledump [-j] [-p] [-d] [-t] [--rowindex &lt;col_ids&gt;] [--recover] [--skip-dump] [--backup-path &lt;new-path&gt;] &lt;file&gt;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">-d</td>
+<td align="left">转储ORC文件数据而不是元数据</td>
+</tr>
+<tr>
+<td align="left">--rowindex</td>
+<td align="left">用逗号分隔的列ID列表指定,打印指定列的行索引,其中0是包含所有列的顶层结构,而1是第一个列ID</td>
+</tr>
+<tr>
+<td align="left">-t</td>
+<td align="left">打印编写器的时区ID</td>
+</tr>
+<tr>
+<td align="left">-j</td>
+<td align="left">以JSON格式打印ORC文件元数据,同时添加-p</td>
+</tr>
+<tr>
+<td align="left">--recover</td>
+<td align="left">恢复由Hive流生成的损坏的ORC文件</td>
+</tr>
+<tr>
+<td align="left">--skip-dump</td>
+<td align="left">与--recover一起指定,将执行恢复而不转储元数据</td>
+</tr>
+<tr>
+<td align="left">--backup-path</td>
+<td align="left">使用新路径指定,将损坏的文件移动到指定的备份路径,默认/tmp</td>
+</tr>
+<tr>
+<td align="left"><code>&lt;orc-file&gt;</code></td>
+<td align="left">ORC文件的URI</td>
+</tr>
+<tr>
+<td align="left"><code>&lt;orc-orc-file/directory&gt;</code></td>
+<td align="left">ORC文件或目录的URI</td>
+</tr>
+</tbody></table>
+<h3 id="parquet"><a href="#parquet" class="headerlink" title="parquet"></a>parquet</h3><p>columnar format for Hadoop,列式存储,可用于hadoop生态圈的任何项目.</p>
+<h4 id="语法-2"><a href="#语法-2" class="headerlink" title="语法"></a>语法</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> myhive.parquettest (</span><br><span class="line">  id <span class="type">int</span>,</span><br><span class="line">  name string,</span><br><span class="line">  sex string,</span><br><span class="line">  city string,</span><br><span class="line">  age <span class="type">int</span></span><br><span class="line">) stored <span class="keyword">as</span> parquet;</span><br></pre></td></tr></table></figure>
+
+<h3 id="sequencefile"><a href="#sequencefile" class="headerlink" title="sequencefile"></a>sequencefile</h3><h4 id="压缩存储"><a href="#压缩存储" class="headerlink" title="压缩存储"></a>压缩存储</h4><p>将数据压缩在Hive表中的性能比未压缩的存储更好,在磁盘使用率和查询性能方面.<br>可以将使用Gzip或Bzip2压缩的文本文件直接导入存储为TextFile的表中.压缩将被自动检测,并且在查询执行过程中将即时对文件进行解压缩.<br>表存储为TextFile,这是默认存储.在这种情况下,Hadoop将无法将您的文件拆分为块,不能并行运行多个映射.<br>将数据插入另一个存储为SequenceFile的表中.Hadoop可以拆分SequenceFile并将其分布在map作业中,而GZIP文件则不能.</p>
+<p><code>io.seqfile.compression.type</code>的值决定了压缩的执行方式.Record 单独压缩每个值,而BLOCK在压缩前缓冲1MB(默认).</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> raw (line string)</span><br><span class="line">   <span class="type">row</span> format delimited fields terminated <span class="keyword">by</span> <span class="string">&#x27;\t&#x27;</span> lines terminated <span class="keyword">by</span> <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line"> </span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> raw_sequence (line string)</span><br><span class="line">   stored <span class="keyword">as</span> sequencefile;</span><br><span class="line"></span><br><span class="line"><span class="comment">--gzip gztest.log -&gt; gztest.log.gz</span></span><br><span class="line">load data <span class="keyword">local</span> inpath <span class="string">&#x27;/home/hadoop/gztest.log.gz&#x27;</span> <span class="keyword">into</span> <span class="keyword">table</span> raw;</span><br><span class="line"> </span><br><span class="line"><span class="keyword">set</span> hive.exec.compress.output<span class="operator">=</span><span class="literal">true</span>;</span><br><span class="line"><span class="keyword">set</span> io.seqfile.compression.type<span class="operator">=</span>block; <span class="comment">--none/record/block</span></span><br><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">table</span> raw_sequence <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> raw;</span><br></pre></td></tr></table></figure>
+
+<h3 id="lzo压缩"><a href="#lzo压缩" class="headerlink" title="lzo压缩"></a>lzo压缩</h3><p>在每台hadoop节点上安装lzo/lzop,core-site.xml需要增加以下配置,<br>com.hadoop.compression.lzo.LzoCodec<br>com.hadoop.compression.lzo.LzopCodec</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>io.compression.codecs<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.DefaultCodec,org.apache.hadoop.io.compress.BZip2Codec,com.hadoop.compression.lzo.LzoCodec,com.hadoop.compression.lzo.LzopCodec<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>io.compression.codec.lzo.class<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>com.hadoop.compression.lzo.LzoCodec<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">external</span> <span class="keyword">table</span> if <span class="keyword">not</span> <span class="keyword">exists</span> hive_table_name (column_1  datatype_1......column_n datatype_n)</span><br><span class="line">partitioned <span class="keyword">by</span> (partition_col_1 datatype_1 ....col_p  datatype_p)</span><br><span class="line"><span class="type">row</span> format delimited fields terminated <span class="keyword">by</span> <span class="string">&#x27;\t&#x27;</span></span><br><span class="line">stored <span class="keyword">as</span> inputformat &quot;com.hadoop.mapred.DeprecatedLzoTextInputFormat&quot;</span><br><span class="line">outputformat &quot;org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat&quot;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> mapreduce.output.fileoutputformat.compress.codec<span class="operator">=</span>com.hadoop.compression.lzo.LzoCodec</span><br><span class="line"><span class="keyword">set</span> hive.exec.compress.output<span class="operator">=</span><span class="literal">true</span></span><br><span class="line"><span class="keyword">set</span> mapreduce.output.fileoutputformat.compress<span class="operator">=</span><span class="literal">true</span></span><br><span class="line"><span class="operator">&lt;</span>query<span class="operator">-</span>string<span class="operator">&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="ddl"><a href="#ddl" class="headerlink" title="ddl"></a>ddl</h2><ul>
+<li>create database/schema, table, view, function, index</li>
+<li>drop database/schema, table, view, index</li>
+<li>truncate table</li>
+<li>alter database/schema, table, view</li>
+<li>msck repair table (or alter table recover partitions)</li>
+<li>show databases/schemas, tables, tblproperties, views, partitions, functions, index[es], columns, create table</li>
+<li>describe database/schema, table_name, view_name, materialized_view_name</li>
+</ul>
+<h3 id="create-drop-alter-use-database"><a href="#create-drop-alter-use-database" class="headerlink" title="create/drop/alter/use database"></a>create/drop/alter/use database</h3><h4 id="create-database"><a href="#create-database" class="headerlink" title="create database"></a>create database</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> (database<span class="operator">|</span>schema) [if <span class="keyword">not</span> <span class="keyword">exists</span>] database_name</span><br><span class="line">  [comment database_comment]</span><br><span class="line">  [<span class="keyword">with</span> dbproperties (property_name<span class="operator">=</span>property_value, ...)];</span><br></pre></td></tr></table></figure>
+
+<h4 id="drop-database"><a href="#drop-database" class="headerlink" title="drop database"></a>drop database</h4><p>默认为restrict,如果数据库不为空,则删除失败,可使用cascade.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">drop</span> (database<span class="operator">|</span>schema) [if <span class="keyword">exists</span>] database_name [restrict<span class="operator">|</span>cascade];</span><br></pre></td></tr></table></figure>
+
+<h4 id="alter-use-database"><a href="#alter-use-database" class="headerlink" title="alter/use database"></a>alter/use database</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> (database<span class="operator">|</span>schema) database_name <span class="keyword">set</span> dbproperties (name<span class="operator">=</span><span class="keyword">value</span>, ...);</span><br><span class="line"><span class="keyword">alter</span> (database<span class="operator">|</span>schema) database_name <span class="keyword">set</span> owner [<span class="keyword">user</span><span class="operator">|</span>role] user_or_role;</span><br><span class="line"></span><br><span class="line">use database_name;</span><br><span class="line">use <span class="keyword">default</span>;</span><br><span class="line"><span class="keyword">select</span> current_database();</span><br></pre></td></tr></table></figure>
+
+<h3 id="create-drop-truncate-table"><a href="#create-drop-truncate-table" class="headerlink" title="create/drop/truncate table"></a>create/drop/truncate table</h3><h4 id="create-table"><a href="#create-table" class="headerlink" title="create table"></a>create table</h4><p><font color="blue">表/列名不区分大小写,SerDe and property names区分大小写.</font></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> [temporary] [<span class="keyword">external</span>] <span class="keyword">table</span> [if <span class="keyword">not</span> <span class="keyword">exists</span>] [db_name.]table_name</span><br><span class="line">  [(col_name data_type [column_constraint_specification] [comment col_comment], ... [constraint_specification])]</span><br><span class="line">  [comment table_comment]</span><br><span class="line">  [partitioned <span class="keyword">by</span> (col_name data_type [comment col_comment], ...)]</span><br><span class="line">  [clustered <span class="keyword">by</span> (col_name, col_name, ...) [sorted <span class="keyword">by</span> (col_name [<span class="keyword">asc</span><span class="operator">|</span><span class="keyword">desc</span>], ...)] <span class="keyword">into</span> num_buckets buckets]</span><br><span class="line">  [skewed <span class="keyword">by</span> (col_name, col_name, ...)</span><br><span class="line">     <span class="keyword">on</span> ((col_value, col_value, ...), (col_value, col_value, ...), ...)</span><br><span class="line">     [stored <span class="keyword">as</span> directories]</span><br><span class="line">  [</span><br><span class="line">   [<span class="type">row</span> format row_format] </span><br><span class="line">   [stored <span class="keyword">as</span> file_format]</span><br><span class="line">     <span class="operator">|</span> stored <span class="keyword">by</span> <span class="string">&#x27;storage.handler.class.name&#x27;</span> [<span class="keyword">with</span> serdeproperties (...)]</span><br><span class="line">  ]</span><br><span class="line">  [location hdfs_path]</span><br><span class="line">  [tblproperties (property_name<span class="operator">=</span>property_value, ...)]</span><br><span class="line">  [<span class="keyword">as</span> select_statement];</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> [temporary] [<span class="keyword">external</span>] <span class="keyword">table</span> [if <span class="keyword">not</span> <span class="keyword">exists</span>] [db_name.]table_name</span><br><span class="line">  <span class="keyword">like</span> existing_table_or_view_name</span><br><span class="line">  [location hdfs_path];</span><br></pre></td></tr></table></figure>
+
+<h5 id="data-type"><a href="#data-type" class="headerlink" title="data_type"></a>data_type</h5><p>primitive_type<br>array_type<br>map_type<br>struct_type<br>union_type</p>
+<h6 id="primitive-type"><a href="#primitive-type" class="headerlink" title="primitive_type"></a>primitive_type</h6><p>tinyint/smallint/int/bigint<br>float/double/double precision<br>decimal/decimal(precision, scale)<br>boolean<br>binary<br>timestamp/date<br>string/varchar/char</p>
+<h6 id="array-type"><a href="#array-type" class="headerlink" title="array_type"></a>array_type</h6><p>ARRAY &lt; data_type &gt;</p>
+<h6 id="map-type"><a href="#map-type" class="headerlink" title="map_type"></a>map_type</h6><p>MAP &lt; primitive_type, data_type &gt;</p>
+<h6 id="struct-type"><a href="#struct-type" class="headerlink" title="struct_type"></a>struct_type</h6><p>STRUCT &lt; col_name : data_type [COMMENT col_comment], ...&gt;</p>
+<h6 id="union-type"><a href="#union-type" class="headerlink" title="union_type"></a>union_type</h6><p>UNIONTYPE &lt; data_type, data_type, ... &gt;</p>
+<h5 id="row-format"><a href="#row-format" class="headerlink" title="row_format"></a>row_format</h5><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">delimited</span><br><span class="line">[fields terminated <span class="keyword">by</span> <span class="type">char</span> [escaped <span class="keyword">by</span> <span class="type">char</span>]]</span><br><span class="line">[collection items terminated <span class="keyword">by</span> <span class="type">char</span>]</span><br><span class="line">[map keys terminated <span class="keyword">by</span> <span class="type">char</span>] [lines terminated <span class="keyword">by</span> <span class="type">char</span>]</span><br><span class="line">[<span class="keyword">null</span> defined <span class="keyword">as</span> <span class="type">char</span>]</span><br><span class="line"><span class="operator">|</span>serde serde_name [<span class="keyword">with</span> serdeproperties (name<span class="operator">=</span><span class="keyword">value</span>, ...)]</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">符号</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">\n</td>
+<td align="left">行分隔符</td>
+</tr>
+<tr>
+<td align="left">^a(ctrl+a)</td>
+<td align="left">字段分隔符,8进制表示为<code>\001</code></td>
+</tr>
+<tr>
+<td align="left">^b</td>
+<td align="left">分隔array/struct中的元素,或用于map中键值对间的分隔,8进制表示为<code>\002</code></td>
+</tr>
+<tr>
+<td align="left">^c</td>
+<td align="left">用于map中键和值间的分隔,8进制表示为<code>\003</code></td>
+</tr>
+</tbody></table>
+<h5 id="file-format"><a href="#file-format" class="headerlink" title="file_format"></a>file_format</h5><p>sequencefile/textfile/rcfile/orc/parquet/avro/inputformat input_format_classname outputformat output_format_classname</p>
+<h5 id="column-constraint-specification"><a href="#column-constraint-specification" class="headerlink" title="column_constraint_specification"></a>column_constraint_specification</h5><p>[ primary key|unique|not null|default [default_value]|check  [check_expression] enable|disable novalidate rely/norely ]</p>
+<h5 id="default-value"><a href="#default-value" class="headerlink" title="default_value"></a>default_value</h5><p>[ literal|current_user()|current_date()|current_timestamp()|null ] </p>
+<h5 id="constraint-specification"><a href="#constraint-specification" class="headerlink" title="constraint_specification"></a>constraint_specification</h5><p>[, primary key (col_name, ...) disable novalidate rely/norely ]<br>[, primary key (col_name, ...) disable novalidate rely/norely ]<br>[, constraint constraint_name foreign key (col_name, ...) references table_name(col_name, ...) disable novalidate ]<br>[, constraint constraint_name unique (col_name, ...) disable novalidate rely/norely ]<br>[, constraint constraint_name check [check_expression] enable|disable novalidate rely/norely ]</p>
+<h4 id="create-table-as-select"><a href="#create-table-as-select" class="headerlink" title="create table as select"></a>create table as select</h4><p>通过CTAS语句中的查询结果来创建和填充表.  </p>
+<ul>
+<li>目标表是原子表,看不到该表,或看到完整结果的表.</li>
+<li>目标表不能是外部表.</li>
+<li>目标表不能是桶表.</li>
+</ul>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> orctest stored <span class="keyword">as</span> orc tblproperties (&quot;orc.compress&quot;<span class="operator">=</span>&quot;NONE&quot;)</span><br><span class="line"><span class="keyword">as</span> <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> raw;</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> parquettest stored <span class="keyword">as</span> parquet</span><br><span class="line"><span class="keyword">as</span> <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> raw;</span><br></pre></td></tr></table></figure>
+
+<h4 id="create-table-like"><a href="#create-table-like" class="headerlink" title="create table like"></a>create table like</h4><p>复制表结构,不包含数据.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> parquettest2 <span class="keyword">like</span> parquettest;</span><br></pre></td></tr></table></figure>
+
+<h4 id="行格式和serde"><a href="#行格式和serde" class="headerlink" title="行格式和serde"></a>行格式和serde</h4><h5 id="regex"><a href="#regex" class="headerlink" title="regex"></a>regex</h5><p>存储为文本文件,由正则表达式解释.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> testregex (</span><br><span class="line">  id <span class="type">int</span>,</span><br><span class="line">  name string,</span><br><span class="line">  sex string,</span><br><span class="line">  city string,</span><br><span class="line">  age <span class="type">int</span>)</span><br><span class="line"><span class="type">row</span> format serde <span class="string">&#x27;org.apache.hadoop.hive.serde2.RegexSerDe&#x27;</span></span><br><span class="line"><span class="keyword">with</span> serdeproperties (</span><br><span class="line">  &quot;input.regex&quot; <span class="operator">=</span> &quot;(.*?)\t(.*?)\t(.*?)\t(.*?)\t(.*?)&quot;</span><br><span class="line">)</span><br><span class="line">stored <span class="keyword">as</span> textfile;</span><br></pre></td></tr></table></figure>
+
+<h5 id="json"><a href="#json" class="headerlink" title="json"></a>json</h5><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--可能需要引用hive-hcatalog-core.jar</span></span><br><span class="line"><span class="keyword">add</span> jar <span class="operator">/</span>xxx<span class="operator">/</span>hive<span class="operator">-</span>hcatalog<span class="operator">-</span>core.jar;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> my_table(a string, b <span class="type">bigint</span>, ...)</span><br><span class="line"><span class="type">row</span> format serde <span class="string">&#x27;org.apache.hive.hcatalog.data.JsonSerDe&#x27;</span></span><br><span class="line">stored <span class="keyword">as</span> textfile;</span><br><span class="line"></span><br><span class="line"><span class="comment">--hive 3.0</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> my_table(a string, b <span class="type">bigint</span>, ...)</span><br><span class="line"><span class="type">row</span> format serde <span class="string">&#x27;org.apache.hadoop.hive.serde2.JsonSerDe&#x27;</span></span><br><span class="line">stored <span class="keyword">as</span> textfile;</span><br><span class="line"></span><br><span class="line"><span class="comment">--hive 4.0</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> my_table(a string, b <span class="type">bigint</span>, ...) stored <span class="keyword">as</span> jsonfile;</span><br></pre></td></tr></table></figure>
+
+<h5 id="csv-tsv"><a href="#csv-tsv" class="headerlink" title="csv/tsv"></a>csv/tsv</h5><p>default_escape_character为<code>\</code>,default_quote_character为<code>&quot;</code>,default_separator为<code>,</code><br>将所有列视为string类型.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> my_table(a string, b string, ...)</span><br><span class="line"><span class="type">row</span> format serde <span class="string">&#x27;org.apache.hadoop.hive.serde2.OpenCSVSerde&#x27;</span></span><br><span class="line"><span class="keyword">with</span> serdeproperties (</span><br><span class="line">   &quot;separatorChar&quot; <span class="operator">=</span> &quot;\t&quot;,</span><br><span class="line">   &quot;quoteChar&quot;     <span class="operator">=</span> &quot;&#x27;&quot;,</span><br><span class="line">   &quot;escapeChar&quot;    <span class="operator">=</span> &quot;\\&quot;</span><br><span class="line">)  </span><br><span class="line">stored <span class="keyword">as</span> textfile;</span><br></pre></td></tr></table></figure>
+
+<h4 id="管理表-外部表"><a href="#管理表-外部表" class="headerlink" title="管理表/外部表"></a>管理表/外部表</h4><p>默认情况下,hive创建管理表,hive控制表的生命周期.<br>如果删除了管理表或分区,则将删除与该表或分区关联的数据和元数据.<br>外部表可以访问存储远程hdfs位置之类的源中的数据.<br>使用<code>external</code>关键字.<br>如果更改外部表的结构/分区,可以使用<code>msck repair table table_name</code>刷新元数据.<br>当文件已经存在或位于远程位置时,使用外部表,并且即使删除了表,文件也存在.</p>
+<p>1.archive/unarchive/truncate/merge/concatenate仅适用于管理表<br>2.drop删除管理表的数据,而只删除外部表的元数据<br>3.acid/事务处理仅适用于管理表<br>4.查询结果缓存仅适用于管理表<br>5.外部表仅允许rely约束<br>6.某些物化视图功能仅适用于管理表</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">external</span> <span class="keyword">table</span> ... location <span class="string">&#x27;&lt;hdfs_location&gt;&#x27;</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">external</span> <span class="keyword">table</span> ... <span class="keyword">like</span> xxx location <span class="string">&#x27;&lt;hdfs_location&gt;&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<h4 id="分区表"><a href="#分区表" class="headerlink" title="分区表"></a>分区表</h4><p>分层存储,分散压力,加快查询速度.<br>使用<code>partitioned by</code>子句创建分区表.<br>一个表可以具有一个或多个分区列,并为分区列中的每个不同值组合创建一个单独的数据目录.<br>分区列为伪列,表中不能定义与分区列重名的列.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> partitiontest(</span><br><span class="line">  id <span class="type">int</span>,</span><br><span class="line">  name string,</span><br><span class="line">  sex string,</span><br><span class="line">  city string,</span><br><span class="line">  age <span class="type">int</span>)</span><br><span class="line">comment <span class="string">&#x27;this is the page view table&#x27;</span></span><br><span class="line">partitioned <span class="keyword">by</span>(dt string, country string)</span><br><span class="line"><span class="type">row</span> format delimited</span><br><span class="line">fields terminated <span class="keyword">by</span> <span class="string">&#x27;\t&#x27;</span></span><br><span class="line">stored <span class="keyword">as</span> sequencefile;</span><br></pre></td></tr></table></figure>
+
+<h5 id="动态分区"><a href="#动态分区" class="headerlink" title="动态分区"></a>动态分区</h5><p>动态分区的创建取决于输入列的值.<br>必须在select语句的列中最后指定动态分区列,并以它们在partition()子句中出现的顺序指定.</p>
+<table>
+<thead>
+<tr>
+<th align="left">属性</th>
+<th align="left">默认值</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">hive.mapred.mode</td>
+<td align="left">nonstrict</td>
+<td align="left">strict时,扫描分区无where条件则执行失败</td>
+</tr>
+<tr>
+<td align="left">hive.error.on.empty.partition</td>
+<td align="left">false</td>
+<td align="left">动态分区插入空时引发异常</td>
+</tr>
+<tr>
+<td align="left">hive.exec.dynamic.partition</td>
+<td align="left">true</td>
+<td align="left">true为启用动态分区插入</td>
+</tr>
+<tr>
+<td align="left">hive.exec.dynamic.partition.mode</td>
+<td align="left">strict</td>
+<td align="left">strict时必须至少指定一个静态分区,nonstrict时允许所有分区都是动态的</td>
+</tr>
+<tr>
+<td align="left">hive.exec.max.dynamic.partitions.pernode</td>
+<td align="left">100</td>
+<td align="left">每个map/reducer节点中允许创建的最大动态分区数</td>
+</tr>
+<tr>
+<td align="left">hive.exec.max.dynamic.partitions</td>
+<td align="left">1000</td>
+<td align="left">总共允许创建的最大动态分区数</td>
+</tr>
+<tr>
+<td align="left">hive.exec.max.created.files</td>
+<td align="left">100000</td>
+<td align="left">作业创建的hdfs文件的最大数量</td>
+</tr>
+</tbody></table>
+<h4 id="桶表"><a href="#桶表" class="headerlink" title="桶表"></a>桶表</h4><p>使用<code>clustered by</code>列对表或分区进行存储.<br>通过<code>sort by</code>列在该存储区中对数据进行排序.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> buckettest(</span><br><span class="line">  id <span class="type">int</span>,</span><br><span class="line">  name string,</span><br><span class="line">  sex string,</span><br><span class="line">  city string,</span><br><span class="line">  age <span class="type">int</span></span><br><span class="line">)</span><br><span class="line">partitioned <span class="keyword">by</span>(dt string)</span><br><span class="line">clustered <span class="keyword">by</span>(id) sorted <span class="keyword">by</span>(name) <span class="keyword">into</span> <span class="number">2</span> buckets;</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> hive.enforce.bucketing <span class="operator">=</span> <span class="literal">true</span>;</span><br><span class="line"><span class="keyword">from</span> raw</span><br><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">table</span> buckettest</span><br><span class="line"><span class="keyword">partition</span> (dt<span class="operator">=</span><span class="string">&#x27;20210223&#x27;</span>)</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span>;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>桶表的数据加载:<br>由于桶表的数据不能通过<code>hdfs dfs -put文件</code>/load data加载,只能通过<code>insert overwrite</code>进行加载,<br>所以把文件加载到桶表中,需要先创建普通表,并通过<code>insert overwrite</code>的方式将普通表的数据通过查询的方式加载到桶表当中去.</p>
+</blockquote>
+<h4 id="skewed-tables"><a href="#skewed-tables" class="headerlink" title="skewed tables"></a>skewed tables</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> list_bucket_single (key string, <span class="keyword">value</span> string)</span><br><span class="line">  skewed <span class="keyword">by</span> (key) <span class="keyword">on</span> (<span class="number">1</span>,<span class="number">5</span>,<span class="number">6</span>) [stored <span class="keyword">as</span> directories];</span><br><span class="line"></span><br><span class="line"><span class="comment">--两个倾斜列</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> list_bucket_multiple (col1 string, col2 <span class="type">int</span>, col3 string)</span><br><span class="line">  skewed <span class="keyword">by</span> (col1, col2) <span class="keyword">on</span> ((<span class="string">&#x27;s1&#x27;</span>,<span class="number">1</span>), (<span class="string">&#x27;s3&#x27;</span>,<span class="number">3</span>), (<span class="string">&#x27;s13&#x27;</span>,<span class="number">13</span>), (<span class="string">&#x27;s78&#x27;</span>,<span class="number">78</span>)) [stored <span class="keyword">as</span> directories];</span><br></pre></td></tr></table></figure>
+
+<h4 id="temporary-tables"><a href="#temporary-tables" class="headerlink" title="temporary tables"></a>temporary tables</h4><ul>
+<li>不支持分区列</li>
+<li>不支持创建索引</li>
+<li>只在当前会话可见</li>
+<li>存储策略,memory/ssd/default,<code>hive.exec.temporary.table.storage</code></li>
+<li>如果与原始表名冲突时,则原始表不能访问,只能访问临时表</li>
+</ul>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> temporary <span class="keyword">table</span> temporarytest (</span><br><span class="line">  id <span class="type">int</span>,</span><br><span class="line">  name string,</span><br><span class="line">  sex string,</span><br><span class="line">  city string,</span><br><span class="line">  age <span class="type">int</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="drop-table"><a href="#drop-table" class="headerlink" title="drop table"></a>drop table</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">drop</span> <span class="keyword">table</span> [if <span class="keyword">exists</span>] table_name [purge];</span><br></pre></td></tr></table></figure>
+
+<h4 id="truncate-table"><a href="#truncate-table" class="headerlink" title="truncate table"></a>truncate table</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--其中partition_spec:(partition_column = partition_col_value,  ...)</span></span><br><span class="line"><span class="keyword">truncate</span> [<span class="keyword">table</span>] table_name [<span class="keyword">partition</span> partition_spec];</span><br></pre></td></tr></table></figure>
+
+<h3 id="alter-table-partition-column"><a href="#alter-table-partition-column" class="headerlink" title="alter table/partition/column"></a>alter table/partition/column</h3><h4 id="rename"><a href="#rename" class="headerlink" title="rename"></a>rename</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> parquettest2 rename <span class="keyword">to</span> parquettest3;</span><br></pre></td></tr></table></figure>
+
+<h4 id="更改表属性"><a href="#更改表属性" class="headerlink" title="更改表属性"></a>更改表属性</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--其中table_properties:(property_name = property_value, ...)</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name <span class="keyword">set</span> tblproperties table_properties;</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> raw <span class="keyword">set</span> tblproperties (&quot;comment&quot;<span class="operator">=</span>&quot;xxx&quot;);</span><br></pre></td></tr></table></figure>
+
+<h4 id="添加serde属性"><a href="#添加serde属性" class="headerlink" title="添加serde属性"></a>添加serde属性</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--serde_properties:(property_name = property_value, ... )</span></span><br><span class="line"><span class="comment">--property_name/property_value必须加引号</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name [<span class="keyword">partition</span> partition_spec] <span class="keyword">set</span> serde serde_class_name [<span class="keyword">with</span> serdeproperties serde_properties];</span><br><span class="line"> </span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name [<span class="keyword">partition</span> partition_spec] <span class="keyword">set</span> serdeproperties serde_properties;</span><br><span class="line"></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> raw <span class="keyword">set</span> serdeproperties (<span class="string">&#x27;field.delim&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;|&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="更改表存储属性"><a href="#更改表存储属性" class="headerlink" title="更改表存储属性"></a>更改表存储属性</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name clustered <span class="keyword">by</span> (col_name, col_name, ...) [sorted <span class="keyword">by</span> (col_name, ...)] <span class="keyword">into</span> num_buckets buckets;</span><br><span class="line"></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> buckettest clustered <span class="keyword">by</span> (id) sorted <span class="keyword">by</span> (name) <span class="keyword">into</span> <span class="number">3</span> buckets;</span><br></pre></td></tr></table></figure>
+
+<h4 id="更改倾斜表属性"><a href="#更改倾斜表属性" class="headerlink" title="更改倾斜表属性"></a>更改倾斜表属性</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name skewed <span class="keyword">by</span> (col_name1, col_name2, ...)</span><br><span class="line">  <span class="keyword">on</span> ([(col_name1_value, col_name2_value, ...) [, (col_name1_value, col_name2_value), ...]</span><br><span class="line">  [stored <span class="keyword">as</span> directories];</span><br><span class="line"><span class="comment">--更改表不倾斜</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name <span class="keyword">not</span> skewed;</span><br><span class="line"><span class="comment">--</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name <span class="keyword">not</span> stored <span class="keyword">as</span> directories;</span><br><span class="line"><span class="comment">--</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name <span class="keyword">set</span> skewed location (col_name1<span class="operator">=</span>&quot;location1&quot; [, col_name2<span class="operator">=</span>&quot;location2&quot;, ...] );</span><br></pre></td></tr></table></figure>
+
+<h4 id="更改表约束"><a href="#更改表约束" class="headerlink" title="更改表约束"></a>更改表约束</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name <span class="keyword">add</span> <span class="keyword">constraint</span> constraint_name <span class="keyword">primary</span> key (<span class="keyword">column</span>, ...) disable novalidate;</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name <span class="keyword">add</span> <span class="keyword">constraint</span> constraint_name <span class="keyword">foreign</span> key (<span class="keyword">column</span>, ...) <span class="keyword">references</span> table_name(<span class="keyword">column</span>, ...) disable novalidate rely;</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name <span class="keyword">add</span> <span class="keyword">constraint</span> constraint_name <span class="keyword">unique</span> (<span class="keyword">column</span>, ...) disable novalidate;</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name change <span class="keyword">column</span> column_name column_name data_type <span class="keyword">constraint</span> constraint_name <span class="keyword">not</span> <span class="keyword">null</span> enable;</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name change <span class="keyword">column</span> column_name column_name data_type <span class="keyword">constraint</span> constraint_name <span class="keyword">default</span> default_value enable;</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name change <span class="keyword">column</span> column_name column_name data_type <span class="keyword">constraint</span> constraint_name <span class="keyword">check</span> check_expression enable;</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name <span class="keyword">drop</span> <span class="keyword">constraint</span> constraint_name;</span><br></pre></td></tr></table></figure>
+
+<h4 id="添加分区"><a href="#添加分区" class="headerlink" title="添加分区"></a>添加分区</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--partition_spec:(partition_column = partition_col_value, ...)</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name <span class="keyword">add</span> [if <span class="keyword">not</span> <span class="keyword">exists</span>] <span class="keyword">partition</span> partition_spec [location <span class="string">&#x27;location&#x27;</span>][, ...];</span><br><span class="line"></span><br><span class="line"><span class="comment">--同时增加多个分区</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> buckettest <span class="keyword">add</span> <span class="keyword">partition</span> (dt<span class="operator">=</span><span class="string">&#x27;20210228&#x27;</span>) <span class="keyword">partition</span> (dt<span class="operator">=</span><span class="string">&#x27;20210229&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="删除分区"><a href="#删除分区" class="headerlink" title="删除分区"></a>删除分区</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name <span class="keyword">drop</span> [if <span class="keyword">exists</span>] <span class="keyword">partition</span> partition_spec[, ...] [ignore protection] [purge];</span><br></pre></td></tr></table></figure>
+
+<h4 id="重命名分区"><a href="#重命名分区" class="headerlink" title="重命名分区"></a>重命名分区</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> buckettest <span class="keyword">partition</span> (dt<span class="operator">=</span><span class="string">&#x27;20210223&#x27;</span>) rename <span class="keyword">to</span> <span class="keyword">partition</span> (dt<span class="operator">=</span><span class="string">&#x27;20210222&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="交换分区"><a href="#交换分区" class="headerlink" title="交换分区"></a>交换分区</h4><p>将一个分区中的数据从一个表移动到另一个具有相同架构并且还没有该分区的表.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> dest_table exchange <span class="keyword">partition</span> (<span class="keyword">partition</span> spec...) <span class="keyword">with</span> <span class="keyword">table</span> src_table</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t1 (a string, b string) partitioned <span class="keyword">by</span> (ds string, hr string);</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t2 (a string, b string) partitioned <span class="keyword">by</span> (ds string, hr string);</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> t1 <span class="keyword">add</span> <span class="keyword">partition</span> (ds <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span>, hr <span class="operator">=</span> <span class="string">&#x27;00&#x27;</span>);</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> t1 <span class="keyword">add</span> <span class="keyword">partition</span> (ds <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span>, hr <span class="operator">=</span> <span class="string">&#x27;01&#x27;</span>);</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> t1 <span class="keyword">add</span> <span class="keyword">partition</span> (ds <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span>, hr <span class="operator">=</span> <span class="string">&#x27;03&#x27;</span>);</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> t2 exchange <span class="keyword">partition</span> (ds <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span>, hr <span class="operator">=</span> <span class="string">&#x27;03&#x27;</span>) <span class="keyword">with</span> <span class="keyword">table</span> t1;</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> t2 exchange <span class="keyword">partition</span> (ds<span class="operator">=</span><span class="string">&#x27;1&#x27;</span>) <span class="keyword">with</span> <span class="keyword">table</span> t1;</span><br></pre></td></tr></table></figure>
+
+<h4 id="msck修复表"><a href="#msck修复表" class="headerlink" title="msck修复表"></a>msck修复表</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">msck [repair] <span class="keyword">table</span> table_name [<span class="keyword">add</span><span class="operator">/</span><span class="keyword">drop</span><span class="operator">/</span>sync partitions];</span><br><span class="line">msck repair <span class="keyword">table</span> buckettest;</span><br></pre></td></tr></table></figure>
+
+<h4 id="存档分区"><a href="#存档分区" class="headerlink" title="存档分区"></a>存档分区</h4><p>只会减少文件数,不会压缩.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> hive.archive.enabled<span class="operator">=</span><span class="literal">true</span>;</span><br><span class="line"><span class="keyword">set</span> hive.archive.har.parentdir.settable<span class="operator">=</span><span class="literal">true</span>;</span><br><span class="line"><span class="keyword">set</span> har.partfile.size<span class="operator">=</span><span class="number">1099511627776</span>;</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> buckettest archive <span class="keyword">partition</span> (dt<span class="operator">=</span><span class="string">&#x27;20210222&#x27;</span>);</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> buckettest unarchive <span class="keyword">partition</span> (dt<span class="operator">=</span><span class="string">&#x27;20210222&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="更改表或分区"><a href="#更改表或分区" class="headerlink" title="更改表或分区"></a>更改表或分区</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--更改表/分区文件格式</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name [<span class="keyword">partition</span> partition_spec] <span class="keyword">set</span> fileformat file_format;</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> buckettest <span class="keyword">partition</span> (dt<span class="operator">=</span><span class="string">&#x27;20210222&#x27;</span>) <span class="keyword">set</span> fileformat parquet;</span><br><span class="line"><span class="comment">--更改表/分区位置</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name [<span class="keyword">partition</span> partition_spec] <span class="keyword">set</span> location &quot;new location&quot;;</span><br><span class="line"><span class="comment">--</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name touch [<span class="keyword">partition</span> partition_spec];</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> buckettest touch <span class="keyword">partition</span> (dt<span class="operator">=</span><span class="string">&#x27;20210224&#x27;</span>);</span><br><span class="line"><span class="comment">--将orc格式的文件合并</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name [<span class="keyword">partition</span> (partition_key <span class="operator">=</span> <span class="string">&#x27;partition_value&#x27;</span> [, ...])] concatenate;</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> buckettest <span class="keyword">partition</span> (dt<span class="operator">=</span><span class="string">&#x27;20210222&#x27;</span>) concatenate;</span><br></pre></td></tr></table></figure>
+
+<h4 id="更改列名称-位置-类型"><a href="#更改列名称-位置-类型" class="headerlink" title="更改列名称/位置/类型"></a>更改列名称/位置/类型</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name [<span class="keyword">partition</span> partition_spec] change [<span class="keyword">column</span>] col_old_name col_new_name column_type</span><br><span class="line">  [comment col_comment] [<span class="keyword">first</span><span class="operator">|</span>after column_name] [cascade<span class="operator">|</span>restrict];</span><br><span class="line"></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_change change a a1 <span class="type">int</span>;</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_change change a1 a2 string after b;</span><br><span class="line"><span class="comment">--the new table&#x27;s structure is:  b int, a2 string, c int.</span></span><br><span class="line"></span><br><span class="line"><span class="comment">--then change column c&#x27;s name to c1, and put it as the first column.不生效</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_change change c c1 <span class="type">int</span> <span class="keyword">first</span>;</span><br><span class="line"><span class="comment">--the new table&#x27;s structure is:  c1 int, b int, a2 string.</span></span><br><span class="line"></span><br><span class="line"><span class="comment">--add a comment to column a1,不生效.</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_change change a1 a1 <span class="type">int</span> comment <span class="string">&#x27;this is column a1&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<h4 id="添加-替换列"><a href="#添加-替换列" class="headerlink" title="添加/替换列"></a>添加/替换列</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> table_name [<span class="keyword">partition</span> partition_spec] <span class="keyword">add</span><span class="operator">|</span>replace columns (col_name data_type [comment col_comment], ...) [cascade<span class="operator">|</span>restrict]</span><br><span class="line"></span><br><span class="line"><span class="comment">--增加列,在分区字段前</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> student <span class="keyword">add</span> columns(app_name string, session_id <span class="type">bigint</span>);</span><br><span class="line"><span class="comment">--删除或替换列</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> test_change replace columns(a <span class="type">int</span>, b <span class="type">int</span>);</span><br></pre></td></tr></table></figure>
+
+<h3 id="create-drop-alter-index"><a href="#create-drop-alter-index" class="headerlink" title="create/drop/alter index"></a>create/drop/alter index</h3><h4 id="创建-删除视图"><a href="#创建-删除视图" class="headerlink" title="创建/删除视图"></a>创建/删除视图</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">view</span> [if <span class="keyword">not</span> <span class="keyword">exists</span>] [db_name.]view_name [(column_name [comment column_comment], ...) ]</span><br><span class="line">  [comment view_comment]</span><br><span class="line">  [tblproperties (property_name <span class="operator">=</span> property_value, ...)]</span><br><span class="line">  <span class="keyword">as</span> <span class="keyword">select</span> ...;</span><br><span class="line"></span><br><span class="line"><span class="keyword">drop</span> <span class="keyword">view</span> [if <span class="keyword">exists</span>] [db_name.]view_name;</span><br></pre></td></tr></table></figure>
+
+<h3 id="create-drop-reload-function"><a href="#create-drop-reload-function" class="headerlink" title="create/drop/reload function"></a>create/drop/reload function</h3><h4 id="临时函数"><a href="#临时函数" class="headerlink" title="临时函数"></a>临时函数</h4><p>当前会话生效,使用<code>add jar</code>命令添加jar包.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> temporary <span class="keyword">function</span> function_name <span class="keyword">as</span> class_name;</span><br><span class="line"><span class="keyword">drop</span> temporary <span class="keyword">function</span> [if <span class="keyword">exists</span>] function_name;</span><br></pre></td></tr></table></figure>
+
+<h4 id="永久函数"><a href="#永久函数" class="headerlink" title="永久函数"></a>永久函数</h4><p>使用<code>using</code>子句指定需要添加到环境中的jar/file/archive.<br>当hive会话首次引用时,这些资源将被添加到环境中,类似于add jar/file.<br>如果hive不在本地模式下,则资源位置必须是hdfs上.<br>该函数将被添加到指定的数据库,或在创建功能时添加到当前数据库.可以通过完全限定函数名称(db_name.function_name)来引用该函数.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">function</span> [db_name.]function_name <span class="keyword">as</span> class_name</span><br><span class="line">  [<span class="keyword">using</span> jar<span class="operator">|</span>file<span class="operator">|</span>archive <span class="string">&#x27;file_uri&#x27;</span> [, jar<span class="operator">|</span>file<span class="operator">|</span>archive <span class="string">&#x27;file_uri&#x27;</span>] ];</span><br><span class="line"></span><br><span class="line"><span class="comment">--删除函数</span></span><br><span class="line"><span class="keyword">drop</span> <span class="keyword">function</span> [if <span class="keyword">exists</span>] function_name;</span><br><span class="line"><span class="comment">--重载函数</span></span><br><span class="line">reload (functions<span class="operator">|</span><span class="keyword">function</span>);</span><br></pre></td></tr></table></figure>
+
+<h3 id="show"><a href="#show" class="headerlink" title="show"></a>show</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> tables [<span class="keyword">in</span> database_name] [<span class="string">&#x27;identifier_with_wildcards&#x27;</span>];</span><br><span class="line"><span class="keyword">show</span> tables <span class="string">&#x27;*test*&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">show</span> views [<span class="keyword">in</span><span class="operator">/</span><span class="keyword">from</span> database_name] [<span class="keyword">like</span> <span class="string">&#x27;pattern_with_wildcards&#x27;</span>];</span><br><span class="line"><span class="keyword">show</span> views <span class="keyword">like</span> <span class="string">&#x27;test_view1|test_view2&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">--显示分区信息</span></span><br><span class="line"><span class="keyword">show</span> partitions table_name;</span><br><span class="line"><span class="keyword">show</span> partitions [db_name.]table_name [<span class="keyword">partition</span>(partition_spec)];</span><br><span class="line"><span class="keyword">show</span> partitions myhive.buckettest <span class="keyword">partition</span>(dt<span class="operator">=</span><span class="string">&#x27;20210222&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">show</span> <span class="keyword">table</span> extended [<span class="keyword">in</span><span class="operator">|</span><span class="keyword">from</span> database_name] <span class="keyword">like</span> <span class="string">&#x27;identifier_with_wildcards&#x27;</span> [<span class="keyword">partition</span>(partition_spec)];</span><br><span class="line"><span class="keyword">show</span> <span class="keyword">table</span> extended <span class="keyword">like</span> buckettest;</span><br><span class="line"></span><br><span class="line"><span class="comment">--显示表属性</span></span><br><span class="line"><span class="keyword">show</span> tblproperties buckettest;</span><br><span class="line"><span class="keyword">show</span> tblproperties buckettest(&quot;last_modified_time&quot;);</span><br><span class="line"></span><br><span class="line"><span class="comment">--显示创建表语句</span></span><br><span class="line"><span class="keyword">show</span> <span class="keyword">create</span> <span class="keyword">table</span> ([db_name.]table_name<span class="operator">|</span>view_name);</span><br><span class="line"><span class="keyword">show</span> <span class="keyword">create</span> <span class="keyword">table</span> buckettest;</span><br><span class="line"></span><br><span class="line"><span class="comment">--</span></span><br><span class="line"><span class="keyword">show</span> columns (<span class="keyword">from</span><span class="operator">|</span><span class="keyword">in</span>) table_name [(<span class="keyword">from</span><span class="operator">|</span><span class="keyword">in</span>) db_name];</span><br><span class="line"><span class="keyword">show</span> columns <span class="keyword">from</span> raw;</span><br><span class="line"></span><br><span class="line"><span class="comment">--</span></span><br><span class="line"><span class="keyword">show</span> functions [<span class="keyword">like</span> &quot;&lt;pattern&gt;&quot;];</span><br></pre></td></tr></table></figure>
+
+<h3 id="desc"><a href="#desc" class="headerlink" title="desc"></a>desc</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">describe</span> database<span class="operator">/</span>schema [extended] db_name;</span><br><span class="line"><span class="keyword">desc</span> database extended myhive;</span><br><span class="line"></span><br><span class="line"><span class="comment">--描述列</span></span><br><span class="line"><span class="keyword">describe</span> [extended<span class="operator">|</span>formatted] [db_name.]table_name[ col_name];</span><br><span class="line"><span class="comment">--描述分区</span></span><br><span class="line"><span class="keyword">describe</span> extended buckettest <span class="keyword">partition</span> (dt<span class="operator">=</span><span class="string">&#x27;20210222&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<h2 id="dml"><a href="#dml" class="headerlink" title="dml"></a>dml</h2><h3 id="load-data"><a href="#load-data" class="headerlink" title="load data"></a>load data</h3><ul>
+<li>通常情况下,指定路径为目录而不是文件,hive会将该目录下所有文件都拷贝</li>
+<li>拷贝后文件名不变</li>
+<li>无overwrite时,当目标文件夹下存在同名文件,会保留旧文件,并重命名新文件+&quot;_copy_1&quot;,不会覆盖</li>
+<li>有overwrite时,之前文件均会覆盖</li>
+<li>local关键字,路径为本地文件系统</li>
+<li>无local时,路径为hdfs文件,支持相对路径</li>
+<li>inpath关键字,路径下不能包含文件夹</li>
+<li>装载的数据格式应与表存储格式相同</li>
+</ul>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--加载本地数据到hive分区目录下,hive自动创建相应分区</span></span><br><span class="line">load data [<span class="keyword">local</span>] inpath <span class="string">&#x27;filepath&#x27;</span> [overwrite] <span class="keyword">into</span> <span class="keyword">table</span> tablename [<span class="keyword">partition</span> (partcol1<span class="operator">=</span>val1, partcol2<span class="operator">=</span>val2 ...)]</span><br></pre></td></tr></table></figure>
+
+<h3 id="insert-data-from-select"><a href="#insert-data-from-select" class="headerlink" title="insert data from select"></a>insert data from select</h3><p>通过查询语句向表中插入数据.</p>
+<ul>
+<li>overwrite关键字,之前文件均会覆盖</li>
+<li>into关键字,以追加的方式写入数据</li>
+</ul>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">table</span> tablename1 [<span class="keyword">partition</span> (partcol1<span class="operator">=</span>val1, partcol2<span class="operator">=</span>val2 ...) [if <span class="keyword">not</span> <span class="keyword">exists</span>]] select_statement1 <span class="keyword">from</span> from_statement;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> tablename1 [<span class="keyword">partition</span> (partcol1<span class="operator">=</span>val1, partcol2<span class="operator">=</span>val2 ...)] select_statement1 <span class="keyword">from</span> from_statement;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--只扫描一次原始数据,按多种方式划分并插入相应分区</span></span><br><span class="line"><span class="comment">--overwrite/into可以混合使用</span></span><br><span class="line"><span class="keyword">from</span> from_statement</span><br><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">table</span> tablename1 [<span class="keyword">partition</span> (partcol1<span class="operator">=</span>val1, partcol2<span class="operator">=</span>val2 ...) [if <span class="keyword">not</span> <span class="keyword">exists</span>]] select_statement1</span><br><span class="line">[<span class="keyword">insert</span> overwrite <span class="keyword">table</span> tablename2 [<span class="keyword">partition</span> ... [if <span class="keyword">not</span> <span class="keyword">exists</span>]] select_statement2]</span><br><span class="line">[<span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> tablename2 [<span class="keyword">partition</span> ...] select_statement2] ...;</span><br><span class="line"></span><br><span class="line"><span class="comment">--动态分区插入</span></span><br><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">table</span> tablename <span class="keyword">partition</span> (partcol1, partcol2 ...) select_statement <span class="keyword">from</span> from_statement;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> tablename <span class="keyword">partition</span> (partcol1, partcol2 ...) select_statement <span class="keyword">from</span> from_statement;</span><br><span class="line"></span><br><span class="line"><span class="comment">--select后的字段需与目标表字段数量相同,不支持中文作为分区字段</span></span><br><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">table</span> student2 <span class="keyword">partition</span>(country,state) <span class="keyword">select</span> <span class="operator">*</span>, em.age, em.department <span class="keyword">from</span> student em;</span><br><span class="line"></span><br><span class="line"><span class="comment">--动态和静态分区可以混合使用,静态分区键必须在动态分区之前</span></span><br><span class="line"><span class="comment">--strict,严格模式,至少有一个分区键是静态的</span></span><br><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">table</span> student2 <span class="keyword">partition</span>(country<span class="operator">=</span><span class="number">18</span>,state) selecgt <span class="operator">*</span>, em.age,em.department <span class="keyword">from</span> student em <span class="keyword">where</span> em.age<span class="operator">=</span><span class="number">18</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="导出数据"><a href="#导出数据" class="headerlink" title="导出数据"></a>导出数据</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> overwrite [<span class="keyword">local</span>] directory directory1</span><br><span class="line">  [<span class="type">row</span> format row_format] [stored <span class="keyword">as</span> file_format]</span><br><span class="line">  <span class="keyword">select</span> ... <span class="keyword">from</span> ...</span><br><span class="line"></span><br><span class="line"><span class="comment">--多个导出</span></span><br><span class="line"><span class="keyword">from</span> from_statement</span><br><span class="line"><span class="keyword">insert</span> overwrite [<span class="keyword">local</span>] directory directory1 select_statement1</span><br><span class="line">[<span class="keyword">insert</span> overwrite [<span class="keyword">local</span>] directory directory2 select_statement2] ...</span><br><span class="line"></span><br><span class="line"><span class="comment">--</span></span><br><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">local</span> directory <span class="string">&#x27;/xxx/xxx&#x27;</span> <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> xxx;</span><br><span class="line"><span class="comment">--指定多个输出目录</span></span><br><span class="line"><span class="keyword">from</span> employee3 em</span><br><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">local</span> directory <span class="string">&#x27;/xxx/1&#x27;</span> <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">where</span> xxx<span class="operator">=</span>&quot;xxx&quot;</span><br><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">local</span> directory <span class="string">&#x27;/xxx/2&#x27;</span> <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">where</span> xxx<span class="operator">=</span>&quot;xxx&quot;</span><br><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">local</span> directory <span class="string">&#x27;/xxx/3&#x27;</span> <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">where</span> xxx<span class="operator">=</span>&quot;xxx&quot;</span><br><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">local</span> directory <span class="string">&#x27;/xxx/4&#x27;</span> <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">where</span> xxx<span class="operator">=</span>&quot;xxx&quot;;</span><br></pre></td></tr></table></figure>
+
+<h2 id="query"><a href="#query" class="headerlink" title="query"></a>query</h2><h3 id="select"><a href="#select" class="headerlink" title="select"></a>select</h3><h4 id="语法-3"><a href="#语法-3" class="headerlink" title="语法"></a>语法</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[<span class="keyword">WITH</span> CommonTableExpression (, CommonTableExpression)<span class="operator">*</span>]</span><br><span class="line"><span class="keyword">SELECT</span> [<span class="keyword">ALL</span> <span class="operator">|</span> <span class="keyword">DISTINCT</span>] select_expr, select_expr, ...</span><br><span class="line">  <span class="keyword">FROM</span> table_reference</span><br><span class="line">  [<span class="keyword">WHERE</span> where_condition]</span><br><span class="line">  [<span class="keyword">GROUP</span> <span class="keyword">BY</span> col_list]</span><br><span class="line">  [<span class="keyword">ORDER</span> <span class="keyword">BY</span> col_list]</span><br><span class="line">  [CLUSTER <span class="keyword">BY</span> col_list</span><br><span class="line">    <span class="operator">|</span> [DISTRIBUTE <span class="keyword">BY</span> col_list] [SORT <span class="keyword">BY</span> col_list]</span><br><span class="line">  ]</span><br><span class="line"> [LIMIT [<span class="keyword">offset</span>,] <span class="keyword">rows</span>];</span><br></pre></td></tr></table></figure>
+
+<h4 id="where-distinct"><a href="#where-distinct" class="headerlink" title="where/distinct"></a>where/distinct</h4><p>不能在where条件中使用列别名.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> sales <span class="keyword">where</span> amount <span class="operator">&gt;</span> <span class="number">10</span> <span class="keyword">and</span> region <span class="operator">=</span> &quot;us&quot;;</span><br><span class="line"><span class="keyword">select</span> <span class="keyword">distinct</span> col1, col2 <span class="keyword">from</span> t1;</span><br><span class="line"><span class="keyword">select</span> <span class="keyword">distinct</span> col1 <span class="keyword">from</span> t1;</span><br></pre></td></tr></table></figure>
+
+<h5 id="谓词操作符"><a href="#谓词操作符" class="headerlink" title="谓词操作符"></a>谓词操作符</h5><p>1.基本数据类型</p>
+<ul>
+<li>a = b</li>
+<li>a &lt;&gt; b</li>
+<li>a &lt; b</li>
+<li>a &lt;= b</li>
+<li>a &gt; b</li>
+<li>a &gt;= b</li>
+<li>a [not] between b and c</li>
+</ul>
+<p>2.string类型</p>
+<ul>
+<li>a [not] like b</li>
+<li>a rlike b</li>
+<li>a regexp b</li>
+</ul>
+<p>3.所有数据类型</p>
+<ul>
+<li>a is [not] null</li>
+</ul>
+<p>分区语法支持=/&lt;/&lt;=/&gt;/&gt;=/&lt;&gt;/and/or/like.<br>like只支持string类型,可用<code>.*</code>.<br>&#39;x%&#39;表示以x开头,&#39;%x&#39;表示以x结尾,&#39;%x%&#39;表示含有x,&#39;_&#39;匹配单个字符.<br><code>country = &quot;usa&quot; and (state = &quot;ca&quot; or state = &quot;az&quot;)</code></p>
+<h5 id="partition-filter"><a href="#partition-filter" class="headerlink" title="partition filter"></a>partition filter</h5><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> buckettest <span class="keyword">where</span> dt <span class="operator">&gt;=</span> <span class="string">&#x27;20210222&#x27;</span> <span class="keyword">and</span> dt <span class="operator">&lt;=</span> <span class="string">&#x27;20210223&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<h4 id="from子查询"><a href="#from子查询" class="headerlink" title="from子查询"></a>from子查询</h4><p>必须给子查询一个名称.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> t3.col</span><br><span class="line"><span class="keyword">from</span> (</span><br><span class="line">  <span class="keyword">select</span> a<span class="operator">+</span>b <span class="keyword">as</span> col</span><br><span class="line">  <span class="keyword">from</span> t1</span><br><span class="line">  <span class="keyword">union</span> <span class="keyword">all</span></span><br><span class="line">  <span class="keyword">select</span> c<span class="operator">+</span>d <span class="keyword">as</span> col</span><br><span class="line">  <span class="keyword">from</span> t2</span><br><span class="line">) t3;</span><br></pre></td></tr></table></figure>
+
+<h4 id="where子查询"><a href="#where子查询" class="headerlink" title="where子查询"></a>where子查询</h4><ul>
+<li>仅在表达式的右侧支持这些子查询</li>
+<li>in/not in子查询只能选择一个列</li>
+<li>exists/not exists必须具有一个或多个相关谓词</li>
+<li>仅在子查询的where子句中支持对父查询的引用</li>
+</ul>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> id, name <span class="keyword">from</span> student s1 </span><br><span class="line"><span class="keyword">where</span> <span class="keyword">exists</span> </span><br><span class="line">(<span class="keyword">select</span> <span class="number">1</span> <span class="keyword">from</span> student s2 <span class="keyword">where</span> s1.id <span class="operator">=</span> s2.id <span class="keyword">and</span> s1.name <span class="operator">=</span> s2.name);</span><br><span class="line"></span><br><span class="line"><span class="comment">--不相关子查询,不引用父查询中的列</span></span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> student s1 <span class="keyword">where</span> s1.id <span class="keyword">in</span> (<span class="keyword">select</span> id <span class="keyword">from</span> student);</span><br></pre></td></tr></table></figure>
+
+<h4 id="having"><a href="#having" class="headerlink" title="having"></a>having</h4><p>对group by语句产生的分组进行条件过滤,如果没有having时,需使用嵌套子查询来完成.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> col1 <span class="keyword">from</span> t1 <span class="keyword">group</span> <span class="keyword">by</span> col1 <span class="keyword">having</span> <span class="built_in">sum</span>(col2) <span class="operator">&gt;</span> <span class="number">10</span>;</span><br><span class="line"><span class="keyword">select</span> col1 <span class="keyword">from</span> (<span class="keyword">select</span> col1, <span class="built_in">sum</span>(col2) <span class="keyword">as</span> col2sum <span class="keyword">from</span> t1 <span class="keyword">group</span> <span class="keyword">by</span> col1) t2 <span class="keyword">where</span> t2.col2sum <span class="operator">&gt;</span> <span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<h4 id="limit"><a href="#limit" class="headerlink" title="limit"></a>limit</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> customers limit <span class="number">5</span>;</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> customers <span class="keyword">order</span> <span class="keyword">by</span> create_date limit <span class="number">2</span>,<span class="number">5</span>;</span><br></pre></td></tr></table></figure>
+
+<h4 id="union-all"><a href="#union-all" class="headerlink" title="union all"></a>union all</h4><h4 id="cte"><a href="#cte" class="headerlink" title="cte"></a>cte</h4><p>公用表表达式(cte)是一个临时结果集,它是从with子句中指定的简单查询派生而来的.<br>该查询紧接在select/insert关键字之前.<br>cte仅在单个语句的执行范围内定义.<br>一个或多个cte可以在select/insert/create table as select/create view as select语句中使用.</p>
+<h5 id="语法-4"><a href="#语法-4" class="headerlink" title="语法"></a>语法</h5><p>withClause: cteClause (, cteClause)*<br>cteClause: cte_name AS (select statment)</p>
+<ul>
+<li>子查询块中不支持with子句</li>
+<li>视图/ctas/insert语句支持cte</li>
+<li>不支持递归查询</li>
+</ul>
+<h5 id="select语句"><a href="#select语句" class="headerlink" title="select语句"></a>select语句</h5><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> q1 <span class="keyword">as</span> ( <span class="keyword">select</span> key <span class="keyword">from</span> src <span class="keyword">where</span> key <span class="operator">=</span> <span class="string">&#x27;5&#x27;</span>)</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">from</span> q1;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- from style</span></span><br><span class="line"><span class="keyword">with</span> q1 <span class="keyword">as</span> (<span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> src <span class="keyword">where</span> key<span class="operator">=</span> <span class="string">&#x27;5&#x27;</span>)</span><br><span class="line"><span class="keyword">from</span> q1</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- chaining CTEs</span></span><br><span class="line"><span class="keyword">with</span> </span><br><span class="line">q1 <span class="keyword">as</span> ( <span class="keyword">select</span> key <span class="keyword">from</span> q2 <span class="keyword">where</span> key <span class="operator">=</span> <span class="string">&#x27;5&#x27;</span>),</span><br><span class="line">q2 <span class="keyword">as</span> ( <span class="keyword">select</span> key <span class="keyword">from</span> src <span class="keyword">where</span> key <span class="operator">=</span> <span class="string">&#x27;5&#x27;</span>)</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> (<span class="keyword">select</span> key <span class="keyword">from</span> q1) a;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- union example</span></span><br><span class="line"><span class="keyword">with</span> </span><br><span class="line">q1 <span class="keyword">as</span> (<span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> src <span class="keyword">where</span> key<span class="operator">=</span> <span class="string">&#x27;5&#x27;</span>),</span><br><span class="line">q2 <span class="keyword">as</span> (<span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> src s2 <span class="keyword">where</span> key <span class="operator">=</span> <span class="string">&#x27;4&#x27;</span>)</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> q1 <span class="keyword">union</span> <span class="keyword">all</span> <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> q2;</span><br></pre></td></tr></table></figure>
+
+<h5 id="view-ctas-insert语句"><a href="#view-ctas-insert语句" class="headerlink" title="view/ctas/insert语句"></a>view/ctas/insert语句</h5><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- insert example</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> s1 <span class="keyword">like</span> src;</span><br><span class="line"><span class="keyword">with</span> q1 <span class="keyword">as</span> ( <span class="keyword">select</span> key, <span class="keyword">value</span> <span class="keyword">from</span> src <span class="keyword">where</span> key <span class="operator">=</span> <span class="string">&#x27;5&#x27;</span>)</span><br><span class="line"><span class="keyword">from</span> q1</span><br><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">table</span> s1</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span>;</span><br><span class="line"> </span><br><span class="line"><span class="comment">-- ctas example</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> s2 <span class="keyword">as</span></span><br><span class="line"><span class="keyword">with</span> q1 <span class="keyword">as</span> ( <span class="keyword">select</span> key <span class="keyword">from</span> src <span class="keyword">where</span> key <span class="operator">=</span> <span class="string">&#x27;4&#x27;</span>)</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> q1;</span><br><span class="line"> </span><br><span class="line"><span class="comment">-- view example</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">view</span> v1 <span class="keyword">as</span></span><br><span class="line"><span class="keyword">with</span> q1 <span class="keyword">as</span> ( <span class="keyword">select</span> key <span class="keyword">from</span> src <span class="keyword">where</span> key <span class="operator">=</span> <span class="string">&#x27;5&#x27;</span>)</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> q1;</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> v1;</span><br><span class="line">  </span><br><span class="line"><span class="comment">-- view example, name collision</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">view</span> v1 <span class="keyword">as</span></span><br><span class="line"><span class="keyword">with</span> q1 <span class="keyword">as</span> ( <span class="keyword">select</span> key <span class="keyword">from</span> src <span class="keyword">where</span> key <span class="operator">=</span> <span class="string">&#x27;5&#x27;</span>)</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> q1;</span><br><span class="line"><span class="keyword">with</span> q1 <span class="keyword">as</span> ( <span class="keyword">select</span> key <span class="keyword">from</span> src <span class="keyword">where</span> key <span class="operator">=</span> <span class="string">&#x27;4&#x27;</span>)</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> v1;</span><br></pre></td></tr></table></figure>
+
+<h3 id="虚拟列"><a href="#虚拟列" class="headerlink" title="虚拟列"></a>虚拟列</h3><ul>
+<li>INPUT__FILE__NAME:hdfs文件名</li>
+<li>BLOCK__OFFSET__INSIDE__FILE:当前全局文件位置</li>
+</ul>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> hive.exec.rowoffset<span class="operator">=</span><span class="literal">true</span>;</span><br><span class="line"><span class="keyword">select</span> INPUT__FILE__NAME, id, BLOCK__OFFSET__INSIDE__FILE, ROW__ID <span class="keyword">from</span> raw_sequence;</span><br></pre></td></tr></table></figure>
+
+<h3 id="explain"><a href="#explain" class="headerlink" title="explain"></a>explain</h3><p>使用关键字explain查看hive查询计划.<br><code>explain [extended] select...</code></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hive/" rel="tag"># hive</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/02/25/hive%E5%87%BD%E6%95%B0/" rel="prev" title="hive函数">
+                  <i class="fa fa-chevron-left"></i> hive函数
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/03/02/hive_hbase%E9%9B%86%E6%88%90/" rel="next" title="hive_hbase集成">
+                  hive_hbase集成 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="flink应用集成日志框架进行日志打点,将日志发送到kafka.flink提供了log4j和logback的配置文件,默认情况下使用log4j.Flink 1.11.0 之前 Flink 使用的日志是 Log4j,在 1.11.0 之后使用的是 Log4j2.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="flink应用日志搜集方案">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/30/flink%E5%BA%94%E7%94%A8%E6%97%A5%E5%BF%97%E6%90%9C%E9%9B%86%E6%96%B9%E6%A1%88/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="flink应用集成日志框架进行日志打点,将日志发送到kafka.flink提供了log4j和logback的配置文件,默认情况下使用log4j.Flink 1.11.0 之前 Flink 使用的日志是 Log4j,在 1.11.0 之后使用的是 Log4j2.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl88.png">
+<meta property="article:published_time" content="2022-08-29T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-13T03:37:01.672Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="flink">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/flgl88.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/30/flink%E5%BA%94%E7%94%A8%E6%97%A5%E5%BF%97%E6%90%9C%E9%9B%86%E6%96%B9%E6%A1%88/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>flink应用日志搜集方案 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8%E6%97%A5%E5%BF%97%E8%AE%B0%E5%BD%95"><span class="nav-number">1.</span> <span class="nav-text">如何使用日志记录</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-Log4j2"><span class="nav-number">1.1.</span> <span class="nav-text">配置 Log4j2</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%8E-Log4j1-%E7%9A%84%E5%85%BC%E5%AE%B9"><span class="nav-number">1.1.1.</span> <span class="nav-text">与 Log4j1 的兼容</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-Log4j1"><span class="nav-number">1.2.</span> <span class="nav-text">配置 Log4j1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-logback"><span class="nav-number">1.3.</span> <span class="nav-text">配置 logback</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%8F%91%E4%BA%BA%E5%91%98%E7%9A%84%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="nav-number">1.4.</span> <span class="nav-text">开发人员的最佳实践</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9B%86%E6%88%90log4j2-flink-1-11-0%E5%90%8E"><span class="nav-number">2.</span> <span class="nav-text">集成log4j2(flink 1.11.0后)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8A%E4%BC%A0kafka%E4%BE%9D%E8%B5%96"><span class="nav-number">2.1.</span> <span class="nav-text">上传kafka依赖</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#flink-conf-yml%E9%85%8D%E7%BD%AE"><span class="nav-number">2.2.</span> <span class="nav-text">flink-conf.yml配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#log4j-properties%E9%85%8D%E7%BD%AE"><span class="nav-number">2.3.</span> <span class="nav-text">log4j.properties配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95"><span class="nav-number">2.4.</span> <span class="nav-text">测试</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#java%E7%A8%8B%E5%BA%8F"><span class="nav-number">2.4.1.</span> <span class="nav-text">java程序</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C"><span class="nav-number">2.4.2.</span> <span class="nav-text">运行</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9B%86%E6%88%90log4j"><span class="nav-number">3.</span> <span class="nav-text">集成log4j</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8A%E4%BC%A0kafka%E4%BE%9D%E8%B5%96-1"><span class="nav-number">3.1.</span> <span class="nav-text">上传kafka依赖</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#log4j-properties%E9%85%8D%E7%BD%AE-1"><span class="nav-number">3.2.</span> <span class="nav-text">log4j.properties配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9B%86%E6%88%90logback"><span class="nav-number">4.</span> <span class="nav-text">集成logback</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8A%E4%BC%A0logback%E7%9B%B8%E5%85%B3%E4%BE%9D%E8%B5%96"><span class="nav-number">4.1.</span> <span class="nav-text">上传logback相关依赖</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8A%E4%BC%A0kafka%E4%BE%9D%E8%B5%96-2"><span class="nav-number">4.2.</span> <span class="nav-text">上传kafka依赖</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89logback%E7%9A%84converter%E5%92%8Clayout"><span class="nav-number">4.3.</span> <span class="nav-text">自定义logback的converter和layout</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AElogback-xml%E6%96%87%E4%BB%B6"><span class="nav-number">4.4.</span> <span class="nav-text">配置logback.xml文件</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/30/flink%E5%BA%94%E7%94%A8%E6%97%A5%E5%BF%97%E6%90%9C%E9%9B%86%E6%96%B9%E6%A1%88/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          flink应用日志搜集方案
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-30 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-30T00:00:00+08:00">2022-08-30</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-13 11:37:01" itemprop="dateModified" datetime="2022-09-13T11:37:01+08:00">2022-09-13</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>flink应用集成日志框架进行日志打点,将日志发送到kafka.<br>flink提供了log4j和logback的配置文件,默认情况下使用log4j.<br>Flink 1.11.0 之前 Flink 使用的日志是 Log4j,在 1.11.0 之后使用的是 Log4j2.</p>
+<span id="more"></span>
+<h2 id="如何使用日志记录"><a href="#如何使用日志记录" class="headerlink" title="如何使用日志记录"></a>如何使用日志记录</h2><p>所有 Flink 进程都会创建一个文本格式的日志文件,其中包含该进程中发生的各种事件的信息.<br>这些日志提供了深入了解 Flink 内部工作的途径,同时可以用来输出检测出的问题(以 WARN/ERROR 消息的形式),还可以辅助调试问题.</p>
+<p>日志文件可以通过 Job-/TaskManager 对应的 WebUI 页面访问.<br>所使用的 Resource Provider(如 YARN)可能会提供额外的访问方式来访问日志.</p>
+<p>Flink 中的日志记录是使用 SLF4J 日志接口实现的.<br>这允许你不需要修改 Flink 的源代码就可以使用任何支持 SLF4J 的日志框架.</p>
+<p>默认情况下,使用 Log4j 2 作为底层日志框架.</p>
+<h3 id="配置-Log4j2"><a href="#配置-Log4j2" class="headerlink" title="配置 Log4j2"></a>配置 Log4j2</h3><p>Log4j 2 是通过 property 配置文件进行配置的.<br>Flink 发行版在 conf 目录中附带了以下 log4j 配置文件,如果启用了 Log4j 2,则会自动使用如下文件:</p>
+<ol>
+<li>log4j-cli.properties:Flink 命令行使用(例如 flink run).</li>
+<li>log4j-session.properties:Flink 命令行在启动基于 Kubernetes/Yarn 的 Session 集群时使用(例如 kubernetes-session.sh/yarn-session.sh).</li>
+<li>log4j-console.properties:Job-/TaskManagers 在前台模式运行时使用(例如 Kubernetes).</li>
+<li>log4j.properties: Job-/TaskManagers 默认使用的日志配置.</li>
+</ol>
+<p>Log4j 会定期扫描这些文件的变更,并在必要时调整日志记录行为.<br>默认情况下30秒检查一次,监测间隔可以通过 Log4j 配置文件的 <code>monitorInterval</code> 配置项进行设置.</p>
+<h4 id="与-Log4j1-的兼容"><a href="#与-Log4j1-的兼容" class="headerlink" title="与 Log4j1 的兼容"></a>与 Log4j1 的兼容</h4><p>Flink 附带了 Log4j API bridge 相关的依赖,使当前基于 Log4j1 开发的应用程序可以继续正常运行.<br>如果有基于 Log4j 1 的自定义配置文件或代码,请查看官方 Log4j 兼容和迁移指南.</p>
+<h3 id="配置-Log4j1"><a href="#配置-Log4j1" class="headerlink" title="配置 Log4j1"></a>配置 Log4j1</h3><p>要将 Flink 与 Log4j 1 一起使用,必须确保:</p>
+<ol>
+<li>Classpath 中不存在<br>org.apache.logging.log4j:log4j-core<br>org.apache.logging.log4j:log4j-slf4j-impl<br>org.apache.logging.log4j:log4j-1.2-api.</li>
+<li>Classpath 中存在<br>log4j:log4j<br>org.slf4j:slf4j-log4j12<br>org.apache.logging.log4j:log4j-to-slf4j<br>org.apache.logging.log4j:log4j-api.</li>
+</ol>
+<p>如果在 IDE 中使用 Log4j 1,则必须在 pom 文件中使用上述 Classpath 中应该存在的 jars 依赖项来替换 Classpath 中不应该存在的 jars 依赖项,并尽可能的排除那些传递依赖于 Classpath 中不存在 jars 的依赖项.</p>
+<p>对于 Flink 发行版,这意味着你必须:</p>
+<ol>
+<li>从 lib 目录中移除 log4j-core,log4j-slf4j-impl 和 log4j-1.2-api jars.</li>
+<li>往 lib 目录中添加 log4j,slf4j-log4j12 和 log4j-to-slf4j jars.</li>
+<li>用适配的 Log4j1 版本替换 conf 目录中的所有 log4j 配置文件.</li>
+</ol>
+<h3 id="配置-logback"><a href="#配置-logback" class="headerlink" title="配置 logback"></a>配置 logback</h3><p>要将 Flink 与 logback 一起使用,必须确保:</p>
+<ol>
+<li>Classpath 中不存在 org.apache.logging.log4j:log4j-slf4j-impl.</li>
+<li>Classpath 中存在 ch.qos.logback:logback-core 和 ch.qos.logback:logback-classic.</li>
+</ol>
+<p>如果在 IDE 中使用 logback,则必须在 pom 文件中使用上述 Classpath 中应该存在的 jars 依赖项来替换 Classpath 中不应该存在的 jars 依赖项,并尽可能的排除那些传递依赖于 Classpath 中不存在 jars 的依赖项.</p>
+<p>对于 Flink 发行版,这意味着你必须:</p>
+<ol>
+<li>从 lib 目录中移除 log4j-slf4j-impl jars.</li>
+<li>向 lib 目录中添加 logback-core 和 logback-classic jars.</li>
+</ol>
+<p>Flink 发行版在 conf 目录中附带了以下 logback 配置文件,如果启用了 logback,则会自动使用这些文件:</p>
+<ol>
+<li>logback-session.properties: Flink 命令行在启动基于 Kubernetes/Yarn 的 Session 集群时使用(例如 kubernetes-session.sh/yarn-session.sh).</li>
+<li>logback-console.properties:Job-/TaskManagers 在前台模式运行时使用(例如 Kubernetes).</li>
+<li>logback.xml: 命令行和 Job-/TaskManager 默认使用的日志配置.</li>
+</ol>
+<p>Logback 1.3+ 需要 SLF4J 2,目前不支持.</p>
+<h3 id="开发人员的最佳实践"><a href="#开发人员的最佳实践" class="headerlink" title="开发人员的最佳实践"></a>开发人员的最佳实践</h3><p>通过将相应 Class 的类型对象作为参数调用 org.slf4j.LoggerFactory#LoggerFactory.getLogger 方法可以创建一个 SLF4J 的 logger.<br>强烈建议将 logger 字段设置为 <code>private static final</code> 修饰的类型.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.slf4j.Logger;</span><br><span class="line"><span class="keyword">import</span> org.slf4j.LoggerFactory;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Foobar</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger LOG = LoggerFactory.getLogger(Foobar.class);</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">    LOG.info(<span class="string">&quot;Hello world!&quot;</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>为了最大限度地利用 SLF4J,建议使用其占位符机制.<br>使用占位符可以在日志级别设置得太高而不会记录消息的情况下避免不必要的字符串构造.</p>
+<p>占位符的语法如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">LOG.info(<span class="string">&quot;This message contains &#123;&#125; placeholders. &#123;&#125;&quot;</span>, <span class="number">2</span>, <span class="string">&quot;Yippie&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>占位符也可以和要记录的异常一起使用.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">catch(Exception exception)&#123;</span><br><span class="line">  LOG.error(&quot;An &#123;&#125; occurred.&quot;, &quot;error&quot;, exception);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="集成log4j2-flink-1-11-0后"><a href="#集成log4j2-flink-1-11-0后" class="headerlink" title="集成log4j2(flink 1.11.0后)"></a>集成log4j2(flink 1.11.0后)</h2><p>把日志格式化成 JSON 格式,这里有两种方案:<br>第一种是自己拼接一个 JSON 字符串,<br>第二种是利用官方提供的 <code>net.logstash.log4j.JSONEventLayoutV1</code> 来格式化.<br>可以自己定义 appender 继承 AppenderSkeleton 即可.</p>
+<p>利用 UserFields 添加了两个自定义的字段用来区分日志 <code>job_name</code> 和 <code>yarnContainerId</code>,这样的话日志就非常清晰了.<br>可以根据 job_name 来检索,所以这里还需要设置一个系统属性 yarnContainerId 让 log4j 可以解析到环境变量里的 yarnContainerId,  Flink 默认是没有加这个属性的,所以要自己添加.</p>
+<h3 id="上传kafka依赖"><a href="#上传kafka依赖" class="headerlink" title="上传kafka依赖"></a>上传kafka依赖</h3><p>将kafka-clients-xxx.jar上传到flink的lib目录下.</p>
+<h3 id="flink-conf-yml配置"><a href="#flink-conf-yml配置" class="headerlink" title="flink-conf.yml配置"></a>flink-conf.yml配置</h3><p>在文件最后添加下面两行即可,这样就可以拿到 containerId.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">env.java.opts.taskmanager: -DyarnContainerId&#x3D;$CONTAINER_ID</span><br><span class="line">env.java.opts.jobmanager: -DyarnContainerId&#x3D;$CONTAINER_ID</span><br></pre></td></tr></table></figure>
+
+<h3 id="log4j-properties配置"><a href="#log4j-properties配置" class="headerlink" title="log4j.properties配置"></a>log4j.properties配置</h3><p>在文件(<code>log4j-*.properties</code>)最后添加以下内容.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">rootLogger.appenderRef.kafka.ref &#x3D; Kafka</span><br><span class="line">appender.kafka.type&#x3D;Kafka</span><br><span class="line">appender.kafka.name&#x3D;Kafka</span><br><span class="line">appender.kafka.syncSend&#x3D;true</span><br><span class="line">appender.kafka.ignoreExceptions&#x3D;false</span><br><span class="line">appender.kafka.topic&#x3D;xx3</span><br><span class="line">appender.kafka.property.type&#x3D;Property</span><br><span class="line">appender.kafka.property.name&#x3D;bootstrap.servers</span><br><span class="line">appender.kafka.property.value&#x3D;oceanbase004:9092</span><br><span class="line">appender.kafka.layout.type&#x3D;JSONLayout</span><br><span class="line">apender.kafka.layout.value&#x3D;net.logstash.log4j.JSONEventLayoutV1</span><br><span class="line">appender.kafka.layout.compact&#x3D;true</span><br><span class="line">appender.kafka.layout.complete&#x3D;false</span><br><span class="line">appender.kafka.layout.additionalField1.type&#x3D;KeyValuePair</span><br><span class="line">appender.kafka.layout.additionalField1.key&#x3D;logdir</span><br><span class="line">appender.kafka.layout.additionalField1.value&#x3D;$&#123;sys:log.file&#125;</span><br><span class="line">appender.kafka.layout.additionalField2.type&#x3D;KeyValuePair</span><br><span class="line">appender.kafka.layout.additionalField2.key&#x3D;job_name</span><br><span class="line">appender.kafka.layout.additionalField2.value&#x3D;$&#123;sys:job_name&#125;</span><br><span class="line">appender.kafka.layout.additionalField3.type&#x3D;KeyValuePair</span><br><span class="line">appender.kafka.layout.additionalField3.key&#x3D;yarnContainerId</span><br><span class="line">appender.kafka.layout.additionalField3.value&#x3D;$&#123;sys:yarnContainerId&#125;</span><br><span class="line"></span><br><span class="line"># 自定义布局格式</span><br><span class="line">appender.kafka.layout.type&#x3D;PatternLayout</span><br><span class="line">appender.kafka.layout.pattern&#x3D;&#123;&quot;log_level&quot;:&quot;%p&quot;,&quot;log_timestamp&quot;:&quot;%d&#123;ISO8601&#125;&quot;,&quot;log_thread&quot;:&quot;%t&quot;,&quot;log_file&quot;:&quot;%F&quot;, &quot;log_line&quot;:&quot;%L&quot;,&quot;log_message&quot;:&quot;&#39;%m&#39;&quot;,&quot;log_path&quot;:&quot;%X&#123;log_path&#125;&quot;,&quot;job_name&quot;:&quot;$&#123;sys:job_name&#125;&quot;,&quot;yarnContainerId&quot;:&quot;$&#123;sys:yarnContainerId&#125;&quot;&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h3><h4 id="java程序"><a href="#java程序" class="headerlink" title="java程序"></a>java程序</h4><p>写一个简单的flink流程序.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">ParameterTool parameterTool = ParameterTool.fromPropertiesFile(TestApp.class.getResourceAsStream(<span class="string">&quot;/application.properties&quot;</span>));</span><br><span class="line">env.getConfig().setGlobalJobParameters(parameterTool);</span><br><span class="line"></span><br><span class="line">logger.info(<span class="string">&quot;xxx-创建source&quot;</span>);</span><br><span class="line">DataStream&lt;String&gt; source = getSourceDataStream(env, parameterTool);</span><br><span class="line">DataStream&lt;String&gt; map = source.map(<span class="keyword">new</span> RichMapFunction&lt;String, String&gt;() &#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> String <span class="title">map</span><span class="params">(String value)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    logger.info(<span class="string">&quot;xxx-map转换&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> value + <span class="string">&quot;-\t-&quot;</span> + <span class="string">&quot;maoeryu&quot;</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">DataStream&lt;String&gt; filter = map.filter(<span class="keyword">new</span> RichFilterFunction&lt;String&gt;() &#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">filter</span><span class="params">(String value)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isNumeric(value)) &#123;</span><br><span class="line">      logger.info(<span class="string">&quot;xxx-filter-number&quot;</span>);</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">logger.info(<span class="string">&quot;xxx-print&quot;</span>);</span><br><span class="line">filter.printToErr();</span><br><span class="line"></span><br><span class="line"><span class="comment">//运行job</span></span><br><span class="line">env.execute(<span class="string">&quot;xxx&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="运行"><a href="#运行" class="headerlink" title="运行"></a>运行</h4><p>使用<code>-Denv.java.opts=&quot;-Djob_name=xxx-job-name&quot;</code>传递job名称.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink run -t yarn-per-job --detached -Denv.java.opts&#x3D;&quot;-Djob_name&#x3D;xxx-job-name&quot; -c com.xyz.daily.server.TestApp &#x2F;data&#x2F;xxx&#x2F;flink-exercises-1.0.0.jar</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;log_level&quot;</span>: <span class="string">&quot;INFO&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;log_timestamp&quot;</span>: <span class="string">&quot;2022-08-31T15:21:47,059&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;log_thread&quot;</span>: <span class="string">&quot;Map -&gt; Filter -&gt; Sink: Print to Std. Err (1/1)#0&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;log_file&quot;</span>: <span class="string">&quot;TestApp.java&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;log_line&quot;</span>: <span class="string">&quot;34&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;log_message&quot;</span>: <span class="string">&quot;&#x27;xxx-map转换&#x27;&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;log_path&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;job_name&quot;</span>: <span class="string">&quot;xxx-job-name&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;yarnContainerId&quot;</span>: <span class="string">&quot;container_1661852182549_0022_01_000003&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/flgl88.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="集成log4j"><a href="#集成log4j" class="headerlink" title="集成log4j"></a>集成log4j</h2><p>其它操作同log4j2.</p>
+<h3 id="上传kafka依赖-1"><a href="#上传kafka依赖-1" class="headerlink" title="上传kafka依赖"></a>上传kafka依赖</h3><p>将kafka-clients-xxx.jar上传到flink的lib目录下.</p>
+<h3 id="log4j-properties配置-1"><a href="#log4j-properties配置-1" class="headerlink" title="log4j.properties配置"></a>log4j.properties配置</h3><p>在文件最后添加以下内容.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">log4j.appender.kafka&#x3D;org.apache.kafka.log4jappender.KafkaLog4jAppender</span><br><span class="line">log4j.appender.kafka.brokerList&#x3D;oceanbase004:9092</span><br><span class="line">log4j.appender.kafka.topic&#x3D;xx3</span><br><span class="line">log4j.appender.kafka.compressionType&#x3D;none</span><br><span class="line">log4j.appender.kafka.requiredNumAcks&#x3D;0</span><br><span class="line">log4j.appender.kafka.syncSend&#x3D;true</span><br><span class="line">log4j.appender.kafka.layout&#x3D;org.apache.log4j.PatternLayout</span><br><span class="line"># 自定义日志格式</span><br><span class="line">log4j.appender.kafka.layout.ConversionPattern&#x3D;&#123;&quot;log_level&quot;:&quot;%p&quot;,\</span><br><span class="line">  &quot;log_timestamp&quot;:&quot;%d&#123;ISO8601&#125;&quot;,\</span><br><span class="line">  &quot;log_package&quot;:&quot;%C&quot;,\</span><br><span class="line">  &quot;log_thread&quot;:&quot;%t&quot;,\</span><br><span class="line">  &quot;log_file&quot;:&quot;%F&quot;,\</span><br><span class="line">  &quot;log_line&quot;:&quot;%L&quot;,\</span><br><span class="line">  &quot;log_message&quot;:&quot;%m&quot;,\</span><br><span class="line">  &quot;log_path&quot;:&quot;%X&#123;log_path&#125;&quot;,\</span><br><span class="line">  &quot;job_name&quot;:&quot;$&#123;sys:job_name&#125;&quot;&#125;</span><br><span class="line">log4j.appender.kafka.level&#x3D;INFO</span><br><span class="line"># for package com.demo.kafka, log would be sent to kafka appender.</span><br><span class="line">log4j.logger.kafka&#x3D;INFO</span><br><span class="line"># 打印源为kafka时指定log默认打印级别</span><br><span class="line">log4j.logger.org.apache.kafka&#x3D;WARN</span><br><span class="line"> </span><br><span class="line"># 日志的布局格式</span><br><span class="line">log4j.appender.kafka.layout&#x3D;net.logstash.log4j.JSONEventLayoutV1</span><br><span class="line"># 添加自定义参数 k:v 格式,如果有多个 , 隔开</span><br><span class="line">log4j.appender.kafka.layout.UserFields&#x3D;job_name:$&#123;sys:job_name&#125;,yarnContainerId:$&#123;sys:yarnContainerId&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="集成logback"><a href="#集成logback" class="headerlink" title="集成logback"></a>集成logback</h2><h3 id="上传logback相关依赖"><a href="#上传logback相关依赖" class="headerlink" title="上传logback相关依赖"></a>上传logback相关依赖</h3><p>删除<code>log4j-slf4j-impl-2.17.1.jar</code>,并上传logback相关依赖到flink的lib目录下:<br>logback-access-1.2.3.jar<br>logback-classic-1.2.3.jar<br>logback-core-1.2.3.jar<br>logback-kafka-appender-0.2.0-RC2.jar</p>
+<h3 id="上传kafka依赖-2"><a href="#上传kafka依赖-2" class="headerlink" title="上传kafka依赖"></a>上传kafka依赖</h3><p>将kafka-clients-xxx.jar上传到flink的lib目录下.</p>
+<h3 id="自定义logback的converter和layout"><a href="#自定义logback的converter和layout" class="headerlink" title="自定义logback的converter和layout"></a>自定义logback的converter和layout</h3><p>打包并上传到flink的目录下.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> ch.qos.logback.classic.pattern.ClassicConverter;</span><br><span class="line"><span class="keyword">import</span> ch.qos.logback.classic.spi.ILoggingEvent;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.lang.StringUtils;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 获取flink应用的java环境变量传递的应用名称并添加到日志中</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AppNameConvert</span> <span class="keyword">extends</span> <span class="title">ClassicConverter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String JOB_NAME = <span class="string">&quot;job.name&quot;</span>;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> String appName = <span class="string">&quot;应用默认名称&quot;</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//应用名称,这里就可以获取yarn application id, 运行机器之类的指标打到日志上</span></span><br><span class="line">  <span class="keyword">static</span> &#123;</span><br><span class="line">    String jobName = System.getProperty(JOB_NAME);</span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isNotEmpty(jobName)) &#123;</span><br><span class="line">      appName = jobName;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> String <span class="title">convert</span><span class="params">(ILoggingEvent iLoggingEvent)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> appName;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> ch.qos.logback.classic.PatternLayout;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 自定义应用名称layout</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AppNameLayOut</span> <span class="keyword">extends</span> <span class="title">PatternLayout</span> </span>&#123;</span><br><span class="line">  <span class="keyword">static</span> &#123;</span><br><span class="line">    defaultConverterMap.put(<span class="string">&quot;app&quot;</span>, AppNameConvert.class.getName());</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="配置logback-xml文件"><a href="#配置logback-xml文件" class="headerlink" title="配置logback.xml文件"></a>配置logback.xml文件</h3><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;LOG_PATTERN&quot;</span></span></span><br><span class="line"><span class="tag">            <span class="attr">value</span>=<span class="string">&quot;%d&#123;yyyy-MM-dd HH:mm:ss.SSS&#125; %app [%thread] %-5level %logger&#123;60&#125; %X&#123;sourceThread&#125; - %msg%n&quot;</span>/&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">appender</span> <span class="attr">name</span>=<span class="string">&quot;file&quot;</span> <span class="attr">class</span>=<span class="string">&quot;ch.qos.logback.core.FileAppender&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">file</span>&gt;</span>$&#123;log.file&#125;<span class="tag">&lt;/<span class="name">file</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">append</span>&gt;</span>false<span class="tag">&lt;/<span class="name">append</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">encoder</span> <span class="attr">class</span>=<span class="string">&quot;ch.qos.logback.core.encoder.LayoutWrappingEncoder&quot;</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">layout</span> <span class="attr">class</span>=<span class="string">&quot;com.xyz.logback.AppNameLayOut&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">pattern</span>&gt;</span>$&#123;LOG_PATTERN&#125;<span class="tag">&lt;/<span class="name">pattern</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">layout</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">charset</span>&gt;</span>UTF-8<span class="tag">&lt;/<span class="name">charset</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">encoder</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">appender</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">appender</span> <span class="attr">name</span>=<span class="string">&quot;kafkaAppender&quot;</span> <span class="attr">class</span>=<span class="string">&quot;com.github.danielwegener.logback.kafka.KafkaAppender&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">encoder</span> <span class="attr">class</span>=<span class="string">&quot;ch.qos.logback.core.encoder.LayoutWrappingEncoder&quot;</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">layout</span> <span class="attr">class</span>=<span class="string">&quot;com.xyz.logback.AppNameLayOut&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">pattern</span>&gt;</span>$&#123;LOG_PATTERN&#125;<span class="tag">&lt;/<span class="name">pattern</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">layout</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">charset</span>&gt;</span>UTF-8<span class="tag">&lt;/<span class="name">charset</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">encoder</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">topic</span>&gt;</span>xx3<span class="tag">&lt;/<span class="name">topic</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">keyingStrategy</span> <span class="attr">class</span>=<span class="string">&quot;com.github.danielwegener.logback.kafka.keying.NoKeyKeyingStrategy&quot;</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">deliveryStrategy</span> <span class="attr">class</span>=<span class="string">&quot;com.github.danielwegener.logback.kafka.delivery.AsynchronousDeliveryStrategy&quot;</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">producerConfig</span>&gt;</span>bootstrap.servers=oceanbase004:9092<span class="tag">&lt;/<span class="name">producerConfig</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">producerConfig</span>&gt;</span>retries=3<span class="tag">&lt;/<span class="name">producerConfig</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">producerConfig</span>&gt;</span>acks=1<span class="tag">&lt;/<span class="name">producerConfig</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">producerConfig</span>&gt;</span>batch-size=16384<span class="tag">&lt;/<span class="name">producerConfig</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">producerConfig</span>&gt;</span>buffer-memory=33554432<span class="tag">&lt;/<span class="name">producerConfig</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">producerConfig</span>&gt;</span>properties.max.request.size==2097152<span class="tag">&lt;/<span class="name">producerConfig</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">producerConfig</span>&gt;</span>linger.ms=1000<span class="tag">&lt;/<span class="name">producerConfig</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">producerConfig</span>&gt;</span>max.block.ms=0<span class="tag">&lt;/<span class="name">producerConfig</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">appender</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">&lt;!-- This affects logging for both user code and Flink --&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">root</span> <span class="attr">level</span>=<span class="string">&quot;INFO&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;file&quot;</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;kafkaAppender&quot;</span>/&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">root</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">&lt;!-- Uncomment this if you want to only change Flink&#x27;s logging --&gt;</span></span><br><span class="line">  <span class="comment">&lt;!--&lt;logger name=&quot;org.apache.flink&quot; level=&quot;INFO&quot;&gt;--&gt;</span></span><br><span class="line">  <span class="comment">&lt;!--&lt;appender-ref ref=&quot;file&quot;/&gt;--&gt;</span></span><br><span class="line">  <span class="comment">&lt;!--&lt;/logger&gt;--&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">&lt;!-- The following lines keep the log level of common libraries/connectors on</span></span><br><span class="line"><span class="comment">       log level INFO. The root logger does not override this. You have to manually</span></span><br><span class="line"><span class="comment">       change the log levels here. --&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">logger</span> <span class="attr">name</span>=<span class="string">&quot;akka&quot;</span> <span class="attr">level</span>=<span class="string">&quot;INFO&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;file&quot;</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;kafkaAppender&quot;</span>/&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">logger</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">logger</span> <span class="attr">name</span>=<span class="string">&quot;org.apache.kafka&quot;</span> <span class="attr">level</span>=<span class="string">&quot;INFO&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;file&quot;</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;kafkaAppender&quot;</span>/&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">logger</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">logger</span> <span class="attr">name</span>=<span class="string">&quot;org.apache.hadoop&quot;</span> <span class="attr">level</span>=<span class="string">&quot;INFO&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;file&quot;</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;kafkaAppender&quot;</span>/&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">logger</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">logger</span> <span class="attr">name</span>=<span class="string">&quot;org.apache.zookeeper&quot;</span> <span class="attr">level</span>=<span class="string">&quot;INFO&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;file&quot;</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;kafkaAppender&quot;</span>/&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">logger</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">&lt;!-- Suppress the irrelevant (wrong) warnings from the Netty channel handler --&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">logger</span> <span class="attr">name</span>=<span class="string">&quot;org.jboss.netty.channel.DefaultChannelPipeline&quot;</span> <span class="attr">level</span>=<span class="string">&quot;ERROR&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;file&quot;</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;kafkaAppender&quot;</span>/&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">logger</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/flink/" rel="tag"># flink</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/30/hive%E5%BC%95%E5%85%A5%E7%AC%AC%E4%B8%89%E6%96%B9Jar%E5%8C%85%E7%9A%84%E6%96%B9%E5%BC%8F/" rel="prev" title="hive引入第三方Jar包的方式">
+                  <i class="fa fa-chevron-left"></i> hive引入第三方Jar包的方式
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/09/05/zookeeper%E4%BA%8B%E5%8A%A1%E6%97%A5%E5%BF%97/" rel="next" title="zookeeper事务日志">
+                  zookeeper事务日志 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

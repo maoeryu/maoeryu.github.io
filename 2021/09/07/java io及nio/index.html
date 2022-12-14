@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="IO是Input&#x2F;Output的缩写,它是基于流模型实现的,比如操作文件时使用输入流和输出流来写入和读取文件等. 12345&#x2F;&#x2F; 读取文件byte[] bytes &#x3D; Files.readAllBytes(Paths.get(&quot;d:&#x2F;io.txt&quot;));System.out.println(new String(bytes));&#x2F;&#x2F; 写入文件Files.write(Paths.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="java io及nio">
+<meta property="og:url" content="https://maoeryu.github.io/2021/09/07/java%20io%E5%8F%8Anio/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="IO是Input&#x2F;Output的缩写,它是基于流模型实现的,比如操作文件时使用输入流和输出流来写入和读取文件等. 12345&#x2F;&#x2F; 读取文件byte[] bytes &#x3D; Files.readAllBytes(Paths.get(&quot;d:&#x2F;io.txt&quot;));System.out.println(new String(bytes));&#x2F;&#x2F; 写入文件Files.write(Paths.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/io11.png">
+<meta property="article:published_time" content="2021-09-06T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-09T06:27:31.256Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="java">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/io11.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/09/07/java%20io%E5%8F%8Anio/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>java io及nio | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E7%B1%BB"><span class="nav-number">1.</span> <span class="nav-text">分类</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Writer"><span class="nav-number">1.1.</span> <span class="nav-text">Writer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Reader"><span class="nav-number">1.2.</span> <span class="nav-text">Reader</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#InputStream"><span class="nav-number">1.3.</span> <span class="nav-text">InputStream</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OutputStream"><span class="nav-number">1.4.</span> <span class="nav-text">OutputStream</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Files%E5%B8%B8%E7%94%A8%E6%96%B9%E6%B3%95"><span class="nav-number">1.5.</span> <span class="nav-text">Files常用方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.6.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#NIO"><span class="nav-number">2.</span> <span class="nav-text">NIO</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.1.</span> <span class="nav-text">示例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#AIO"><span class="nav-number">3.</span> <span class="nav-text">AIO</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B-1"><span class="nav-number">3.1.</span> <span class="nav-text">示例</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/09/07/java%20io%E5%8F%8Anio/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          java io及nio
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-09-07 00:00:00" itemprop="dateCreated datePublished" datetime="2021-09-07T00:00:00+08:00">2021-09-07</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-09 14:27:31" itemprop="dateModified" datetime="2022-09-09T14:27:31+08:00">2022-09-09</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>IO是Input/Output的缩写,它是基于流模型实现的,比如操作文件时使用输入流和输出流来写入和读取文件等.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 读取文件</span></span><br><span class="line"><span class="keyword">byte</span>[] bytes = Files.readAllBytes(Paths.get(<span class="string">&quot;d:/io.txt&quot;</span>));</span><br><span class="line">System.out.println(<span class="keyword">new</span> String(bytes));</span><br><span class="line"><span class="comment">// 写入文件</span></span><br><span class="line">Files.write(Paths.get(<span class="string">&quot;d:/io.txt&quot;</span>), <span class="string">&quot;tom1&quot;</span>.getBytes(), StandardOpenOption.APPEND);</span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+<h2 id="分类"><a href="#分类" class="headerlink" title="分类"></a>分类</h2><p>传统的IO按照流类型我们可以分为,字符流/字节流.其中,<br>字符流包括Reader/Writer.<br>字节流包括InputStream/OutputStream.<br>传统IO的类关系图,如下图所示,</p>
+<img src="/images/io11.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="Writer"><a href="#Writer" class="headerlink" title="Writer"></a>Writer</h3><p>用来写入文件,参数2表示覆盖(false)或追加(true).</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Writer writer = <span class="keyword">new</span> FileWriter(<span class="string">&quot;d:/io.txt&quot;</span>,<span class="keyword">true</span>);</span><br><span class="line">writer.append(<span class="string">&quot;maoeryu\r\n&quot;</span>);</span><br><span class="line">writer.close();</span><br></pre></td></tr></table></figure>
+
+<h3 id="Reader"><a href="#Reader" class="headerlink" title="Reader"></a>Reader</h3><p>用来读取文件.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Reader reader = <span class="keyword">new</span> FileReader(<span class="string">&quot;d:/io.txt&quot;</span>);</span><br><span class="line">BufferedReader bufferedReader = <span class="keyword">new</span> BufferedReader(reader);</span><br><span class="line">String str;</span><br><span class="line"><span class="comment">// 逐行读取信息</span></span><br><span class="line"><span class="keyword">while</span> (<span class="keyword">null</span> != (str = bufferedReader.readLine())) &#123;</span><br><span class="line">  System.out.println(str);</span><br><span class="line">&#125;</span><br><span class="line">bufferedReader.close();</span><br><span class="line">reader.close();</span><br></pre></td></tr></table></figure>
+
+<h3 id="InputStream"><a href="#InputStream" class="headerlink" title="InputStream"></a>InputStream</h3><p>用来读取文件.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">InputStream inputStream = <span class="keyword">new</span> FileInputStream(<span class="string">&quot;d:/io.txt&quot;</span>);</span><br><span class="line"><span class="keyword">byte</span>[] bytes = <span class="keyword">new</span> <span class="keyword">byte</span>[inputStream.available()];</span><br><span class="line"><span class="comment">// 读取到byte数组</span></span><br><span class="line"><span class="keyword">int</span> read = inputStream.read(bytes);</span><br><span class="line">System.out.println(read);</span><br><span class="line"><span class="comment">// 内容转换为字符串</span></span><br><span class="line">String content = <span class="keyword">new</span> String(bytes, StandardCharsets.UTF_8);</span><br><span class="line">System.out.println(content);</span><br><span class="line">inputStream.close();</span><br></pre></td></tr></table></figure>
+
+<h3 id="OutputStream"><a href="#OutputStream" class="headerlink" title="OutputStream"></a>OutputStream</h3><p>用来写入文件.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">OutputStream outputStream = <span class="keyword">new</span> FileOutputStream(<span class="string">&quot;d:/io.txt&quot;</span>,<span class="keyword">true</span>);</span><br><span class="line">outputStream.write(<span class="string">&quot;tom\r\n&quot;</span>.getBytes());</span><br><span class="line">outputStream.close();</span><br></pre></td></tr></table></figure>
+
+<h3 id="Files常用方法"><a href="#Files常用方法" class="headerlink" title="Files常用方法"></a>Files常用方法</h3><p>Files.exists():检测文件路径是否存在<br>Files.createFile():创建文件<br>Files.createDirectory():创建文件夹<br>Files.delete():删除一个文件或目录<br>Files.copy():复制文件<br>Files.move():移动文件<br>Files.size():查看文件个数<br>Files.read():读取文件<br>Files.write():写入文件</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>BufferedInputStream是一种带缓存区的输入流,<br>在读取字节数据时可以从底层流中一次性读取多个字节到缓存区,而不必每次都调用系统底层.<br>同理,BufferedOutputStream也是一种带缓冲区的输出流,<br>通过缓冲区输出流,应用程序先把字节写入缓冲区,缓存区满后再调用操作系统底层,从而提高系统性能,而不必每次都去调用系统底层方法.</p>
+<p>FileInputStream在小文件读写时性能较好,而在大文件操作时使用BufferedInputStream更有优势.</p>
+<h2 id="NIO"><a href="#NIO" class="headerlink" title="NIO"></a>NIO</h2><p>NIO(Non-Blocking IO)的出现解决了传统 IO,也就是我们经常说的BIO(Blocking IO)同步阻塞的问题.</p>
+<p>NIO提供了Channel/Selector和Buffer等概念,可以实现多路复用和同步非阻塞IO操作,从而大大提升了IO操作的性能.</p>
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><p>创建了两个Socket客户端,用于收取和打印服务器端的消息.<br>其中,服务器端通过SelectionKey(选择键)获取到SocketChannel(通道),<br>而通道都注册到Selector(选择器)上,<br>所有的客户端都可以获得对应的通道,而不是所有客户端都排队堵塞等待一个服务器连接,<br>这样就实现多路复用的效果了.<br>多路指的是多个通道(SocketChannel),而复用指的是一个服务器端连接重复被不同的客户端使用.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> port = <span class="number">6666</span>;</span><br><span class="line"><span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">  <span class="keyword">try</span> (Selector selector = Selector.open();</span><br><span class="line">       ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();) &#123;</span><br><span class="line">    serverSocketChannel.bind(<span class="keyword">new</span> InetSocketAddress(InetAddress.getLocalHost(), port));</span><br><span class="line">    serverSocketChannel.configureBlocking(<span class="keyword">false</span>);</span><br><span class="line">    serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);</span><br><span class="line">    <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">      <span class="comment">// 阻塞等待就绪的 Channel</span></span><br><span class="line">      selector.select();</span><br><span class="line">      Set&lt;SelectionKey&gt; selectionKeys = selector.selectedKeys();</span><br><span class="line">      Iterator&lt;SelectionKey&gt; iterator = selectionKeys.iterator();</span><br><span class="line">      <span class="keyword">while</span> (iterator.hasNext()) &#123;</span><br><span class="line">        SelectionKey key = iterator.next();</span><br><span class="line">        <span class="keyword">try</span> (SocketChannel channel = ((ServerSocketChannel) key.channel()).accept()) &#123;</span><br><span class="line">          channel.write(Charset.defaultCharset().encode(<span class="string">&quot;maoeryu&quot;</span>));</span><br><span class="line">        &#125;</span><br><span class="line">        iterator.remove();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">    e.printStackTrace();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;).start();</span><br><span class="line"></span><br><span class="line"><span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">  <span class="comment">// Socket 客户端 1(接收信息并打印)</span></span><br><span class="line">  <span class="keyword">try</span> (Socket cSocket = <span class="keyword">new</span> Socket(InetAddress.getLocalHost(), port)) &#123;</span><br><span class="line">    BufferedReader bufferedReader = <span class="keyword">new</span> BufferedReader(<span class="keyword">new</span> InputStreamReader(cSocket.getInputStream()));</span><br><span class="line">    bufferedReader.lines().forEach(s -&gt; System.out.println(<span class="string">&quot;客户端 1 打印:&quot;</span> + s));</span><br><span class="line">  &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">    e.printStackTrace();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;).start();</span><br><span class="line"></span><br><span class="line"><span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">  <span class="comment">// Socket 客户端 2(接收信息并打印)</span></span><br><span class="line">  <span class="keyword">try</span> (Socket cSocket = <span class="keyword">new</span> Socket(InetAddress.getLocalHost(), port)) &#123;</span><br><span class="line">    BufferedReader bufferedReader = <span class="keyword">new</span> BufferedReader(<span class="keyword">new</span> InputStreamReader(cSocket.getInputStream()));</span><br><span class="line">    bufferedReader.lines().forEach(s -&gt; System.out.println(<span class="string">&quot;客户端 2 打印:&quot;</span> + s));</span><br><span class="line">  &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">    e.printStackTrace();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;).start();</span><br></pre></td></tr></table></figure>
+
+<h2 id="AIO"><a href="#AIO" class="headerlink" title="AIO"></a>AIO</h2><p>AIO(Asynchronous IO),NIO的升级,也叫NIO2,<br>实现了异步非堵塞IO,异步IO的操作基于事件和回调机制.</p>
+<h3 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h3><p>AIO实现简单的Socket服务器.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> port = <span class="number">8888</span>;</span><br><span class="line"><span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    AsynchronousChannelGroup group;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      group = AsynchronousChannelGroup.withThreadPool(Executors.newFixedThreadPool(<span class="number">4</span>));</span><br><span class="line">      AsynchronousServerSocketChannel server = AsynchronousServerSocketChannel.open(group).bind(<span class="keyword">new</span> InetSocketAddress(InetAddress.getLocalHost(), port));</span><br><span class="line">      server.accept(<span class="keyword">null</span>, <span class="keyword">new</span> CompletionHandler&lt;AsynchronousSocketChannel, AsynchronousServerSocketChannel&gt;() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">completed</span><span class="params">(AsynchronousSocketChannel result, AsynchronousServerSocketChannel attachment)</span> </span>&#123;</span><br><span class="line">          <span class="comment">// 接收下一个请求</span></span><br><span class="line">          server.accept(<span class="keyword">null</span>, <span class="keyword">this</span>);</span><br><span class="line">          <span class="keyword">try</span> &#123;</span><br><span class="line">            Future&lt;Integer&gt; f = result.write(StandardCharsets.UTF_8.encode(<span class="string">&quot;maoeryu&quot;</span>));</span><br><span class="line">            f.get();</span><br><span class="line">            System.out.println(<span class="string">&quot;服务端发送时间:&quot;</span> + DateFormat.getDateTimeInstance().format(<span class="keyword">new</span> Date()));</span><br><span class="line">            result.close();</span><br><span class="line">          &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">failed</span><span class="params">(Throwable exc, AsynchronousServerSocketChannel attachment)</span> </span>&#123;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;);</span><br><span class="line">      group.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException | InterruptedException e) &#123;</span><br><span class="line">      e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;).start();</span><br><span class="line"></span><br><span class="line"><span class="comment">// Socket 客户端</span></span><br><span class="line">AsynchronousSocketChannel client = AsynchronousSocketChannel.open();</span><br><span class="line">Future&lt;Void&gt; future = client.connect(<span class="keyword">new</span> InetSocketAddress(InetAddress.getLocalHost(), port));</span><br><span class="line">future.get();</span><br><span class="line">ByteBuffer buffer = ByteBuffer.allocate(<span class="number">100</span>);</span><br><span class="line">client.read(buffer, <span class="keyword">null</span>, <span class="keyword">new</span> CompletionHandler&lt;Integer, Void&gt;() &#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">completed</span><span class="params">(Integer result, Void attachment)</span> </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">&quot;客户端打印:&quot;</span> + <span class="keyword">new</span> String(buffer.array()));</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">failed</span><span class="params">(Throwable exc, Void attachment)</span> </span>&#123;</span><br><span class="line">    exc.printStackTrace();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      client.close();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">      e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/java/" rel="tag"># java</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/09/07/java%E5%8F%8D%E5%B0%84%E5%8F%8A%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86/" rel="prev" title="java反射及动态代理">
+                  <i class="fa fa-chevron-left"></i> java反射及动态代理
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/09/08/java%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84-%E9%98%9F%E5%88%97/" rel="next" title="java数据结构-队列">
+                  java数据结构-队列 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

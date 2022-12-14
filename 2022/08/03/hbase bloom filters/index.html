@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="布隆过滤器(Bloom filter)是 HBase 的高级功能,在列族定义时可以声明.能够减少特定访问模式下的查询时间.这种模式增加了内存和存储的负担,默认是关闭状态.  什么是 Bloom Filter?简单介绍就是一种空间优化的哈希表,使用多个哈希函数计算一个值在哈希表中的占用,能够精确判断一个值不存在,能够在一定错误率下提供一个值可能存在的判断.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hbase bloom filters">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/03/hbase%20bloom%20filters/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="布隆过滤器(Bloom filter)是 HBase 的高级功能,在列族定义时可以声明.能够减少特定访问模式下的查询时间.这种模式增加了内存和存储的负担,默认是关闭状态.  什么是 Bloom Filter?简单介绍就是一种空间优化的哈希表,使用多个哈希函数计算一个值在哈希表中的占用,能够精确判断一个值不存在,能够在一定错误率下提供一个值可能存在的判断.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbfilter1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbfilter2.png">
+<meta property="article:published_time" content="2022-08-02T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-09T06:29:41.826Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hbase">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/hbfilter1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/03/hbase%20bloom%20filters/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hbase bloom filters | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.</span> <span class="nav-text">布隆过滤器类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HBase-%E6%9B%B4%E6%96%B0%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.</span> <span class="nav-text">HBase 更新模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E5%BC%80%E9%94%80"><span class="nav-number">3.</span> <span class="nav-text">添加开销</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/03/hbase%20bloom%20filters/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hbase bloom filters
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-03 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-03T00:00:00+08:00">2022-08-03</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-09 14:29:41" itemprop="dateModified" datetime="2022-09-09T14:29:41+08:00">2022-09-09</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>布隆过滤器(Bloom filter)是 HBase 的高级功能,在列族定义时可以声明.<br>能够减少特定访问模式下的查询时间.<br>这种模式增加了内存和存储的负担,默认是关闭状态.</p>
+<blockquote>
+<p>什么是 Bloom Filter?<br>简单介绍就是一种空间优化的哈希表,使用多个哈希函数计算一个值在哈希表中的占用,能够精确判断一个值不存在,能够在一定错误率下提供一个值可能存在的判断.</p>
+</blockquote>
+<span id="more"></span>
+<h3 id="布隆过滤器类型"><a href="#布隆过滤器类型" class="headerlink" title="布隆过滤器类型"></a>布隆过滤器类型</h3><table>
+<thead>
+<tr>
+<th align="left">类型</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">NONE</td>
+<td align="left">不使用布隆过滤器</td>
+</tr>
+<tr>
+<td align="left">ROW</td>
+<td align="left">行键使用布隆过滤器</td>
+</tr>
+<tr>
+<td align="left">ROWCOL</td>
+<td align="left">列键使用布隆过滤器</td>
+</tr>
+</tbody></table>
+<p>列的数量远多于行的数量(除非每行只有一列),使用ROWCOL会占用大量的空间.</p>
+<p>使用Bloom filter的根本原因是默认机制决定了一个存储文件是否包含特定的受限于可用块索引的行键.<br>这个索引是相当粗粒度的,只存储了文件包含块的开始键.<br>例如,系统使用默认的64KB作为块大小,1GB的存储文件分成16384个块,进一步假设每个单元格平均大小是200字节,一个文件中超过500万个单元格.<br>如果用户随机查找一个行键,这个行键很可能在两个块的开始键之间,判断这个键是否真实存在的唯一方法是加载这个块,并扫描查找这个键.</p>
+<p>同时以下情况会使问题变得更复杂,对于一个典型程序来说,用户通常会不断的更新数据,Memstore中的数据不断被flush到磁盘.<br>Major compact会将所有 HFile 合并成大文件,并做数据清理,非常耗时.<br>Minor compact 仅合并最近生成的 HFile,直到合并后的文件达到配置的最大大小.<br>总之一段时间内系统中会存在很多存储文件,其中一些可能包含用户请求行键的单元格,如下图所示(哪个文件包含行键&quot;row-R&quot;).</p>
+<img src="/images/hbfilter1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>这些文件属于同一个Region(StartKey: &quot;row-A&quot;, EndKey: &quot;row-Z&quot;)的同一个列族,只有几个文件包含特定行的更新,文件的块索引包含整个行键的范围(&quot;row-A&quot; ～ &quot;row-Z&quot;),查询&quot;row-R&quot;时会加载每一个文件进行遍历.<br>使用 Bloom filter 的好处是,可以立即判断特定行是否在每一个文件中:能够明确的判断行键不再一个文件中,行键可能在一个文件中(Bloom filter 的特性存在判断可能有错误率,错误率通常为1%).<br>能够减少块加载,提供整个集群的吞吐量.</p>
+<h3 id="HBase-更新模式"><a href="#HBase-更新模式" class="headerlink" title="HBase 更新模式"></a>HBase 更新模式</h3><p>在一种场景下,用户对大部分的行都频繁更新,那么大部分的文件都会包含这些行,这种场景不适用 Bloom filter,不能明显减少加载块的数量,额外增加了很多的存储.<br>如果用户批量更新,一行的数据只被写入少数的文件中,这时候 Bloom filter 可以明显发挥作用.</p>
+<p>同时还能够提高缓存的命中率,因为加载更少的块,意味着缓存的波动更少.<br>BlockCache 的会把读到的整个 DataBlock 缓存起来,因此更少的加载可以减少与请求数据不相关的数据占用缓存.</p>
+<h3 id="添加开销"><a href="#添加开销" class="headerlink" title="添加开销"></a>添加开销</h3><p>除了更新模式,另一个决定是否适用 Bloom filter 的因素是添加开销,每项会在过滤器中占用约1字节的存储空间.<br>1GB的存储文件,假设使用很短的行键,如果每个单元格占用20字节,那么布隆过滤器的最大可能占用51MB空间(1GB/20Byte),如果每个单元格占用1KB,那么过滤器最大只需要1MB空间(1GB/1KB).<br>考虑到过滤器对于查询优化的影响,与1GB的总存储相比,不及1MB的开销比较小.<br>ROW 级别的过滤器相比 ROWCOL 级别的过滤器占用空间更少.</p>
+<blockquote>
+<p>使用行级还是行加列级的过滤器?</p>
+</blockquote>
+<p>取决于业务的使用模式,和存储空间开销</p>
+<p>ROW 级别过滤器有效的场景(按效果大小排序):扫描行(范围扫描),读整行,读行加列<br>ROWCOL 级别过滤器有效的场景:读行加列</p>
+<p>下图总结了一般情况下不同级别过滤器的选择标准:</p>
+<img src="/images/hbfilter2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hbase/" rel="tag"># hbase</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/03/hbase%20compaction/" rel="prev" title="hbase compaction">
+                  <i class="fa fa-chevron-left"></i> hbase compaction
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/05/%E4%BB%8E%E5%88%86%E5%B8%83%E5%BC%8F%E4%B8%80%E8%87%B4%E6%80%A7%E8%B0%88%E5%88%B0cap-base%E7%90%86%E8%AE%BA/" rel="next" title="从分布式一致性谈到cap-base理论">
+                  从分布式一致性谈到cap-base理论 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

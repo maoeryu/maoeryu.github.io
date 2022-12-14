@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="redis命令,string&#x2F;hash&#x2F;list&#x2F;set&#x2F;sortset.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="redis命令-数据结构">
+<meta property="og:url" content="https://maoeryu.github.io/2021/02/20/redis%E5%91%BD%E4%BB%A4-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="redis命令,string&#x2F;hash&#x2F;list&#x2F;set&#x2F;sortset.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2021-02-19T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-07-26T02:57:05.702Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="redis">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/02/20/redis%E5%91%BD%E4%BB%A4-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>redis命令-数据结构 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#string"><span class="nav-number">1.</span> <span class="nav-text">string</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#set-key-value-EX-seconds-PX-milliseconds-KEEPTTL-NX-XX-GET"><span class="nav-number">1.1.</span> <span class="nav-text">set key value [EX seconds|PX milliseconds|KEEPTTL] [NX|XX] [GET]</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#get-key"><span class="nav-number">1.2.</span> <span class="nav-text">get key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mset-k1-v1-k2-v2%E2%80%A6"><span class="nav-number">1.3.</span> <span class="nav-text">mset k1 v1 k2 v2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mget-k1-k2%E2%80%A6"><span class="nav-number">1.4.</span> <span class="nav-text">mget k1 k2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#getset-key-value"><span class="nav-number">1.5.</span> <span class="nav-text">getset key value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#setex-key-ttl-value"><span class="nav-number">1.6.</span> <span class="nav-text">setex key ttl value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#psetex-key-ttl-mill-value"><span class="nav-number">1.7.</span> <span class="nav-text">psetex key ttl_mill value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#setnx-key-value"><span class="nav-number">1.8.</span> <span class="nav-text">setnx key value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#msetnx-k1-v1-k2-v2%E2%80%A6"><span class="nav-number">1.9.</span> <span class="nav-text">msetnx k1 v1 k2 v2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#setrange-key-offset-value"><span class="nav-number">1.10.</span> <span class="nav-text">setrange key offset value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#getrange-key-start-end"><span class="nav-number">1.11.</span> <span class="nav-text">getrange key start end</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#strlen-key"><span class="nav-number">1.12.</span> <span class="nav-text">strlen key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#incr-key"><span class="nav-number">1.13.</span> <span class="nav-text">incr key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#incrby-key-count"><span class="nav-number">1.14.</span> <span class="nav-text">incrby key count</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#incrbyfloat-key-count"><span class="nav-number">1.15.</span> <span class="nav-text">incrbyfloat key count</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#decr-key"><span class="nav-number">1.16.</span> <span class="nav-text">decr key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#decrby-key-count"><span class="nav-number">1.17.</span> <span class="nav-text">decrby key count</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#append-key-newvalue"><span class="nav-number">1.18.</span> <span class="nav-text">append key newvalue</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#setbit-key-offset-value"><span class="nav-number">1.19.</span> <span class="nav-text">setbit key offset value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#getbit-key-offset"><span class="nav-number">1.20.</span> <span class="nav-text">getbit key offset</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#bitcount-key"><span class="nav-number">1.21.</span> <span class="nav-text">bitcount key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#bitop-and-destkey-k1-k2%E2%80%A6"><span class="nav-number">1.22.</span> <span class="nav-text">bitop and destkey k1 k2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#bitop-or-destkey-k1-k2%E2%80%A6"><span class="nav-number">1.23.</span> <span class="nav-text">bitop or destkey k1 k2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#bitop-xor-destkey-k1-k2%E2%80%A6"><span class="nav-number">1.24.</span> <span class="nav-text">bitop xor destkey k1 k2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#bitop-not-destkey-key"><span class="nav-number">1.25.</span> <span class="nav-text">bitop not destkey key</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#hash"><span class="nav-number">2.</span> <span class="nav-text">hash</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#hset-key-field-value"><span class="nav-number">2.1.</span> <span class="nav-text">hset key field value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hsetnx-key-field-value"><span class="nav-number">2.2.</span> <span class="nav-text">hsetnx key field value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hget-key-field"><span class="nav-number">2.3.</span> <span class="nav-text">hget key field</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hmset-key-f1-v1-f2-v2%E2%80%A6"><span class="nav-number">2.4.</span> <span class="nav-text">hmset key f1 v1 f2 v2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hmget-key-f1-f2%E2%80%A6"><span class="nav-number">2.5.</span> <span class="nav-text">hmget key f1 f2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hgetall-key"><span class="nav-number">2.6.</span> <span class="nav-text">hgetall key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hkeys-key"><span class="nav-number">2.7.</span> <span class="nav-text">hkeys key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hvals-key"><span class="nav-number">2.8.</span> <span class="nav-text">hvals key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hincrby-key-field-count"><span class="nav-number">2.9.</span> <span class="nav-text">hincrby key field count</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hincrbyfloat-key-field-count"><span class="nav-number">2.10.</span> <span class="nav-text">hincrbyfloat key field count</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hlen-key"><span class="nav-number">2.11.</span> <span class="nav-text">hlen key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hdel-key-field1-field2%E2%80%A6"><span class="nav-number">2.12.</span> <span class="nav-text">hdel key field1 field2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hexists-key-field"><span class="nav-number">2.13.</span> <span class="nav-text">hexists key field</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hscan-key-cursor-match-pattern-COUNT-count"><span class="nav-number">2.14.</span> <span class="nav-text">hscan key cursor [match pattern] [COUNT count]</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#list"><span class="nav-number">3.</span> <span class="nav-text">list</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#lpush-key-v1-v2%E2%80%A6"><span class="nav-number">3.1.</span> <span class="nav-text">lpush key v1 v2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#lpushx-key-value"><span class="nav-number">3.2.</span> <span class="nav-text">lpushx key value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rpush-key-v1-v2%E2%80%A6"><span class="nav-number">3.3.</span> <span class="nav-text">rpush key v1 v2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rpushx-key-value"><span class="nav-number">3.4.</span> <span class="nav-text">rpushx key value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#lrange-key-start-end"><span class="nav-number">3.5.</span> <span class="nav-text">lrange key start end</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#lpop-key"><span class="nav-number">3.6.</span> <span class="nav-text">lpop key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rpop-key"><span class="nav-number">3.7.</span> <span class="nav-text">rpop key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#blpop-key1-key2-timeout"><span class="nav-number">3.8.</span> <span class="nav-text">blpop key1 key2... timeout</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#brpop-key1-key2-timeout"><span class="nav-number">3.9.</span> <span class="nav-text">brpop key1 key2... timeout</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#brpoplpush-key1-key2-timeout"><span class="nav-number">3.10.</span> <span class="nav-text">brpoplpush key1 key2 timeout</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rpoplpush-key-destkey"><span class="nav-number">3.11.</span> <span class="nav-text">rpoplpush key destkey</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#lindex-key-position"><span class="nav-number">3.12.</span> <span class="nav-text">lindex key position</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#linsert-key-before-after-pivot-value"><span class="nav-number">3.13.</span> <span class="nav-text">linsert key before&#x2F;after pivot value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#llen-key"><span class="nav-number">3.14.</span> <span class="nav-text">llen key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#lrem-key-count-value"><span class="nav-number">3.15.</span> <span class="nav-text">lrem key count value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#lset-key-index-value"><span class="nav-number">3.16.</span> <span class="nav-text">lset key index value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ltrim-key-start-end"><span class="nav-number">3.17.</span> <span class="nav-text">ltrim key start end</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#set"><span class="nav-number">4.</span> <span class="nav-text">set</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#sadd-key-v1-v2%E2%80%A6"><span class="nav-number">4.1.</span> <span class="nav-text">sadd key v1 v2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#smembers-key"><span class="nav-number">4.2.</span> <span class="nav-text">smembers key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sdiff-k1-k2%E2%80%A6"><span class="nav-number">4.3.</span> <span class="nav-text">sdiff k1 k2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sdiffstore-destkey-k1-k2%E2%80%A6"><span class="nav-number">4.4.</span> <span class="nav-text">sdiffstore destkey k1 k2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sinter-k1-k2%E2%80%A6"><span class="nav-number">4.5.</span> <span class="nav-text">sinter k1 k2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sinterstore-destkey-k1-k2%E2%80%A6"><span class="nav-number">4.6.</span> <span class="nav-text">sinterstore destkey k1 k2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sunion-k1-k2%E2%80%A6"><span class="nav-number">4.7.</span> <span class="nav-text">sunion k1 k2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sunionstore-destkey-k1-k2%E2%80%A6"><span class="nav-number">4.8.</span> <span class="nav-text">sunionstore destkey k1 k2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#scard-key"><span class="nav-number">4.9.</span> <span class="nav-text">scard key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sismember-key-value"><span class="nav-number">4.10.</span> <span class="nav-text">sismember key value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#smove-k1-k2-value"><span class="nav-number">4.11.</span> <span class="nav-text">smove k1 k2 value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spop-key-count"><span class="nav-number">4.12.</span> <span class="nav-text">spop key [count]</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#srandmember-key-count"><span class="nav-number">4.13.</span> <span class="nav-text">srandmember key [count]</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#srem-key-v1-v2"><span class="nav-number">4.14.</span> <span class="nav-text">srem key v1 v2</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sscan-key-cursor-match-pattern-COUNT-count"><span class="nav-number">4.15.</span> <span class="nav-text">sscan key cursor [match pattern] [COUNT count]</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sorted"><span class="nav-number">5.</span> <span class="nav-text">sorted</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#zadd-key-score1-v1-score2-v2%E2%80%A6"><span class="nav-number">5.1.</span> <span class="nav-text">zadd key score1 v1 score2 v2…</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zscore-key-value"><span class="nav-number">5.2.</span> <span class="nav-text">zscore key value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zcard-key"><span class="nav-number">5.3.</span> <span class="nav-text">zcard key</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zcount-key-min-max"><span class="nav-number">5.4.</span> <span class="nav-text">zcount key min max</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zincrby-key-count-value"><span class="nav-number">5.5.</span> <span class="nav-text">zincrby key count value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zlexcount-key-min-max"><span class="nav-number">5.6.</span> <span class="nav-text">zlexcount key min max</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zrange-key-start-stop-withscores"><span class="nav-number">5.7.</span> <span class="nav-text">zrange key start stop [withscores]</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zrevrange-key-start-stop-withscores"><span class="nav-number">5.8.</span> <span class="nav-text">zrevrange key start stop [withscores]</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zrangebyles-key-min-max-limit-offset-count"><span class="nav-number">5.9.</span> <span class="nav-text">zrangebyles key min max [limit offset count]</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zrangebyscore-key-min-max-withscores-limit-offset-count"><span class="nav-number">5.10.</span> <span class="nav-text">zrangebyscore key min max [withscores] [limit offset count]</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zrevrangebyscore-key-min-max-withscores-limit-offset-count"><span class="nav-number">5.11.</span> <span class="nav-text">zrevrangebyscore key min max [withscores] [limit offset count]</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zrank-key-value"><span class="nav-number">5.12.</span> <span class="nav-text">zrank key value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zrevrank-key-value"><span class="nav-number">5.13.</span> <span class="nav-text">zrevrank key value</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zrem-key-v1-v2"><span class="nav-number">5.14.</span> <span class="nav-text">zrem key v1 v2</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zremrangebylex-key-min-max"><span class="nav-number">5.15.</span> <span class="nav-text">zremrangebylex key min max</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zremrangebyrank-key-start-stop"><span class="nav-number">5.16.</span> <span class="nav-text">zremrangebyrank key start stop</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zremrangebyscore-key-min-max"><span class="nav-number">5.17.</span> <span class="nav-text">zremrangebyscore key min max</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zunionstore-destkey-numkeys-key-key-WEIGHTS-weight-weight-AGGREGATE-SUM-MIN-MAX"><span class="nav-number">5.18.</span> <span class="nav-text">zunionstore destkey numkeys key [key ...] [WEIGHTS weight [weight ...]] [AGGREGATE SUM|MIN|MAX]</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zinterstore-destkey-numkeys-key-key-WEIGHTS-weight-weight-AGGREGATE-SUM-MIN-MAX"><span class="nav-number">5.19.</span> <span class="nav-text">zinterstore destkey numkeys key [key ...] [WEIGHTS weight [weight ...]] [AGGREGATE SUM|MIN|MAX]</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zscan-key-cursor-match-pattern-COUNT-count"><span class="nav-number">5.20.</span> <span class="nav-text">zscan key cursor [match pattern] [COUNT count]</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/02/20/redis%E5%91%BD%E4%BB%A4-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          redis命令-数据结构
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-02-20 00:00:00" itemprop="dateCreated datePublished" datetime="2021-02-20T00:00:00+08:00">2021-02-20</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-07-26 10:57:05" itemprop="dateModified" datetime="2022-07-26T10:57:05+08:00">2022-07-26</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>redis命令,string/hash/list/set/sortset.</p>
+<span id="more"></span>
+<h2 id="string"><a href="#string" class="headerlink" title="string"></a>string</h2><h3 id="set-key-value-EX-seconds-PX-milliseconds-KEEPTTL-NX-XX-GET"><a href="#set-key-value-EX-seconds-PX-milliseconds-KEEPTTL-NX-XX-GET" class="headerlink" title="set key value [EX seconds|PX milliseconds|KEEPTTL] [NX|XX] [GET]"></a>set key value [EX seconds|PX milliseconds|KEEPTTL] [NX|XX] [GET]</h3><blockquote>
+<p>设置值,存在时覆盖,无视原类型.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set a1 a</span><br></pre></td></tr></table></figure>
+
+<h3 id="get-key"><a href="#get-key" class="headerlink" title="get key"></a>get key</h3><blockquote>
+<p>获取值,非字符串时,返回错误.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">get a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="mset-k1-v1-k2-v2…"><a href="#mset-k1-v1-k2-v2…" class="headerlink" title="mset k1 v1 k2 v2…"></a>mset k1 v1 k2 v2…</h3><blockquote>
+<p>一次设置多个.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mset a1 a a2 a</span><br></pre></td></tr></table></figure>
+
+<h3 id="mget-k1-k2…"><a href="#mget-k1-k2…" class="headerlink" title="mget k1 k2…"></a>mget k1 k2…</h3><blockquote>
+<p>一次获取多个,某个key不存在,这个key返回nil.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mget a1 a2</span><br></pre></td></tr></table></figure>
+
+<h3 id="getset-key-value"><a href="#getset-key-value" class="headerlink" title="getset key value"></a>getset key value</h3><blockquote>
+<p>非字符串时,返回错误.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">getset a1 b</span><br></pre></td></tr></table></figure>
+
+<h3 id="setex-key-ttl-value"><a href="#setex-key-ttl-value" class="headerlink" title="setex key ttl value"></a>setex key ttl value</h3><blockquote>
+<p>设置值和过期时间,单位秒.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">setex a1 100 a</span><br></pre></td></tr></table></figure>
+
+<h3 id="psetex-key-ttl-mill-value"><a href="#psetex-key-ttl-mill-value" class="headerlink" title="psetex key ttl_mill value"></a>psetex key ttl_mill value</h3><blockquote>
+<p>同上,单位毫秒.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">psetex a1 10000 a</span><br></pre></td></tr></table></figure>
+
+<h3 id="setnx-key-value"><a href="#setnx-key-value" class="headerlink" title="setnx key value"></a>setnx key value</h3><blockquote>
+<p>key不存在时,设置值,key存在时,失败,返回0.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">setnx a1 a</span><br></pre></td></tr></table></figure>
+
+<h3 id="msetnx-k1-v1-k2-v2…"><a href="#msetnx-k1-v1-k2-v2…" class="headerlink" title="msetnx k1 v1 k2 v2…"></a>msetnx k1 v1 k2 v2…</h3><blockquote>
+<p>所有key都不存在时,设置kv,至少有一个key存在时,都失败,返回0,原子性操作.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msetnx a1 v1 a2 v2</span><br></pre></td></tr></table></figure>
+
+<h3 id="setrange-key-offset-value"><a href="#setrange-key-offset-value" class="headerlink" title="setrange key offset value"></a>setrange key offset value</h3><blockquote>
+<p>覆盖value字符串,从offset开始,key不存在时,值被设置为\x00\x00\x00 + value.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">setrange a1 3 tom</span><br></pre></td></tr></table></figure>
+
+<h3 id="getrange-key-start-end"><a href="#getrange-key-start-end" class="headerlink" title="getrange key start end"></a>getrange key start end</h3><blockquote>
+<p>截取value子串,前后都包含.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">getrange a1 0 3</span><br></pre></td></tr></table></figure>
+
+<h3 id="strlen-key"><a href="#strlen-key" class="headerlink" title="strlen key"></a>strlen key</h3><blockquote>
+<p>返回value长度.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">strlen a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="incr-key"><a href="#incr-key" class="headerlink" title="incr key"></a>incr key</h3><blockquote>
+<p>存储的数字加1,如果key不存在时会先初始化为0再执行计数,如果value不能转为数字则返回错误.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">incr a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="incrby-key-count"><a href="#incrby-key-count" class="headerlink" title="incrby key count"></a>incrby key count</h3><blockquote>
+<p>同上,加count,count可为负数.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">incrby a1 10</span><br></pre></td></tr></table></figure>
+
+<h3 id="incrbyfloat-key-count"><a href="#incrbyfloat-key-count" class="headerlink" title="incrbyfloat key count"></a>incrbyfloat key count</h3><blockquote>
+<p>同上,浮点count.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">incrbyfloat a1 5.5</span><br></pre></td></tr></table></figure>
+
+<h3 id="decr-key"><a href="#decr-key" class="headerlink" title="decr key"></a>decr key</h3><blockquote>
+<p>同上,减1.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">decr a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="decrby-key-count"><a href="#decrby-key-count" class="headerlink" title="decrby key count"></a>decrby key count</h3><blockquote>
+<p>同上,减count,count可为负数.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">decrby a1 -2</span><br></pre></td></tr></table></figure>
+
+<h3 id="append-key-newvalue"><a href="#append-key-newvalue" class="headerlink" title="append key newvalue"></a>append key newvalue</h3><blockquote>
+<p>将新值追加到旧值末尾,key不存在时,返回新值长度.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">append a1 tom</span><br></pre></td></tr></table></figure>
+
+<h3 id="setbit-key-offset-value"><a href="#setbit-key-offset-value" class="headerlink" title="setbit key offset value"></a>setbit key offset value</h3><blockquote>
+<p>设置或清除指定offset上的数字,a的10进制为97,2进制表示为01100001.<br>将a的第6位改为1,相当于加2,值变为c,01100011.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">setbit a1 6 1</span><br></pre></td></tr></table></figure>
+
+<h3 id="getbit-key-offset"><a href="#getbit-key-offset" class="headerlink" title="getbit key offset"></a>getbit key offset</h3><blockquote>
+<p>获取指定offset上的数字,set a1 a/get a1 -&gt; getbit a1 0/1/2/.../7.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">getbit a1 6</span><br></pre></td></tr></table></figure>
+
+<h3 id="bitcount-key"><a href="#bitcount-key" class="headerlink" title="bitcount key"></a>bitcount key</h3><blockquote>
+<p>计算key中数字为1的数量.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bitcount a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="bitop-and-destkey-k1-k2…"><a href="#bitop-and-destkey-k1-k2…" class="headerlink" title="bitop and destkey k1 k2…"></a>bitop and destkey k1 k2…</h3><blockquote>
+<p>对一个或多个key求逻辑并,结果存到destkey,set a1 a/set a2 b/set a3 c.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bitop and a123 a1 a2 a3</span><br></pre></td></tr></table></figure>
+
+<h3 id="bitop-or-destkey-k1-k2…"><a href="#bitop-or-destkey-k1-k2…" class="headerlink" title="bitop or destkey k1 k2…"></a>bitop or destkey k1 k2…</h3><blockquote>
+<p>同上,逻辑或.<br>a-&gt;01100001;b-&gt;01100010;c-&gt;01100011.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bitop or a123 a1 a2 a3</span><br></pre></td></tr></table></figure>
+
+<h3 id="bitop-xor-destkey-k1-k2…"><a href="#bitop-xor-destkey-k1-k2…" class="headerlink" title="bitop xor destkey k1 k2…"></a>bitop xor destkey k1 k2…</h3><blockquote>
+<p>同上,逻辑异或.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bitop xor a123 a1 a2 a3</span><br></pre></td></tr></table></figure>
+
+<h3 id="bitop-not-destkey-key"><a href="#bitop-not-destkey-key" class="headerlink" title="bitop not destkey key"></a>bitop not destkey key</h3><blockquote>
+<p>对key求逻辑非.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bitop not a123 a1</span><br></pre></td></tr></table></figure>
+
+<h2 id="hash"><a href="#hash" class="headerlink" title="hash"></a>hash</h2><h3 id="hset-key-field-value"><a href="#hset-key-field-value" class="headerlink" title="hset key field value"></a>hset key field value</h3><blockquote>
+<p>设置指定字段值.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hset a1 name tom</span><br></pre></td></tr></table></figure>
+
+<h3 id="hsetnx-key-field-value"><a href="#hsetnx-key-field-value" class="headerlink" title="hsetnx key field value"></a>hsetnx key field value</h3><blockquote>
+<p>为不存在的字段设置值,字段存在时,失败,返回0.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hsetnx a1 name tom</span><br></pre></td></tr></table></figure>
+
+<h3 id="hget-key-field"><a href="#hget-key-field" class="headerlink" title="hget key field"></a>hget key field</h3><blockquote>
+<p>获取指定字段值.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hget a1 name</span><br></pre></td></tr></table></figure>
+
+<h3 id="hmset-key-f1-v1-f2-v2…"><a href="#hmset-key-f1-v1-f2-v2…" class="headerlink" title="hmset key f1 v1 f2 v2…"></a>hmset key f1 v1 f2 v2…</h3><blockquote>
+<p>一次设置多个字段和值.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hmset a1 name &quot;tom&quot; age 12 desc &quot;redis&quot; addr &quot;country&quot;</span><br></pre></td></tr></table></figure>
+
+<h3 id="hmget-key-f1-f2…"><a href="#hmget-key-f1-f2…" class="headerlink" title="hmget key f1 f2…"></a>hmget key f1 f2…</h3><blockquote>
+<p>一次获取多个字段值.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hmget a1 name age</span><br></pre></td></tr></table></figure>
+
+<h3 id="hgetall-key"><a href="#hgetall-key" class="headerlink" title="hgetall key"></a>hgetall key</h3><blockquote>
+<p>获取所有字段和值,无字段时,key消失.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hgetall a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="hkeys-key"><a href="#hkeys-key" class="headerlink" title="hkeys key"></a>hkeys key</h3><blockquote>
+<p>获取key中所有字段.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hkeys a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="hvals-key"><a href="#hvals-key" class="headerlink" title="hvals key"></a>hvals key</h3><blockquote>
+<p>获取所有值.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hvals a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="hincrby-key-field-count"><a href="#hincrby-key-field-count" class="headerlink" title="hincrby key field count"></a>hincrby key field count</h3><blockquote>
+<p>对指定字段加/减count,key不存在时,先创建hash表,字段不存在时,先初始化字段为0.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hincrby a1 age 11</span><br></pre></td></tr></table></figure>
+
+<h3 id="hincrbyfloat-key-field-count"><a href="#hincrbyfloat-key-field-count" class="headerlink" title="hincrbyfloat key field count"></a>hincrbyfloat key field count</h3><blockquote>
+<p>同上,增量浮点数.</p>
+</blockquote>
+<h3 id="hlen-key"><a href="#hlen-key" class="headerlink" title="hlen key"></a>hlen key</h3><blockquote>
+<p>获取key中所有字段数量.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hlen a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="hdel-key-field1-field2…"><a href="#hdel-key-field1-field2…" class="headerlink" title="hdel key field1 field2…"></a>hdel key field1 field2…</h3><blockquote>
+<p>删除hash表中一个或多个字段,不包含忽略字段的数量.</p>
+</blockquote>
+<h3 id="hexists-key-field"><a href="#hexists-key-field" class="headerlink" title="hexists key field"></a>hexists key field</h3><blockquote>
+<p>查看指定字段是否存在.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexists a1 name</span><br></pre></td></tr></table></figure>
+
+<h3 id="hscan-key-cursor-match-pattern-COUNT-count"><a href="#hscan-key-cursor-match-pattern-COUNT-count" class="headerlink" title="hscan key cursor [match pattern] [COUNT count]"></a>hscan key cursor [match pattern] [COUNT count]</h3><blockquote>
+<p>迭代hash表,同scan.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hscan a1 0&#x2F;hscan a1 0 match a*</span><br></pre></td></tr></table></figure>
+
+<h2 id="list"><a href="#list" class="headerlink" title="list"></a>list</h2><h3 id="lpush-key-v1-v2…"><a href="#lpush-key-v1-v2…" class="headerlink" title="lpush key v1 v2…"></a>lpush key v1 v2…</h3><blockquote>
+<p>插入一个或多个值到列表头部.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lpush a1 redis mysql tom</span><br></pre></td></tr></table></figure>
+
+<h3 id="lpushx-key-value"><a href="#lpushx-key-value" class="headerlink" title="lpushx key value"></a>lpushx key value</h3><blockquote>
+<p>同上,插入已存在key,插入一个.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lpushx a1 tomas</span><br></pre></td></tr></table></figure>
+
+<h3 id="rpush-key-v1-v2…"><a href="#rpush-key-v1-v2…" class="headerlink" title="rpush key v1 v2…"></a>rpush key v1 v2…</h3><blockquote>
+<p>同上,插入尾部.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpush a1 a b c</span><br></pre></td></tr></table></figure>
+
+<h3 id="rpushx-key-value"><a href="#rpushx-key-value" class="headerlink" title="rpushx key value"></a>rpushx key value</h3><blockquote>
+<p>同上,插入已存在key,插入一个.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpushx a1 a b c</span><br></pre></td></tr></table></figure>
+
+<h3 id="lrange-key-start-end"><a href="#lrange-key-start-end" class="headerlink" title="lrange key start end"></a>lrange key start end</h3><blockquote>
+<p>获取指定区间列表的元素.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lrange a1 0 -1</span><br></pre></td></tr></table></figure>
+
+<h3 id="lpop-key"><a href="#lpop-key" class="headerlink" title="lpop key"></a>lpop key</h3><blockquote>
+<p>移除列表第一个元素,无字段时,key消失.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lpop a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="rpop-key"><a href="#rpop-key" class="headerlink" title="rpop key"></a>rpop key</h3><blockquote>
+<p>移除列表最后一个元素.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpop a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="blpop-key1-key2-timeout"><a href="#blpop-key1-key2-timeout" class="headerlink" title="blpop key1 key2... timeout"></a>blpop key1 key2... timeout</h3><blockquote>
+<p>同上,无元素会阻塞到超时或有元素为止,单位秒,按key的顺序移除.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">blpop a1 a2 100</span><br></pre></td></tr></table></figure>
+
+<h3 id="brpop-key1-key2-timeout"><a href="#brpop-key1-key2-timeout" class="headerlink" title="brpop key1 key2... timeout"></a>brpop key1 key2... timeout</h3><blockquote>
+<p>同上,移除最后一个元素.</p>
+</blockquote>
+<h3 id="brpoplpush-key1-key2-timeout"><a href="#brpoplpush-key1-key2-timeout" class="headerlink" title="brpoplpush key1 key2 timeout"></a>brpoplpush key1 key2 timeout</h3><blockquote>
+<p>同上,移除key1最后一个元素,插入到key2头部.</p>
+</blockquote>
+<h3 id="rpoplpush-key-destkey"><a href="#rpoplpush-key-destkey" class="headerlink" title="rpoplpush key destkey"></a>rpoplpush key destkey</h3><blockquote>
+<p>移除key最后一个元素,添加到另一个列表.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpoplpush a1 a2</span><br></pre></td></tr></table></figure>
+
+<h3 id="lindex-key-position"><a href="#lindex-key-position" class="headerlink" title="lindex key position"></a>lindex key position</h3><blockquote>
+<p>通过索引获取列表中的元素,索引可为负数,-1表示最后一个元素,0为第一个元素.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lindex a1 1</span><br></pre></td></tr></table></figure>
+
+<h3 id="linsert-key-before-after-pivot-value"><a href="#linsert-key-before-after-pivot-value" class="headerlink" title="linsert key before/after pivot value"></a>linsert key before/after pivot value</h3><blockquote>
+<p>在元素前/后插入元素.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">linsert a1 before mysql tom</span><br></pre></td></tr></table></figure>
+
+<h3 id="llen-key"><a href="#llen-key" class="headerlink" title="llen key"></a>llen key</h3><blockquote>
+<p>获取列表的长度.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">llen a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="lrem-key-count-value"><a href="#lrem-key-count-value" class="headerlink" title="lrem key count value"></a>lrem key count value</h3><blockquote>
+<p>移除count个等于value的元素,count&gt;0,从头开始,数量为count,&lt;0从尾开始,数量为count的绝对值=0移除所有.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lrem a1 -2 tom</span><br></pre></td></tr></table></figure>
+
+<h3 id="lset-key-index-value"><a href="#lset-key-index-value" class="headerlink" title="lset key index value"></a>lset key index value</h3><blockquote>
+<p>通过索引设置元素,索引超出,错误.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lset a1 0 maoeryu</span><br></pre></td></tr></table></figure>
+
+<h3 id="ltrim-key-start-end"><a href="#ltrim-key-start-end" class="headerlink" title="ltrim key start end"></a>ltrim key start end</h3><blockquote>
+<p>删除区间外的元素,修剪列表.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ltrim a1 0 3</span><br></pre></td></tr></table></figure>
+
+<h2 id="set"><a href="#set" class="headerlink" title="set"></a>set</h2><h3 id="sadd-key-v1-v2…"><a href="#sadd-key-v1-v2…" class="headerlink" title="sadd key v1 v2…"></a>sadd key v1 v2…</h3><blockquote>
+<p>向集合中添加一个或多个元素,元素存在时,忽略.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sadd a1 a b c</span><br></pre></td></tr></table></figure>
+
+<h3 id="smembers-key"><a href="#smembers-key" class="headerlink" title="smembers key"></a>smembers key</h3><blockquote>
+<p>获取集合中所有元素.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">smembers a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="sdiff-k1-k2…"><a href="#sdiff-k1-k2…" class="headerlink" title="sdiff k1 k2…"></a>sdiff k1 k2…</h3><blockquote>
+<p>返回第一个与其他集合间的差异,第一个集合独有的元素,无差集返回空列表.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sdiff a1 a2 a3</span><br></pre></td></tr></table></figure>
+
+<h3 id="sdiffstore-destkey-k1-k2…"><a href="#sdiffstore-destkey-k1-k2…" class="headerlink" title="sdiffstore destkey k1 k2…"></a>sdiffstore destkey k1 k2…</h3><blockquote>
+<p>将差集存储或覆盖destkey,第一个集合独有的元素.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sdiffstore ad a1 a2 a3</span><br></pre></td></tr></table></figure>
+
+<h3 id="sinter-k1-k2…"><a href="#sinter-k1-k2…" class="headerlink" title="sinter k1 k2…"></a>sinter k1 k2…</h3><blockquote>
+<p>返回交集,无交集返回空列表.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sinter a1 a2</span><br></pre></td></tr></table></figure>
+
+<h3 id="sinterstore-destkey-k1-k2…"><a href="#sinterstore-destkey-k1-k2…" class="headerlink" title="sinterstore destkey k1 k2…"></a>sinterstore destkey k1 k2…</h3><blockquote>
+<p>将交集存储或覆盖destkey.</p>
+</blockquote>
+<h3 id="sunion-k1-k2…"><a href="#sunion-k1-k2…" class="headerlink" title="sunion k1 k2…"></a>sunion k1 k2…</h3><blockquote>
+<p>返回并集.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sunion a1 a2</span><br></pre></td></tr></table></figure>
+
+<h3 id="sunionstore-destkey-k1-k2…"><a href="#sunionstore-destkey-k1-k2…" class="headerlink" title="sunionstore destkey k1 k2…"></a>sunionstore destkey k1 k2…</h3><blockquote>
+<p>将并集存储或覆盖destkey.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sunionstore ad2 a1 a2</span><br></pre></td></tr></table></figure>
+
+<h3 id="scard-key"><a href="#scard-key" class="headerlink" title="scard key"></a>scard key</h3><blockquote>
+<p>获取集合中元素的数量.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">scard a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="sismember-key-value"><a href="#sismember-key-value" class="headerlink" title="sismember key value"></a>sismember key value</h3><blockquote>
+<p>判断元素是否存在.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sismember a1 a</span><br></pre></td></tr></table></figure>
+
+<h3 id="smove-k1-k2-value"><a href="#smove-k1-k2-value" class="headerlink" title="smove k1 k2 value"></a>smove k1 k2 value</h3><blockquote>
+<p>移动指定元素,原子性操作.</p>
+</blockquote>
+<h3 id="spop-key-count"><a href="#spop-key-count" class="headerlink" title="spop key [count]"></a>spop key [count]</h3><blockquote>
+<p>移除随机个元素.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spop a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="srandmember-key-count"><a href="#srandmember-key-count" class="headerlink" title="srandmember key [count]"></a>srandmember key [count]</h3><blockquote>
+<p>返回随机个元素,不移除.</p>
+</blockquote>
+<h3 id="srem-key-v1-v2"><a href="#srem-key-v1-v2" class="headerlink" title="srem key v1 v2"></a>srem key v1 v2</h3><blockquote>
+<p>移除一个或多个元素,不包含忽略字段的数量.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">srem a1 a b</span><br></pre></td></tr></table></figure>
+
+<h3 id="sscan-key-cursor-match-pattern-COUNT-count"><a href="#sscan-key-cursor-match-pattern-COUNT-count" class="headerlink" title="sscan key cursor [match pattern] [COUNT count]"></a>sscan key cursor [match pattern] [COUNT count]</h3><blockquote>
+<p>迭代集合元素.</p>
+</blockquote>
+<h2 id="sorted"><a href="#sorted" class="headerlink" title="sorted"></a>sorted</h2><h3 id="zadd-key-score1-v1-score2-v2…"><a href="#zadd-key-score1-v1-score2-v2…" class="headerlink" title="zadd key score1 v1 score2 v2…"></a>zadd key score1 v1 score2 v2…</h3><blockquote>
+<p>插入一个或多个元素和分数,分数值可以是整数或双精度浮点数,成员存在时覆盖,返回值不包含存在的元素数量.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zadd a1 1 a1 2 a2</span><br></pre></td></tr></table></figure>
+
+<h3 id="zscore-key-value"><a href="#zscore-key-value" class="headerlink" title="zscore key value"></a>zscore key value</h3><blockquote>
+<p>获取元素的分数.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zscore a1 c</span><br></pre></td></tr></table></figure>
+
+<h3 id="zcard-key"><a href="#zcard-key" class="headerlink" title="zcard key"></a>zcard key</h3><blockquote>
+<p>获取集合中元素的数量.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zcard a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="zcount-key-min-max"><a href="#zcount-key-min-max" class="headerlink" title="zcount key min max"></a>zcount key min max</h3><blockquote>
+<p>获取指定分数区间元素的数量,前后包含,针对分数.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zcount a1 1 2</span><br></pre></td></tr></table></figure>
+
+<h3 id="zincrby-key-count-value"><a href="#zincrby-key-count-value" class="headerlink" title="zincrby key count value"></a>zincrby key count value</h3><blockquote>
+<p>对集合中指定元素加上count,count可以为负数.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zincrby a1 4 a1</span><br></pre></td></tr></table></figure>
+
+<h3 id="zlexcount-key-min-max"><a href="#zlexcount-key-min-max" class="headerlink" title="zlexcount key min max"></a>zlexcount key min max</h3><blockquote>
+<p>获取指定字典区间元素的数量,针对元素.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zadd a1 0 a 0 b 0 c 0 d 0 e&#x2F;zlexcount a1 [b [f</span><br></pre></td></tr></table></figure>
+
+<h3 id="zrange-key-start-stop-withscores"><a href="#zrange-key-start-stop-withscores" class="headerlink" title="zrange key start stop [withscores]"></a>zrange key start stop [withscores]</h3><blockquote>
+<p>获取指定索引区间元素,元素递增排序,针对序号.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zrange a1 0 -1</span><br></pre></td></tr></table></figure>
+
+<h3 id="zrevrange-key-start-stop-withscores"><a href="#zrevrange-key-start-stop-withscores" class="headerlink" title="zrevrange key start stop [withscores]"></a>zrevrange key start stop [withscores]</h3><blockquote>
+<p>同上,降序.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zrevrange a1 0 -1 withscores</span><br></pre></td></tr></table></figure>
+
+<h3 id="zrangebyles-key-min-max-limit-offset-count"><a href="#zrangebyles-key-min-max-limit-offset-count" class="headerlink" title="zrangebyles key min max [limit offset count]"></a>zrangebyles key min max [limit offset count]</h3><blockquote>
+<p>获取指定字典区间的元素.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zrangebylex a1 [b [d</span><br></pre></td></tr></table></figure>
+
+<h3 id="zrangebyscore-key-min-max-withscores-limit-offset-count"><a href="#zrangebyscore-key-min-max-withscores-limit-offset-count" class="headerlink" title="zrangebyscore key min max [withscores] [limit offset count]"></a>zrangebyscore key min max [withscores] [limit offset count]</h3><blockquote>
+<p>获取指定分数区间的元素,前后包含.</p>
+<blockquote>
+<p><code>(1 5表示&lt;1&lt;x&lt;=5</code>.<br>zrangebyscore a1 -inf +inf withscores,显示整个set.</p>
+</blockquote>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zrangebyscore a1 1 2</span><br></pre></td></tr></table></figure>
+
+<h3 id="zrevrangebyscore-key-min-max-withscores-limit-offset-count"><a href="#zrevrangebyscore-key-min-max-withscores-limit-offset-count" class="headerlink" title="zrevrangebyscore key min max [withscores] [limit offset count]"></a>zrevrangebyscore key min max [withscores] [limit offset count]</h3><blockquote>
+<p>同上,降序.</p>
+</blockquote>
+<h3 id="zrank-key-value"><a href="#zrank-key-value" class="headerlink" title="zrank key value"></a>zrank key value</h3><blockquote>
+<p>获取元素排名,索引从0开始,第一是0.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zrank a1 b</span><br></pre></td></tr></table></figure>
+
+<h3 id="zrevrank-key-value"><a href="#zrevrank-key-value" class="headerlink" title="zrevrank key value"></a>zrevrank key value</h3><blockquote>
+<p>同上,降序.</p>
+</blockquote>
+<h3 id="zrem-key-v1-v2"><a href="#zrem-key-v1-v2" class="headerlink" title="zrem key v1 v2"></a>zrem key v1 v2</h3><blockquote>
+<p>移除一个或多个元素,不包含忽略字段的数量.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zrem a1 c d</span><br></pre></td></tr></table></figure>
+
+<h3 id="zremrangebylex-key-min-max"><a href="#zremrangebylex-key-min-max" class="headerlink" title="zremrangebylex key min max"></a>zremrangebylex key min max</h3><blockquote>
+<p>移除指定字典区间元素.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zremrangebylex a1 [a [c</span><br></pre></td></tr></table></figure>
+
+<h3 id="zremrangebyrank-key-start-stop"><a href="#zremrangebyrank-key-start-stop" class="headerlink" title="zremrangebyrank key start stop"></a>zremrangebyrank key start stop</h3><blockquote>
+<p>移除指定排名区间元素,前后包含.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zremrangebyrank a1 1 2</span><br></pre></td></tr></table></figure>
+
+<h3 id="zremrangebyscore-key-min-max"><a href="#zremrangebyscore-key-min-max" class="headerlink" title="zremrangebyscore key min max"></a>zremrangebyscore key min max</h3><blockquote>
+<p>移除指定分数区间元素,前后包含.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zremrangebyscore a1 2 4</span><br></pre></td></tr></table></figure>
+
+<h3 id="zunionstore-destkey-numkeys-key-key-WEIGHTS-weight-weight-AGGREGATE-SUM-MIN-MAX"><a href="#zunionstore-destkey-numkeys-key-key-WEIGHTS-weight-weight-AGGREGATE-SUM-MIN-MAX" class="headerlink" title="zunionstore destkey numkeys key [key ...] [WEIGHTS weight [weight ...]] [AGGREGATE SUM|MIN|MAX]"></a>zunionstore destkey numkeys key [key ...] [WEIGHTS weight [weight ...]] [AGGREGATE SUM|MIN|MAX]</h3><blockquote>
+<p>计算一个或多个集合的并集,其中给定key的数量必须以numkeys参数指定,将结果存储到destkey中,默认情况下,结果集中某个元素的分数是所有集合中该元素之和,各个元素*权重.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zunionstore o1 3 a1 a2 a3 weights 2 3 4&#x2F;zunionstore o3 3 a1 a2 a3 weights 2 3 4 aggregate max</span><br></pre></td></tr></table></figure>
+
+<h3 id="zinterstore-destkey-numkeys-key-key-WEIGHTS-weight-weight-AGGREGATE-SUM-MIN-MAX"><a href="#zinterstore-destkey-numkeys-key-key-WEIGHTS-weight-weight-AGGREGATE-SUM-MIN-MAX" class="headerlink" title="zinterstore destkey numkeys key [key ...] [WEIGHTS weight [weight ...]] [AGGREGATE SUM|MIN|MAX]"></a>zinterstore destkey numkeys key [key ...] [WEIGHTS weight [weight ...]] [AGGREGATE SUM|MIN|MAX]</h3><blockquote>
+<p>同上,交集.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zinterstore o1 3 a1 a2 a3 weights 2 3 4</span><br></pre></td></tr></table></figure>
+
+<h3 id="zscan-key-cursor-match-pattern-COUNT-count"><a href="#zscan-key-cursor-match-pattern-COUNT-count" class="headerlink" title="zscan key cursor [match pattern] [COUNT count]"></a>zscan key cursor [match pattern] [COUNT count]</h3><blockquote>
+<p>迭代有序集合元素.</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/redis/" rel="tag"># redis</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/02/19/blog%E6%90%AD%E5%BB%BA/" rel="prev" title="blog搭建">
+                  <i class="fa fa-chevron-left"></i> blog搭建
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/02/20/redis%E5%91%BD%E4%BB%A4-%E5%85%B6%E4%BB%96/" rel="next" title="redis命令-其他">
+                  redis命令-其他 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

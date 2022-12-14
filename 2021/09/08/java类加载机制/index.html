@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="java类,从被加载到使用,一般会经历下面几个步骤:加载--&gt;验证--&gt;准备--&gt;解析--&gt;初始化--&gt;使用--&gt;卸载">
+<meta property="og:type" content="article">
+<meta property="og:title" content="java类加载机制">
+<meta property="og:url" content="https://maoeryu.github.io/2021/09/08/java%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="java类,从被加载到使用,一般会经历下面几个步骤:加载--&gt;验证--&gt;准备--&gt;解析--&gt;初始化--&gt;使用--&gt;卸载">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/class1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/class2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/class3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/class4.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/class5.png">
+<meta property="article:published_time" content="2021-09-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-08-25T03:20:57.637Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="java">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/class1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/09/08/java%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>java类加载机制 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%97%B6%E6%9C%BA"><span class="nav-number">1.</span> <span class="nav-text">类加载时机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B1%BB%E8%BF%9E%E6%8E%A5%E8%BF%87%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">类连接过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B1%BB%E5%88%9D%E5%A7%8B%E5%8C%96%E6%97%B6%E6%9C%BA"><span class="nav-number">3.</span> <span class="nav-text">类初始化时机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8%E4%BB%A5%E5%8F%8A%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6"><span class="nav-number">4.</span> <span class="nav-text">类加载器以及双亲委派机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Bootstrap-ClassLoader-%E5%90%AF%E5%8A%A8%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8"><span class="nav-number">4.1.</span> <span class="nav-text">Bootstrap ClassLoader 启动类加载器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Extension-ClassLoader-%E6%89%A9%E5%B1%95%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8"><span class="nav-number">4.2.</span> <span class="nav-text">Extension ClassLoader 扩展类加载器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Application-%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8"><span class="nav-number">4.3.</span> <span class="nav-text">Application 应用程序类加载器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8"><span class="nav-number">4.4.</span> <span class="nav-text">自定义类加载器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6"><span class="nav-number">4.5.</span> <span class="nav-text">双亲委派机制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A7%94%E6%B4%BE%E6%96%B9%E5%BC%8F"><span class="nav-number">4.6.</span> <span class="nav-text">委派方式</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/09/08/java%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          java类加载机制
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-09-08 00:00:00" itemprop="dateCreated datePublished" datetime="2021-09-08T00:00:00+08:00">2021-09-08</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-08-25 11:20:57" itemprop="dateModified" datetime="2022-08-25T11:20:57+08:00">2022-08-25</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>java类,从被加载到使用,一般会经历下面几个步骤:<br>加载--&gt;验证--&gt;准备--&gt;解析--&gt;初始化--&gt;使用--&gt;卸载</p>
+<span id="more"></span>
+<h3 id="类加载时机"><a href="#类加载时机" class="headerlink" title="类加载时机"></a>类加载时机</h3><p>类在被使用的时会被加载进JVM中.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyTest</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">    Study study = <span class="keyword">new</span> Study();</span><br><span class="line">    study.studyJava();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Study</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">studyJava</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">&quot;This is Java&quot;</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当启动JVM运行到有main()方法时,MyTest.class这个类就会被加载进来.<br>然后运行到有一个new Study()的时候,发现需要实例化一个Study对象,就会去class文件找到study类加载进来.</p>
+<img src="/images/class1.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="类连接过程"><a href="#类连接过程" class="headerlink" title="类连接过程"></a>类连接过程</h3><p>类的连接主要是指类验证/准备以及初始化的过程.</p>
+<p>1.验证阶段:指加载进来的class文件是否合法,有没有被篡改等.<br>2.准备阶段:将加载的类分配相应的内存空间,及给变量指定初始值等,例private int type.<br>3.解析阶段:这个主要是将符号引用替换为直接引用的过程.</p>
+<img src="/images/class2.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>最核心的阶段是初始化,</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Study</span> </span>&#123;</span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> strategyType = Configuration.getInt(<span class="string">&quot;config.strage.type&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在类的准备阶段,是分配内存空间以及给出初始化值的,然而这个Configuration.getInt(&quot;config.strage.type&quot;),在准备阶段会不会执行这段代码呢？<br>其实是不会执行的,这里只会分配内存和给个初始值“0”.<br>Configuration.getInt(&quot;config.strage.type&quot;)是在初始化阶段进行执行的,然后再将结果赋值给strategyType的,<br>static{}代码块也是在初始化阶段进行执行的.</p>
+<h3 id="类初始化时机"><a href="#类初始化时机" class="headerlink" title="类初始化时机"></a>类初始化时机</h3><p>在new一个对象的时候,这个时候就会触发类的加载到初始化的全过程.<br>包含main()方法的类,需要立刻初始化.<br>如果在初始化一个类时,发现他的父类没有进行初始化,那么就得先初始化父类.</p>
+<img src="/images/class3.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="类加载器以及双亲委派机制"><a href="#类加载器以及双亲委派机制" class="headerlink" title="类加载器以及双亲委派机制"></a>类加载器以及双亲委派机制</h3><h4 id="Bootstrap-ClassLoader-启动类加载器"><a href="#Bootstrap-ClassLoader-启动类加载器" class="headerlink" title="Bootstrap ClassLoader 启动类加载器"></a>Bootstrap ClassLoader 启动类加载器</h4><p>这个主要是用来加载安装在机器上JDK目录的核心类,即在java 目录lib包里的各种jar包,启动JVM的时候,第一步就是加载这lib里面的类.</p>
+<h4 id="Extension-ClassLoader-扩展类加载器"><a href="#Extension-ClassLoader-扩展类加载器" class="headerlink" title="Extension ClassLoader 扩展类加载器"></a>Extension ClassLoader 扩展类加载器</h4><p>这个也是加载jdk默认的扩展类,在java目录lib\ext目录里面的各种jar包.</p>
+<h4 id="Application-应用程序类加载器"><a href="#Application-应用程序类加载器" class="headerlink" title="Application 应用程序类加载器"></a>Application 应用程序类加载器</h4><p>这个类加载器就是加载在classPath环境变量指定的路径的类,也就是自己开发出来的各种类.</p>
+<h4 id="自定义类加载器"><a href="#自定义类加载器" class="headerlink" title="自定义类加载器"></a>自定义类加载器</h4><p>自定义就是根据自己的需要,设计一种自己的加载器去加载写的程序,和上面3种是互斥的.</p>
+<h4 id="双亲委派机制"><a href="#双亲委派机制" class="headerlink" title="双亲委派机制"></a>双亲委派机制</h4><p>JVM的类加载器是有亲子层级关系的,自上到下分别是启动类加载器/扩展类加载器/应用程序类加载器乃至最后一层是自定义类加载器,这就是一个双亲委派的机制.</p>
+<img src="/images/class4.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="委派方式"><a href="#委派方式" class="headerlink" title="委派方式"></a>委派方式</h4><p>如果应用程序类加载器需要加载一个类时,第一步就是先找它的父类加载器去加载,直到最顶层的类加载器.<br>如果父类加载器在自己负责的范围内并未找到这个类的话,就会把加载的权利让给自己的子类去加载.</p>
+<blockquote>
+<p>加载Study类</p>
+</blockquote>
+<p>1.应用程序类加载器会去找他的父类加载器去帮它加载这个Study这个类.<br>2.扩展类加载器这个时候也会去请求他的父类加载器去帮忙加载Study这个类.<br>3.启动类加载器找了一圈发现这个Study并不在他的加载范围内,然后,就说不在我这儿,你自己去找.<br>4.扩展类就自己找,也找了一圈,仍然是没找到,就会下发他的儿子,你自己的类,你自己找去.<br>5.应用程序类加载器这个时候就会自己找Study这个类,然后给加载进JVM中.</p>
+<img src="/images/class5.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/java/" rel="tag"># java</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/09/08/java%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84-%E9%98%9F%E5%88%97/" rel="prev" title="java数据结构-队列">
+                  <i class="fa fa-chevron-left"></i> java数据结构-队列
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/09/08/java%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/" rel="next" title="java内存模型">
+                  java内存模型 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

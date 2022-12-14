@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="ClickHouse是一个用于联机分析(OLAP)的列式数据库管理系统(DBMS).ClickHouse不单单是一个数据库, 它是一个数据库管理系统. 官方文档:https:&#x2F;&#x2F;clickhouse.com&#x2F;docs&#x2F;zhGitHub地址:https:&#x2F;&#x2F;github.com&#x2F;ClickHouse&#x2F;ClickHouse">
+<meta property="og:type" content="article">
+<meta property="og:title" content="clickhouse介绍">
+<meta property="og:url" content="https://maoeryu.github.io/2022/09/08/clickhouse%E4%BB%8B%E7%BB%8D/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="ClickHouse是一个用于联机分析(OLAP)的列式数据库管理系统(DBMS).ClickHouse不单单是一个数据库, 它是一个数据库管理系统. 官方文档:https:&#x2F;&#x2F;clickhouse.com&#x2F;docs&#x2F;zhGitHub地址:https:&#x2F;&#x2F;github.com&#x2F;ClickHouse&#x2F;ClickHouse">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl103.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl104.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl105.png">
+<meta property="article:published_time" content="2022-09-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-14T11:31:01.174Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="clickhouse">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/flgl103.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/09/08/clickhouse%E4%BB%8B%E7%BB%8D/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>clickhouse介绍 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#OLAP%E5%9C%BA%E6%99%AF"><span class="nav-number">1.1.</span> <span class="nav-text">OLAP场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ClickHouse%E4%B8%BB%E8%A6%81%E5%8A%9F%E8%83%BD"><span class="nav-number">1.2.</span> <span class="nav-text">ClickHouse主要功能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ClickHouse%E7%9A%84%E7%89%B9%E6%80%A7"><span class="nav-number">1.3.</span> <span class="nav-text">ClickHouse的特性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%A0%E5%AF%86%E7%B4%A2%E5%BC%95%E5%92%8C%E7%A8%80%E7%96%8F%E7%B4%A2%E5%BC%95"><span class="nav-number">1.4.</span> <span class="nav-text">稠密索引和稀疏索引</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A8%A0%E5%AF%86%E7%B4%A2%E5%BC%95"><span class="nav-number">1.4.1.</span> <span class="nav-text">稠密索引</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A8%80%E7%96%8F%E7%B4%A2%E5%BC%95"><span class="nav-number">1.4.2.</span> <span class="nav-text">稀疏索引</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ClickHouse%E5%BA%93%E8%A1%A8%E5%BC%95%E6%93%8E"><span class="nav-number">2.</span> <span class="nav-text">ClickHouse库表引擎</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93%E5%BC%95%E6%93%8E"><span class="nav-number">2.1.</span> <span class="nav-text">数据库引擎</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%A8%E5%BC%95%E6%93%8E"><span class="nav-number">2.2.</span> <span class="nav-text">表引擎</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#MergeTree%E7%B1%BB%E5%9E%8B%E5%BC%95%E6%93%8E"><span class="nav-number">2.2.1.</span> <span class="nav-text">MergeTree类型引擎</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#log%E7%B1%BB%E5%9E%8B%E5%BC%95%E6%93%8E"><span class="nav-number">2.2.2.</span> <span class="nav-text">log类型引擎</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9B%86%E6%88%90%E7%B1%BB%E5%9E%8B%E5%BC%95%E6%93%8E"><span class="nav-number">2.2.3.</span> <span class="nav-text">集成类型引擎</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%94%A8%E4%BA%8E%E5%85%B6%E4%BB%96%E7%89%B9%E5%AE%9A%E5%8A%9F%E8%83%BD%E7%9A%84%E5%BC%95%E6%93%8E"><span class="nav-number">2.2.4.</span> <span class="nav-text">用于其他特定功能的引擎</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ClickHouse%E6%9E%B6%E6%9E%84"><span class="nav-number">3.</span> <span class="nav-text">ClickHouse架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Parser-Interpreter"><span class="nav-number">3.1.</span> <span class="nav-text">Parser&#x2F;Interpreter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%A8%E5%BC%95%E6%93%8E-1"><span class="nav-number">3.2.</span> <span class="nav-text">表引擎</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DataType"><span class="nav-number">3.3.</span> <span class="nav-text">DataType</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Column-Field"><span class="nav-number">3.4.</span> <span class="nav-text">Column&#x2F;Field</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Block"><span class="nav-number">3.5.</span> <span class="nav-text">Block</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ClickHouse%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">4.</span> <span class="nav-text">ClickHouse配置文件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E8%AF%B4%E6%98%8E"><span class="nav-number">4.1.</span> <span class="nav-text">配置说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E8%B7%AF%E5%BE%84%E9%85%8D%E7%BD%AE"><span class="nav-number">4.2.</span> <span class="nav-text">数据路径配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E9%85%8D%E7%BD%AE"><span class="nav-number">4.3.</span> <span class="nav-text">日志配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E9%85%8D%E7%BD%AE"><span class="nav-number">4.4.</span> <span class="nav-text">集群配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%97%E5%85%B8%E9%85%8D%E7%BD%AE"><span class="nav-number">4.5.</span> <span class="nav-text">字典配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E9%85%8D%E7%BD%AE"><span class="nav-number">4.6.</span> <span class="nav-text">用户配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ZooKeeper-%E9%85%8D%E7%BD%AE"><span class="nav-number">4.7.</span> <span class="nav-text">ZooKeeper 配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Macros-%E9%85%8D%E7%BD%AE"><span class="nav-number">4.8.</span> <span class="nav-text">Macros 配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Prometheus-%E9%85%8D%E7%BD%AE"><span class="nav-number">4.9.</span> <span class="nav-text">Prometheus 配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MergeTree-%E9%85%8D%E7%BD%AE"><span class="nav-number">4.10.</span> <span class="nav-text">MergeTree 配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E5%B8%B8%E7%94%A8%E9%85%8D%E7%BD%AE"><span class="nav-number">4.11.</span> <span class="nav-text">其他常用配置</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/09/08/clickhouse%E4%BB%8B%E7%BB%8D/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          clickhouse介绍
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-09-08 00:00:00" itemprop="dateCreated datePublished" datetime="2022-09-08T00:00:00+08:00">2022-09-08</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-14 19:31:01" itemprop="dateModified" datetime="2022-09-14T19:31:01+08:00">2022-09-14</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>ClickHouse是一个用于联机分析(OLAP)的列式数据库管理系统(DBMS).<br>ClickHouse不单单是一个数据库, 它是一个数据库管理系统.</p>
+<p>官方文档:<a target="_blank" rel="noopener" href="https://clickhouse.com/docs/zh">https://clickhouse.com/docs/zh</a><br>GitHub地址:<a target="_blank" rel="noopener" href="https://github.com/ClickHouse/ClickHouse">https://github.com/ClickHouse/ClickHouse</a></p>
+<span id="more"></span>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><h3 id="OLAP场景"><a href="#OLAP场景" class="headerlink" title="OLAP场景"></a>OLAP场景</h3><p>大多数数据库访问都是读请求.<br>数据总是以批量形式写入数据库(每次写入大于 1000 行).<br>已添加的数据一般无需修改.<br>每次查询都从数据库中读取大量的行,但是同时又仅需少量的列.<br>数据表多为宽表,即每个表均包含着大量的列.<br>查询量一般较少(非高并发,通常每台服务器每秒约有数百个查询或更少).<br>对于简单查询,允许的延迟大约为 50 毫秒(响应时间要迅速).<br>列中的数据相对较小,一般为数字或短字符串.<br>处理单个查询时需要高吞吐量(每个服务器每秒高达数十亿行).<br>事务不是必须的.<br>对数据一致性要求低.<br>查询结果明显小于源数据,换句话说,数据被过滤或聚合后能够被存放在单台服务器的内存中.</p>
+<p>可以看到,OLAP 业务场景与其它流行的业务场景如 OLTP 等有很大的不同,使用 OLTP 数据库或 Key-Value 数据库去处理分析查询业务将会获得非常差的性能,而且没有任何意义.</p>
+<h3 id="ClickHouse主要功能"><a href="#ClickHouse主要功能" class="headerlink" title="ClickHouse主要功能"></a>ClickHouse主要功能</h3><p>DDL(数据定义语言):可以动态地创建/修改或删除数据库/表和视图,而无须重启服务.<br>DML(数据操作语言):可以动态查询/插入/修改或删除数据.<br>权限控制:可以按照用户粒度设置数据库或者表的操作权限,保障数据的安全性.<br>数据备份与恢复:提供了数据备份导出与导入恢复机制,满足生产环境的要求.<br>分布式管理:提供集群模式,能够自动管理多个数据库节点.</p>
+<h3 id="ClickHouse的特性"><a href="#ClickHouse的特性" class="headerlink" title="ClickHouse的特性"></a>ClickHouse的特性</h3><p>1)列式数据库管理系统<br>在一个真正的列式数据库管理系统中,除了数据本身外不应该存在其他额外的数据.<br>这意味着为了避免在值旁边存储它们的长度<code>&lt;number&gt;</code>,你必须支持固定长度数值类型.</p>
+<p>2)数据压缩<br>除了在磁盘空间和CPU消耗之间进行不同权衡的高效通用压缩编解码器之外,ClickHouse还提供针对特定类型数据的专用编解码器,这使得ClickHouse能够与更小的数据库(如时间序列数据库)竞争并超越它们.</p>
+<p>3)数据的磁盘存储<br>许多的列式数据库(如SAP HANA, Google PowerDrill)只能在内存中工作,这种方式会造成比实际更多的设备预算.<br>ClickHouse被设计用于工作在传统磁盘上的系统,它提供每GB更低的存储成本,但如果可以使用SSD和内存,它也会合理的利用这些资源.</p>
+<p>4)多核心并行处理<br>ClickHouse会使用服务器上一切可用的资源,从而以最自然的方式并行处理大型查询.</p>
+<p>5)多主架构<br>HDFS/Spark/HBase和Elasticsearch这类分布式系统,都采用了Master-Slave主从架构,由一个管控节点作为Leader统筹全局.<br>而ClickHouse则由于它的集群架构和其他数据库不同,这种架构使得它是一个多主架构.</p>
+<p>6)多服务器分布式处理<br>在ClickHouse中,数据可以保存在不同的shard上,每一个shard都由一组用于容错的replica组成,查询可以并行地在所有shard上进行处理.</p>
+<p>7)支持SQL<br>ClickHouse支持一种基于SQL的声明式查询语言,它在许多情况下与ANSI SQL标准相同.<br>支持的查询GROUP BY/ORDER BY/FROM/JOIN/IN以及非相关子查询.<br>相关(依赖性)子查询和窗口函数暂不受支持,但将来会被实现.</p>
+<p>8)多样化的表引擎<br>ClickHouse和mysql一样,也将存储部分进行了抽象,把存储引擎作为一层独立的接口.<br>所以说Clickhouse实现了很多种表引擎,比如mergetree/log/memory等类型的引擎,每一种表引擎都有着各自的特点,用户可以根据实际业务场景的要求,选择合适的表引擎使用.</p>
+<p>9)向量引擎<br>为了高效的使用CPU,数据不仅仅按列存储,同时还按向量(列的一部分)进行处理,这样可以更加高效地使用CPU.</p>
+<p>10)实时的数据更新<br>ClickHouse支持在表中定义主键.<br>为了使查询能够快速在主键中进行范围查找,数据总是以增量的方式有序的存储在MergeTree中.<br>因此,数据可以持续不断地高效的写入到表中,并且写入的过程中不会存在任何加锁的行为.</p>
+<p>11)在线查询<br>按照主键对数据进行排序,这将帮助ClickHouse在几十毫秒以内完成对数据特定值或范围的查找.</p>
+<p>12)支持数据复制和数据完整性<br>ClickHouse使用异步的多主复制技术.<br>当数据被写入任何一个可用副本后,系统会在后台将数据分发给其他副本,以保证系统在不同副本上保持相同的数据.</p>
+<p>13)角色的访问控制<br>ClickHouse使用SQL查询实现用户帐户管理,并允许角色的访问控制,类似于ANSI SQL标准和流行的关系数据库管理系统.</p>
+<p>14)限制没有完整的事务支持.<br>缺少高频率,低延迟的修改或删除已存在数据的能力.<br>仅能用于批量删除或修改数据,但这符合GDPR(General Data Protection Regulation:通用数据保护条例).<br>稀疏索引使得ClickHouse不适合通过其键检索单行的点查询.</p>
+<h3 id="稠密索引和稀疏索引"><a href="#稠密索引和稀疏索引" class="headerlink" title="稠密索引和稀疏索引"></a>稠密索引和稀疏索引</h3><h4 id="稠密索引"><a href="#稠密索引" class="headerlink" title="稠密索引"></a>稠密索引</h4><p>即每一条记录,对应一个索引字段.<br>稠密索引访问速度非常块,但是维护成本大.<br>根据索引字段不一样,有候选键索引和非候选键索引之分.</p>
+<img src="/images/flgl103.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="稀疏索引"><a href="#稀疏索引" class="headerlink" title="稀疏索引"></a>稀疏索引</h4><p>相对稠密索引,稀疏索引并没有每条记录,建立了索引字段,而是把记录分为若干个块,为每个块建立一条索引字段.<br>稀疏索引字段,要求索引字段是按顺序排序的,否则无法有效索引.<br>稀疏索引,数据查询速度较慢,但是存储空间小,维护成本低.</p>
+<img src="/images/flgl104.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="ClickHouse库表引擎"><a href="#ClickHouse库表引擎" class="headerlink" title="ClickHouse库表引擎"></a>ClickHouse库表引擎</h2><h3 id="数据库引擎"><a href="#数据库引擎" class="headerlink" title="数据库引擎"></a>数据库引擎</h3><p>默认情况下,ClickHouse使用Atomic数据库引擎.<br>它提供了可配置的table engines和SQL dialect.<br>目前支持的数据库引擎有以下几种:<br>Atomic<br>MySQL<br>SQLite<br>PostgreSQL<br>MaterializeMySQL<br>Lazy<br>MaterializedPostgreSQL<br>Replicated</p>
+<h3 id="表引擎"><a href="#表引擎" class="headerlink" title="表引擎"></a>表引擎</h3><p>表引擎(即表的类型)决定了:</p>
+<ol>
+<li>数据的存储方式和位置,写到哪里以及从哪里读取数据</li>
+<li>支持哪些查询以及如何支持</li>
+<li>并发数据访问</li>
+<li>索引的使用(如果存在)</li>
+<li>是否可以执行多线程请求</li>
+<li>数据复制参数</li>
+<li>表引擎类型</li>
+</ol>
+<h4 id="MergeTree类型引擎"><a href="#MergeTree类型引擎" class="headerlink" title="MergeTree类型引擎"></a>MergeTree类型引擎</h4><p>适用于高负载任务的最通用和功能最强大的表引擎.<br>这些引擎的共同特点是可以快速插入数据并进行后续的后台数据处理.<br>MergeTree系列引擎支持数据复制(使用Replicated* 的引擎版本),分区和一些其他引擎不支持的其他功能.<br>该类型的引擎:<br>MergeTree<br>ReplacingMergeTree<br>SummingMergeTree<br>AggregatingMergeTree<br>CollapsingMergeTree<br>VersionedCollapsingMergeTree<br>GraphiteMergeTree</p>
+<h4 id="log类型引擎"><a href="#log类型引擎" class="headerlink" title="log类型引擎"></a>log类型引擎</h4><p>这些引擎是为了需要写入许多小数据量(少于一百万行)的表的场景而开发的.<br>具有最小功能的轻量级引擎.<br>当您需要快速写入许多小表(最多约100万行)并在以后整体读取它们时,该类型的引擎是最有效的.<br>该类型的引擎:<br>TinyLog<br>StripeLog<br>Log</p>
+<h4 id="集成类型引擎"><a href="#集成类型引擎" class="headerlink" title="集成类型引擎"></a>集成类型引擎</h4><p>ClickHouse 提供了多种方式来与外部系统集成,包括表引擎.<br>像所有其他的表引擎一样,使用CREATE TABLE或ALTER TABLE查询语句来完成配置.<br>支持的集成引擎:<br>Kafka<br>MySQL<br>ODBC<br>JDBC<br>HDFS</p>
+<h4 id="用于其他特定功能的引擎"><a href="#用于其他特定功能的引擎" class="headerlink" title="用于其他特定功能的引擎"></a>用于其他特定功能的引擎</h4><p>特定功能的引擎有如下几种:<br>Distributed<br>MaterializedView<br>Dictionary<br>Merge<br>File<br>Null<br>Set<br>Join<br>URL<br>View<br>Memory<br>Buffer</p>
+<h2 id="ClickHouse架构"><a href="#ClickHouse架构" class="headerlink" title="ClickHouse架构"></a>ClickHouse架构</h2><p>Clickhouse的集群架构是和其他的数据集群有一定的区别,他的集群能力是<strong>表级别的</strong>,而我们熟知的大数据体系,比如hadoop系列的集群都是服务级别的.<br>例如,一个hdfs集群,所有文件都会切片/备份.<br>而Clickhouse集群中,建表时也可以自己决定用不用,也就是说其实Clickhouse单节点就能存活.</p>
+<img src="/images/flgl105.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="Parser-Interpreter"><a href="#Parser-Interpreter" class="headerlink" title="Parser/Interpreter"></a>Parser/Interpreter</h3><p>Parser和Interpreter是非常重要的两组接口.<br>Parser分析器是将sql语句已递归的方式形成AST语法树的形式,并且不同类型的sql都会调用不同的parse实现类.<br>而Interpreter解释器则负责解释AST,并进一步创建查询的执行管道.<br>Interpreter解释器的作用就像Service服务层一样,起到串联整个查询过程的作用,它会根据解释器的类型,聚合它所需要的资源.<br>首先它会解析AST对象.<br>然后执行&quot;业务逻辑&quot;(例如分支判断/设置参数/调用接口等).<br>最终返回IBlock对象,以线程的形式建立起一个查询执行管道.</p>
+<h3 id="表引擎-1"><a href="#表引擎-1" class="headerlink" title="表引擎"></a>表引擎</h3><p>表引擎是ClickHouse的一个显著特性,clickhouse有很多种表引擎.<br>不同的表引擎由不同的子类实现.<br>表引擎是使用IStorage接口的,该接口定义了DDL(如ALTER/RENAME/OPTIMIZE和DROP等)/read/write方法,它们分别负责数据的定义/查询与写入.</p>
+<h3 id="DataType"><a href="#DataType" class="headerlink" title="DataType"></a>DataType</h3><p>数据的序列化和反序列化工作由DataType负责.<br>根据不同的数据类型,IDataType接口会有不同的实现类.<br>DataType虽然会对数据进行正反序列化,但是它不会直接和内存或者磁盘做交互,而是转交给Column和Filed处理.</p>
+<h3 id="Column-Field"><a href="#Column-Field" class="headerlink" title="Column/Field"></a>Column/Field</h3><p>Column和Field是ClickHouse数据最基础的映射单元.<br>作为一款百分之百的列式存储数据库,ClickHouse按列存储数据,内存中的一列数据由一个Column对象表示.<br>Column对象分为接口和实现两个部分,在IColumn接口对象中,定义了对数据进行各种关系运算的方法,例如插入数据的insertRangeFrom和insertFrom方法/用于分页的cut,以及用于过滤的filter方法等.<br>而这些方法的具体实现对象则根据数据类型的不同,由相应的对象实现,例如ColumnString/ColumnArray和ColumnTuple等.<br>在大多数场合,ClickHouse都会以整列的方式操作数据,但凡事也有例外.<br>如果需要操作单个具体的数值(也就是单列中的一行数据),则需要使用Field对象,Field对象代表一个单值.<br>与Column对象的泛化设计思路不同,Field对象使用了聚合的设计模式.<br>在Field对象内部聚合了Null/UInt64/String和Array等13种数据类型及相应的处理逻辑.</p>
+<h3 id="Block"><a href="#Block" class="headerlink" title="Block"></a>Block</h3><p>ClickHouse内部的数据操作是面向Block对象进行的,并且采用了流的形式.<br>虽然Column和Filed组成了数据的基本映射单元,但对应到实际操作,它们还缺少了一些必要的信息,比如数据的类型及列的名称.<br>于是ClickHouse设计了Block对象,Block对象可以看作数据表的子集.<br>Block对象的本质是由数据对象/数据类型和列名称组成的三元组,即Column/DataType及列名称字符串.<br>Column提供了数据的读取能力,而DataType知道如何正反序列化,所以Block在这些对象的基础之上实现了进一步的抽象和封装,从而简化了整个使用的过程,仅通过Block对象就能完成一系列的数据操作.<br>在具体的实现过程中,Block并没有直接聚合Column和DataType对象,而是通过ColumnWith TypeAndName对象进行间接引用.</p>
+<h2 id="ClickHouse配置文件"><a href="#ClickHouse配置文件" class="headerlink" title="ClickHouse配置文件"></a>ClickHouse配置文件</h2><p>在使用 ClickHouse 之前,我们需要修改 ClickHouse 配置文件中的一些默认配置,比如数据存储路径,集群信息以及用户信息等,这样可以更好地对 ClickHouse 进行管理控制,以满足我们的业务需求.</p>
+<h3 id="配置说明"><a href="#配置说明" class="headerlink" title="配置说明"></a>配置说明</h3><ol>
+<li>ClickHouse 支持多配置文件管理,主配置文件为 config.xml,默认位于 /etc/clickhouse-server 目录下,其余的配置文件均需包含在 /etc/clickhouse-server/config.d 目录下.</li>
+<li>ClickHouse 的所有配置文件均是 XML 格式的,而且在每个配置文件中都需要有相同的根元素.</li>
+<li>主配置文件中的一些配置可以通过 replace 或 remove 属性被其子配置文件所覆盖,如子配置文件中的表示将使用该配置来替换主配置文件中的 zookeeper 选项.<br>如果两个属性都未指定,则会递归组合各配置文件的内容并替换重复子项的值.</li>
+<li>另外,配置文件中还可以定义 substitution 替换,如果一个配置包含 incl 属性,则替换文件中相应的配置将被使用.<br>默认情况下替换文件的路径为 /etc/metrika.xml,可以通过 include_from 配置项进行设置.<br>如果待替换的配置不存在,ClickHouse 会记录错误日志,为了避免这种情况,可以指定配置项的 optional 属性来表示该替换是可选的.</li>
+<li>在启动时,ClickHouse 会根据已有的配置文件生成相应的预处理文件,这些文件中包含了所有已完成替换和覆盖的配置项,它们被统一放置于 preprocessed 目录下,你可以从这些文件中查看最终的配置项是否正确.<br>另外 ClickHouse 会跟踪配置文件的更改,对于某些配置如集群配置以及用户配置等,更改后会自动生效,无需重启 ClickHouse 服务,而对于其它配置项的更改可能需要重启服务才能生效.</li>
+<li>对于集群中的全部 ClickHouse 节点,除部分配置(如 macros)外,其它所有的配置最好都保持一致,以便于统一管理及使用.</li>
+</ol>
+<h3 id="数据路径配置"><a href="#数据路径配置" class="headerlink" title="数据路径配置"></a>数据路径配置</h3><ol>
+<li>数据路径下既存储数据库和表的元数据信息(位于 metadata 目录),也存储表的真实数据(位于 data 目录).<br>元数据是指建库和建表的语句,亦即数据库和表的结构信息,每次 ClickHouse 启动时会根据元数据信息去加载相应的数据库和表.</li>
+<li>数据路径的配置如下所示,其对应的 XML 标签为.<br><code>&lt;path&gt;/path/to/clickhouse/&lt;/path&gt;</code></li>
+<li>当单个物理盘无法存储全部的数据时,可以考虑将不同的数据库存储在不同的物理盘上,然后在 /path/to/clickhouse/data/ 目录下创建软连接指向其它物理盘上的数据库目录.</li>
+</ol>
+<h3 id="日志配置"><a href="#日志配置" class="headerlink" title="日志配置"></a>日志配置</h3><ol>
+<li>ClickHouse 的日志文件中记录了各种类型的事件日志,包括数据的插入和查询的日志以及一些配置和数据合并相关的日志等.<br>一般我们会通过日志文件找出 ClickHouse 报错的具体原因,以便解决问题.</li>
+<li>日志的配置如下所示,其对应的 XML 标签为.<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&lt;logger&gt;</span><br><span class="line">  &lt;level&gt;trace&lt;&#x2F;level&gt;</span><br><span class="line">  &lt;log&gt;&#x2F;path&#x2F;to&#x2F;clickhouse-server&#x2F;clickhouse-server.log&lt;&#x2F;log&gt;</span><br><span class="line">  &lt;errorlog&gt;&#x2F;path&#x2F;to&#x2F;clickhouse-server&#x2F;clickhouse-server.err.log&lt;&#x2F;errorlog&gt;</span><br><span class="line">  &lt;size&gt;1000M&lt;&#x2F;size&gt;</span><br><span class="line">  &lt;count&gt;10&lt;&#x2F;count&gt;</span><br><span class="line">&lt;&#x2F;logger&gt;</span><br></pre></td></tr></table></figure></li>
+<li>level 表示事件的日志级别,可以配置为 trace/debug/information/warning/error 等值.</li>
+<li>log 表示主日志文件路径,该日志文件中包含所有 level 级别以上的事件日志.</li>
+<li>errorlog 表示错误日志文件路径,该日志文件仅包含错误日志,便于问题排查.</li>
+<li>size 表示日志大小,当日志文件达到指定 size 后,ClickHouse 会进行日志轮转.</li>
+<li>count 表示日志轮转的最大数量.</li>
+<li>因为事件日志是由多线程异步写入到日志文件中的,所以不同事件之间的日志会产生交错,不利于按顺序进行日志排查.<br>但 ClickHouse 为每个事件都提供了唯一的 ID 来标识,我们可以根据此 ID 来跟踪事件状态的变化.</li>
+</ol>
+<h3 id="集群配置"><a href="#集群配置" class="headerlink" title="集群配置"></a>集群配置</h3><ol>
+<li>集群的配置主要用于分布式查询,在创建分布式表 (Distributed) 时会用到.</li>
+<li>集群配置文件的示例如下所示,其对应的 XML 标签为.<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">&lt;yandex&gt;</span><br><span class="line">  &lt;remote_servers&gt;</span><br><span class="line">    &lt;cluster_name&gt;</span><br><span class="line">      &lt;shard&gt;</span><br><span class="line">        &lt;weight&gt;1&lt;&#x2F;weight&gt;</span><br><span class="line">        &lt;internal_replication&gt;false&lt;&#x2F;internal_replication&gt;</span><br><span class="line">        &lt;replica&gt;</span><br><span class="line">          &lt;host&gt;hostname1&#x2F;ip1&lt;&#x2F;host&gt;</span><br><span class="line">          &lt;port&gt;9000&lt;&#x2F;port&gt;</span><br><span class="line">        &lt;&#x2F;replica&gt;</span><br><span class="line">      &lt;&#x2F;shard&gt;</span><br><span class="line">      &lt;shard&gt;</span><br><span class="line">        &lt;weight&gt;1&lt;&#x2F;weight&gt;</span><br><span class="line">        &lt;internal_replication&gt;false&lt;&#x2F;internal_replication&gt;</span><br><span class="line">        &lt;replica&gt;</span><br><span class="line">          &lt;host&gt;hostname2&#x2F;ip2&lt;&#x2F;host&gt;</span><br><span class="line">          &lt;port&gt;9000&lt;&#x2F;port&gt;</span><br><span class="line">        &lt;&#x2F;replica&gt;</span><br><span class="line">      &lt;&#x2F;shard&gt;</span><br><span class="line">    &lt;&#x2F;cluster_name&gt;</span><br><span class="line">  &lt;&#x2F;remote_servers&gt;</span><br><span class="line">&lt;&#x2F;yandex&gt;</span><br></pre></td></tr></table></figure></li>
+<li>cluster_name 表示集群名称,shard 表示集群的分片(即 ClickHouse 节点),集群会有多个 shard,每个 shard 上都存有全部数据的一部分.</li>
+<li>weight 表示数据写入的权重,当有数据直接写入集群时会根据该权重来将数据分发给不同的 ClickHouse 节点,可以理解为权重轮询负载均衡.</li>
+<li>replica 表示每个 shard 的副本,默认为 1 个,可以设置多个,表示该 shard 有多个副本.<br>正常情况下,每个副本都会存有相同的数据.</li>
+<li>internal_replication 表示副本间是否为内部复制,当通过集群向分片插入数据时会起作用.<br>参数的默认值为 false,表示向该分片的所有副本中写入相同的数据(副本间数据一致性不强,无法保证完全同步).<br>true 表示只向其中的一个副本写入数据(副本间通过复制表来完成同步,能保证数据的一致性).</li>
+<li>在实际情况下,我们一般不会通过集群进行数据写入,而是将数据直接写入到各 ClickHouse 节点.<br>一来通过集群进行分发数据会带来二次的网络延迟,降低了数据的写入速度,二来当数据量较多时,由于网络带宽限制,数据分发节点会成为数据传输的瓶颈,从而拉低了整体的数据写入效率.</li>
+<li>可以定义多个集群,以应对不同的查询需要.<br>每次添加新的集群配置后,无需重启 ClickHouse 服务,该配置会即时生效.</li>
+</ol>
+<h3 id="字典配置"><a href="#字典配置" class="headerlink" title="字典配置"></a>字典配置</h3><ol>
+<li>字典就是一种键-&gt;值映射关系,一般在数据查询时使用.<br>相比于多表 JOIN 的查询操作,使用字典查询会更加高效.</li>
+<li>字典文件的位置需要由 config.xml 文件中的 dictionaries_config 配置项设置.<br><code>&lt;dictionaries_config&gt;dictionaries/*_dictionary.xml&lt;/dictionaries_config&gt;</code><br>上述配置表示 ClickHouse 会从与 config.xml 文件同级的 dictionaries 目录下加载以 <code>_dictionary.xml</code> 为后缀的全部字典文件.</li>
+<li>字典配置文件的示例如下所示,其对应的 XML 标签为.<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">&lt;yandex&gt;</span><br><span class="line">  &lt;dictionary&gt;</span><br><span class="line">    &lt;format&gt;TabSeparated&lt;&#x2F;format&gt;</span><br><span class="line">    &lt;file&#x2F;&gt;</span><br><span class="line">    &lt;source&#x2F;&gt;</span><br><span class="line">    &lt;layout&gt;</span><br><span class="line">      &lt;!-- Memory layout configuration --&gt;</span><br><span class="line">      &lt;complex_key_hashed&#x2F;&gt;</span><br><span class="line">    &lt;&#x2F;layout&gt;</span><br><span class="line">    &lt;structure&gt;</span><br><span class="line">      &lt;!-- Complex key configuration --&gt;</span><br><span class="line">      &lt;key&gt;</span><br><span class="line">        &lt;attribute&gt;</span><br><span class="line">          &lt;name&gt;key&lt;&#x2F;name&gt;</span><br><span class="line">          &lt;type&gt;String&lt;&#x2F;type&gt;</span><br><span class="line">        &lt;&#x2F;attribute&gt;</span><br><span class="line">      &lt;&#x2F;key&gt;</span><br><span class="line">      &lt;attribute&gt;</span><br><span class="line">        &lt;name&gt;value&lt;&#x2F;name&gt;</span><br><span class="line">        &lt;type&gt;String&lt;&#x2F;type&gt;</span><br><span class="line">        &lt;null_value&#x2F;&gt;</span><br><span class="line">        &lt;injective&gt;true&lt;&#x2F;injective&gt;</span><br><span class="line">      &lt;&#x2F;attribute&gt;</span><br><span class="line">    &lt;&#x2F;structure&gt;</span><br><span class="line">    &lt;lifetime&gt;300&lt;&#x2F;lifetime&gt;</span><br><span class="line">  &lt;&#x2F;dictionary&gt;</span><br><span class="line">&lt;&#x2F;yandex&gt;</span><br></pre></td></tr></table></figure></li>
+<li>name 表示字典名称.</li>
+<li>source 表示字典的数据来源,数据来源有多种类型,可以是本地的文本文件,HTTP 接口或者其它各种数据库管理系统.</li>
+<li>layout 表示字典在内存中的存储方式.<br>一般推荐使用 flat,hashed 和 complex_key_hashed 存储方式,因为它们提供了最佳的查询处理速度.</li>
+<li>structure 表示字典的结构,亦即键值对的信息.<br>key 表示字典的键值,它可以由多个属性组成.<br>attribute 表示字典的值,也可以有多个.</li>
+<li>lifetime 表示字典的更新频率,单位为秒.</li>
+<li>创建完字典后,可以通过 SELECT dictGetTYPE) 语句来查询字典中指定 key 值对应的 value.<br>其中 TYPE 表示具体的数据类型,比如获取字符串类型的值可以使用 dictGetString.</li>
+<li>除了使用配置文件来创建字典外,还可以使用 SQL 语句来生成字典.<br>但相对而言,使用配置文件会更加直观便捷.</li>
+</ol>
+<h3 id="用户配置"><a href="#用户配置" class="headerlink" title="用户配置"></a>用户配置</h3><ol>
+<li>config.xml 可以指定单独的文件来对用户信息进行配置,用户配置文件的路径通过 users_config 配置项指定,默认为 users.xml.<br><code>&lt;users_config&gt;users.xml&lt;/users_config&gt;</code></li>
+<li>与 config.xml 文件类似,用户配置也可以被切分为不同的文件以便于管理,这些文件需要保存到 users.d 目录下.</li>
+<li>ClickHouse 的默认用户为 default,密码为空.</li>
+<li>用户配置的示例如下所示,其对应的 XML 标签为.<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;users&gt;</span><br><span class="line">  &lt;!-- If user name was not specified, &#39;default&#39; user is used. --&gt;</span><br><span class="line">  &lt;user_name&gt;</span><br><span class="line">    &lt;password&gt;&lt;&#x2F;password&gt;</span><br><span class="line">    &lt;!-- Or --&gt;</span><br><span class="line">    &lt;password_sha256_hex&gt;&lt;&#x2F;password_sha256_hex&gt;</span><br><span class="line">    &lt;networks incl&#x3D;&quot;networks&quot; replace&#x3D;&quot;replace&quot;&gt;</span><br><span class="line">      &lt;ip&gt;::&#x2F;0&lt;&#x2F;ip&gt;</span><br><span class="line">    &lt;&#x2F;networks&gt;</span><br><span class="line">    &lt;profile&gt;profile_name&lt;&#x2F;profile&gt;</span><br><span class="line">    &lt;quota&gt;default&lt;&#x2F;quota&gt;</span><br><span class="line">  &lt;&#x2F;user_name&gt;</span><br><span class="line">  &lt;!-- Other users settings --&gt;</span><br><span class="line">&lt;&#x2F;users&gt;</span><br></pre></td></tr></table></figure></li>
+<li>user_name 表示待添加的用户名.</li>
+<li>password 表示明文密码,不推荐使用该方式设置密码.</li>
+<li>password_sha256_hex 表示经过 sha256 hash 后的密码,推荐使用该方式设置密码,密码的生成方式如下所示.<br><code>echo -n &quot;$PASSWORD&quot; | sha256sum | tr -d &#39;-&#39;</code></li>
+<li>networks 表示允许连接到 ClickHouse 节点的网络地址列表,可以为 IP 地址或 Hostname.<br><code>::/0</code> 表示该用户可以从任何网络地址连接到 ClickHouse 节点.</li>
+<li>profile 表示对用户的一系列设置,用以控制用户的行为,如设置该用户具有只读权限等.<br>它是以单独的 XML 标签存在于 users.xml 文件中的.<br>配置的示例如下所示.<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- Settings profiles --&gt;</span><br><span class="line">&lt;profiles&gt;</span><br><span class="line">  &lt;!-- Default settings --&gt;</span><br><span class="line">  &lt;default&gt;</span><br><span class="line">    &lt;!-- The maximum number of threads when running a single query. --&gt;</span><br><span class="line">    &lt;max_threads&gt;8&lt;&#x2F;max_threads&gt;</span><br><span class="line">  &lt;&#x2F;default&gt;</span><br><span class="line"></span><br><span class="line">  &lt;!-- Settings for quries from the user interface --&gt;</span><br><span class="line">  &lt;profile_name&gt;</span><br><span class="line">    &lt;!-- Maximum memory usage for processing single query, in bytes. --&gt;</span><br><span class="line">    &lt;max_memory_usage&gt;30000000000&lt;&#x2F;max_memory_usage&gt;</span><br><span class="line">    &lt;!-- How to choose between replicas during distributed query processing. --&gt;</span><br><span class="line">    &lt;load_balancing&gt;in_order&lt;&#x2F;load_balancing&gt;</span><br><span class="line">    &lt;readonly&gt;1&lt;&#x2F;readonly&gt;</span><br><span class="line">  &lt;&#x2F;profile_name&gt;</span><br><span class="line">&lt;&#x2F;profiles&gt;</span><br></pre></td></tr></table></figure>
+profile 的名称可以任意,不同的用户可以配置相同的 profile.<br>另外需要注意,default profile 必须存在,它会在 ClickHouse 启动时作为默认的设置使用.</li>
+<li>quota 表示用户配额设置,用来限制用户一段时间内的资源使用,如 1 小时内的查询数不超过 1024 等.<br>它同样是以单独的 XML 标签存在于 users.xml 文件中的.<br>配置的示例如下所示.<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- Quotas --&gt;</span><br><span class="line">&lt;quotas&gt;</span><br><span class="line">  &lt;!-- Quota name. --&gt;</span><br><span class="line">  &lt;default&gt;</span><br><span class="line">    &lt;!-- Restrictions for a time period. You can set many intervals with different restrictions. --&gt;</span><br><span class="line">    &lt;interval&gt;</span><br><span class="line">      &lt;!-- Length of the interval. --&gt;</span><br><span class="line">      &lt;duration&gt;3600&lt;&#x2F;duration&gt;</span><br><span class="line"></span><br><span class="line">      &lt;!-- Unlimited. Just collect data for the specified time interval. --&gt;</span><br><span class="line">      &lt;queries&gt;0&lt;&#x2F;queries&gt;</span><br><span class="line">      &lt;errors&gt;0&lt;&#x2F;errors&gt;</span><br><span class="line">      &lt;result_rows&gt;0&lt;&#x2F;result_rows&gt;</span><br><span class="line">      &lt;read_rows&gt;0&lt;&#x2F;read_rows&gt;</span><br><span class="line">      &lt;execution_time&gt;0&lt;&#x2F;execution_time&gt;</span><br><span class="line">    &lt;&#x2F;interval&gt;</span><br><span class="line">  &lt;&#x2F;default&gt;</span><br><span class="line">&lt;&#x2F;quotas&gt;</span><br></pre></td></tr></table></figure>
+配额限制与 profile 中限制的主要区别在于,它可以对一段时间内运行的一组查询设置限制,而不是限制单个查询.</li>
+<li>除了使用配置文件管理用户,还可以基于 SQL 语句来创建、修改或删除用户.<br>但相对而言,使用配置文件会更加直观便捷.</li>
+</ol>
+<h3 id="ZooKeeper-配置"><a href="#ZooKeeper-配置" class="headerlink" title="ZooKeeper 配置"></a>ZooKeeper 配置</h3><ol>
+<li>zookeeper 配置允许 ClickHouse 与一个 ZooKeeper 集群进行交互.<br>ClickHouse 主要使用 ZooKeeper 来存储复制表的元数据,当不使用复制表时,该配置可以忽略.</li>
+<li>ZooKeeper 配置文件的示例如下所示,其对应的 XML 标签为.<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&lt;yandex&gt;</span><br><span class="line">  &lt;zookeeper replace&#x3D;&quot;true&quot;&gt;</span><br><span class="line">    &lt;node index&#x3D;&quot;1&quot;&gt;</span><br><span class="line">      &lt;host&gt;hostname1&#x2F;ip1&lt;&#x2F;host&gt;</span><br><span class="line">      &lt;port&gt;2181&lt;&#x2F;port&gt;</span><br><span class="line">    &lt;&#x2F;node&gt;</span><br><span class="line">    &lt;node index&#x3D;&quot;2&quot;&gt;</span><br><span class="line">      &lt;host&gt;hostname2&#x2F;ip2&lt;&#x2F;host&gt;</span><br><span class="line">      &lt;port&gt;2181&lt;&#x2F;port&gt;</span><br><span class="line">    &lt;&#x2F;node&gt;</span><br><span class="line">    &lt;node index&#x3D;&quot;3&quot;&gt;</span><br><span class="line">      &lt;host&gt;hostname3&#x2F;ip3&lt;&#x2F;host&gt;</span><br><span class="line">      &lt;port&gt;2181&lt;&#x2F;port&gt;</span><br><span class="line">    &lt;&#x2F;node&gt;</span><br><span class="line">  &lt;&#x2F;zookeeper&gt;</span><br><span class="line">&lt;&#x2F;yandex&gt;</span><br></pre></td></tr></table></figure></li>
+<li>node 表示一个 ZooKeeper 节点,可以设置多个.<br>当尝试连接到 ZooKeeper 集群时,index 属性指定了各节点的连接顺序.</li>
+</ol>
+<h3 id="Macros-配置"><a href="#Macros-配置" class="headerlink" title="Macros 配置"></a>Macros 配置</h3><ol>
+<li>macros 配置主要用来替换复制表的参数,在创建复制表时需要用到,当不使用复制表时,该配置可以忽略.</li>
+<li>Macros 配置文件的示例如下所示,其对应的 XML 标签为.<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;yandex&gt;</span><br><span class="line">  &lt;macros replace&#x3D;&quot;true&quot;&gt;</span><br><span class="line">    &lt;shard&gt;01&lt;&#x2F;shard&gt;</span><br><span class="line">    &lt;replica&gt;hostname&#x2F;ip&lt;&#x2F;replica&gt;</span><br><span class="line">  &lt;&#x2F;macros&gt;</span><br><span class="line">&lt;&#x2F;yandex&gt;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h3 id="Prometheus-配置"><a href="#Prometheus-配置" class="headerlink" title="Prometheus 配置"></a>Prometheus 配置</h3><ol>
+<li>该配置用来供 Prometheus 获取 ClickHouse 的指标信息.</li>
+<li>Prometheus 配置的示例如下所示,其对应的 XML 标签为.<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&lt;prometheus&gt;</span><br><span class="line">  &lt;endpoint&gt;&#x2F;metrics&lt;&#x2F;endpoint&gt;</span><br><span class="line">  &lt;port&gt;9363&lt;&#x2F;port&gt;</span><br><span class="line">  &lt;metrics&gt;true&lt;&#x2F;metrics&gt;</span><br><span class="line">  &lt;events&gt;true&lt;&#x2F;events&gt;</span><br><span class="line">  &lt;asynchronous_metrics&gt;true&lt;&#x2F;asynchronous_metrics&gt;</span><br><span class="line">&lt;&#x2F;prometheus&gt;</span><br></pre></td></tr></table></figure></li>
+<li>endpoint 表示指标接口的 URI.</li>
+<li>port 表示指标服务所使用的端口.</li>
+<li>metrics,events 和 asynchronous_metrics 都是标志项,代表是否暴露相应的指标信息.</li>
+<li>配置完成后,即可访问 <a href="http://ip:port/metrics">http://ip:port/metrics</a> 来查看所有的 ClickHouse 指标信息了.</li>
+</ol>
+<h3 id="MergeTree-配置"><a href="#MergeTree-配置" class="headerlink" title="MergeTree 配置"></a>MergeTree 配置</h3><ol>
+<li>该配置用来对使用 MergeTree 系列引擎的表进行微调.<br>需要注意,除非你对该配置有充分的了解,否则不建议修改.</li>
+<li>MergeTree 配置的示例如下所示,其对应的 XML 标签为.<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;merge_tree&gt;</span><br><span class="line">  &lt;!-- If more than this number active parts in single partition, throw &#39;Too many parts ...&#39; exception. --&gt;</span><br><span class="line">  &lt;parts_to_throw_insert&gt;300&lt;&#x2F;parts_to_throw_insert&gt;</span><br><span class="line">&lt;&#x2F;merge_tree&gt;</span><br></pre></td></tr></table></figure></li>
+<li>更多 MergeTree 相关配置可以参见源码中的 MergeTreeSettings.h 头文件.</li>
+</ol>
+<h3 id="其他常用配置"><a href="#其他常用配置" class="headerlink" title="其他常用配置"></a>其他常用配置</h3><ol>
+<li>时区配置.<br><code>&lt;timezone&gt;Asia/Shanghai&lt;/timezone&gt;</code></li>
+<li>最大连接数配置.<br><code>&lt;max_connections&gt;4096&lt;/max_connections&gt;</code></li>
+<li>并发查询数配置.<br><code>&lt;max_concurrent_queries&gt;200&lt;/max_concurrent_queries&gt;</code></li>
+<li>ClickHouse 最大内存使用量配置.<br><code>&lt;max_server_memory_usage&gt;0&lt;/max_server_memory_usage&gt;</code></li>
+<li>可删除表的最大数据量配置.<br><code>&lt;max_table_size_to_drop&gt;0&lt;/max_table_size_to_drop&gt;</code><br>单位为字节,默认值为 50 G,当表中数据大小超过该限制时,不能使用 DROP 语句去删除该表(防止误操作).<br>如果设置为 0,表示没有任何限制.<br>如果你仍然想删除某个数据量超限的表而不想修改上述配置并重启 ClickHouse 时,可以在 ClickHouse 的数据目录下创建一个标志文件 /path/to/clickhouse/flags/force_drop_table 表示可以强制删除该表,然后执行 DROP 语句即可删表成功.<br>上述标志文件在执行完一次 DROP 语句后会被自动删除以防止再次执行意外的 DROP 操作,因此执行创建标志文件和执行 DROP 语句的系统用户(非 ClickHouse 用户)应该保持一致,以避免在执行完 DROP 语句后,用户没有权限删除标志文件,从而导致后续操作失误并造成数据损失.</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/clickhouse/" rel="tag"># clickhouse</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/09/08/clickhouse%E5%AE%89%E8%A3%85/" rel="prev" title="clickhouse安装">
+                  <i class="fa fa-chevron-left"></i> clickhouse安装
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/09/08/clickhouse%20try/" rel="next" title="clickhouse try">
+                  clickhouse try <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

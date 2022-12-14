@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="table th:first-of-type {   width: 40%; } table th:nth-of-type(2) {   width: 60%; }   https:&#x2F;&#x2F;spark.apache.org&#x2F;examples.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="spark rdd编程指南">
+<meta property="og:url" content="https://maoeryu.github.io/2022/11/22/spark%20rdd%E7%BC%96%E7%A8%8B%E6%8C%87%E5%8D%97/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="table th:first-of-type {   width: 40%; } table th:nth-of-type(2) {   width: 60%; }   https:&#x2F;&#x2F;spark.apache.org&#x2F;examples.html">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1341.png">
+<meta property="article:published_time" content="2022-11-21T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-12-02T06:14:54.032Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="spark">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1341.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/11/22/spark%20rdd%E7%BC%96%E7%A8%8B%E6%8C%87%E5%8D%97/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>spark rdd编程指南 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8E-Spark-%E9%93%BE%E6%8E%A5"><span class="nav-number">2.</span> <span class="nav-text">与 Spark 链接</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96Spark"><span class="nav-number">3.</span> <span class="nav-text">初始化Spark</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8Shell"><span class="nav-number">3.1.</span> <span class="nav-text">使用Shell</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%B9%E6%80%A7%E5%88%86%E5%B8%83%E5%BC%8F%E6%95%B0%E6%8D%AE%E9%9B%86-RDD"><span class="nav-number">4.</span> <span class="nav-text">弹性分布式数据集 (RDD)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Parallelized-Collections"><span class="nav-number">4.1.</span> <span class="nav-text">Parallelized Collections</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#External-Datasets"><span class="nav-number">4.2.</span> <span class="nav-text">External Datasets</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RDD%E6%93%8D%E4%BD%9C"><span class="nav-number">4.3.</span> <span class="nav-text">RDD操作</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Basics"><span class="nav-number">4.3.1.</span> <span class="nav-text">Basics</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B0%86%E5%87%BD%E6%95%B0%E4%BC%A0%E9%80%92%E7%BB%99-Spark"><span class="nav-number">4.3.2.</span> <span class="nav-text">将函数传递给 Spark</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#scala"><span class="nav-number">4.3.2.1.</span> <span class="nav-text">scala</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#java"><span class="nav-number">4.3.2.2.</span> <span class="nav-text">java</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%90%86%E8%A7%A3%E9%97%AD%E5%8C%85"><span class="nav-number">4.3.3.</span> <span class="nav-text">理解闭包</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BE%8B%E5%AD%90"><span class="nav-number">4.3.3.1.</span> <span class="nav-text">例子</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%9C%AC%E5%9C%B0%E4%B8%8E%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8F"><span class="nav-number">4.3.3.2.</span> <span class="nav-text">本地与集群模式</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%89%93%E5%8D%B0-RDD-%E7%9A%84%E5%85%83%E7%B4%A0"><span class="nav-number">4.3.3.3.</span> <span class="nav-text">打印 RDD 的元素</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E9%94%AE%E5%80%BC%E5%AF%B9"><span class="nav-number">4.3.4.</span> <span class="nav-text">使用键值对</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Transformations-%E8%BD%AC%E6%8D%A2"><span class="nav-number">4.3.5.</span> <span class="nav-text">Transformations(转换)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Actions-%E5%8A%A8%E4%BD%9C"><span class="nav-number">4.3.6.</span> <span class="nav-text">Actions(动作)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Shuffle%E6%93%8D%E4%BD%9C"><span class="nav-number">4.3.7.</span> <span class="nav-text">Shuffle操作</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">4.3.7.1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E5%BD%B1%E5%93%8D"><span class="nav-number">4.3.7.2.</span> <span class="nav-text">性能影响</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RDD%E6%8C%81%E4%B9%85%E5%8C%96"><span class="nav-number">4.4.</span> <span class="nav-text">RDD持久化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%89%E6%8B%A9%E5%93%AA%E4%B8%AA%E5%AD%98%E5%82%A8%E7%BA%A7%E5%88%AB"><span class="nav-number">4.4.1.</span> <span class="nav-text">选择哪个存储级别</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE"><span class="nav-number">4.4.2.</span> <span class="nav-text">删除数据</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%8F%98%E9%87%8F"><span class="nav-number">5.</span> <span class="nav-text">共享变量</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%BF%E6%92%AD%E5%8F%98%E9%87%8F"><span class="nav-number">5.1.</span> <span class="nav-text">广播变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Accumulators-%E7%B4%AF%E5%8A%A0%E5%99%A8"><span class="nav-number">5.2.</span> <span class="nav-text">Accumulators(累加器)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2%E5%88%B0%E9%9B%86%E7%BE%A4"><span class="nav-number">6.</span> <span class="nav-text">部署到集群</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8E-Java-Scala-%E5%90%AF%E5%8A%A8-Spark-%E4%BD%9C%E4%B8%9A"><span class="nav-number">7.</span> <span class="nav-text">从 Java &#x2F; Scala 启动 Spark 作业</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95"><span class="nav-number">8.</span> <span class="nav-text">单元测试</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#example"><span class="nav-number">9.</span> <span class="nav-text">example</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/11/22/spark%20rdd%E7%BC%96%E7%A8%8B%E6%8C%87%E5%8D%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          spark rdd编程指南
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-11-22 00:00:00" itemprop="dateCreated datePublished" datetime="2022-11-22T00:00:00+08:00">2022-11-22</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-12-02 14:14:54" itemprop="dateModified" datetime="2022-12-02T14:14:54+08:00">2022-12-02</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <style>
+table th:first-of-type {
+  width: 40%;
+}
+table th:nth-of-type(2) {
+  width: 60%;
+}
+</style>
+
+<p><a target="_blank" rel="noopener" href="https://spark.apache.org/examples.html">https://spark.apache.org/examples.html</a></p>
+<span id="more"></span>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>在高层次上,每个 Spark 应用程序都包含一个驱动程序,该驱动程序运行用户的main函数并在集群上执行各种并行操作.<br>Spark 提供的主要抽象是弹性分布式数据集(RDD),它是跨集群节点分区的元素集合,可以并行操作.<br>RDD 是通过从 Hadoop 文件系统(或任何其他 Hadoop 支持的文件系统)中的文件或驱动程序中现有的 Scala 集合开始并对其进行转换来创建的.<br>用户还可以要求 Spark 将RDD持久保存在内存中,允许它在并行操作中有效地重用.<br>最后,RDD 会自动从节点故障中恢复.</p>
+<p>Spark 中的第二个抽象是可以在并行操作中使用的共享变量.<br>默认情况下,当 Spark 在不同节点上将一个函数作为一组任务并行运行时,它会将函数中使用的每个变量的副本发送到每个任务.<br>有时,一个变量需要跨任务共享,或者在任务和驱动程序之间共享.<br>Spark 支持两种类型的共享变量:</p>
+<ol>
+<li>广播变量,可用于在所有节点的内存中缓存一个值.</li>
+<li>累加器,它们是仅&quot;添加&quot;到的变量,例如计数器和求和.</li>
+</ol>
+<h2 id="与-Spark-链接"><a href="#与-Spark-链接" class="headerlink" title="与 Spark 链接"></a>与 Spark 链接</h2><blockquote>
+<p>scala<br>Spark 2.4.8 的构建和分发默认与 Scala 2.12 一起使用.(Spark 也可以构建为与其他版本的 Scala 一起工作.)要使用 Scala 编写应用程序,您需要使用兼容的 Scala 版本(例如 2.12.X).</p>
+</blockquote>
+<blockquote>
+<p>java<br>Spark 2.4.8 支持 lambda 表达式来简洁地编写函数,否则你可以使用 <code>org.apache.spark.api.java.function</code>包中的类.<br>请注意,在 Spark 2.2.0 中删除了对 Java 7 的支持.</p>
+</blockquote>
+<p>要编写 Spark 应用程序,您需要添加对 Spark 的 Maven 依赖.Spark 可通过 Maven Central 在以下位置获得:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">groupId &#x3D; org.apache.spark</span><br><span class="line">artifactId &#x3D; spark-core_2.12</span><br><span class="line">version &#x3D; 2.4.8</span><br></pre></td></tr></table></figure>
+
+<p>此外,如果您希望访问 HDFS 集群,您需要 hadoop-client为您的 HDFS 版本添加依赖.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">groupId &#x3D; org.apache.hadoop</span><br><span class="line">artifactId &#x3D; hadoop-client</span><br><span class="line">version &#x3D; &lt;your-hdfs-version&gt;</span><br></pre></td></tr></table></figure>
+
+<p>最后,您需要将一些 Spark 类导入到您的程序中.添加以下行:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;scala</span><br><span class="line">import org.apache.spark.SparkContext</span><br><span class="line">import org.apache.spark.SparkConf</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;java</span><br><span class="line">import org.apache.spark.api.java.JavaSparkContext;</span><br><span class="line">import org.apache.spark.api.java.JavaRDD;</span><br><span class="line">import org.apache.spark.SparkConf;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>在 Spark 1.3.0 之前,您需要显式<code>import org.apache.spark.SparkContext._</code>启用必要的隐式转换.</p>
+</blockquote>
+<h2 id="初始化Spark"><a href="#初始化Spark" class="headerlink" title="初始化Spark"></a>初始化Spark</h2><p>Spark 程序必须做的第一件事是创建一个SparkContext对象,它告诉 Spark 如何访问集群.要创建一个SparkContext,您首先需要构建一个SparkConf对象,其中包含有关您的应用程序的信息.</p>
+<p>每个 JVM 只能有一个 SparkContext 处于活动状态.在创建新的 SparkContext 之前,您必须stop()它.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;scala</span><br><span class="line">val conf &#x3D; new SparkConf().setAppName(appName).setMaster(master)</span><br><span class="line">new SparkContext(conf)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;java</span><br><span class="line">SparkConf conf &#x3D; new SparkConf().setAppName(appName).setMaster(master);</span><br><span class="line">JavaSparkContext sc &#x3D; new JavaSparkContext(conf);</span><br></pre></td></tr></table></figure>
+
+<p>该appName参数是您的应用程序在集群 UI 上显示的名称. master是一个Spark、Mesos 或 YARN 集群 URL,或者一个在本地模式下运行的特殊&quot;local&quot;字符串.实际上,当在集群上运行时,您不会希望master在程序中进行硬编码,而是希望启动应用程序spark-submit并在那里接收它.但是,对于本地测试和单元测试,您可以通过&quot;local&quot;来运行 Spark in-process.</p>
+<h3 id="使用Shell"><a href="#使用Shell" class="headerlink" title="使用Shell"></a>使用Shell</h3><p>在 Spark shell 中,一个特殊的解释器感知 SparkContext 已经在名为sc. 制作您自己的 SparkContext 将不起作用.您可以使用参数<font color="blue">--master</font>设置上下文连接到哪个主服务器,并且可以通过<font color="blue">--jars</font>将逗号分隔列表传递给参数来将 JAR 添加到类路径中.您还可以通过向<font color="blue">--packages</font>参数提供以逗号分隔的 Maven 坐标列表来将依赖项(例如 Spark 包)添加到您的 shell 会话.任何可能存在依赖关系的附加存储库(例如 Sonatype)都可以传递给<font color="blue">--repositories</font>参数.例如,要bin/spark-shell恰好在四个内核上运行,请使用:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/spark-shell --master local[4]</span><br></pre></td></tr></table></figure>
+
+<p>或者,要同时添加code.jar到其类路径,请使用:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/spark-shell --master local[4] --jars code.jar</span><br></pre></td></tr></table></figure>
+
+<p>要使用 Maven 坐标包含依赖项:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/spark-shell --master local[4] --packages &quot;org.example:example:0.1&quot;</span><br></pre></td></tr></table></figure>
+
+<p>如需完整的选项列表,请运行spark-shell --help. 在幕后, spark-shell调用更通用的spark-submit脚本.</p>
+<h2 id="弹性分布式数据集-RDD"><a href="#弹性分布式数据集-RDD" class="headerlink" title="弹性分布式数据集 (RDD)"></a>弹性分布式数据集 (RDD)</h2><p>Spark 围绕弹性分布式数据集(RDD) 的概念展开,RDD 是可以并行操作的容错元素集合.<br>有两种创建 RDD 的方法:</p>
+<ol>
+<li>并行化驱动程序中的现有集合</li>
+<li>引用外部存储系统中的数据集,例如共享文件系统、HDFS、HBase 或任何提供 Hadoop InputFormat 的数据源.</li>
+</ol>
+<h3 id="Parallelized-Collections"><a href="#Parallelized-Collections" class="headerlink" title="Parallelized Collections"></a>Parallelized Collections</h3><p>并行化集合是通过在驱动程序(Scala )中的现有集合上调用SparkContext的方法来创建的.集合中的元素被复制以形成可以并行操作的分布式数据集.例如,下面是如何创建一个包含数字 1 到 5 的并行化集合:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;scala</span><br><span class="line">val data &#x3D; Array(1, 2, 3, 4, 5)</span><br><span class="line">val distData &#x3D; sc.parallelize(data)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;java</span><br><span class="line">List&lt;Integer&gt; data &#x3D; Arrays.asList(1, 2, 3, 4, 5);</span><br><span class="line">JavaRDD&lt;Integer&gt; distData &#x3D; sc.parallelize(data);</span><br></pre></td></tr></table></figure>
+
+<p>创建后,分布式数据集 (distData) 可以并行操作.例如,我们可能会调用distData.reduce((a, b) =&gt; a + b)将数组的元素相加.</p>
+<p>并行集合的一个重要参数是将数据集分割成的分区数.Spark 将为集群的每个分区运行一个任务.通常,您希望集群中的每个 CPU 有 2-4 个分区.通常,Spark 会尝试根据您的集群自动设置分区数.但是,您也可以通过将其作为第二个参数传递给parallelize(例如<code>sc.parallelize(data, 10)</code>) 来手动设置它.注意:代码中的某些地方使用术语切片(分区的同义词)来保持向后兼容性.</p>
+<h3 id="External-Datasets"><a href="#External-Datasets" class="headerlink" title="External Datasets"></a>External Datasets</h3><p>Spark 可以从 Hadoop 支持的任何存储源创建分布式数据集,包括本地文件系统、HDFS、Cassandra、HBase、Amazon S3等.Spark 支持文本文件、SequenceFiles和任何其他 Hadoop InputFormat.</p>
+<p>可以使用SparkContext的textFile方法创建文本文件 RDD.此方法采用文件的 URI(机器上的本地路径,或hdfs://,s3a://等 URI)并将其作为行集合读取.这是一个示例调用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;scala</span><br><span class="line">scala&gt; val distFile &#x3D; sc.textFile(&quot;data.txt&quot;)</span><br><span class="line">distFile: org.apache.spark.rdd.RDD[String] &#x3D; data.txt MapPartitionsRDD[10] at textFile at &lt;console&gt;:26</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;java</span><br><span class="line">JavaRDD&lt;String&gt; distFile &#x3D; sc.textFile(&quot;data.txt&quot;);</span><br></pre></td></tr></table></figure>
+
+<p>创建后,distFile可以通过数据集操作进行操作.例如,我们可以使用mapandreduce操作将所有行的大小相加,如下所示:<br>distFile.map(s =&gt; s.length).reduce((a, b) =&gt; a + b).</p>
+<blockquote>
+<p>使用 Spark 读取文件的一些注意事项:</p>
+</blockquote>
+<ol>
+<li>如果使用本地文件系统上的路径,则该文件也必须可以在工作节点上的相同路径上访问.将文件复制到所有工作人员或使用网络安装的共享文件系统.</li>
+<li>Spark 的所有基于文件的输入方法(包括textFile)都支持在目录、压缩文件和通配符上运行.例如,您可以使用以下方式.<br>textFile(&quot;/my/directory&quot;)<br>textFile(&quot;/my/directory/*.txt&quot;)<br>textFile(&quot;/my/directory/*.gz&quot;)</li>
+<li>该textFile方法还采用可选的第二个参数来控制文件的分区数.默认情况下,Spark 为文件的每个块创建一个分区(在 HDFS 中块默认为 128MB),但您也可以通过传递更大的值来请求更多的分区.请注意,分区不能少于块.</li>
+</ol>
+<p>除了文本文件,Spark 的 Scala API 还支持其他几种数据格式:</p>
+<ol>
+<li><code>SparkContext.wholeTextFiles</code>允许您读取包含多个小文本文件的目录,并以 (filename, content) 对的形式返回每个文件.这与textFile形成对比,后者将在每个文件中每行返回一条记录.分区由数据位置决定,在某些情况下,这可能会导致分区太少.对于这些情况,wholeTextFiles提供可选的第二个参数来控制最小分区数.</li>
+<li>对于SequenceFiles,使用 SparkContext 的<code>sequenceFile[K, V]</code>方法,其中K和V是文件中键和值的类型.这些应该是 Hadoop 的Writable接口的子类,如IntWritable和Text.此外,Spark 允许您为一些常见的 Writables 指定原生类型.例如,<code>sequenceFile[Int, String]</code>将自动读取 IntWritables 和 Texts.</li>
+<li>对于其他 Hadoop InputFormats,您可以使用该<code>SparkContext.hadoopRDD</code>方法,该方法采用任意JobConf输入格式类、键类和值类.设置这些的方式与使用输入源的 Hadoop 作业相同.您还可以使用<code>SparkContext.newAPIHadoopRDD</code>基于&quot;新&quot;MapReduce API ( org.apache.hadoop.mapreduce) 的 InputFormats.</li>
+<li><code>RDD.saveAsObjectFile</code>和<code>SparkContext.objectFile</code>支持以由序列化 Java 对象组成的简单格式保存 RDD.虽然这不如像 Avro 这样的专用格式那么高效,但它提供了一种保存任何 RDD 的简单方法.</li>
+</ol>
+<h3 id="RDD操作"><a href="#RDD操作" class="headerlink" title="RDD操作"></a>RDD操作</h3><p>RDD 支持两种类型的操作:transformations和actions ,前者从现有数据集创建新数据集,后者在数据集上运行计算后将值返回给驱动程序.例如,map是一个转换,它通过一个函数传递每个数据集元素并返回一个表示结果的新 RDD.另一方面,reduce是一个操作,它使用一些函数聚合 RDD 的所有元素并将最终结果返回给驱动程序(尽管也有一个reduceByKey返回分布式数据集的并行).</p>
+<p><font color="blue">Spark 中的所有转换都是惰性的,因为它们不会立即计算结果</font>.相反,他们只记得应用于某些基础数据集(例如文件)的转换.仅当操作需要将结果返回给驱动程序时才计算转换.这种设计使 Spark 能够更高效地运行.例如,我们可以意识到通过创建的数据集map将在 a 中使用,reduce并且只将结果返回reduce给驱动程序,而不是更大的映射数据集.</p>
+<p>默认情况下,每次对它运行操作时,每个转换后的 RDD 都可能会重新计算.但是,您也可以使用persist(or cache) 方法将 RDD 保存在内存中,在这种情况下,Spark 会将元素保留在集群上,以便在您下次查询时更快地访问它.还支持在磁盘上持久化 RDD,或跨多个节点复制.</p>
+<h4 id="Basics"><a href="#Basics" class="headerlink" title="Basics"></a>Basics</h4><p>为了说明 RDD 基础知识,请考虑下面的简单程序:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">val lines &#x3D; sc.textFile(&quot;data.txt&quot;)</span><br><span class="line">val lineLengths &#x3D; lines.map(s &#x3D;&gt; s.length)</span><br><span class="line">val totalLength &#x3D; lineLengths.reduce((a, b) &#x3D;&gt; a + b)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;java</span><br><span class="line">JavaRDD&lt;String&gt; lines &#x3D; sc.textFile(&quot;data.txt&quot;);</span><br><span class="line">JavaRDD&lt;Integer&gt; lineLengths &#x3D; lines.map(s -&gt; s.length());</span><br><span class="line">int totalLength &#x3D; lineLengths.reduce((a, b) -&gt; a + b);</span><br></pre></td></tr></table></figure>
+
+<p>第一行定义了来自外部文件的基本 RDD.此数据集未加载到内存中或以其他方式执行:lines只是指向文件的指针.第二行定义lineLengths为map转换的结果.同样,由于懒惰,不会立即lineLengths 计算.最后,我们运行reduce,这是一个动作.在这一点上,Spark 将计算分解为在不同机器上运行的任务,每台机器都运行它的映射部分和本地归约,只将它的答案返回给驱动程序.</p>
+<p>如果我们还想lineLengths稍后再次使用,我们可以添加:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">lineLengths.persist()</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;java</span><br><span class="line">lineLengths.persist(StorageLevel.MEMORY_ONLY());</span><br></pre></td></tr></table></figure>
+
+<p>在reduce之前,这将导致lineLengths在第一次计算后保存在内存中.</p>
+<h4 id="将函数传递给-Spark"><a href="#将函数传递给-Spark" class="headerlink" title="将函数传递给 Spark"></a>将函数传递给 Spark</h4><p>Spark 的 API 严重依赖驱动程序中的传递函数在集群上运行.</p>
+<h5 id="scala"><a href="#scala" class="headerlink" title="scala"></a>scala</h5><p>有两种推荐的方法可以做到这一点:</p>
+<ol>
+<li>匿名函数语法,可用于短代码.</li>
+<li>全局单例对象中的静态方法.例如,您可以定义object MyFunctions然后传递MyFunctions.func1,如下所示:<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">object MyFunctions &#123;</span><br><span class="line">  def func1(s: String): String &#x3D; &#123; ... &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">myRdd.map(MyFunctions.func1)</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>请注意,虽然也可以在类实例中传递对方法的引用(与单例对象相反),但这需要将包含该类的对象与方法一起发送.例如,考虑:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">class MyClass &#123;</span><br><span class="line">  def func1(s: String): String &#x3D; &#123; ... &#125;</span><br><span class="line">  def doStuff(rdd: RDD[String]): RDD[String] &#x3D; &#123; rdd.map(func1) &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在这里,如果我们创建一个新MyClass实例并调用doStuff它,map里面引用了 该实例MyClass 的方法func1,所以需要将整个对象发送到集群.它类似于写作<code>.rdd.map(x =&gt; this.func1(x))</code></p>
+<p>以类似的方式,访问外部对象的字段将引用整个对象:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">class MyClass &#123;</span><br><span class="line">  val field &#x3D; &quot;Hello&quot;</span><br><span class="line">  def doStuff(rdd: RDD[String]): RDD[String] &#x3D; &#123; rdd.map(x &#x3D;&gt; field + x) &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>相当于写<code>rdd.map(x =&gt; this.field + x)</code>,它引用了所有的this.<br>为了避免这个问题,最简单的方法是复制field到局部变量而不是从外部访问它:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">def doStuff(rdd: RDD[String]): RDD[String] &#x3D; &#123;</span><br><span class="line">  val field_ &#x3D; this.field</span><br><span class="line">  rdd.map(x &#x3D;&gt; field_ + x)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="java"><a href="#java" class="headerlink" title="java"></a>java</h5><p>在 Java 中,函数由实现<code>org.apache.spark.api.java.function</code>包中的接口的类表示.有两种方法可以创建这样的函数:</p>
+<ol>
+<li>在您自己的类中实现 Function 接口,作为匿名内部类或命名内部类,并将其实例传递给 Spark.</li>
+<li>使用lambda 表达式 来简洁地定义一个实现.</li>
+</ol>
+<p>虽然本指南的大部分内容使用 lambda 语法以求简洁,但很容易以长格式使用所有相同的 API.例如,我们可以将上面的代码编写如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">JavaRDD&lt;String&gt; lines &#x3D; sc.textFile(&quot;data.txt&quot;);</span><br><span class="line">JavaRDD&lt;Integer&gt; lineLengths &#x3D; lines.map(new Function&lt;String, Integer&gt;() &#123;</span><br><span class="line">  public Integer call(String s) &#123; return s.length(); &#125;</span><br><span class="line">&#125;);</span><br><span class="line">int totalLength &#x3D; lineLengths.reduce(new Function2&lt;Integer, Integer, Integer&gt;() &#123;</span><br><span class="line">  public Integer call(Integer a, Integer b) &#123; return a + b; &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>或者,如果编写内联函数很笨拙:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">class GetLength implements Function&lt;String, Integer&gt; &#123;</span><br><span class="line">  public Integer call(String s) &#123; return s.length(); &#125;</span><br><span class="line">&#125;</span><br><span class="line">class Sum implements Function2&lt;Integer, Integer, Integer&gt; &#123;</span><br><span class="line">  public Integer call(Integer a, Integer b) &#123; return a + b; &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">JavaRDD&lt;String&gt; lines &#x3D; sc.textFile(&quot;data.txt&quot;);</span><br><span class="line">JavaRDD&lt;Integer&gt; lineLengths &#x3D; lines.map(new GetLength());</span><br><span class="line">int totalLength &#x3D; lineLengths.reduce(new Sum());</span><br></pre></td></tr></table></figure>
+
+<p>请注意,Java 中的匿名内部类也可以访问封闭范围内的变量,只要它们被final标记即可.与其他语言一样,Spark 会将这些变量的副本发送到每个工作节点.</p>
+<h4 id="理解闭包"><a href="#理解闭包" class="headerlink" title="理解闭包"></a>理解闭包</h4><p>Spark 的难点之一是在跨集群执行代码时理解变量和方法的范围和生命周期.修改超出其范围的变量的 RDD 操作可能经常引起混淆.<br>在下面的示例中,我们将查看foreach()用于递增计数器的代码,但其他操作也可能出现类似问题.</p>
+<h5 id="例子"><a href="#例子" class="headerlink" title="例子"></a>例子</h5><p>考虑下面的原始 RDD 元素总和,它的行为可能会有所不同,具体取决于执行是否发生在同一 JVM 中.一个常见的例子是在local模式 ( <code>--master = local[n]</code>) 中运行 Spark 与将 Spark 应用程序部署到集群(例如通过 spark-submit 到 YARN):</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">var counter &#x3D; 0</span><br><span class="line">var rdd &#x3D; sc.parallelize(data)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Wrong: Don&#39;t do this!!</span><br><span class="line">rdd.foreach(x &#x3D;&gt; counter +&#x3D; x)</span><br><span class="line"></span><br><span class="line">println(&quot;Counter value: &quot; + counter)</span><br></pre></td></tr></table></figure>
+
+<p>//java</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">int counter &#x3D; 0;</span><br><span class="line">JavaRDD&lt;Integer&gt; rdd &#x3D; sc.parallelize(data);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Wrong: Don&#39;t do this!!</span><br><span class="line">rdd.foreach(x -&gt; counter +&#x3D; x);</span><br><span class="line"></span><br><span class="line">println(&quot;Counter value: &quot; + counter);</span><br></pre></td></tr></table></figure>
+
+<h5 id="本地与集群模式"><a href="#本地与集群模式" class="headerlink" title="本地与集群模式"></a>本地与集群模式</h5><p>上述代码的行为未定义,可能无法按预期工作.为了执行作业,Spark 将 RDD 操作的处理分解为任务,每个任务都由一个执行器执行.<br>在执行之前,Spark 计算任务的闭包.<font color="red">闭包是那些必须对执行程序可见的变量和方法</font>,以便在 RDD 上执行其计算(在本例中为foreach()).这个闭包被序列化并发送给每个执行者.</p>
+<p>发送给每个执行程序的闭包中的变量现在是副本,因此,当在函数中引用计数器foreach时,它不再是驱动程序节点上的计数器.驱动程序节点的内存中仍有一个计数器,但执行程序不再可见.<br>执行者只能看到序列化闭包中的副本.因此,计数器的最终值仍将为零,因为对计数器的所有操作都引用了序列化闭包中的值.</p>
+<p>在本地模式下,在某些情况下,该foreach函数实际上会在与驱动程序相同的 JVM 中执行,并且会引用相同的原始计数器,并且可能会实际更新它.</p>
+<p>为了确保在这些场景中定义明确的行为,应该使用Accumulator.<br>Spark 中的累加器专门用于提供一种机制,用于在集群中跨工作节点拆分执行时安全地更新变量.</p>
+<p>一般来说,闭包-像循环或局部定义的方法这样的构造,不应该用来改变一些全局状态.Spark 不定义或保证从闭包外部引用的对象的突变行为.执行此操作的一些代码可能在本地模式下工作,但这只是偶然,并且此类代码在分布式模式下不会按预期运行.如果需要一些全局聚合,请改用累加器.</p>
+<h5 id="打印-RDD-的元素"><a href="#打印-RDD-的元素" class="headerlink" title="打印 RDD 的元素"></a>打印 RDD 的元素</h5><p>另一个常见的习惯用法是尝试使用<code>rdd.foreach(println)</code>/<code>rdd.map(println)</code>打印出 RDD 的元素.在一台机器上,这将生成预期的输出并打印所有 RDD 的元素.然而,在cluster模式下,stdout执行者调用的输出现在写入执行者的stdout,而不是驱动程序上的,所以stdout驱动程序不会显示这些.<br>要打印驱动程序上的所有元素,可以使用collect()首先将 RDD 带到驱动程序节点的方法<code>rdd.collect().foreach(println)</code>:但是,这可能会导致驱动程序耗尽内存,因为collect()将整个 RDD 提取到一台机器上.如果您只需要打印 RDD 的几个元素,更安全的方法是使用take(): <code>rdd.take(100).foreach(println)</code>.</p>
+<h4 id="使用键值对"><a href="#使用键值对" class="headerlink" title="使用键值对"></a>使用键值对</h4><p>虽然大多数 Spark 操作适用于包含任何类型对象的 RDD,但一些特殊操作仅适用于键值对的 RDD.最常见的是分布式&quot;shuffle&quot;操作,例如通过键对元素进行分组或聚合.</p>
+<p>//scala<br>在 Scala 中,这些操作在包含Tuple2对象(语言中的内置元组,通过简单地编写创建)的 RDD上自动可用 (a, b).键值对操作在 PairRDDFunctions类中可用,它自动环绕元组的 RDD.</p>
+<p>//java<br>在 Java 中,键值对使用 Scala 标准库中的scala.Tuple2类表示.您可以简单地调用new Tuple2(a, b)来创建一个元组,然后使用<code>tuple._1()</code>/<code>tuple._2()</code>访问它的字段.<br>键值对的 RDD 由 JavaPairRDD类表示.您可以使用特殊版本的操作从 JavaRDD 构建 JavaPairRDD map,例如 mapToPair和flatMapToPair.JavaPairRDD 将同时具有标准的 RDD 函数和特殊的键值函数.</p>
+<p>例如,下面的代码通过reduceByKey对键值对的操作来统计每行文本在文件中出现了多少次:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">val lines &#x3D; sc.textFile(&quot;data.txt&quot;)</span><br><span class="line">val pairs &#x3D; lines.map(s &#x3D;&gt; (s, 1))</span><br><span class="line">val counts &#x3D; pairs.reduceByKey((a, b) &#x3D;&gt; a + b)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;java</span><br><span class="line">JavaRDD&lt;String&gt; lines &#x3D; sc.textFile(&quot;data.txt&quot;);</span><br><span class="line">JavaPairRDD&lt;String, Integer&gt; pairs &#x3D; lines.mapToPair(s -&gt; new Tuple2(s, 1));</span><br><span class="line">JavaPairRDD&lt;String, Integer&gt; counts &#x3D; pairs.reduceByKey((a, b) -&gt; a + b);</span><br></pre></td></tr></table></figure>
+
+<p>例如,我们还可以使用<code>counts.sortByKey()</code>来按字母顺序对这些对进行排序,最后 <code>counts.collect()</code>将它们作为对象数组带回驱动程序.</p>
+<blockquote>
+<p>注意:在键值对操作中使用自定义对象作为键时,必须确保自定义equals()方法伴随着匹配hashCode()方法.</p>
+</blockquote>
+<h4 id="Transformations-转换"><a href="#Transformations-转换" class="headerlink" title="Transformations(转换)"></a>Transformations(转换)</h4><p>下表列出了 Spark 支持的一些常见转换.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Transformation</th>
+<th align="left">意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">map(func)</td>
+<td align="left">返回通过函数func传递源的每个元素而形成的新分布式数据集.</td>
+</tr>
+<tr>
+<td align="left">filter(func)</td>
+<td align="left">返回通过选择源中func返回 true的那些元素形成的新数据集.</td>
+</tr>
+<tr>
+<td align="left">flatMap(func)</td>
+<td align="left">类似于 map,但每个输入项都可以映射到 0 个或多个输出项(因此func应该返回一个 Seq 而不是单个项).</td>
+</tr>
+<tr>
+<td align="left">mapPartitions(func)</td>
+<td align="left">类似于map,但是在RDD的每个分区(block)上分别运行,所以func在T类型的RDD上运行时必须是<code>Iterator&lt;T&gt; =&gt; Iterator&lt;U&gt;</code>类型.</td>
+</tr>
+<tr>
+<td align="left">mapPartitionsWithIndex(func)</td>
+<td align="left">类似于mapPartitions,但也为func提供了一个表示分区索引的整数值,所以func在T类型的RDD上运行时必须是<code>(Int, Iterator&lt;T&gt;) =&gt; Iterator&lt;U&gt;</code>类型.</td>
+</tr>
+<tr>
+<td align="left">sample(withReplacement, fraction, seed)</td>
+<td align="left">使用给定的随机数生成器种子对数据的一小部分进行采样,有或没有替换.</td>
+</tr>
+<tr>
+<td align="left">union(otherDataset)</td>
+<td align="left">返回一个新数据集,其中包含源数据集中的元素和参数的并集.</td>
+</tr>
+<tr>
+<td align="left">intersection(otherDataset)</td>
+<td align="left">返回一个新的 RDD,其中包含源数据集中的元素与参数的交集.</td>
+</tr>
+<tr>
+<td align="left">distinct([numPartitions]))</td>
+<td align="left">返回包含源数据集的不同元素的新数据集.</td>
+</tr>
+<tr>
+<td align="left">groupByKey([numPartitions])</td>
+<td align="left">当在 (K, V) 对的数据集上调用时,返回 (K, Iterable<V>) 对的数据集.注意:如果您正在分组以便对每个键执行聚合(例如总和或平均值),则使用reduceByKey/aggregateByKey会产生更好的性能.注意:默认情况下,输出中的并行度取决于父 RDD 的分区数.您可以传递一个可选numPartitions参数来设置不同数量的任务.</td>
+</tr>
+<tr>
+<td align="left">reduceByKey(func, [numPartitions])</td>
+<td align="left">当在 (K, V) 对的数据集上调用时,返回 (K, V) 对的数据集,其中每个键的值使用给定的 reduce 函数func聚合,其类型必须为 (V,V) =&gt; V. 与groupByKey中一样,reduce 任务的数量可通过可选的第二个参数进行配置.</td>
+</tr>
+<tr>
+<td align="left">aggregateByKey(zeroValue)(seqOp, combOp, [numPartitions])</td>
+<td align="left">当在 (K, V) 对的数据集上调用时,返回 (K, U) 对的数据集,其中每个键的值使用给定的组合函数和中性&quot;零&quot;值聚合.允许与输入值类型不同的聚合值类型,同时避免不必要的分配.与groupByKey中一样,reduce 任务的数量可以通过可选的第二个参数进行配置.</td>
+</tr>
+<tr>
+<td align="left">sortByKey([ascending], [numPartitions])</td>
+<td align="left">当在 K 实现 Ordered 的 (K, V) 对数据集上调用时,返回按键按升序或降序排序的 (K, V) 对数据集,如布尔ascending参数中指定的那样.</td>
+</tr>
+<tr>
+<td align="left">join(otherDataset, [numPartitions])</td>
+<td align="left">当在 (K, V) 和 (K, W) 类型的数据集上调用时,返回一个 (K, (V, W)) 对的数据集,其中包含每个键的所有元素对.通过leftOuterJoin、rightOuterJoin和支持外部联接fullOuterJoin.</td>
+</tr>
+<tr>
+<td align="left">cogroup(otherDataset, [numPartitions])</td>
+<td align="left">当在 (K, V) 和 (K, W) 类型的数据集上调用时,返回 (K, (Iterable<V>, Iterable<W>)) 元组的数据集.此操作也称为groupWith.</td>
+</tr>
+<tr>
+<td align="left">cartesian(otherDataset)</td>
+<td align="left">在 T 和 U 类型的数据集上调用时,返回 (T, U) 对(所有元素对)的数据集,迪卡尔集.</td>
+</tr>
+<tr>
+<td align="left">pipe(command, [envVars])</td>
+<td align="left">通过 shell 命令(例如 Perl 或 bash 脚本)对 RDD 的每个分区进行管道传输.RDD 元素被写入进程的标准输入,输出到其标准输出的行作为字符串的 RDD 返回.</td>
+</tr>
+<tr>
+<td align="left">coalesce(numPartitions)</td>
+<td align="left">将 RDD 中的分区数减少到 numPartitions.用于过滤大型数据集后更有效地运行操作.</td>
+</tr>
+<tr>
+<td align="left">repartition(numPartitions)</td>
+<td align="left">随机重新排列 RDD 中的数据以创建更多或更少的分区并在它们之间进行平衡.这总是会shuffle网络上的所有数据.</td>
+</tr>
+<tr>
+<td align="left">repartitionAndSortWithinPartitions(partitioner)</td>
+<td align="left">根据给定的分区程序对 RDD 进行重新分区,并在每个结果分区内,按记录的键对记录进行排序.这比repartition在每个分区内调用然后排序更有效,因为它可以将排序向下推入shuffle机制.</td>
+</tr>
+</tbody></table>
+<h4 id="Actions-动作"><a href="#Actions-动作" class="headerlink" title="Actions(动作)"></a>Actions(动作)</h4><p>下表列出了 Spark 支持的一些常见操作.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Action</th>
+<th align="left">意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">reduce(func)</td>
+<td align="left">使用函数func(接受两个参数并返回一个)聚合数据集的元素.该函数应该是可交换的和结合的,以便可以正确地并行计算.</td>
+</tr>
+<tr>
+<td align="left">collect()</td>
+<td align="left">在驱动程序中将数据集的所有元素作为数组返回.这通常在过滤器或其他返回足够小的数据子集的操作之后很有用.</td>
+</tr>
+<tr>
+<td align="left">count()</td>
+<td align="left">返回数据集中的元素数.</td>
+</tr>
+<tr>
+<td align="left">first()</td>
+<td align="left">返回数据集的第一个元素(类似于 take(1)).</td>
+</tr>
+<tr>
+<td align="left">take(n)</td>
+<td align="left">返回包含数据集前n 个元素的数组.</td>
+</tr>
+<tr>
+<td align="left">takeSample(withReplacement, num, [seed])</td>
+<td align="left">返回一个数组,其中包含数据集的num个元素的随机样本,有或没有替换,可以选择预先指定随机数生成器种子.</td>
+</tr>
+<tr>
+<td align="left">takeOrdered(n, [ordering])</td>
+<td align="left">使用自然顺序或自定义比较器返回 RDD 的前n 个元素.</td>
+</tr>
+<tr>
+<td align="left">saveAsTextFile(path)</td>
+<td align="left">将数据集的元素作为文本文件(或一组文本文件)写入本地文件系统、HDFS 或任何其他 Hadoop 支持的文件系统的给定目录中.Spark 将对每个元素调用 toString 以将其转换为文件中的一行文本.</td>
+</tr>
+<tr>
+<td align="left">saveAsSequenceFile(path)(Java and Scala)</td>
+<td align="left">将数据集的元素作为 Hadoop SequenceFile 写入本地文件系统、HDFS 或任何其他 Hadoop 支持的文件系统中的给定路径.这在实现 Hadoop 的可写接口的键值对 RDD 上可用.在 Scala 中,它也可用于可隐式转换为 Writable 的类型(Spark 包括对 Int、Double、String 等基本类型的转换).</td>
+</tr>
+<tr>
+<td align="left">saveAsObjectFile(path)(Java and Scala)</td>
+<td align="left">使用 Java 序列化以简单格式编写数据集的元素,然后可以使用 SparkContext.objectFile().</td>
+</tr>
+<tr>
+<td align="left">countByKey()</td>
+<td align="left">仅适用于 (K, V) 类型的 RDD.返回 (K, Int) 对的哈希映射以及每个键的计数.</td>
+</tr>
+<tr>
+<td align="left">foreach(func)</td>
+<td align="left">对数据集的每个元素运行函数func.这通常是为了产生副作用,例如更新累加器或与外部存储系统交互.注意:在外部修改 Accumulators 以外的变量foreach()可能会导致未定义的行为.有关详细信息,请参阅理解闭包.</td>
+</tr>
+</tbody></table>
+<p>Spark RDD API 还公开了一些操作的异步版本,例如foreachAsyncfor foreach,它会立即将FutureAction返回给调用者,而不是在操作完成时阻塞.这可用于管理或等待操作的异步执行.</p>
+<h4 id="Shuffle操作"><a href="#Shuffle操作" class="headerlink" title="Shuffle操作"></a>Shuffle操作</h4><p>Spark 中的某些操作会触发一个称为shuffle的事件.shuffle 是 Spark 重新分配数据的机制,因此它可以跨分区进行不同的分组.这通常涉及跨执行器和机器复制数据,使shuffle成为一项复杂且成本高昂的操作.</p>
+<h5 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h5><p>为了理解在shuffle过程中发生了什么,我们可以考虑 reduceByKey操作的例子.该reduceByKey操作生成一个新的 RDD,其中单个键的所有值组合成一个元组-键和对与该键关联的所有值执行 reduce 函数的结果.挑战在于,并非单个键的所有值都必须位于同一分区,甚至同一台机器上,但它们必须位于同一位置才能计算结果.</p>
+<blockquote>
+<p>在 Spark 中,数据通常不会跨分区分布在特定操作所需的位置.在计算期间,单个任务将在单个分区上运行.<br>因此,为了组织所有数据以供单个reduceByKey reduce 任务执行,Spark 需要执行 all-to-all 操作.<br>它必须从所有分区中读取以找到所有键的所有值,然后将跨分区的值汇集在一起以计算每个键的最终结果-这称为shuffle.</p>
+</blockquote>
+<p>虽然新混洗数据的每个分区中的元素集是确定性的,分区本身的排序也是如此,但这些元素的排序不是.如果在shuffle后需要可预测的有序数据,则可以使用:</p>
+<ol>
+<li>mapPartitions对每个分区进行排序,例如,<code>.sorted</code></li>
+<li>repartitionAndSortWithinPartitions在重新分区的同时有效地对分区进行排序</li>
+<li>sortBy制作全局有序的 RDD</li>
+</ol>
+<p>可能导致shuffle的操作包括像repartition和coalesce这样的重新分区操作,像groupByKey和reduceByKey这样的&#39;ByKey操作(计数除外),以及 像cogroup和join这样的连接操作.</p>
+<h5 id="性能影响"><a href="#性能影响" class="headerlink" title="性能影响"></a>性能影响</h5><p>Shuffle是一项开销很大的操作,因为它涉及磁盘 I/O、数据序列化和网络 I/O.为了为 shuffle 组织数据,Spark 生成了一组任务-map任务来组织数据,以及一组reduce任务来聚合它.这个命名法来自 MapReduce,与 Spark 的map和reduce操作没有直接关系.</p>
+<p>在内部,单个地图任务的结果会保存在内存中,直到它们无法容纳为止.然后,这些根据目标分区进行排序并写入单个文件.在 reduce 端,任务读取相关的排序块.</p>
+<p>某些shuffle操作会消耗大量堆内存,因为它们使用内存中的数据结构在传输记录之前或之后组织记录.具体来说, reduceByKey/aggregateByKey在 map 端创建这些结构,并在reduce 端&#39;ByKey操作生成这些结构.当数据不适合内存时,Spark 会将这些表溢出到磁盘,从而导致磁盘 I/O 的额外开销并增加垃圾收集.</p>
+<p>Shuffle 也会在磁盘上产生大量的中间文件.从 Spark 1.3 开始,这些文件会一直保留到相应的 RDD 不再使用并被垃圾回收为止.这样做是为了在重新计算谱系时不需要重新创建混洗文件.如果应用程序保留对这些 RDD 的引用,或者如果 GC 不频繁启动,垃圾收集可能只会在很长一段时间后才会发生.这意味着长时间运行的 Spark 作业可能会消耗大量磁盘空间.临时存放目录由 spark.local.dir配置Spark上下文时的配置参数指定.</p>
+<p>可以通过调整各种配置参数来调整shuffle行为.请参阅Spark 配置指南中的&quot;shuffle行为&quot;部分.</p>
+<h3 id="RDD持久化"><a href="#RDD持久化" class="headerlink" title="RDD持久化"></a>RDD持久化</h3><p>Spark 中最重要的功能之一是跨操作在内存中持久化(或缓存)数据集.当你持久化一个 RDD 时,每个节点存储它在内存中计算的任何分区,并在对该数据集(或从它派生的数据集)的其他操作中重用它们.这允许未来的行动更快(通常超过 10 倍).缓存是迭代算法和快速交互使用的关键工具.</p>
+<p>您可以使用persist()或cache()方法将 RDD 标记为持久化.第一次在动作中计算时,它将保存在节点的内存中.Spark 的缓存是容错的-如果 RDD 的任何分区丢失,它将使用最初创建它的转换自动重新计算.</p>
+<p>此外,每个持久化的 RDD 都可以使用不同的存储级别进行存储,例如,允许您将数据集持久化在磁盘上,将其持久化在内存中,但作为序列化的 Java 对象(以节省空间),跨节点复制它.这些级别是通过将 StorageLevel对象(Scala、 Java、 Python)传递给 来设置的persist().该cache()方法是使用默认存储级别的简写,即StorageLevel.MEMORY_ONLY(将反序列化的对象存储在内存中).完整的存储级别集是:</p>
+<table>
+<thead>
+<tr>
+<th align="left">存储级别</th>
+<th align="left">意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">MEMORY_ONLY</td>
+<td align="left">将 RDD 作为反序列化的 Java 对象存储在 JVM 中.如果 RDD 不适合内存,一些分区将不会被缓存,并且会在每次需要时即时重新计算.这是默认级别.</td>
+</tr>
+<tr>
+<td align="left">MEMORY_AND_DISK</td>
+<td align="left">将 RDD 作为反序列化的 Java 对象存储在 JVM 中.如果 RDD 不适合内存,存储不适合磁盘的分区,并在需要时从那里读取它们.</td>
+</tr>
+<tr>
+<td align="left">MEMORY_ONLY_SER(Java and Scala)</td>
+<td align="left">将RDD 存储为序列化的Java 对象(每个分区一个字节数组).这通常比反序列化对象更节省空间,尤其是在使用 快速序列化程序时,但读取时会占用更多 CPU.</td>
+</tr>
+<tr>
+<td align="left">MEMORY_AND_DISK_SER(Java and Scala)</td>
+<td align="left">与 MEMORY_ONLY_SER 类似,但将不适合内存的分区溢出到磁盘,而不是在每次需要时即时重新计算它们.</td>
+</tr>
+<tr>
+<td align="left">DISK_ONLY</td>
+<td align="left">仅将 RDD 分区存储在磁盘上.</td>
+</tr>
+<tr>
+<td align="left">MEMORY_ONLY_2, MEMORY_AND_DISK_2, etc.</td>
+<td align="left">与上面的级别相同,但在两个集群节点上复制每个分区.</td>
+</tr>
+<tr>
+<td align="left">OFF_HEAP (experimental)</td>
+<td align="left">类似于 MEMORY_ONLY_SER,但将数据存储在 堆外内存中.这需要启用堆外内存.实验性</td>
+</tr>
+</tbody></table>
+<p>注意: 在 Python 中,存储的对象将始终使用Pickle库进行序列化,因此您是否选择序列化级别无关紧要.Python 中可用的存储级别包括MEMORY_ONLY、MEMORY_ONLY_2、 MEMORY_AND_DISK、MEMORY_AND_DISK_2、DISK_ONLY和DISK_ONLY_2.</p>
+<p>Spark 还会在shuffle操作(例如reduceByKey)中自动保留一些中间数据,即使没有用户调用persist. 这样做是为了避免在shuffle期间节点失败时重新计算整个输入.persist如果用户计划重用它,我们仍然建议用户调用生成的 RDD.</p>
+<h4 id="选择哪个存储级别"><a href="#选择哪个存储级别" class="headerlink" title="选择哪个存储级别"></a>选择哪个存储级别</h4><p>Spark 的存储级别旨在提供内存使用和 CPU 效率之间的不同权衡.我们建议通过以下过程来选择一个:</p>
+<ol>
+<li>如果您的 RDD 适合默认存储级别 ( MEMORY_ONLY),请保留它们.这是 CPU 效率最高的选项,允许 RDD 上的操作尽可能快地运行.</li>
+<li>如果没有,请尝试使用MEMORY_ONLY_SER并选择一个快速序列化库,使对象的空间效率更高,但访问速度仍然相当快.(Java 和 Scala)</li>
+<li>不要溢出到磁盘,除非计算数据集的函数很昂贵,或者它们过滤了大量数据.否则,重新计算一个分区可能和从磁盘读取它一样快.</li>
+<li>如果您想要快速故障恢复(例如,如果使用 Spark 来处理来自 Web 应用程序的请求),请使用复制存储级别.所有存储级别都通过重新计算丢失的数据来提供完整的容错能力,但复制的存储级别让您可以继续在 RDD 上运行任务,而无需等待重新计算丢失的分区.</li>
+</ol>
+<h4 id="删除数据"><a href="#删除数据" class="headerlink" title="删除数据"></a>删除数据</h4><p>Spark 自动监控每个节点上的缓存使用情况,并以最近最少使用 (LRU) 的方式删除旧数据分区.如果您想手动删除 RDD 而不是等待它从缓存中删除,请使用该<code>RDD.unpersist()</code>方法.</p>
+<h2 id="共享变量"><a href="#共享变量" class="headerlink" title="共享变量"></a>共享变量</h2><p>通常,当传递给 Spark 操作(例如map or reduce)的函数在远程集群节点上执行时,它会处理函数中使用的所有变量的单独副本.这些变量被复制到每台机器,并且远程机器上的变量更新不会传播回驱动程序.跨任务支持通用的读写共享变量是低效的.但是,Spark 确实为两种常见的使用模式提供了两种有限类型的共享变量:广播变量和累加器.</p>
+<h3 id="广播变量"><a href="#广播变量" class="headerlink" title="广播变量"></a>广播变量</h3><p>广播变量允许程序员在每台机器上缓存一个只读变量,而不是将它的副本与任务一起发送.例如,它们可用于以高效的方式为每个节点提供大型输入数据集的副本.Spark 还尝试使用高效的广播算法来分发广播变量,以降低通信成本.</p>
+<p>Spark 动作通过一组阶段执行,由分布式&quot;shuffle&quot;操作分隔.Spark 在每个阶段自动广播任务所需的公共数据.以这种方式广播的数据以序列化形式缓存,并在运行每个任务之前反序列化.这意味着显式创建广播变量仅在跨多个阶段的任务需要相同数据或以反序列化形式缓存数据很重要时才有用.</p>
+<p>广播变量是从变量v通过调用<code>SparkContext.broadcast(v)</code>创建的.广播变量是v的包装器,可以通过调用value 方法访问它的值.下面的代码显示了这一点:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">scala&gt; val broadcastVar &#x3D; sc.broadcast(Array(1, 2, 3))</span><br><span class="line">broadcastVar: org.apache.spark.broadcast.Broadcast[Array[Int]] &#x3D; Broadcast(0)</span><br><span class="line"></span><br><span class="line">scala&gt; broadcastVar.value</span><br><span class="line">res0: Array[Int] &#x3D; Array(1, 2, 3)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;java</span><br><span class="line">Broadcast&lt;int[]&gt; broadcastVar &#x3D; sc.broadcast(new int[] &#123;1, 2, 3&#125;);</span><br><span class="line"></span><br><span class="line">broadcastVar.value();</span><br><span class="line">&#x2F;&#x2F; returns [1, 2, 3]</span><br></pre></td></tr></table></figure>
+
+<p>创建广播变量后,应该使用它代替v集群上运行的任何函数中的值,这样它就v不会多次传送到节点.此外,对象 v在广播后不应修改,以确保所有节点都获得相同的广播变量值(例如,如果变量稍后被传送到新节点).</p>
+<h3 id="Accumulators-累加器"><a href="#Accumulators-累加器" class="headerlink" title="Accumulators(累加器)"></a>Accumulators(累加器)</h3><p>累加器是仅通过关联和交换操作&quot;添加&quot;到的变量,因此可以有效地并行支持.它们可用于实现计数器(如在 MapReduce 中)或求和.Spark 原生支持数字类型的累加器,程序员可以添加对新类型的支持.</p>
+<p>作为用户,您可以创建命名或未命名的累加器.如下图所示,一个命名的累加器(在此实例中counter)将显示在修改该累加器的阶段的 Web UI 中.Spark 显示&quot;任务&quot;表中任务修改的每个累加器的值.</p>
+<img src="/images/fly1341.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>跟踪 UI 中的累加器对于了解运行阶段的进度很有用(注意:Python 尚不支持此功能).</p>
+<p>可以通过分别调用SparkContext.longAccumulator()/SparkContext.doubleAccumulator() 累加 Long 或 Double 类型的值来创建数字累加器.<br>然后可以使用该add方法将在集群上运行的任务添加到集群中.但是,他们无法读取其值.只有驱动程序可以使用它的value方法读取累加器的值.</p>
+<p>下面的代码显示了一个用于累加数组元素的累加器:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">scala&gt; val accum &#x3D; sc.longAccumulator(&quot;My Accumulator&quot;)</span><br><span class="line">accum: org.apache.spark.util.LongAccumulator &#x3D; LongAccumulator(id: 0, name: Some(My Accumulator), value: 0)</span><br><span class="line"></span><br><span class="line">scala&gt; sc.parallelize(Array(1, 2, 3, 4)).foreach(x &#x3D;&gt; accum.add(x))</span><br><span class="line">...</span><br><span class="line">10&#x2F;09&#x2F;29 18:41:08 INFO SparkContext: Tasks finished in 0.317106 s</span><br><span class="line"></span><br><span class="line">scala&gt; accum.value</span><br><span class="line">res2: Long &#x3D; 10</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">LongAccumulator accum &#x3D; jsc.sc().longAccumulator();</span><br><span class="line"></span><br><span class="line">sc.parallelize(Arrays.asList(1, 2, 3, 4)).foreach(x -&gt; accum.add(x));</span><br><span class="line">&#x2F;&#x2F; ...</span><br><span class="line">&#x2F;&#x2F; 10&#x2F;09&#x2F;29 18:41:08 INFO SparkContext: Tasks finished in 0.317106 s</span><br><span class="line"></span><br><span class="line">accum.value();</span><br><span class="line">&#x2F;&#x2F; returns 10</span><br></pre></td></tr></table></figure>
+
+<p>虽然此代码使用了对 Long 类型累加器的内置支持,但程序员也可以通过子类化AccumulatorV2来创建自己的类型.<br>AccumulatorV2 抽象类有几个必须覆盖的方法:reset将累加器重置为零,add将另一个值添加到累加器, merge将另一个相同类型的累加器合并到这个累加器中.必须覆盖的其他方法包含在API 文档中.例如,假设我们有一个MyVector表示数学向量的类,我们可以这样写:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">class VectorAccumulatorV2 extends AccumulatorV2[MyVector, MyVector] &#123;</span><br><span class="line"></span><br><span class="line">  private val myVector: MyVector &#x3D; MyVector.createZeroVector</span><br><span class="line"></span><br><span class="line">  def reset(): Unit &#x3D; &#123;</span><br><span class="line">    myVector.reset()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  def add(v: MyVector): Unit &#x3D; &#123;</span><br><span class="line">    myVector.add(v)</span><br><span class="line">  &#125;</span><br><span class="line">  ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Then, create an Accumulator of this type:</span><br><span class="line">val myVectorAcc &#x3D; new VectorAccumulatorV2</span><br><span class="line">&#x2F;&#x2F; Then, register it into spark context:</span><br><span class="line">sc.register(myVectorAcc, &quot;MyVectorAcc1&quot;)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">class VectorAccumulatorV2 implements AccumulatorV2&lt;MyVector, MyVector&gt; &#123;</span><br><span class="line"></span><br><span class="line">  private MyVector myVector &#x3D; MyVector.createZeroVector();</span><br><span class="line"></span><br><span class="line">  public void reset() &#123;</span><br><span class="line">    myVector.reset();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  public void add(MyVector v) &#123;</span><br><span class="line">    myVector.add(v);</span><br><span class="line">  &#125;</span><br><span class="line">  ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Then, create an Accumulator of this type:</span><br><span class="line">VectorAccumulatorV2 myVectorAcc &#x3D; new VectorAccumulatorV2();</span><br><span class="line">&#x2F;&#x2F; Then, register it into spark context:</span><br><span class="line">jsc.sc().register(myVectorAcc, &quot;MyVectorAcc1&quot;);</span><br></pre></td></tr></table></figure>
+
+<p>请注意,当程序员定义自己的 AccumulatorV2 类型时,生成的类型可能与添加的元素的类型不同.</p>
+<p>对于仅在动作内部执行的累加器更新,Spark 保证每个任务对累加器的更新只会应用一次,即重新启动的任务不会更新该值.在转换中,用户应该意识到如果重新执行任务或作业阶段,每个任务的更新可能会应用多次.</p>
+<p>累加器不会改变 Spark 的惰性求值模型.如果在对 RDD 的操作中更新它们,则它们的值仅在 RDD 被计算为操作的一部分时更新.因此,在惰性转换(如map(). 下面的代码片段演示了这个属性:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">val accum &#x3D; sc.longAccumulator</span><br><span class="line">data.map &#123; x &#x3D;&gt; accum.add(x); x &#125;</span><br><span class="line">&#x2F;&#x2F; Here, accum is still 0 because no actions have caused the map operation to be computed.</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">LongAccumulator accum &#x3D; jsc.sc().longAccumulator();</span><br><span class="line">data.map(x -&gt; &#123; accum.add(x); return f(x); &#125;);</span><br><span class="line">&#x2F;&#x2F; Here, accum is still 0 because no actions have caused the &#96;map&#96; to be computed.</span><br></pre></td></tr></table></figure>
+
+<h2 id="部署到集群"><a href="#部署到集群" class="headerlink" title="部署到集群"></a>部署到集群</h2><p>申请提交指南描述了如何向集群提交申请.简而言之,一旦您将应用程序打包到一个 JAR(对于 Java/Scala)或一组.py文件.zip(对于 Python)中,<code>bin/spark-submit</code>脚本就可以让您将它提交给任何支持的集群管理器.</p>
+<h2 id="从-Java-Scala-启动-Spark-作业"><a href="#从-Java-Scala-启动-Spark-作业" class="headerlink" title="从 Java / Scala 启动 Spark 作业"></a>从 Java / Scala 启动 Spark 作业</h2><p><code>org.apache.spark.launcher</code>包提供用于使用简单的 Java API 将 Spark 作业作为子进程启动的类.</p>
+<h2 id="单元测试"><a href="#单元测试" class="headerlink" title="单元测试"></a>单元测试</h2><p>Spark 对使用任何流行的单元测试框架进行单元测试都很友好.只需在您的测试中创建一个SparkContext并将主 URL 设置为local,运行您的操作,然后调用SparkContext.stop()以将其拆除.finally确保在块或测试框架的方法中停止上下文tearDown,因为 Spark 不支持在同一程序中同时运行两个上下文.</p>
+<h2 id="example"><a href="#example" class="headerlink" title="example"></a>example</h2><p>您可以在 Spark 网站上看到一些示例 Spark 程序.此外,Spark 在examples目录中包含多个示例(Scala、 Java、 Python、 R).您可以通过将类名传递给 Spark 的bin/run-example脚本来运行 Java 和 Scala 示例.例如:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;run-example SparkPi</span><br></pre></td></tr></table></figure>
+
+<p><a target="_blank" rel="noopener" href="https://spark.apache.org/examples.html">https://spark.apache.org/examples.html</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/apache/spark/tree/master/examples/src/main/java/org/apache/spark/examples">https://github.com/apache/spark/tree/master/examples/src/main/java/org/apache/spark/examples</a><br><a target="_blank" rel="noopener" href="https://github.com/apache/spark/tree/master/examples/src/main/scala/org/apache/spark/examples">https://github.com/apache/spark/tree/master/examples/src/main/scala/org/apache/spark/examples</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/apache/spark/tree/master/examples/src/main/java/org/apache/spark/examples/streaming">https://github.com/apache/spark/tree/master/examples/src/main/java/org/apache/spark/examples/streaming</a><br><a target="_blank" rel="noopener" href="https://github.com/apache/spark/tree/master/examples/src/main/scala/org/apache/spark/examples/streaming">https://github.com/apache/spark/tree/master/examples/src/main/scala/org/apache/spark/examples/streaming</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/spark/" rel="tag"># spark</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/11/22/spark%20streaming%E7%BC%96%E7%A8%8B%E6%8C%87%E5%8D%97/" rel="prev" title="spark streaming编程指南">
+                  <i class="fa fa-chevron-left"></i> spark streaming编程指南
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/11/23/spark%E7%BB%93%E6%9E%84%E5%8C%96%E6%B5%81%E7%BC%96%E7%A8%8B%E6%8C%87%E5%8D%97/" rel="next" title="spark结构化流编程指南">
+                  spark结构化流编程指南 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

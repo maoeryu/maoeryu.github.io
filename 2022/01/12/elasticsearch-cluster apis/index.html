@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="elasticsearch版本6.8.2">
+<meta property="og:type" content="article">
+<meta property="og:title" content="elasticsearch-cluster apis">
+<meta property="og:url" content="https://maoeryu.github.io/2022/01/12/elasticsearch-cluster%20apis/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="elasticsearch版本6.8.2">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-01-11T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-07-26T02:50:55.362Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="elasticsearch">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/01/12/elasticsearch-cluster%20apis/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>elasticsearch-cluster apis | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E5%81%A5%E5%BA%B7"><span class="nav-number">1.</span> <span class="nav-text">集群健康</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E7%8A%B6%E6%80%81"><span class="nav-number">2.</span> <span class="nav-text">集群状态</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E7%BB%9F%E8%AE%A1"><span class="nav-number">3.</span> <span class="nav-text">集群统计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BE%85%E5%A4%84%E7%90%86%E4%BB%BB%E5%8A%A1"><span class="nav-number">4.</span> <span class="nav-text">待处理任务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E8%AE%BE%E7%BD%AE"><span class="nav-number">5.</span> <span class="nav-text">集群设置</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%98%E5%85%88%E9%A1%BA%E5%BA%8F"><span class="nav-number">5.1.</span> <span class="nav-text">优先顺序</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8A%82%E7%82%B9%E7%BB%9F%E8%AE%A1"><span class="nav-number">6.</span> <span class="nav-text">节点统计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8A%82%E7%82%B9%E4%BF%A1%E6%81%AF"><span class="nav-number">7.</span> <span class="nav-text">节点信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8A%82%E7%82%B9%E7%83%AD%E7%BA%BF%E7%A8%8B"><span class="nav-number">8.</span> <span class="nav-text">节点热线程</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/01/12/elasticsearch-cluster%20apis/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          elasticsearch-cluster apis
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-01-12 00:00:00" itemprop="dateCreated datePublished" datetime="2022-01-12T00:00:00+08:00">2022-01-12</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-07-26 10:50:55" itemprop="dateModified" datetime="2022-07-26T10:50:55+08:00">2022-07-26</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>elasticsearch版本6.8.2</p>
+<span id="more"></span>
+
+<h3 id="集群健康"><a href="#集群健康" class="headerlink" title="集群健康"></a>集群健康</h3><p>获得关于集群健康的非常简单的状态.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -X GET &quot;localhost:9200&#x2F;_cluster&#x2F;health?pretty&quot;</span><br></pre></td></tr></table></figure>
+
+<p>响应,</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;cluster_name&quot;</span> : <span class="string">&quot;estest001&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;status&quot;</span> : <span class="string">&quot;green&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;timed_out&quot;</span> : <span class="literal">false</span>,</span><br><span class="line">  <span class="attr">&quot;number_of_nodes&quot;</span> : <span class="number">3</span>,</span><br><span class="line">  <span class="attr">&quot;number_of_data_nodes&quot;</span> : <span class="number">3</span>,</span><br><span class="line">  <span class="attr">&quot;active_primary_shards&quot;</span> : <span class="number">15</span>,</span><br><span class="line">  <span class="attr">&quot;active_shards&quot;</span> : <span class="number">45</span>,</span><br><span class="line">  <span class="attr">&quot;relocating_shards&quot;</span> : <span class="number">0</span>,</span><br><span class="line">  <span class="attr">&quot;initializing_shards&quot;</span> : <span class="number">0</span>,</span><br><span class="line">  <span class="attr">&quot;unassigned_shards&quot;</span> : <span class="number">0</span>,</span><br><span class="line">  <span class="attr">&quot;delayed_unassigned_shards&quot;</span> : <span class="number">0</span>,</span><br><span class="line">  <span class="attr">&quot;number_of_pending_tasks&quot;</span> : <span class="number">0</span>,</span><br><span class="line">  <span class="attr">&quot;number_of_in_flight_fetch&quot;</span> : <span class="number">0</span>,</span><br><span class="line">  <span class="attr">&quot;task_max_waiting_in_queue_millis&quot;</span> : <span class="number">0</span>,</span><br><span class="line">  <span class="attr">&quot;active_shards_percent_as_number&quot;</span> : <span class="number">100.0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>查看一或多个索引健康状况,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -X GET &quot;localhost:9200&#x2F;_cluster&#x2F;health&#x2F;data,data1?pretty&quot;</span><br></pre></td></tr></table></figure>
+
+<h3 id="集群状态"><a href="#集群状态" class="headerlink" title="集群状态"></a>集群状态</h3><p>访问表示整个集群状态的元数据,这包括诸如:<br>集群中的节点集,<br>所有集群级设置,<br>有关集群中索引的信息,包括它们的映射和设置,<br>集群中所有分片的位置.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">curl -X GET &quot;localhost:9200&#x2F;_cluster&#x2F;state?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost:9200&#x2F;_cluster&#x2F;state&#x2F;nodes?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost:9200&#x2F;_cluster&#x2F;state&#x2F;&#123;metrics&#125;&#x2F;&#123;indices&#125;?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost:9200&#x2F;_cluster&#x2F;state&#x2F;metadata,routing_table&#x2F;foo,bar?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost:9200&#x2F;_cluster&#x2F;state&#x2F;_all&#x2F;foo,bar?pretty&quot;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;cluster_name&quot;</span>: <span class="string">&quot;estest001&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;cluster_uuid&quot;</span>: <span class="string">&quot;241koEbSR1G0zGtxMY3T6w&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;nodes&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;rL0QVOeeQW6USM1KGtKSTw&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;core1&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;ephemeral_id&quot;</span>: <span class="string">&quot;mpjfm5-PTOiHGC8ysW8Mbw&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;transport_address&quot;</span>: <span class="string">&quot;172.18.250.93:9300&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;attributes&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;ml.machine_memory&quot;</span>: <span class="string">&quot;16720564224&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;xpack.installed&quot;</span>: <span class="string">&quot;true&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;ml.max_open_jobs&quot;</span>: <span class="string">&quot;20&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;ml.enabled&quot;</span>: <span class="string">&quot;true&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;vZ73FMEWTq2VIki-ZOl-1g&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;core2&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;ephemeral_id&quot;</span>: <span class="string">&quot;G3Ykm2idQkWmNn6wQn_HAg&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;transport_address&quot;</span>: <span class="string">&quot;172.18.250.94:9300&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;attributes&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;ml.machine_memory&quot;</span>: <span class="string">&quot;16720965632&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;ml.max_open_jobs&quot;</span>: <span class="string">&quot;20&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;xpack.installed&quot;</span>: <span class="string">&quot;true&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;ml.enabled&quot;</span>: <span class="string">&quot;true&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;uutRKLlBRkSA01WabQHieQ&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;core3&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;ephemeral_id&quot;</span>: <span class="string">&quot;mhf_YVFGTnqfdONTZyrOsA&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;transport_address&quot;</span>: <span class="string">&quot;172.18.250.95:9300&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;attributes&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;ml.machine_memory&quot;</span>: <span class="string">&quot;16720965632&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;ml.max_open_jobs&quot;</span>: <span class="string">&quot;20&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;xpack.installed&quot;</span>: <span class="string">&quot;true&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;ml.enabled&quot;</span>: <span class="string">&quot;true&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="集群统计"><a href="#集群统计" class="headerlink" title="集群统计"></a>集群统计</h3><p>从集群范围的角度检索统计信息,返回基本索引指标(分片数量/存储大小/内存使用情况)和有关构成集群的当前节点的信息(数量/角色/操作系统/jvm版本/内存使用情况/cpu和已安装的插件).</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -X GET &quot;localhost:9200&#x2F;_cluster&#x2F;stats?human&amp;pretty&amp;pretty&quot;</span><br></pre></td></tr></table></figure>
+
+<h3 id="待处理任务"><a href="#待处理任务" class="headerlink" title="待处理任务"></a>待处理任务</h3><p>通常这将返回一个空列表,因为集群级别的更改通常很快.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -X GET &quot;localhost:9200&#x2F;_cluster&#x2F;pending_tasks?pretty&quot;</span><br></pre></td></tr></table></figure>
+
+<h3 id="集群设置"><a href="#集群设置" class="headerlink" title="集群设置"></a>集群设置</h3><p>查看和更改集群范围的设置.</p>
+<p>查看集群设置,默认情况下,调用仅返回已明确定义的设置,但也可以包含默认设置.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -X GET &quot;localhost:9200&#x2F;_cluster&#x2F;settings?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost:9200&#x2F;_cluster&#x2F;settings?include_defaults&#x3D;true&amp;pretty&quot;</span><br></pre></td></tr></table></figure>
+
+<p>响应,</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;persistent&quot;</span> : &#123; &#125;,</span><br><span class="line">  <span class="attr">&quot;transient&quot;</span> : &#123; &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对设置的更新可以是持久的,这意味着它们会在重新启动时应用,也可以是瞬态的,它们不会在整个集群重新启动后继续存在,以下是持久更新的示例,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">curl -X PUT &quot;localhost:9200&#x2F;_cluster&#x2F;settings?pretty&quot; -H &#39;Content-Type: application&#x2F;json&#39; -d&#39;</span><br><span class="line">&#123;</span><br><span class="line">    &quot;persistent&quot; : &#123;</span><br><span class="line">        &quot;indices.recovery.max_bytes_per_sec&quot; : &quot;50mb&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#39;</span><br></pre></td></tr></table></figure>
+
+<p>此更新是暂时的,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">curl -X PUT &quot;localhost:9200&#x2F;_cluster&#x2F;settings?flat_settings&#x3D;true&amp;pretty&quot; -H &#39;Content-Type: application&#x2F;json&#39; -d&#39;</span><br><span class="line">&#123;</span><br><span class="line">    &quot;transient&quot; : &#123;</span><br><span class="line">        &quot;indices.recovery.max_bytes_per_sec&quot; : &quot;20mb&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#39;</span><br></pre></td></tr></table></figure>
+
+<p>可以通过分配一个null值来重置永久或临时设置,如果重置瞬态设置,则应用定义的以下值中的第一个,<br>持久的设置<br>配置文件中的设置<br>默认值</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">curl -X PUT &quot;localhost:9200&#x2F;_cluster&#x2F;settings?pretty&quot; -H &#39;Content-Type: application&#x2F;json&#39; -d&#39;</span><br><span class="line">&#123;</span><br><span class="line">    &quot;transient&quot; : &#123;</span><br><span class="line">        &quot;indices.recovery.max_bytes_per_sec&quot; : null</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#39;</span><br></pre></td></tr></table></figure>
+
+<p>响应不包括已重置的设置,</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    &quot;persistent&quot; : &#123;&#125;,</span><br><span class="line">    &quot;transient&quot; : &#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以使用通配符重置设置,例如,要重置所有动态<code>indices.recovery</code>设置,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">curl -X PUT &quot;localhost:9200&#x2F;_cluster&#x2F;settings?pretty&quot; -H &#39;Content-Type: application&#x2F;json&#39; -d&#39;</span><br><span class="line">&#123;</span><br><span class="line">    &quot;transient&quot; : &#123;</span><br><span class="line">        &quot;indices.recovery.*&quot; : null</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#39;</span><br></pre></td></tr></table></figure>
+
+<h4 id="优先顺序"><a href="#优先顺序" class="headerlink" title="优先顺序"></a>优先顺序</h4><p>集群设置的优先顺序是:<br>瞬态集群设置<br>持久集群设置<br>elasticsearch.yml配置文件中的设置</p>
+<p>最好使用settings API设置所有集群范围的设置,并将该elasticsearch.yml文件仅用于本地配置.<br>这样,可以确保所有节点上的设置都相同.<br>另一方面,如果不小心使用配置文件在不同节点上定义了不同的设置,则很难注意到这些差异.<br>可以在Modules中找到可以动态更新的设置列表.</p>
+<h3 id="节点统计"><a href="#节点统计" class="headerlink" title="节点统计"></a>节点统计</h3><p>允许检索一个或多个集群节点统计信息,类似于集群统计,包含os/jvm/内存等信息.</p>
+<p>默认情况下,返回所有统计信息.<br>可以通过合并的任何限制这个indices/os/process/jvm/transport/http/fs/breaker/thread_pool.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -X GET &quot;localhost:9200&#x2F;_nodes&#x2F;stats?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost:9200&#x2F;_nodes&#x2F;core1,core2&#x2F;stats?pretty&quot;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">indices</td>
+<td align="left">关于大小/文档计数/索引和删除时间/搜索时间/字段缓存大小/合并和刷新的索引统计信息</td>
+</tr>
+<tr>
+<td align="left">fs</td>
+<td align="left">文件系统信息/数据路径/可用磁盘空间/读/写统计信息</td>
+</tr>
+<tr>
+<td align="left">http</td>
+<td align="left">HTTP 连接信息</td>
+</tr>
+<tr>
+<td align="left">jvm</td>
+<td align="left">JVM 统计信息/内存池信息/垃圾收集/缓冲池/加载/卸载类的数量</td>
+</tr>
+<tr>
+<td align="left">os</td>
+<td align="left">操作系统统计信息/平均负载/内存/交换</td>
+</tr>
+<tr>
+<td align="left">process</td>
+<td align="left">进程统计/内存消耗/cpu 使用率/打开文件描述符</td>
+</tr>
+<tr>
+<td align="left">thread_pool</td>
+<td align="left">每个线程池的统计信息,包括当前大小/队列和拒绝的任务</td>
+</tr>
+<tr>
+<td align="left">transport</td>
+<td align="left">关于集群通信中发送和接收字节的传输统计信息</td>
+</tr>
+<tr>
+<td align="left">breaker</td>
+<td align="left">现场数据断路器统计</td>
+</tr>
+<tr>
+<td align="left">discovery</td>
+<td align="left">发现统计</td>
+</tr>
+<tr>
+<td align="left">ingest</td>
+<td align="left">摄取预处理统计</td>
+</tr>
+<tr>
+<td align="left">adaptive_selection</td>
+<td align="left">关于自适应副本选择的统计信息</td>
+</tr>
+</tbody></table>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">curl -X GET &quot;localhost::9200&#x2F;_nodes?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost::9200&#x2F;_nodes&#x2F;stats?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost::9200&#x2F;_nodes&#x2F;stats&#x2F;os?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost::9200&#x2F;_nodes&#x2F;core1&#x2F;stats?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost::9200&#x2F;_nodes&#x2F;core1&#x2F;stats&#x2F;os,process,jvm?pretty&quot;</span><br></pre></td></tr></table></figure>
+
+<h3 id="节点信息"><a href="#节点信息" class="headerlink" title="节点信息"></a>节点信息</h3><p>检索一个或多个集群节点信息.<br>允许仅获取有关settings/os/process/jvm/thread_pool/transport/http/plugins/ingest/indices.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">curl -X GET &quot;localhost:9200&#x2F;_nodes?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost:9200&#x2F;_nodes&#x2F;core1,core2?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost:9200&#x2F;_nodes&#x2F;process?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost:9200&#x2F;_nodes&#x2F;_all&#x2F;process?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost:9200&#x2F;_nodes&#x2F;core1,core2&#x2F;jvm,process?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost:9200&#x2F;_nodes&#x2F;core1,core2&#x2F;info&#x2F;jvm,process?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost:9200&#x2F;_nodes&#x2F;core1,core2&#x2F;_all?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost:9200&#x2F;_nodes&#x2F;plugins?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost:9200&#x2F;_nodes&#x2F;usage?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost:9200&#x2F;_nodes&#x2F;core1,core2&#x2F;usage?pretty&quot;</span><br></pre></td></tr></table></figure>
+
+<h3 id="节点热线程"><a href="#节点热线程" class="headerlink" title="节点热线程"></a>节点热线程</h3><p>生成集群中每个选定节点上的热线程的细分.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -X GET &quot;localhost:9200&#x2F;_nodes&#x2F;hot_threads?pretty&quot;</span><br><span class="line">curl -X GET &quot;localhost:9200&#x2F;_nodes&#x2F;core1,core2&#x2F;hot_threads?pretty&quot;</span><br></pre></td></tr></table></figure>
+
+
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/elasticsearch/" rel="tag"># elasticsearch</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/01/06/elasticsearch%E6%95%B0%E6%8D%AE%E8%BF%81%E7%A7%BB/" rel="prev" title="elasticsearch数据迁移">
+                  <i class="fa fa-chevron-left"></i> elasticsearch数据迁移
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/01/13/log4j%E8%87%AA%E5%AE%9A%E4%B9%89append/" rel="next" title="log4j自定义append">
+                  log4j自定义append <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

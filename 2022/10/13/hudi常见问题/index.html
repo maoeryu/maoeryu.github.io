@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="Hudi 什么时候有用?如果您希望将数据快速摄取到 HDFS 或云存储中,Hudi 可以为您提供帮助工具(https:&#x2F;&#x2F;hudi.apache.org&#x2F;docs&#x2F;writing_data&#x2F;).此外,如果您的 ETL&#x2F;hive&#x2F;spark 作业速度较慢&#x2F;占用大量资源,Hudi 可能会通过提供增量方法来读取和写入数据来提供帮助. 作为一个组织,Hudi 可以帮助您构建一个高效的数据湖,解决一些最复杂">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hudi常见问题">
+<meta property="og:url" content="https://maoeryu.github.io/2022/10/13/hudi%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="Hudi 什么时候有用?如果您希望将数据快速摄取到 HDFS 或云存储中,Hudi 可以为您提供帮助工具(https:&#x2F;&#x2F;hudi.apache.org&#x2F;docs&#x2F;writing_data&#x2F;).此外,如果您的 ETL&#x2F;hive&#x2F;spark 作业速度较慢&#x2F;占用大量资源,Hudi 可能会通过提供增量方法来读取和写入数据来提供帮助. 作为一个组织,Hudi 可以帮助您构建一个高效的数据湖,解决一些最复杂">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-10-12T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-10-28T01:32:26.628Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hudi">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/10/13/hudi%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hudi常见问题 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Hudi-%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E6%9C%89%E7%94%A8"><span class="nav-number">1.</span> <span class="nav-text">Hudi 什么时候有用?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hudi-%E6%9C%89%E5%93%AA%E4%BA%9B%E9%9D%9E%E7%9B%AE%E6%A0%87"><span class="nav-number">2.</span> <span class="nav-text">Hudi 有哪些非目标?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E5%A2%9E%E9%87%8F%E5%A4%84%E7%90%86-%E4%B8%BA%E4%BB%80%E4%B9%88-Hudi-docs-talks-%E4%B8%80%E7%9B%B4%E5%9C%A8%E8%B0%88%E8%AE%BA%E5%AE%83"><span class="nav-number">3.</span> <span class="nav-text">什么是增量处理?为什么 Hudi docs&#x2F;talks 一直在谈论它?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99%E6%97%B6%E5%A4%8D%E5%88%B6-COW-%E4%B8%8E%E8%AF%BB%E6%97%B6%E5%90%88%E5%B9%B6-MOR-%E5%AD%98%E5%82%A8%E7%B1%BB%E5%9E%8B%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB"><span class="nav-number">4.</span> <span class="nav-text">写时复制 (COW) 与读时合并 (MOR) 存储类型有什么区别?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%B8%BA%E6%88%91%E7%9A%84%E5%B7%A5%E4%BD%9C%E8%B4%9F%E8%BD%BD%E9%80%89%E6%8B%A9%E5%AD%98%E5%82%A8%E7%B1%BB%E5%9E%8B"><span class="nav-number">5.</span> <span class="nav-text">如何为我的工作负载选择存储类型?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hudi-%E6%98%AF%E5%88%86%E6%9E%90%E6%95%B0%E6%8D%AE%E5%BA%93%E5%90%97"><span class="nav-number">6.</span> <span class="nav-text">Hudi 是分析数据库吗?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%AF%B9%E5%AD%98%E5%82%A8%E5%9C%A8-Hudi-%E4%B8%AD%E7%9A%84%E6%95%B0%E6%8D%AE%E8%BF%9B%E8%A1%8C%E5%BB%BA%E6%A8%A1"><span class="nav-number">7.</span> <span class="nav-text">如何对存储在 Hudi 中的数据进行建模?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88hudi%E9%9C%80%E8%A6%81%E9%85%8D%E7%BD%AEkey%E5%AD%97%E6%AE%B5"><span class="nav-number">8.</span> <span class="nav-text">为什么hudi需要配置key字段?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hudi-%E6%98%AF%E5%90%A6%E6%94%AF%E6%8C%81%E4%BA%91%E5%AD%98%E5%82%A8-%E5%AF%B9%E8%B1%A1%E5%AD%98%E5%82%A8"><span class="nav-number">9.</span> <span class="nav-text">Hudi 是否支持云存储&#x2F;对象存储?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hudi-%E6%94%AF%E6%8C%81%E5%93%AA%E4%BA%9B%E7%89%88%E6%9C%AC%E7%9A%84-Hive-Spark-Hadoop"><span class="nav-number">10.</span> <span class="nav-text">Hudi 支持哪些版本的 Hive&#x2F;Spark&#x2F;Hadoop ?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hudi-%E6%98%AF%E5%A6%82%E4%BD%95%E5%9C%A8%E6%95%B0%E6%8D%AE%E9%9B%86%E4%B8%AD%E5%AE%9E%E9%99%85%E5%AD%98%E5%82%A8%E6%95%B0%E6%8D%AE%E7%9A%84"><span class="nav-number">11.</span> <span class="nav-text">Hudi 是如何在数据集中实际存储数据的?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E5%86%99-Hudi-%E6%95%B0%E6%8D%AE%E9%9B%86%E6%9C%89%E5%93%AA%E4%BA%9B%E6%96%B9%E6%B3%95"><span class="nav-number">12.</span> <span class="nav-text">编写 Hudi 数据集有哪些方法?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hudi-%E4%BD%9C%E4%B8%9A%E6%98%AF%E5%A6%82%E4%BD%95%E9%83%A8%E7%BD%B2%E7%9A%84"><span class="nav-number">13.</span> <span class="nav-text">Hudi 作业是如何部署的?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%88%91%E7%8E%B0%E5%9C%A8%E5%A6%82%E4%BD%95%E6%9F%A5%E8%AF%A2%E6%88%91%E5%88%9A%E5%88%9A%E5%86%99%E7%9A%84-Hudi-%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">14.</span> <span class="nav-text">我现在如何查询我刚刚写的 Hudi 数据集?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hudi-%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86%E8%BE%93%E5%85%A5%E4%B8%AD%E7%9A%84%E9%87%8D%E5%A4%8D%E8%AE%B0%E5%BD%95%E9%94%AE"><span class="nav-number">15.</span> <span class="nav-text">Hudi 如何处理输入中的重复记录键?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%88%91%E5%8F%AF%E4%BB%A5%E4%B8%BA%E8%BE%93%E5%85%A5%E8%AE%B0%E5%BD%95%E5%A6%82%E4%BD%95%E4%B8%8E%E5%AD%98%E5%82%A8%E8%AE%B0%E5%BD%95%E5%90%88%E5%B9%B6%E5%AE%9E%E7%8E%B0%E8%87%AA%E5%B7%B1%E7%9A%84%E9%80%BB%E8%BE%91%E5%90%97"><span class="nav-number">16.</span> <span class="nav-text">我可以为输入记录如何与存储记录合并实现自己的逻辑吗?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-Hudi-%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE%E9%9B%86%E4%B8%AD%E7%9A%84%E8%AE%B0%E5%BD%95"><span class="nav-number">17.</span> <span class="nav-text">如何使用 Hudi 删除数据集中的记录?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hudi%E7%9A%84%E5%A2%9E%E9%87%8F%E6%9F%A5%E8%AF%A2%E7%BB%93%E6%9E%9C%E4%B8%AD%E4%BC%9A%E5%87%BA%E7%8E%B0%E8%A2%AB%E5%88%A0%E9%99%A4%E7%9A%84%E8%AE%B0%E5%BD%95%E5%90%97"><span class="nav-number">18.</span> <span class="nav-text">Hudi的增量查询结果中会出现被删除的记录吗?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%B0%86%E6%95%B0%E6%8D%AE%E8%BF%81%E7%A7%BB%E5%88%B0-Hudi"><span class="nav-number">19.</span> <span class="nav-text">如何将数据迁移到 Hudi ?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%B0%86-hudi-%E9%85%8D%E7%BD%AE%E4%BC%A0%E9%80%92%E7%BB%99%E6%88%91%E7%9A%84-spark-%E5%B7%A5%E4%BD%9C"><span class="nav-number">20.</span> <span class="nav-text">如何将 hudi 配置传递给我的 spark 工作?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%88%9B%E5%BB%BA-Hive-%E9%A3%8E%E6%A0%BC%E7%9A%84%E5%88%86%E5%8C%BA%E6%96%87%E4%BB%B6%E5%A4%B9%E7%BB%93%E6%9E%84"><span class="nav-number">21.</span> <span class="nav-text">如何创建 Hive 风格的分区文件夹结构?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%B0%86-hudi-%E9%85%8D%E7%BD%AE%E4%BC%A0%E9%80%92%E7%BB%99%E6%88%91%E7%9A%84%E7%9B%B4%E7%BA%BF-Hive-%E6%9F%A5%E8%AF%A2"><span class="nav-number">22.</span> <span class="nav-text">如何将 hudi 配置传递给我的直线 Hive 查询?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%88%91%E5%8F%AF%E4%BB%A5%E5%B0%86%E6%88%91%E7%9A%84-Hudi-%E6%95%B0%E6%8D%AE%E9%9B%86%E6%B3%A8%E5%86%8C%E5%88%B0-Apache-Hive-%E5%85%83%E5%AD%98%E5%82%A8%E5%90%97"><span class="nav-number">23.</span> <span class="nav-text">我可以将我的 Hudi 数据集注册到 Apache Hive 元存储吗?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hudi-%E7%B4%A2%E5%BC%95%E6%98%AF%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C%E7%9A%84-%E5%AE%83%E6%9C%89%E4%BB%80%E4%B9%88%E5%A5%BD%E5%A4%84"><span class="nav-number">24.</span> <span class="nav-text">Hudi 索引是如何工作的?它有什么好处?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hudi-cleaner%E6%98%AF%E5%81%9A%E4%BB%80%E4%B9%88%E7%9A%84"><span class="nav-number">25.</span> <span class="nav-text">Hudi cleaner是做什么的?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hudi-%E7%9A%84%E6%9E%B6%E6%9E%84%E8%BF%9B%E5%8C%96%E6%95%85%E4%BA%8B%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">26.</span> <span class="nav-text">Hudi 的架构进化故事是什么?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%B8%BA-MOR-%E6%95%B0%E6%8D%AE%E9%9B%86%E8%BF%90%E8%A1%8C%E5%8E%8B%E7%BC%A9"><span class="nav-number">27.</span> <span class="nav-text">如何为 MOR 数据集运行压缩?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9%E4%BA%8E-MOR-%E6%95%B0%E6%8D%AE%E9%9B%86%E4%B8%8A%E7%9A%84%E5%BC%82%E6%AD%A5-%E7%A6%BB%E7%BA%BF%E5%8E%8B%E7%BC%A9-%E6%88%91%E6%9C%89%E5%93%AA%E4%BA%9B%E9%80%89%E6%8B%A9"><span class="nav-number">28.</span> <span class="nav-text">对于 MOR 数据集上的异步&#x2F;离线压缩,我有哪些选择?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9%E4%BA%8E-Hudi-%E5%86%99%E4%BD%9C-%E6%88%91%E5%8F%AF%E4%BB%A5%E6%9C%9F%E5%BE%85%E4%BB%80%E4%B9%88%E6%80%A7%E8%83%BD-%E6%91%84%E5%8F%96%E5%BB%B6%E8%BF%9F"><span class="nav-number">29.</span> <span class="nav-text">对于 Hudi 写作,我可以期待什么性能&#x2F;摄取延迟?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hudi-%E8%AF%BB%E5%8F%96-%E6%9F%A5%E8%AF%A2%E7%9A%84%E6%80%A7%E8%83%BD%E5%A6%82%E4%BD%95"><span class="nav-number">30.</span> <span class="nav-text">Hudi 读取&#x2F;查询的性能如何?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E5%88%9B%E5%BB%BA%E5%A4%A7%E9%87%8F%E5%B0%8F%E6%96%87%E4%BB%B6"><span class="nav-number">31.</span> <span class="nav-text">如何避免创建大量小文件?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%8D%B3%E4%BD%BF%E5%9C%A8%E8%AE%BE%E7%BD%AE-39-hoodie-cleaner-commits-retained-39-1-%E4%B9%8B%E5%90%8E-Hudi-%E4%BB%8D%E8%87%B3%E5%B0%91%E4%BF%9D%E7%95%99%E4%B8%80%E4%B8%AA%E5%85%88%E5%89%8D%E7%9A%84%E6%8F%90%E4%BA%A4"><span class="nav-number">32.</span> <span class="nav-text">为什么即使在设置 &#39;hoodie.cleaner.commits.retained&#39;: 1 之后,Hudi 仍至少保留一个先前的提交?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-DeltaStreamer-%E6%88%96-Spark-DataSource-API-%E5%86%99%E5%85%A5%E9%9D%9E%E5%88%86%E5%8C%BA-Hudi-%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">33.</span> <span class="nav-text">如何使用 DeltaStreamer 或 Spark DataSource API 写入非分区 Hudi 数据集?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%88%91%E4%BB%AC%E5%BF%85%E9%A1%BB%E8%AE%BE%E7%BD%AE-2-%E7%A7%8D%E4%B8%8D%E5%90%8C%E7%9A%84%E6%96%B9%E5%BC%8F%E6%9D%A5%E9%85%8D%E7%BD%AE-Spark-%E4%BB%A5%E4%B8%8E-Hudi-%E4%B8%80%E8%B5%B7%E4%BD%BF%E7%94%A8"><span class="nav-number">34.</span> <span class="nav-text">为什么我们必须设置 2 种不同的方式来配置 Spark 以与 Hudi 一起使用?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%88%91%E6%9C%89%E4%B8%80%E4%B8%AA%E7%8E%B0%E6%9C%89%E7%9A%84%E6%95%B0%E6%8D%AE%E9%9B%86%E5%B9%B6%E6%83%B3%E4%BD%BF%E7%94%A8%E8%AF%A5%E6%95%B0%E6%8D%AE%E7%9A%84%E4%B8%80%E9%83%A8%E5%88%86%E6%9D%A5%E8%AF%84%E4%BC%B0-Hudi"><span class="nav-number">35.</span> <span class="nav-text">我有一个现有的数据集并想使用该数据的一部分来评估 Hudi ?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E6%9E%9C%E6%88%91%E5%B0%86%E6%96%87%E4%BB%B6%E7%89%88%E6%9C%AC%E4%BF%9D%E6%8C%81%E5%9C%A8-1-%E4%BD%BF%E7%94%A8%E6%AD%A4%E9%85%8D%E7%BD%AE-%E6%88%91%E5%8F%AF%E4%BB%A5%E5%9C%A8%E5%86%99%E5%85%A5%E5%A4%B1%E8%B4%A5%E6%97%B6%E5%9B%9E%E6%BB%9A-%E5%88%B0%E6%9C%80%E5%90%8E%E4%B8%80%E6%AC%A1%E6%8F%90%E4%BA%A4-%E5%90%97"><span class="nav-number">36.</span> <span class="nav-text">如果我将文件版本保持在 1,使用此配置,我可以在写入失败时回滚(到最后一次提交)吗?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88partition%E5%AD%97%E6%AE%B5%E9%99%A4%E4%BA%86partition-path%E4%B9%8B%E5%A4%96%E8%BF%98%E8%A6%81%E5%AD%98%E5%82%A8%E5%9C%A8parquet%E6%96%87%E4%BB%B6%E4%B8%AD"><span class="nav-number">37.</span> <span class="nav-text">为什么partition字段除了partition path之外还要存储在parquet文件中?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%88%91%E7%9C%8B%E5%88%B0%E5%BE%88%E5%A4%9A%E5%AD%98%E6%A1%A3%E6%96%87%E4%BB%B6-%E5%A6%82%E4%BD%95%E6%8E%A7%E5%88%B6%E7%94%9F%E6%88%90%E7%9A%84%E5%BD%92%E6%A1%A3%E6%8F%90%E4%BA%A4%E6%96%87%E4%BB%B6%E7%9A%84%E6%95%B0%E9%87%8F"><span class="nav-number">38.</span> <span class="nav-text">我看到很多存档文件.如何控制生成的归档提交文件的数量?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E9%85%8D%E7%BD%AEBloom%E8%BF%87%E6%BB%A4%E5%99%A8-%E4%BD%BF%E7%94%A8Bloom-Global-Bloom%E7%B4%A2%E5%BC%95%E6%97%B6"><span class="nav-number">39.</span> <span class="nav-text">如何配置Bloom过滤器(使用Bloom&#x2F;Global_Bloom索引时) ?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%B0%83%E6%95%B4-Hudi-%E4%BD%9C%E4%B8%9A%E7%9A%84-shuffle-%E5%B9%B6%E8%A1%8C%E6%80%A7"><span class="nav-number">40.</span> <span class="nav-text">如何调整 Hudi 作业的 shuffle 并行性?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#INT96-INT64-%E5%92%8C%E6%97%B6%E9%97%B4%E6%88%B3%E5%85%BC%E5%AE%B9%E6%80%A7"><span class="nav-number">41.</span> <span class="nav-text">INT96&#x2F;INT64 和时间戳兼容性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%B0%86%E7%8E%B0%E6%9C%89%E7%9A%84-COW-%E8%A1%A8%E8%BD%AC%E6%8D%A2%E4%B8%BA-MOR"><span class="nav-number">42.</span> <span class="nav-text">如何将现有的 COW 表转换为 MOR ?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BD%93%E6%88%91%E7%9A%84-Hudi-%E8%A1%A8%E4%B8%AD%E5%8F%91%E7%94%9F%E6%96%B0%E7%9A%84%E6%8F%90%E4%BA%A4%E6%97%B6-%E6%88%91%E5%8F%AF%E4%BB%A5%E5%BE%97%E5%88%B0%E9%80%9A%E7%9F%A5%E5%90%97"><span class="nav-number">43.</span> <span class="nav-text">当我的 Hudi 表中发生新的提交时,我可以得到通知吗?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%9C%A8-Hudi-%E4%B8%AD%E9%AA%8C%E8%AF%81%E6%95%B0%E6%8D%AE%E6%BA%90%E6%9E%B6%E6%9E%84%E5%8D%8F%E8%B0%83"><span class="nav-number">44.</span> <span class="nav-text">如何在 Hudi 中验证数据源架构协调?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9C%8B%E5%88%B0%E7%9B%B8%E5%90%8C%E8%AE%B0%E5%BD%95%E9%94%AE%E5%80%BC%E7%9A%84%E4%B8%A4%E6%9D%A1%E4%B8%8D%E5%90%8C%E8%AE%B0%E5%BD%95-%E6%AF%8F%E4%B8%AA%E8%AE%B0%E5%BD%95%E9%94%AE%E5%85%B7%E6%9C%89%E4%B8%8D%E5%90%8C%E7%9A%84%E6%97%B6%E9%97%B4%E6%88%B3%E6%A0%BC%E5%BC%8F-%E8%BF%99%E6%80%8E%E4%B9%88%E5%8F%AF%E8%83%BD"><span class="nav-number">45.</span> <span class="nav-text">看到相同记录键值的两条不同记录,每个记录键具有不同的时间戳格式.这怎么可能?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%88%91%E5%8F%AF%E4%BB%A5%E4%BB%8E%E4%B8%80%E7%A7%8D%E7%B4%A2%E5%BC%95%E7%B1%BB%E5%9E%8B%E5%88%87%E6%8D%A2%E5%88%B0%E5%8F%A6%E4%B8%80%E7%A7%8D%E8%80%8C%E6%97%A0%E9%9C%80%E9%87%8D%E5%86%99%E6%95%B4%E4%B8%AA%E8%A1%A8%E5%90%97"><span class="nav-number">46.</span> <span class="nav-text">我可以从一种索引类型切换到另一种而无需重写整个表吗?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%86-Hudi-%E4%B8%8E-HDFS-%E4%B8%8A%E7%9A%84%E5%85%83%E6%95%B0%E6%8D%AE%E8%A1%A8%E4%B8%80%E8%B5%B7%E4%BD%BF%E7%94%A8%E6%97%B6-%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3-HBase-%E4%B8%AD%E7%9A%84-NoSuchMethodError"><span class="nav-number">47.</span> <span class="nav-text">将 Hudi 与 HDFS 上的元数据表一起使用时,如何解决 HBase 中的 NoSuchMethodError ?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3-RuntimeException-%E8%AF%B4%E7%9A%84-hbase-default-xml-file-seems-to-be-for-an-older-version-of-HBase"><span class="nav-number">48.</span> <span class="nav-text">如何解决 RuntimeException 说的?hbase-default.xml file seems to be for an older version of HBase</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/10/13/hudi%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hudi常见问题
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-10-13 00:00:00" itemprop="dateCreated datePublished" datetime="2022-10-13T00:00:00+08:00">2022-10-13</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-10-28 09:32:26" itemprop="dateModified" datetime="2022-10-28T09:32:26+08:00">2022-10-28</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h3 id="Hudi-什么时候有用"><a href="#Hudi-什么时候有用" class="headerlink" title="Hudi 什么时候有用?"></a>Hudi 什么时候有用?</h3><p>如果您希望将数据快速摄取到 HDFS 或云存储中,Hudi 可以为您提供帮助工具(<a target="_blank" rel="noopener" href="https://hudi.apache.org/docs/writing_data/">https://hudi.apache.org/docs/writing_data/</a>).<br>此外,如果您的 ETL/hive/spark 作业速度较慢/占用大量资源,Hudi 可能会通过提供增量方法来读取和写入数据来提供帮助.</p>
+<p>作为一个组织,Hudi 可以帮助您构建一个高效的数据湖,解决一些最复杂/低级的存储管理问题,同时更快地将数据交到您的数据分析师/工程师和科学家手中.</p>
+<span id="more"></span>
+<h3 id="Hudi-有哪些非目标"><a href="#Hudi-有哪些非目标" class="headerlink" title="Hudi 有哪些非目标?"></a>Hudi 有哪些非目标?</h3><p>Hudi 不是为任何 OLTP 用例而设计的,在这些用例中,您通常使用现有的 NoSQL/RDBMS 数据存储.<br>Hudi 无法替代您的内存分析数据库.<br>Hudi 支持数分钟级的近实时摄取,以牺牲延迟换取高效批处理.<br>如果您真的需要亚分钟处理延迟,那么请坚持使用您最喜欢的流处理解决方案.</p>
+<h3 id="什么是增量处理-为什么-Hudi-docs-talks-一直在谈论它"><a href="#什么是增量处理-为什么-Hudi-docs-talks-一直在谈论它" class="headerlink" title="什么是增量处理?为什么 Hudi docs/talks 一直在谈论它?"></a>什么是增量处理?为什么 Hudi docs/talks 一直在谈论它?</h3><p>增量处理最初是由 Vinoth Chandar 在 O&#39;reilly博客中引入的,它引发了大部分工作.<br>在纯技术术语中,增量处理只是指以流处理方式编写小批量程序.<br>典型的批处理作业每隔几个小时消耗所有输入并重新计算所有输出.<br>典型的流处理作业消耗一些新的输入并重新计算输出的新/更改,连续/每隔几秒.<br>虽然以批处理方式重新计算所有输出可能更简单,但它既浪费又资源昂贵.<br>Hudi 能够以流方式编写相同的批处理管道,每隔几分钟运行一次.</p>
+<p>虽然我们只能将其称为流处理,但我们将其称为增量处理,以区别于使用 Apache Flink/Apache Apex 或 Apache Kafka Streams 构建的纯流处理管道.</p>
+<h3 id="写时复制-COW-与读时合并-MOR-存储类型有什么区别"><a href="#写时复制-COW-与读时合并-MOR-存储类型有什么区别" class="headerlink" title="写时复制 (COW) 与读时合并 (MOR) 存储类型有什么区别?"></a>写时复制 (COW) 与读时合并 (MOR) 存储类型有什么区别?</h3><p>写入时复制:<br>这种存储类型使客户端能够以列式文件格式摄取数据,目前是 parquet.<br>使用 COW 存储类型写入 Hudi 数据集的任何新数据都将写入新的 parquet 文件.<br>更新现有的一组行将导致重写整个 parquet 文件,这些文件共同包含正在更新的受影响的行.<br>因此,对此类数据集的所有写入都受到 parquet 写入性能的限制,parquet 文件越大,摄取数据所需的时间就越长.</p>
+<p>合并阅读:<br>这种存储类型使客户端能够将数据快速摄取到基于行的数据格式中,例如 avro.<br>使用 MOR 表类型写入 Hudi 数据集的任何新数据都将写入新的log/delta文件,这些文件在内部将数据存储为 avro 编码字节.<br>压缩过程(配置为内联或异步)会将日志文件格式转换为列文件格式(parquet).<br>两种不同的 InputFormat 公开了该数据的 2 个不同视图,Read Optimized 视图公开了列式 parquet 读取性能,而 Realtime View 分别公开了列式和/或日志读取性能.<br>更新现有的一组行将导致 a) 从以前的压缩生成的现有基本 parquet 文件的伴随log/delta文件或 b) 写入log/delta文件的更新,以防它没有发生压缩.<br>因此,对此类数据集的所有写入都受到 avro/log 文件写入性能的限制,比 parquet 快得多.<br>虽然,与columnar(parquet)文件相比,读取log/delta文件的成本更高.</p>
+<h3 id="如何为我的工作负载选择存储类型"><a href="#如何为我的工作负载选择存储类型" class="headerlink" title="如何为我的工作负载选择存储类型?"></a>如何为我的工作负载选择存储类型?</h3><p>Hudi 的一个关键目标是提供比重写整个表或分区快几个数量级的upsert 功能.<br>1)在以下情况下选择Copy-on-write存储:</p>
+<ol>
+<li>正在寻找一种简单的替代方案,它可以替换现有的parquet tables而不需要任何实时数据.</li>
+<li>当前的工作是重写整个表/分区以处理更新,而每个分区中只有少数文件实际更改.</li>
+<li>让事情在操作上更简单(没有压缩等),摄取/写入性能受parquet 文件大小和受更新影响/污染的此类文件的数量的限制.</li>
+<li>不会突然爆发大量更新或插入旧分区.<br>COW 吸收了编写器端的所有合并成本,因此这些突然的变化可能会阻塞您的摄取并干扰达到正常模式摄取延迟目标.</li>
+</ol>
+<p>2)在以下情况下选择merge-on-read存储:</p>
+<ol>
+<li>希望尽可能快速地摄取数据并进行查询.</li>
+<li>工作负载可能会出现突然的峰值/模式变化(例如,对上游数据库中旧事务的批量更新导致对 DFS 上的旧分区进行大量更新).<br>异步压缩有助于分摊由此类场景引起的写入放大,而正常摄取跟上传入的更改流.</li>
+</ol>
+<p>无论您选择什么,Hudi 都提供:</p>
+<ol>
+<li>快照隔离和批量记录的原子写入</li>
+<li>增量拉动</li>
+<li>能够重复数据删除</li>
+</ol>
+<h3 id="Hudi-是分析数据库吗"><a href="#Hudi-是分析数据库吗" class="headerlink" title="Hudi 是分析数据库吗?"></a>Hudi 是分析数据库吗?</h3><p>一个典型的数据库有一堆始终运行的长时间运行的存储服务器,它们需要写入和读取.<br>Hudi 的架构非常不同,并且有充分的理由.<br>它是高度解耦的,写入和查询/读取可以独立扩展以应对扩展挑战.<br>因此,它可能并不总是看起来像一个数据库.</p>
+<p>尽管如此,Hudi 的设计非常像数据库,并提供类似的功能(更新插入/变更捕获)和语义(事务写入/快照隔离读取).</p>
+<h3 id="如何对存储在-Hudi-中的数据进行建模"><a href="#如何对存储在-Hudi-中的数据进行建模" class="headerlink" title="如何对存储在 Hudi 中的数据进行建模?"></a>如何对存储在 Hudi 中的数据进行建模?</h3><p>将数据写入 Hudi 时,您可以像在key-value存储上一样对记录进行建模 - 指定一个键字段(对于单个分区/跨数据集是唯一的)/一个分区字段(表示要放置键的分区)和 preCombine/组合逻辑,指定如何处理写入的一批记录中的重复项.<br>该模型使 Hudi 能够像在数据库表上一样强制执行主键约束.</p>
+<p>在查询/读取数据时,Hudi 只是将自己呈现为一个类似 json 的分层表,每个人都习惯于使用 Hive/Spark/Presto 而非 Parquet/Json/Avro 进行查询.<br><a target="_blank" rel="noopener" href="https://hudi.apache.org/docs/writing_data/">https://hudi.apache.org/docs/writing_data/</a></p>
+<h3 id="为什么hudi需要配置key字段"><a href="#为什么hudi需要配置key字段" class="headerlink" title="为什么hudi需要配置key字段?"></a>为什么hudi需要配置key字段?</h3><p>Hudi 旨在支持快速记录级别的 Upsert,因此需要一个key来识别传入记录是插入还是更新或删除,并进行相应的处理.<br>此外,Hudi 自动维护此主键的索引,对于 CDC 等许多用例,确保此类主键约束对于确保数据质量至关重要.<br>在这种情况下,预组合键有助于在单批输入记录中协调具有相同键的多条记录.<br>即使对于仅附加数据流,Hudi 也支持在插入记录之前基于键的重复数据删除.<br>例如:您可能至少有一次数据集成系统,例如 Kafka MirrorMaker,它可以在故障期间引入重复项.<br>即使对于普通的旧批处理管道,key也有助于消除可能由回填管道引起的重复,这通常是不清楚需要重写哪组记录.<br>我们正在积极努力使key更容易,只需要它们进行 Upsert 和/或在内部自动生成key(很像 RDBMS row_ids)</p>
+<h3 id="Hudi-是否支持云存储-对象存储"><a href="#Hudi-是否支持云存储-对象存储" class="headerlink" title="Hudi 是否支持云存储/对象存储?"></a>Hudi 是否支持云存储/对象存储?</h3><p>是的.<br>一般来说,Hudi 能够在任何 Hadoop 文件系统实现上提供其功能,因此可以在云存储(Amazon S3 或 Microsoft Azure 或谷歌云存储)上读取和写入数据集.<br>随着时间的推移,Hudi 还整合了特定的设计方面,使在云上构建 Hudi 数据集变得容易,例如s3 的一致性检查/数据文件涉及的零移动/重命名.</p>
+<h3 id="Hudi-支持哪些版本的-Hive-Spark-Hadoop"><a href="#Hudi-支持哪些版本的-Hive-Spark-Hadoop" class="headerlink" title="Hudi 支持哪些版本的 Hive/Spark/Hadoop ?"></a>Hudi 支持哪些版本的 Hive/Spark/Hadoop ?</h3><p>截至 2019 年 9 月,Hudi 可以支持 Spark 2.1+/Hive 2.x/Hadoop 2.7+(不是 Hadoop 3).</p>
+<h3 id="Hudi-是如何在数据集中实际存储数据的"><a href="#Hudi-是如何在数据集中实际存储数据的" class="headerlink" title="Hudi 是如何在数据集中实际存储数据的?"></a>Hudi 是如何在数据集中实际存储数据的?</h3><p>从高层次上讲,Hudi 基于 MVCC 设计,将数据写入版本化的 parquet/base 文件和包含对基本文件的更改的日志文件.<br>所有文件都存储在数据集的分区方案下,这与 Apache Hive 表在 DFS 上的布局方式非常相似.</p>
+<h3 id="编写-Hudi-数据集有哪些方法"><a href="#编写-Hudi-数据集有哪些方法" class="headerlink" title="编写 Hudi 数据集有哪些方法?"></a>编写 Hudi 数据集有哪些方法?</h3><p>通常,您从源获取一组部分更新/插入,并对 Hudi 数据集发出写入操作.<br>如果您从任何标准来源(如 Kafka 或跟踪 DFS)摄取数据,则delta streamer工具非常有用,它提供了一种简单的/自我管理的解决方案,可以将数据写入 Hudi.<br>您还可以编写自己的代码以使用 Spark 数据源 API 从自定义源捕获数据,并使用Hudi 数据源写入 Hudi.</p>
+<h3 id="Hudi-作业是如何部署的"><a href="#Hudi-作业是如何部署的" class="headerlink" title="Hudi 作业是如何部署的?"></a>Hudi 作业是如何部署的?</h3><p>Hudi 编写的好处是它就像任何其他 spark 作业一样在 YARN/Mesos 甚至 K8S 集群上运行.<br>因此,您可以简单地使用 Spark UI 来了解写入操作.</p>
+<h3 id="我现在如何查询我刚刚写的-Hudi-数据集"><a href="#我现在如何查询我刚刚写的-Hudi-数据集" class="headerlink" title="我现在如何查询我刚刚写的 Hudi 数据集?"></a>我现在如何查询我刚刚写的 Hudi 数据集?</h3><p>除非启用 Hive 同步,否则 Hudi 使用上述方法之一编写的数据集可以像任何其他源一样简单地通过 Spark 数据源进行查询.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> hoodieROView = spark.read.format(<span class="string">&quot;org.apache.hudi&quot;</span>).load(basePath + <span class="string">&quot;/path/to/partitions/*&quot;</span>)</span><br><span class="line"><span class="keyword">val</span> hoodieIncViewDF = spark.read().format(<span class="string">&quot;org.apache.hudi&quot;</span>)</span><br><span class="line">     .option(<span class="type">DataSourceReadOptions</span>.<span class="type">VIEW_TYPE_OPT_KEY</span>(), <span class="type">DataSourceReadOptions</span>.<span class="type">VIEW_TYPE_INCREMENTAL_OPT_VAL</span>())</span><br><span class="line">     .option(<span class="type">DataSourceReadOptions</span>.<span class="type">BEGIN_INSTANTTIME_OPT_KEY</span>(), &lt;beginInstantTime&gt;)</span><br><span class="line">     .load(basePath);</span><br></pre></td></tr></table></figure>
+
+<p>如果在deltastreamer工具或数据源中启用了 Hive 同步,则数据集在 Hive 中以几个表的形式提供,现在可以使用 HiveQL/Presto 或 SparkSQL 读取.<br><a target="_blank" rel="noopener" href="https://hudi.apache.org/docs/querying_data/">https://hudi.apache.org/docs/querying_data/</a></p>
+<h3 id="Hudi-如何处理输入中的重复记录键"><a href="#Hudi-如何处理输入中的重复记录键" class="headerlink" title="Hudi 如何处理输入中的重复记录键?"></a>Hudi 如何处理输入中的重复记录键?</h3><p>当对数据集发出操作并且提供的一批记录包含给定键的多个条目时,通过重复调用有效负载类的preCombine()方法upsert,所有这些都将减少为一个最终值.<br>默认情况下,我们选择具有最大价值的记录(通过调用 .compareTo() 确定),提供 latest-write-wins 样式语义.</p>
+<p>对于 insert 或 bulk_insert 操作,不执行此类预组合.<br>因此,如果您的输入包含重复项,则数据集也将包含重复项.<br>如果您不希望重复记录,请发出 upsert 或考虑指定选项以对datasource或deltastreamer中的输入进行重复数据删除.</p>
+<h3 id="我可以为输入记录如何与存储记录合并实现自己的逻辑吗"><a href="#我可以为输入记录如何与存储记录合并实现自己的逻辑吗" class="headerlink" title="我可以为输入记录如何与存储记录合并实现自己的逻辑吗?"></a>我可以为输入记录如何与存储记录合并实现自己的逻辑吗?</h3><p>这是 Hudi 中用于表示任何 hudi 记录的有效负载接口.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">HoodieRecordPayload</span>&lt;<span class="title">T</span> <span class="keyword">extends</span> <span class="title">HoodieRecordPayload</span>### <span class="keyword">extends</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * When more than one HoodieRecord have the same HoodieKey, this function combines them before attempting to insert/upsert by taking in a property map.</span></span><br><span class="line"><span class="comment">   * Implementation can leverage the property to decide their business logic to do preCombine.</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> another instance of another &#123;<span class="doctag">@link</span> HoodieRecordPayload&#125; to be combined with.</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> properties Payload related properties. For example pass the ordering field(s) name to extract from value in storage.</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> the combined value</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">default</span> T <span class="title">preCombine</span><span class="params">(T another, Properties properties)</span></span>;</span><br><span class="line"> </span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * This methods lets you write custom merging/combining logic to produce new values as a function of current value on storage and whats contained</span></span><br><span class="line"><span class="comment">   * in this object. Implementations can leverage properties if required.</span></span><br><span class="line"><span class="comment">   * &lt;p&gt;</span></span><br><span class="line"><span class="comment">   * eg:</span></span><br><span class="line"><span class="comment">   * 1) You are updating counters, you may want to add counts to currentValue and write back updated counts</span></span><br><span class="line"><span class="comment">   * 2) You may be reading DB redo logs, and merge them with current image for a database row on storage</span></span><br><span class="line"><span class="comment">   * &lt;/p&gt;</span></span><br><span class="line"><span class="comment">   *</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> currentValue Current value in storage, to merge/combine this payload with</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> schema Schema used for record</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> properties Payload related properties. For example pass the ordering field(s) name to extract from value in storage.</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> new combined/merged value to be written back to storage. EMPTY to skip writing this record.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  default Option&lt;IndexedRecord### combineAndGetUpdateValue(IndexedRecord currentValue, Schema schema, Properties properties) throws IOException;</span><br><span class="line">   </span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * Generates an avro record out of the given HoodieRecordPayload, to be written out to storage. Called when writing a new value for the given</span></span><br><span class="line"><span class="comment">   * HoodieKey, wherein there is no existing record in storage to be combined against. (i.e insert) Return EMPTY to skip writing this record.</span></span><br><span class="line"><span class="comment">   * Implementations can leverage properties if required.</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> schema Schema used for record</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@param</span> properties Payload related properties. For example pass the ordering field(s) name to extract from value in storage.</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> the &#123;<span class="doctag">@link</span> IndexedRecord&#125; to be inserted.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="meta">@PublicAPIMethod(maturity = ApiMaturityLevel.STABLE)</span></span><br><span class="line">  default Option&lt;IndexedRecord### getInsertValue(Schema schema, Properties properties) throws IOException;</span><br><span class="line"> </span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * This method can be used to extract some metadata from HoodieRecordPayload. The metadata is passed to &#123;<span class="doctag">@code</span> WriteStatus.markSuccess()&#125; and</span></span><br><span class="line"><span class="comment">   * &#123;<span class="doctag">@code</span> WriteStatus.markFailure()&#125; in order to compute some aggregate metrics using the metadata in the context of a write success or failure.</span></span><br><span class="line"><span class="comment">   * <span class="doctag">@return</span> the metadata in the form of Map&lt;String, String### if any.</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="meta">@PublicAPIMethod(maturity = ApiMaturityLevel.STABLE)</span></span><br><span class="line">  default Option&lt;Map&lt;String, String&gt;### getMetadata() &#123;</span><br><span class="line">    <span class="keyword">return</span> Option.empty();</span><br><span class="line">  &#125;</span><br><span class="line"> </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如您所见,( combineAndGetUpdateValue(), getInsertValue() ) 控制存储上的记录如何与传入的更新/插入相结合以生成要写回存储的最终值.<br>preCombine() 用于合并同一传入批次中的记录.</p>
+<h3 id="如何使用-Hudi-删除数据集中的记录"><a href="#如何使用-Hudi-删除数据集中的记录" class="headerlink" title="如何使用 Hudi 删除数据集中的记录?"></a>如何使用 Hudi 删除数据集中的记录?</h3><p>GDPR 使删除成为每个人数据管理工具箱中的必备工具.<br>Hudi 支持软删除和硬删除.<br><a target="_blank" rel="noopener" href="https://hudi.apache.org/docs/writing_data/#deletes">https://hudi.apache.org/docs/writing_data/#deletes</a></p>
+<h3 id="Hudi的增量查询结果中会出现被删除的记录吗"><a href="#Hudi的增量查询结果中会出现被删除的记录吗" class="headerlink" title="Hudi的增量查询结果中会出现被删除的记录吗?"></a>Hudi的增量查询结果中会出现被删除的记录吗?</h3><p>软删除(与硬删除不同)确实出现在增量拉取查询结果中.<br>因此,如果您需要一种将删除传播到下游表的机制,您可以使用软删除.</p>
+<h3 id="如何将数据迁移到-Hudi"><a href="#如何将数据迁移到-Hudi" class="headerlink" title="如何将数据迁移到 Hudi ?"></a>如何将数据迁移到 Hudi ?</h3><p>Hudi 为使用 hudi-cli 提供的 <code>HDFSParquetImporter</code> 工具一次性将整个数据集重写到 Hudi 提供内置支持.<br>您还可以通过使用 Spark 数据源 API 对数据集进行简单的读取和写入来完成此操作.<br>迁移后,可以使用此处讨论的正常方式执行写入.</p>
+<h3 id="如何将-hudi-配置传递给我的-spark-工作"><a href="#如何将-hudi-配置传递给我的-spark-工作" class="headerlink" title="如何将 hudi 配置传递给我的 spark 工作?"></a>如何将 hudi 配置传递给我的 spark 工作?</h3><p>涵盖数据源和低级 Hudi 写入客户端(deltastreamer 和数据源内部调用)的 Hudi 配置选项在这里.<br><a target="_blank" rel="noopener" href="https://hudi.apache.org/docs/configurations/">https://hudi.apache.org/docs/configurations/</a><br>在 DeltaStreamer 等任何工具上调用--help将打印所有使用选项.<br>许多控制 upsert/文件大小行为的选项是在写入客户端级别定义的,下面是我们如何将它们传递给可用于写入数据的不同选项.</p>
+<p>对于 Spark DataSource,您可以使用 DataFrameWriter 的&quot;选项&quot;API 来传递这些配置.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">inputDF.write().format(<span class="string">&quot;org.apache.hudi&quot;</span>)</span><br><span class="line">  .options(clientOpts) <span class="comment">// any of the Hudi client opts can be passed in as well</span></span><br><span class="line">  .option(<span class="type">DataSourceWriteOptions</span>.<span class="type">RECORDKEY_FIELD_OPT_KEY</span>(), <span class="string">&quot;_row_key&quot;</span>)</span><br><span class="line">  ...</span><br></pre></td></tr></table></figure>
+
+<p>直接使用时<code>HoodieWriteClient</code>,您可以使用您提到的链接中的配置简单地构造 HoodieWriteConfig 对象.<br>使用 <code>HoodieDeltaStreamer</code> 工具摄取时,您可以在属性文件中设置配置并将文件作为 cmdline 参数&quot; --props &quot;传递</p>
+<h3 id="如何创建-Hive-风格的分区文件夹结构"><a href="#如何创建-Hive-风格的分区文件夹结构" class="headerlink" title="如何创建 Hive 风格的分区文件夹结构?"></a>如何创建 Hive 风格的分区文件夹结构?</h3><p>默认情况下,Hudi 仅使用分区值创建分区文件夹,但如果想创建类似于 Hive 生成结构的方式的分区文件夹,其路径包含键值对,如 <code>country=us/...</code> 或 <code>datestr=2021-04-20</code>.<br>这是 Hive 样式(或格式)分区.<br>路径包括分区键的名称和每个路径表示的值.</p>
+<p>要启用 hive 样式分区,您需要在写入数据时添加此 hoodie 配置:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hoodie.datasource.write.hive_style_partitioning: true</span><br></pre></td></tr></table></figure>
+
+<h3 id="如何将-hudi-配置传递给我的直线-Hive-查询"><a href="#如何将-hudi-配置传递给我的直线-Hive-查询" class="headerlink" title="如何将 hudi 配置传递给我的直线 Hive 查询?"></a>如何将 hudi 配置传递给我的直线 Hive 查询?</h3><p>如果未选择 Hudi 的输入格式,则返回的结果可能不正确.<br>为确保选择正确的输入格式,请使用<code>org.apache.hadoop.hive.ql.io.HiveInputFormat</code>/<code>org.apache.hudi.hadoop.hive.HoodieCombineHiveInputFormat</code>进行<code>hive.input.format</code>配置.<br>这可以设置如下所示:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> hive.input.format<span class="operator">=</span>org.apache.hadoop.hive.ql.io.HiveInputFormat</span><br><span class="line"><span class="comment">--或者</span></span><br><span class="line"><span class="keyword">set</span> hive.input.format<span class="operator">=</span>org.apache.hudi.hadoop.hive.HoodieCombineHiveInputFormat</span><br></pre></td></tr></table></figure>
+
+<h3 id="我可以将我的-Hudi-数据集注册到-Apache-Hive-元存储吗"><a href="#我可以将我的-Hudi-数据集注册到-Apache-Hive-元存储吗" class="headerlink" title="我可以将我的 Hudi 数据集注册到 Apache Hive 元存储吗?"></a>我可以将我的 Hudi 数据集注册到 Apache Hive 元存储吗?</h3><p>是的.<br>这可以通过独立的Hive Sync 工具或使用deltastreamer工具或datasource中的选项来执行.<br><a target="_blank" rel="noopener" href="https://hudi.apache.org/docs/syncing_metastore/#hive-sync-tool">https://hudi.apache.org/docs/syncing_metastore/#hive-sync-tool</a></p>
+<h3 id="Hudi-索引是如何工作的-它有什么好处"><a href="#Hudi-索引是如何工作的-它有什么好处" class="headerlink" title="Hudi 索引是如何工作的?它有什么好处?"></a>Hudi 索引是如何工作的?它有什么好处?</h3><p>索引组件是 Hudi 编写的关键部分,它将给定的 recordKey 一致地映射到 Hudi 内部的 fileGroup.<br>这可以更快地识别受给定写入操作影响/污染的文件组.</p>
+<p>Hudi 支持以下几个索引选项:</p>
+<ol>
+<li><code>HoodieBloomIndex</code>:使用布隆过滤器和范围信息放置在parquet/base文件的页脚中</li>
+<li><code>HoodieGlobalBloomIndex</code>:非全局索引仅强制单个分区内的键的唯一性,即用户应该知道存储给定记录键的分区.<br>这有助于即使是非常大的数据集也能很好地扩展索引.<br>但是,在某些情况下,可能需要对所有分区执行重复数据删除/强制唯一性,而全局布隆索引正是这样做的.<br>如果使用此方法,则将传入记录与整个数据集中的文件进行比较,并确保 recordKey 仅存在于一个分区中.</li>
+<li><code>HBaseIndex</code>:Apache HBase 是一个键值存储,通常位于 HDFS 附近.还可以将索引存储在 HBase 中.</li>
+<li><code>HoodieSimpleIndex</code>(默认):一个简单的索引,它从基本文件中读取感兴趣的字段(记录键和分区路径),并与传入记录连接以查找标记位置.</li>
+<li><code>HoodieGlobalSimpleIndex</code>:简单索引的全局版本,其中唯一性是整个表的记录键.</li>
+<li><code>HoodieBucketIndex</code>:每个分区都有静态定义的桶,记录被标记到其中.<br>由于位置是通过散列机制标记的,因此该索引查找将非常有效.</li>
+<li><code>HoodieSparkConsistentBucketIndex</code>:这也类似于 Bucket Index.<br>唯一不同的是,数据倾斜可以通过动态改变桶数来解决.</li>
+</ol>
+<p>如果您愿意,可以通过子类化<code>HoodieIndex</code>类并在 <code>configs.xml</code> 中配置索引类名称来实现自己的索引.</p>
+<h3 id="Hudi-cleaner是做什么的"><a href="#Hudi-cleaner是做什么的" class="headerlink" title="Hudi cleaner是做什么的?"></a>Hudi cleaner是做什么的?</h3><p>Hudi 清理程序通常在提交和 deltacommit 之后立即运行,并删除不再需要的旧文件.<br>如果您使用增量拉取功能,请确保配置清理器以保留足够数量的最后提交以进行回退.<br>另一个考虑因素是为长时间运行的作业提供足够的时间来完成运行.<br>否则,清理程序可能会删除作业正在或可能正在读取的文件,并且会使作业失败.<br>通常,默认配置 10 允许每 30 分钟运行一次摄取,以保留长达 5 小时的数据.<br>如果您更频繁地运行摄取,或者您想为查询提供更多运行时间,请考虑增加 config 的值:<code>hoodie.cleaner.commits.retained</code></p>
+<h3 id="Hudi-的架构进化故事是什么"><a href="#Hudi-的架构进化故事是什么" class="headerlink" title="Hudi 的架构进化故事是什么?"></a>Hudi 的架构进化故事是什么?</h3><p>Hudi 使用 Avro 作为记录的内部规范表示,主要是由于其良好的模式兼容性和进化属性.<br>这是在摄取或 ETL 管道中具有可靠性的关键方面.<br>只要传递给 Hudi 的模式(在 DeltaStreamer 模式提供程序配置中显式或通过 Spark Datasource 的数据集模式隐式传递)是向后兼容的(例如,没有字段删除,仅将新字段附加到模式),Hudi 将无缝处理旧的读/写和新数据,并使 Hive 架构保持最新.</p>
+<h3 id="如何为-MOR-数据集运行压缩"><a href="#如何为-MOR-数据集运行压缩" class="headerlink" title="如何为 MOR 数据集运行压缩?"></a>如何为 MOR 数据集运行压缩?</h3><p>在 MOR 数据集上运行压缩的最简单方法是<code>compaction inline</code>,代价是花费更多时间摄取.<br>这可能特别有用,在您有少量迟到的数据流入旧分区的常见情况下.<br>在这种情况下,您可能只想积极压缩最后 N 个分区,同时等待为旧分区积累足够的日志.<br>最终结果是您已经转换了大部分最近的数据,这些数据更有可能被查询为优化的列格式.</p>
+<p>也就是说,出于不阻止压缩摄取的明显原因,您可能还希望异步运行它.<br>这可以通过您的工作流调度程序/笔记本独立调度的单独压缩作业来完成.<br>如果您使用的是 delta streamer,那么您可以在连续模式下运行,其中摄取和压缩都在单个 spark 运行时同时管理.</p>
+<h3 id="对于-MOR-数据集上的异步-离线压缩-我有哪些选择"><a href="#对于-MOR-数据集上的异步-离线压缩-我有哪些选择" class="headerlink" title="对于 MOR 数据集上的异步/离线压缩,我有哪些选择?"></a>对于 MOR 数据集上的异步/离线压缩,我有哪些选择?</h3><p>压缩有两个部分:</p>
+<ol>
+<li>调度:在这一步中,Hudi 扫描分区并选择要压缩的文件切片.<br>最终将压缩计划写入 Hudi 时间线.<br>调度需要与其他编写者更紧密的协调(定期摄取被认为是编写者之一).<br>如果调度是与摄取作业内联完成的,则会自动处理这种协调.<br>否则,当调度异步发生时,需要配置锁提供程序以实现多个写入者之间的这种协调.</li>
+<li>执行:在此步骤中,读取压缩计划并压缩文件切片.<br>执行不需要像调度步骤那样与其他编写器进行相同级别的协调,并且可以轻松地与摄取作业分离.</li>
+</ol>
+<p>DeltaStreamer:</p>
+<ol>
+<li>在 Continuous 模式下,默认实现异步压缩.<br>这里调度是由摄取作业内联完成的,压缩执行是由一个单独的并行线程异步实现的.</li>
+<li>在非连续模式下,只能进行内联压缩.</li>
+<li>请注意,在任一模式下,通过传递 <code>--disable-compaction</code> 压缩被完全禁用</li>
+</ol>
+<p>Spark datasource:</p>
+<ol>
+<li>可以通过定期运行离线 Hudi Compactor Utility 或 Hudi CLI 来实现异步调度和异步执行.<br>但是,这需要配置一个锁提供程序.</li>
+<li>或者,从 0.11.0 开始,为了避免对锁提供者的依赖,单独的调度可以由常规编写器使用 config 内联完成<code>hoodie.compact.schedule.inline</code>.并且可以通过定期触发 Hudi Compactor Utility 或 Hudi CLI 离线完成压缩执行.</li>
+</ol>
+<p>Spark structured streaming:</p>
+<ol>
+<li>压缩在流式作业中异步调度和执行.<br>默认情况下,异步压缩对 Merge-On-Read 表上的结构化流作业启用.</li>
+<li>请注意,无法使用 spark 结构化流禁用 MOR 数据集的异步压缩.</li>
+</ol>
+<p>Flink:</p>
+<ol>
+<li>Merge-On-Read 表默认启用异步压缩.</li>
+<li>离线压缩可以通过设置<code>compaction.async.enabled=false</code>并定期运行Flink 离线 Compactor来实现.<br>运行离线压缩器时,需要确保没有对表的活动写入.<br><a target="_blank" rel="noopener" href="https://hudi.apache.org/docs/next/compaction/#flink-offline-compaction">https://hudi.apache.org/docs/next/compaction/#flink-offline-compaction</a></li>
+<li>第三个选项(强烈推荐第二个选项)是从常规摄取作业安排压缩并从离线作业执行压缩计划.<br>为了实现这一点,请设置为<code>compaction.async.enabled=false</code>/<code>compaction.schedule.enabled=true</code>,然后定期运行Flink 离线 Compactor以执行计划.</li>
+</ol>
+<h3 id="对于-Hudi-写作-我可以期待什么性能-摄取延迟"><a href="#对于-Hudi-写作-我可以期待什么性能-摄取延迟" class="headerlink" title="对于 Hudi 写作,我可以期待什么性能/摄取延迟?"></a>对于 Hudi 写作,我可以期待什么性能/摄取延迟?</h3><p>您可以写入 Hudi 的速度取决于写入操作以及您在此过程中所做的一些权衡,例如文件大小.<br>就像数据库如何通过磁盘上的直接/原始文件 I/O 产生开销一样,与读取/写入原始 DFS 文件相比,Hudi 操作可能会因支持类似数据库的功能而产生开销.<br>也就是说,Hudi 从数据库文献中实现了先进的技术,以保持这些最小化.</p>
+<table>
+<thead>
+<tr>
+<th align="left">存储类型</th>
+<th align="left">工作负载类型</th>
+<th align="left">表现</th>
+<th align="left">提示</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">copy on write</td>
+<td align="left">bulk_insert</td>
+<td align="left">应该匹配vanilla spark writing写作+额外的排序以适当大小的文件</td>
+<td align="left">适当大小的bulk insert parallelism以获得正确数量的文件.如果你想要这个自动调整,请使用insert</td>
+</tr>
+<tr>
+<td align="left">copy on write</td>
+<td align="left">insert</td>
+<td align="left">类似于批量插入,除了文件大小是自动调整的,需要将输入缓存到内存中并进行自定义分区.</td>
+<td align="left">性能将受到您可以写入摄取数据的并行程度的限制.如果您发现写入仅来自少数几个执行程序,请调整此限制.</td>
+</tr>
+<tr>
+<td align="left">copy on write</td>
+<td align="left">upsert/ de-duplicate &amp; insert</td>
+<td align="left">这两者都将涉及索引查找.与使用 Spark的 JOIN 来识别受影响的记录相比,只要ordered keys或 &lt;50% 的更新,Hudi 索引通常快 7-10 倍.与覆盖整个分区相比,Hudi 写入速度可以快几个数量级,具体取决于给定分区中实际更新了多少文件.例如,如果一个分区有 1000 个文件,其中每次摄取运行时只有 100 个文件被弄脏,那么 Hudi 只会读取/合并总共 100 个文件,因此比重写整个分区快 10 倍.</td>
+<td align="left">最终,性能将受到我们读取和写入 parquet 文件的速度的限制,这取决于此处配置的 parquet 文件的大小.还要确保正确调整您的布隆过滤器.HUDI-56会自动调整.</td>
+</tr>
+<tr>
+<td align="left">merge on read</td>
+<td align="left">bulk insert</td>
+<td align="left">目前新数据只进入 parquet 文件,因此这里的性能应该类似于 copy_on_write 批量插入.这具有将数据直接放入 parquet 以提高查询性能的良好副作用.HUDI-86将直接添加对记录插入的支持,并且会大幅增加.</td>
+<td align="left">无</td>
+</tr>
+<tr>
+<td align="left">merge on read</td>
+<td align="left">insert</td>
+<td align="left">与上面类似</td>
+<td align="left">无</td>
+</tr>
+<tr>
+<td align="left">merge on read</td>
+<td align="left">upsert/ de-duplicate &amp; insert</td>
+<td align="left">索引性能将保持与copy-on-write相同,而更新的摄取延迟(copy_on_write 中最昂贵的 I/O 操作)被发送到日志文件,因此异步压缩提供了非常好的摄取性能和低写入放大.</td>
+<td align="left">无</td>
+</tr>
+</tbody></table>
+<p>与许多管理时间序列数据的典型系统一样,如果您的密钥具有时间戳前缀或单调递增/递减,Hudi 的性能会更好.<br>你几乎总能做到这一点.<br>即使你有 UUID 密钥,你也可以按照这样的技巧来获取有序的密钥.</p>
+<h3 id="Hudi-读取-查询的性能如何"><a href="#Hudi-读取-查询的性能如何" class="headerlink" title="Hudi 读取/查询的性能如何?"></a>Hudi 读取/查询的性能如何?</h3><p>对于 ReadOptimized 视图,您可以期待与 Hive/Spark/Presto 中的标准 parquet 表相同的同类最佳列查询性能.<br>对于增量视图,您可以预期相对于给定时间窗口中通常有多少数据更改以及整个扫描需要多少时间来加快速度.<br>例如,如果在一个包含 1000 个文件的分区中在过去一小时内仅更改了 100 个文件,那么与全扫描分区以查找新数据相比,使用 Hudi 中的增量拉取的速度可以预期为 10 倍.</p>
+<p>对于实时视图,您可以预期性能类似于 Hive/Spark/Presto 中相同的 avro 支持表.</p>
+<h3 id="如何避免创建大量小文件"><a href="#如何避免创建大量小文件" class="headerlink" title="如何避免创建大量小文件?"></a>如何避免创建大量小文件?</h3><p>Hudi 的一个关键设计决策是避免创建小文件并始终写入适当大小的文件.<br>有两种方法可以避免在 Hudi 中创建大量小文件,它们都有不同的取舍:<br>1)在摄取期间自动调整小文件大小:此解决方案以摄取/写入时间为代价来保持查询始终高效.<br>编写非常小的文件然后将它们拼接在一起的常用方法只能解决小文件带来的系统可伸缩性问题,并且无论如何都会通过向它们公开小文件来降低查询速度.</p>
+<p>Hudi 能够在执行upsert/insert操作时保持配置的目标文件大小.<br>(注意:bulk_insert操作不提供此功能,旨在更简单地替代 <code>spark.write.parquet</code> )</p>
+<p>对于copy-on-write,这就像配置maximum size for a base/parquet file(<code>hoodie.parquet.max.file.size</code>)和soft limit(<code>hoodie.parquet.small.file.limit</code>)应被视为小文件的一样简单.<br>对于 Hudi 表的初始引导,调整记录大小估计对于确保将足够的记录打包到 parquet 文件中也很重要.<br>对于后续写入,Hudi 自动使用基于先前提交的平均记录大小.<br>Hudi 将尝试在写入时向小文件添加足够的记录,以使其达到配置的最大限制.<br>例如,当<code>compactionSmallFileSize=100MB</code>/<code>limitFileSize=120MB</code> 时,Hudi 将挑选所有小于100MB 的文件并尝试将它们增加到120MB.</p>
+<p>对于merge-on-read,需要设置的配置很少.<br>MergeOnRead 对于不同的 INDEX 选项的工作方式不同.</p>
+<ol>
+<li><code>canIndexLogFiles = true</code>的索引:新数据的插入直接进入日志文件.<br>在这种情况下,您可以配置最大日志大小(<code>hoodie.logfile.max.size</code>)和一个表示当数据从 avro 移动到 parquet 文件时大小减小的因子(<code>hoodie.logfile.to.parquet.compression.ratio</code>).</li>
+<li>带有<code>canIndexLogFiles = false</code>的索引:新数据的插入仅用于 parquet 文件.<br>在这种情况下,适用与上述 COPY_ON_WRITE 情况相同的配置.</li>
+</ol>
+<p>注意:在任何一种情况下,只有当特定文件片没有 PENDING 压缩或关联的日志文件时,小文件才会自动调整大小.<br>例如,对于案例 1:如果您有一个日志文件,并且计划进行压缩 C1 将该日志文件转换为 Parquet,则无法再向该日志文件中插入任何内容.<br>对于案例 2:如果您有一个 parquet 文件并且更新最终创建了关联的 delta 日志文件,则不能再有插入到该 parquet 文件中.<br>只有在执行了压缩并且没有与基本 parquet 文件关联的日志文件之后,才能将新插入发送到自动调整该 parquet 文件的大小.</p>
+<p>2)集群:这是 Hudi 中的一个功能,可以将小文件同步或异步分组为较大的文件.<br>由于自动调整小文件大小的第一个解决方案在摄取速度上进行了权衡(因为小文件在摄取期间调整大小),如果您的用例对摄取延迟非常敏感,您不想在摄取速度上妥协,这可能最终创建了很多小文件,集群来救援.<br>可以通过摄取作业安排集群,异步作业可以在后台将小文件拼接在一起以生成更大的文件.<br>请注意,在此期间,摄取可以继续同时运行.<br><a target="_blank" rel="noopener" href="https://hudi.apache.org/blog/2021/01/27/hudi-clustering-intro/">https://hudi.apache.org/blog/2021/01/27/hudi-clustering-intro/</a></p>
+<p>请注意,Hudi 总是在磁盘上创建不可变文件.<br>为了能够进行自动调整大小或集群,Hudi 将始终创建较小文件的更新版本,从而产生同一文件的 2 个版本.<br>清洁服务稍后将启动并删除旧版本的小文件并保留最新的小文件.</p>
+<h3 id="为什么即使在设置-39-hoodie-cleaner-commits-retained-39-1-之后-Hudi-仍至少保留一个先前的提交"><a href="#为什么即使在设置-39-hoodie-cleaner-commits-retained-39-1-之后-Hudi-仍至少保留一个先前的提交" class="headerlink" title="为什么即使在设置 &#39;hoodie.cleaner.commits.retained&#39;: 1 之后,Hudi 仍至少保留一个先前的提交?"></a>为什么即使在设置 <code>&#39;hoodie.cleaner.commits.retained&#39;: 1</code> 之后,Hudi 仍至少保留一个先前的提交?</h3><p>Hudi 以内联或异步模式(0.6.0 及更高版本)写入数据时运行更清洁以删除旧文件版本.<br>Hudi Cleaner 在清理旧文件版本时至少保留一个先前的提交.<br>这是为了防止在读取最新文件版本的同时运行的查询突然发现这些文件因为添加了新文件版本而被清理程序删除.<br>换句话说,为了确保读者的快照隔离,需要至少保留一个先前的提交.</p>
+<h3 id="如何使用-DeltaStreamer-或-Spark-DataSource-API-写入非分区-Hudi-数据集"><a href="#如何使用-DeltaStreamer-或-Spark-DataSource-API-写入非分区-Hudi-数据集" class="headerlink" title="如何使用 DeltaStreamer 或 Spark DataSource API 写入非分区 Hudi 数据集?"></a>如何使用 DeltaStreamer 或 Spark DataSource API 写入非分区 Hudi 数据集?</h3><p>Hudi 支持写入非分区数据集.<br>要写入未分区的 Hudi 数据集并执行配置单元表同步,您需要在传递的属性中设置以下配置:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hoodie.datasource.write.keygenerator.class&#x3D;org.apache.hudi.keygen.NonpartitionedKeyGenerator</span><br><span class="line">hoodie.datasource.hive_sync.partition_extractor_class&#x3D;org.apache.hudi.hive.NonPartitionedExtractor</span><br></pre></td></tr></table></figure>
+
+<h3 id="为什么我们必须设置-2-种不同的方式来配置-Spark-以与-Hudi-一起使用"><a href="#为什么我们必须设置-2-种不同的方式来配置-Spark-以与-Hudi-一起使用" class="headerlink" title="为什么我们必须设置 2 种不同的方式来配置 Spark 以与 Hudi 一起使用?"></a>为什么我们必须设置 2 种不同的方式来配置 Spark 以与 Hudi 一起使用?</h3><p>非 Hive 引擎倾向于自己列出 DFS 来查询数据集.<br>例如,Spark 开始直接从文件系统(HDFS 或 S3)读取路径.</p>
+<p>从 Spark 调用如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">org.apache.spark.rdd.NewHadoopRDD.getPartitions</span><br><span class="line">org.apache.parquet.hadoop.ParquetInputFormat.getSplits</span><br><span class="line">org.apache.hadoop.mapreduce.lib.input.FileInputFormat.getSplits</span><br></pre></td></tr></table></figure>
+
+<p>如果不了解 Hudi 的文件布局,引擎只会简单地读取所有 parquet 文件并显示其中的数据,结果会产生大量重复.<br>概括地说,有两种方法可以配置查询引擎以正确读取 Hudi 数据集:<br>1)让他们调用方法<code>HoodieParquetInputFormat#getSplits</code>和<code>HoodieParquetInputFormat#getRecordReader</code></p>
+<ol>
+<li>Hive 本身就是这样做的,因为 InputFormat 是 Hive 中插入新表格格式的抽象.<br>HoodieParquetInputFormat 扩展了 MapredParquetInputFormat,它只是 hive 的输入格式,我们将 Hudi 表注册到由这些输入格式支持的 Hive 元存储.</li>
+<li>Presto 还回退到在看到<code>UseFileSplitsFromInputFormat</code>注释时调用输入格式,仅获取拆分,然后继续使用自己的优化/矢量化 parquet 阅读器来查询 Copy-on-Write 表</li>
+<li>可以使用 <code>--conf spark.sql.hive.convertMetastoreParquet=false</code> 强制 Spark 回退到 HoodieParquetInputFormat 类</li>
+</ol>
+<p>2)让引擎调用路径过滤器或其他方式直接调用Hudi类过滤DFS上的文件,挑选出最新的文件分片</p>
+<ol>
+<li>尽管我们可以强制 Spark 回退到使用 InputFormat 类,但这样做可能会失去使用 Spark 优化的 parquet 读取器路径的能力.</li>
+<li>为了保持原生 parquet 读取性能的优势,我们将其设置 HoodieROTablePathFilter为路径过滤器,在 Spark Hadoop 配置中明确设置.<br>文件中有逻辑:确保 Hoodie 相关文件的文件夹(路径)或文件始终确保最新文件切片被选中.<br>这会过滤掉重复条目并显示每条记录的最新条目.</li>
+</ol>
+<h3 id="我有一个现有的数据集并想使用该数据的一部分来评估-Hudi"><a href="#我有一个现有的数据集并想使用该数据的一部分来评估-Hudi" class="headerlink" title="我有一个现有的数据集并想使用该数据的一部分来评估 Hudi ?"></a>我有一个现有的数据集并想使用该数据的一部分来评估 Hudi ?</h3><p>可以将该数据的一部分批量导入新的 hudi 表.<br>例如,如果您想尝试一个月的数据.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">spark.read.parquet(<span class="string">&quot;your_data_set/path/to/month&quot;</span>)</span><br><span class="line">     .write.format(<span class="string">&quot;org.apache.hudi&quot;</span>)</span><br><span class="line">     .option(<span class="string">&quot;hoodie.datasource.write.operation&quot;</span>, <span class="string">&quot;bulk_insert&quot;</span>)</span><br><span class="line">     .option(<span class="string">&quot;hoodie.datasource.write.storage.type&quot;</span>, <span class="string">&quot;storage_type&quot;</span>) <span class="comment">// COPY_ON_WRITE or MERGE_ON_READ</span></span><br><span class="line">     .option(<span class="type">RECORDKEY_FIELD_OPT_KEY</span>, <span class="string">&quot;&lt;your key&gt;&quot;</span>).</span><br><span class="line">     .option(<span class="type">PARTITIONPATH_FIELD_OPT_KEY</span>, <span class="string">&quot;&lt;your_partition&gt;&quot;</span>)</span><br><span class="line">     ...</span><br><span class="line">     .mode(<span class="type">SaveMode</span>.<span class="type">Append</span>)</span><br><span class="line">     .save(basePath);</span><br></pre></td></tr></table></figure>
+
+<p>获得初始副本后,您可以通过每轮选择一些数据样本来简单地对其运行 upsert 操作.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">spark.read.parquet(<span class="string">&quot;your_data_set/path/to/month&quot;</span>).limit(n) <span class="comment">// Limit n records</span></span><br><span class="line">     .write.format(<span class="string">&quot;org.apache.hudi&quot;</span>)</span><br><span class="line">     .option(<span class="string">&quot;hoodie.datasource.write.operation&quot;</span>, <span class="string">&quot;upsert&quot;</span>)</span><br><span class="line">     .option(<span class="type">RECORDKEY_FIELD_OPT_KEY</span>, <span class="string">&quot;&lt;your key&gt;&quot;</span>).</span><br><span class="line">     .option(<span class="type">PARTITIONPATH_FIELD_OPT_KEY</span>, <span class="string">&quot;&lt;your_partition&gt;&quot;</span>)</span><br><span class="line">     ...</span><br><span class="line">     .mode(<span class="type">SaveMode</span>.<span class="type">Append</span>)</span><br><span class="line">     .save(basePath);</span><br></pre></td></tr></table></figure>
+
+<p>对于读取表上的合并,您可能还想尝试调度和运行压缩作业.<br>您可以使用 org.apache.hudi.utilities.HoodieCompactor 上的 spark submit 或使用HUDI CLI直接运行压缩.</p>
+<h3 id="如果我将文件版本保持在-1-使用此配置-我可以在写入失败时回滚-到最后一次提交-吗"><a href="#如果我将文件版本保持在-1-使用此配置-我可以在写入失败时回滚-到最后一次提交-吗" class="headerlink" title="如果我将文件版本保持在 1,使用此配置,我可以在写入失败时回滚(到最后一次提交)吗?"></a>如果我将文件版本保持在 1,使用此配置,我可以在写入失败时回滚(到最后一次提交)吗?</h3><p>是的,提交发生在清理之前.<br>任何失败的提交都不会造成任何副作用,Hudi 将保证快照隔离.</p>
+<h3 id="为什么partition字段除了partition-path之外还要存储在parquet文件中"><a href="#为什么partition字段除了partition-path之外还要存储在parquet文件中" class="headerlink" title="为什么partition字段除了partition path之外还要存储在parquet文件中?"></a>为什么partition字段除了partition path之外还要存储在parquet文件中?</h3><p>Hudi 支持可自定义的分区值,这些值可以是另一个字段的派生值.<br>此外,仅将分区值存储为字段的一部分会导致在各种查询引擎查询时丢失类型信息.</p>
+<h3 id="我看到很多存档文件-如何控制生成的归档提交文件的数量"><a href="#我看到很多存档文件-如何控制生成的归档提交文件的数量" class="headerlink" title="我看到很多存档文件.如何控制生成的归档提交文件的数量?"></a>我看到很多存档文件.如何控制生成的归档提交文件的数量?</h3><p>请注意,在不支持日志追加操作的云存储中,Hudi 被迫创建新的归档文件来归档旧的元数据操作.<br>您可以继续增加 <code>hoodie.commits.archival.batch</code> 以增加每个存档文件存档的提交数.<br>此外,您可以增加 2 个水印配置之间的差异:<code>hoodie.keep.max.commits</code>(默认:30)和 <code>hoodie.keep.min.commits</code>(默认:20).<br>这样,您可以减少创建的存档文件数量,同时增加每个存档文件存档的元数据数量.<br>请注意,在 0.7.0 发布后,我们将添加整合的 Hudi 元数据(RFC-15),后续工作将涉及重新组织存档元数据,以便我们可以定期压缩以控制这些存档文件的文件大小.</p>
+<h3 id="如何配置Bloom过滤器-使用Bloom-Global-Bloom索引时"><a href="#如何配置Bloom过滤器-使用Bloom-Global-Bloom索引时" class="headerlink" title="如何配置Bloom过滤器(使用Bloom/Global_Bloom索引时) ?"></a>如何配置Bloom过滤器(使用Bloom/Global_Bloom索引时) ?</h3><p>布隆过滤器用于布隆索引中以查找写入路径中记录键的位置.<br>布隆过滤器仅在索引类型选择为&quot;BLOOM&quot;或&quot;GLOBAL_BLOOM&quot;时使用.<br>Hudi 几乎没有可供用户用来调整布隆过滤器的配置旋钮.</p>
+<p>在高层次上,hudi 有两种类型的blooms:Simple/Dynamic.<br>1)Simple,顾名思义,就是简单.大小是基于少量配置静态分配的.<br><code>hoodie.bloom.index.filter.type: SIMPLE</code><br><code>hoodie.index.bloom.num_entries</code>指每个布隆过滤器的条目总数,指的是一个文件切片.<br>默认值为 60000.</p>
+<p><code>hoodie.index.bloom.fpp</code>指布隆过滤器的误报概率.<br>默认值:1*10^-9.</p>
+<p>布隆过滤器的大小取决于这两个值.<br>这是静态分配的,这里是确定绽放大小的公式.<br>直到添加到bloom中的条目总数在配置hoodie.index.bloom.num_entries值范围内,fpp才会被接受.<br>即默认值为 60k 和 1*10^-9,布隆过滤器序列化大小 = 430kb.<br>但是,如果添加更多条目,则误报概率将不予考虑.<br>如果添加的条目数超过配置的值,则可能会返回更多误报.<br>因此,用户应该为 num_entries 和 fpp 设置正确的值.</p>
+<p>Hudi 建议拥有大约 100 到 120 mb 大小的文件以获得更好的查询性能.<br>因此,根据记录大小,可以确定一个数据文件可以容纳多少条记录.</p>
+<p>假设您的数据文件最大大小为 128Mb,默认平均记录大小为 1024 字节.<br>因此,大致相当于每个数据文件有 130k 个条目.<br>对于此配置,您应该将 num_entries 设置为 ~130k.</p>
+<p>2)Dynamic bloom filter:<br><code>hoodie.bloom.index.filter.type: DYNAMIC</code><br>这是布隆过滤器的高级版本,它随着条目数量的增长而动态增长.<br>因此,用户应该设置两个值 wrt num_entries.<br><code>hoodie.index.bloom.num_entries</code>将确定bloom的起始大小.<br><code>hoodie.bloom.index.filter.dynamic.max.entries</code>将确定bloom可以长到的最大尺寸.<br>并且 fpp 需要设置类似于&quot;Simple&quot;布隆过滤器.<br>Bloom 大小将根据第一个配置<code>hoodie.index.bloom.num_entries</code>进行分配.<br>一旦条目数达到此值,bloom 将动态增长其大小到 2 倍.<br>这将一直持续到大小达到最大值<code>hoodie.bloom.index.filter.dynamic.max.entries</code>.<br>直到大小达到这个最大值,fpp 才会被接受.<br>如果添加的条目超过最大值,则 fpp 可能不被接受.</p>
+<h3 id="如何调整-Hudi-作业的-shuffle-并行性"><a href="#如何调整-Hudi-作业的-shuffle-并行性" class="headerlink" title="如何调整 Hudi 作业的 shuffle 并行性?"></a>如何调整 Hudi 作业的 shuffle 并行性?</h3><p>首先,让我们了解并行性一词在 Hudi 作业中的含义.<br>对于使用 Spark 的任何 Hudi 作业,并行度等于应为 DAG 中的特定阶段生成的 spark 分区的数量.<br>在 spark 中,每个 spark 分区都映射到一个可以在 executor 上执行的 spark 任务.<br>通常,对于 spark 应用程序,以下层次结构适用<br>( Spark Application → N Spark Jobs → M Spark Stages → T Spark Tasks ) on ( E executors with C cores )</p>
+<p>可以为 spark 应用程序指定 E 个执行器来运行 spark 应用程序.<br>每个 executor 可能拥有 1 个或多个 spark 核心.<br>每个 Spark 任务都需要至少 1 个内核才能执行,因此想象在 Z 时间内要完成 T 个任务,具体取决于 C 内核.<br>C越高,Z越小.</p>
+<p>有了这种理解,如果您希望 DAG 阶段运行得更快,请将T 设置为接近或高于 C.<br>此外,这种并行性最终控制了您使用基于 Hudi 的作业编写的输出文件的数量.<br>让我们了解可用的不同类型的旋钮:</p>
+<p>BulkInsertParallelism → 这用于控制 Hudi 作业创建输出文件的并行度.<br>这种并行度越高,创建的任务数量就越多,因此最终将创建更多数量的输出文件.<br>即使您将parquet-max-file-size定义为一个很高的值,如果您将并行度设置得非常高,则无法满足最大文件大小,因为 spark 任务正在处理更少量的数据.</p>
+<p>Upsert / Insert Parallelism → 这用于控制在将数据读取到作业时读取过程的速度.</p>
+<h3 id="INT96-INT64-和时间戳兼容性"><a href="#INT96-INT64-和时间戳兼容性" class="headerlink" title="INT96/INT64 和时间戳兼容性"></a>INT96/INT64 和时间戳兼容性</h3><p><a target="_blank" rel="noopener" href="https://hudi.apache.org/docs/configurations#hoodiedatasourcehive_syncsupport_timestamp">https://hudi.apache.org/docs/configurations#hoodiedatasourcehive_syncsupport_timestamp</a></p>
+<h3 id="如何将现有的-COW-表转换为-MOR"><a href="#如何将现有的-COW-表转换为-MOR" class="headerlink" title="如何将现有的 COW 表转换为 MOR ?"></a>如何将现有的 COW 表转换为 MOR ?</h3><p>您需要做的就是编辑 hoodie.properties(位于 <code>hudi_table_path/.hoodie/hoodie.properties</code>)中的表类型属性.<br>但是手动更改它会导致校验和错误.<br>所以,我们必须通过 hudi-cli:</p>
+<ol>
+<li>将现有的 hoodie.properties 复制到新位置.</li>
+<li>将表类型编辑为 <code>MERGE_ON_READ</code></li>
+<li>启动 hudi-cli<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">connect --path hudi_table_path</span><br><span class="line">repair overwrite-hoodie-props --new-props-file new_hoodie.properties</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h3 id="当我的-Hudi-表中发生新的提交时-我可以得到通知吗"><a href="#当我的-Hudi-表中发生新的提交时-我可以得到通知吗" class="headerlink" title="当我的 Hudi 表中发生新的提交时,我可以得到通知吗?"></a>当我的 Hudi 表中发生新的提交时,我可以得到通知吗?</h3><p>是的.<br>Hudi 提供了发布关于写入提交的回调通知的能力.<br>您可以使用 http 挂钩或选择通过 Kafka/pulsar 主题获得通知,或插入您自己的实现以获取通知.</p>
+<h3 id="如何在-Hudi-中验证数据源架构协调"><a href="#如何在-Hudi-中验证数据源架构协调" class="headerlink" title="如何在 Hudi 中验证数据源架构协调?"></a>如何在 Hudi 中验证数据源架构协调?</h3><p>使用 Hudi,您可以协调架构,这意味着您可以在传入数据上应用目标表架构,因此如果批处理中缺少字段,它将被注入空值.<br>您可以使用<code>hoodie.datasource.write.reconcile.schema</code>配置启用模式协调.</p>
+<p>模式协调如何与 Spark 一起工作的示例:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">hudi_options &#x3D; &#123;</span><br><span class="line">    &#39;hoodie.table.name&#39;: &quot;test_recon1&quot;,</span><br><span class="line">    &#39;hoodie.datasource.write.recordkey.field&#39;: &#39;uuid&#39;,</span><br><span class="line">    &#39;hoodie.datasource.write.table.name&#39;: &quot;test_recon1&quot;,</span><br><span class="line">    &#39;hoodie.datasource.write.precombine.field&#39;: &#39;ts&#39;,</span><br><span class="line">    &#39;hoodie.upsert.shuffle.parallelism&#39;: 2,</span><br><span class="line">    &#39;hoodie.insert.shuffle.parallelism&#39;: 2,</span><br><span class="line">    &quot;hoodie.datasource.write.hive_style_partitioning&quot;:&quot;true&quot;,</span><br><span class="line">    &quot;hoodie.datasource.write.reconcile.schema&quot;: &quot;true&quot;,</span><br><span class="line">    &quot;hoodie.datasource.hive_sync.jdbcurl&quot;:&quot;thrift:&#x2F;&#x2F;localhost:9083&quot;,</span><br><span class="line">    &quot;hoodie.datasource.hive_sync.database&quot;:&quot;hudi&quot;,</span><br><span class="line">    &quot;hoodie.datasource.hive_sync.table&quot;:&quot;test_recon1&quot;,</span><br><span class="line">    &quot;hoodie.datasource.hive_sync.enable&quot;:&quot;true&quot;,</span><br><span class="line">    &quot;hoodie.datasource.hive_sync.mode&quot;: &quot;hms&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">some_json &#x3D; &#39;&#123;&quot;uuid&quot;:1,&quot;ts&quot;:1,&quot;Url&quot;:&quot;hudi.apache.com&quot;&#125;&#39;</span><br><span class="line">df &#x3D; spark.read.json(sc.parallelize([some_json]))</span><br><span class="line"></span><br><span class="line">df.write.format(&quot;hudi&quot;).mode(&quot;append&quot;).options(**hudi_options).save(base_path)</span><br><span class="line"></span><br><span class="line">spark.sql(&quot;select * from hudi.test_recon1;&quot;).show()</span><br><span class="line"></span><br><span class="line">missing_field_json &#x3D; &#39;&#123;&quot;uuid&quot;:2,&quot;ts&quot;:1&#125;&#39;</span><br><span class="line">df &#x3D; spark.read.json(sc.parallelize([missing_field_json]))</span><br><span class="line"></span><br><span class="line">df.write.format(&quot;hudi&quot;).mode(&quot;append&quot;).options(**hudi_options).save(base_path)</span><br><span class="line"></span><br><span class="line">spark.sql(&quot;select * from hudi.test_recon1;&quot;).show()</span><br></pre></td></tr></table></figure>
+
+<h3 id="看到相同记录键值的两条不同记录-每个记录键具有不同的时间戳格式-这怎么可能"><a href="#看到相同记录键值的两条不同记录-每个记录键具有不同的时间戳格式-这怎么可能" class="headerlink" title="看到相同记录键值的两条不同记录,每个记录键具有不同的时间戳格式.这怎么可能?"></a>看到相同记录键值的两条不同记录,每个记录键具有不同的时间戳格式.这怎么可能?</h3><p>这是为 bulk_insert 操作启用行写入器的一个已知问题.<br>当您执行 bulk_insert 后跟另一个写入操作(例如 upsert/insert)时,可能会专门针对时间戳字段观察到这种情况.<br>例如,bulk_insert 可能会2016-12-29 09:54:00.0为记录键生成时间戳,而非 bulk_insert 写入操作可能会为记录键生成一个长值 1483023240000000,从而创建两个不同的记录.<br>为了解决这个问题,从 0.10.1 开始,引入了一个新的配置<code>hoodie.datasource.write.keygenerator.consistent.logical.timestamp.enabled </code>以带来一致性,无论是否启用了行写入.<br>但是,为了向后兼容并且不破坏现有管道,此配置默认设置为 false 并且必须显式启用.</p>
+<h3 id="我可以从一种索引类型切换到另一种而无需重写整个表吗"><a href="#我可以从一种索引类型切换到另一种而无需重写整个表吗" class="headerlink" title="我可以从一种索引类型切换到另一种而无需重写整个表吗?"></a>我可以从一种索引类型切换到另一种而无需重写整个表吗?</h3><p>只要不是全局的,在 Bloom 索引和 Simple 索引之间切换应该是可以的.<br>从全局移动到非全局(反之亦然)可能行不通.<br>在 Hbase(全局索引)和常规bloom 之间切换也可能不起作用.</p>
+<h3 id="将-Hudi-与-HDFS-上的元数据表一起使用时-如何解决-HBase-中的-NoSuchMethodError"><a href="#将-Hudi-与-HDFS-上的元数据表一起使用时-如何解决-HBase-中的-NoSuchMethodError" class="headerlink" title="将 Hudi 与 HDFS 上的元数据表一起使用时,如何解决 HBase 中的 NoSuchMethodError ?"></a>将 Hudi 与 HDFS 上的元数据表一起使用时,如何解决 HBase 中的 NoSuchMethodError ?</h3><p>从 0.11.0 版本开始,我们将 HBase 版本升级到了 2.4.9,它是基于 Hadoop 2.x 发布的.<br>Hudi 的元数据表使用 HFile 作为基础文件格式,依赖 HBase 库.<br>在使用 Hadoop 3.x 在 HDFS 上启用 Hudi 表中的元数据表时,由于 Hadoop 2.x 和 3.x 之间的兼容性问题,可能会引发 NoSuchMethodError.<br>为了解决这个问题,这里是解决方法:</p>
+<ol>
+<li>从 下载 HBase 源代码<a target="_blank" rel="noopener" href="https://github.com/apache/hbase">https://github.com/apache/hbase</a>.</li>
+<li>切换到带有标签的2.4.9版本的源代码rel/2.4.9:<br>git checkout rel/2.4.9</li>
+<li>用Hadoop 3版本打包新版本的HBase 2.4.9:<br>mvn clean install -Denforcer.skip -DskipTests -Dhadoop.profile=3.0 -Psite-install-step</li>
+<li>再次打包Hudi .</li>
+</ol>
+<h3 id="如何解决-RuntimeException-说的-hbase-default-xml-file-seems-to-be-for-an-older-version-of-HBase"><a href="#如何解决-RuntimeException-说的-hbase-default-xml-file-seems-to-be-for-an-older-version-of-HBase" class="headerlink" title="如何解决 RuntimeException 说的?hbase-default.xml file seems to be for an older version of HBase"></a>如何解决 RuntimeException 说的?hbase-default.xml file seems to be for an older version of HBase</h3><p>这通常发生在类路径中存在运行时环境提供的其他 HBase 库时,例如 Cloudera CDP 堆栈,从而导致冲突.<br>要绕过 RuntimeException,您可以在配置文件hbase-site.xml中<code>hbase.defaults.for.version.skip</code>设置为true,覆盖 Cloudera 管理器中的配置.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hudi/" rel="tag"># hudi</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/10/12/clickhouse%E5%87%86%E5%AE%9E%E6%97%B6%E6%95%B0%E4%BB%93%E8%83%BD%E5%8A%9B%E6%8E%A2%E7%B4%A2/" rel="prev" title="clickhouse准实时数仓能力探索">
+                  <i class="fa fa-chevron-left"></i> clickhouse准实时数仓能力探索
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/10/14/hudi%E9%9B%86%E6%88%90spark/" rel="next" title="hudi集成spark">
+                  hudi集成spark <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

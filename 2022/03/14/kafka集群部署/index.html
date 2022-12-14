@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="kafka版本为kafka_2.11-1.0.0.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kafka集群部署">
+<meta property="og:url" content="https://maoeryu.github.io/2022/03/14/kafka%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="kafka版本为kafka_2.11-1.0.0.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-03-13T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-08-25T03:20:56.385Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="kafka">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/03/14/kafka%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>kafka集群部署 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E8%A7%84%E5%88%92"><span class="nav-number">1.</span> <span class="nav-text">环境规划</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F"><span class="nav-number">1.1.</span> <span class="nav-text">操作系统</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A3%81%E7%9B%98"><span class="nav-number">1.2.</span> <span class="nav-text">磁盘</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A3%81%E7%9B%98%E5%AE%B9%E9%87%8F"><span class="nav-number">1.3.</span> <span class="nav-text">磁盘容量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98"><span class="nav-number">1.4.</span> <span class="nav-text">内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cpu"><span class="nav-number">1.5.</span> <span class="nav-text">cpu</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%A6%E5%AE%BD"><span class="nav-number">1.6.</span> <span class="nav-text">带宽</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E7%A4%BA%E4%BE%8B"><span class="nav-number">1.7.</span> <span class="nav-text">配置示例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%8A%82%E7%82%B9%E9%83%A8%E7%BD%B2"><span class="nav-number">2.</span> <span class="nav-text">节点部署</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">2.1.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8A%82%E7%82%B9%E9%83%A8%E7%BD%B2-1"><span class="nav-number">2.2.</span> <span class="nav-text">节点部署</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8kafka"><span class="nav-number">2.3.</span> <span class="nav-text">启动kafka</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95"><span class="nav-number">2.4.</span> <span class="nav-text">测试</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E6%95%B0%E9%85%8D%E7%BD%AE"><span class="nav-number">3.</span> <span class="nav-text">参数配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#broker"><span class="nav-number">3.1.</span> <span class="nav-text">broker</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#topic"><span class="nav-number">3.2.</span> <span class="nav-text">topic</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#gc"><span class="nav-number">3.3.</span> <span class="nav-text">gc</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#jvm"><span class="nav-number">3.4.</span> <span class="nav-text">jvm</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#os"><span class="nav-number">3.5.</span> <span class="nav-text">os</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/03/14/kafka%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          kafka集群部署
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-03-14 00:00:00" itemprop="dateCreated datePublished" datetime="2022-03-14T00:00:00+08:00">2022-03-14</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-08-25 11:20:56" itemprop="dateModified" datetime="2022-08-25T11:20:56+08:00">2022-08-25</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>kafka版本为kafka_2.11-1.0.0.</p>
+<span id="more"></span>
+
+<h2 id="环境规划"><a href="#环境规划" class="headerlink" title="环境规划"></a>环境规划</h2><h3 id="操作系统"><a href="#操作系统" class="headerlink" title="操作系统"></a>操作系统</h3><h3 id="磁盘"><a href="#磁盘" class="headerlink" title="磁盘"></a>磁盘</h3><p>Kafka是顺序写磁盘的,而磁盘顺序I/O的性能,即使机械硬盘也是不弱的.<br>顺序I/O不需要频繁地移动磁头,因而节省了耗时的寻道时间,即机械硬盘完全可以胜任kafka存储的任务,ssd更好.</p>
+<p>kafka通过副本机制提供冗余和高可靠性,以及通过分散到各个节点的领导者选举机制来实现负载均衡,RAID 10(1+0)的优势不明显.</p>
+<p>推荐为每个broker都配置多个日志路径,每个路径都独立挂载在不同的磁盘上,这使得多块物理磁盘磁头同时执行物理I/O写操作,可以极大地加速Kafka消息生产的速度.</p>
+<h3 id="磁盘容量"><a href="#磁盘容量" class="headerlink" title="磁盘容量"></a>磁盘容量</h3><p>Kafka的每条消息都保存在实际的物理磁盘中,这些消息默认会被broker保存一段时间之后清除,这段时间是可以配置的,<br>因此可以根据自身实际业务场景和存储需求来大致计算线上环境所需的磁盘容量.</p>
+<blockquote>
+<p>假设在业务场景中,clients每天会产生1亿条消息,每条消息保存两份并保留一周的时间,平均一条消息的大小是1KB,那么需要为Kafka规划<br>多少磁盘空间呢?</p>
+</blockquote>
+<p>如果每天1亿条消息,那么每天产生的消息会占用1亿× 2 ×1KB / 1000 / 1000 = 200GB的磁盘空间,最好再额外预留10%的磁盘空间用于其他数据文件(比如索引文件等)的存储,因此在这种使用场景下每天新发送的消息将占用210GB左右的磁盘空间.<br>因为还要保存一周的数据,所以整体的磁盘容量规划是210 × 7 ≈1.5TB.<br>当然,这是无压缩的情况,如果在clients启用了消息压缩,可以预估一个平均的压缩比(比如0.5),那么整体的磁盘容量就是0.75TB.</p>
+<blockquote>
+<p>对于磁盘容量的规划和以下多个因素有关:<br> 新增消息数<br> 消息留存时间<br> 平均消息大小<br> 副本数<br> 是否启用压缩</p>
+</blockquote>
+<h3 id="内存"><a href="#内存" class="headerlink" title="内存"></a>内存</h3><p>Kafka大量依靠文件系统和磁盘来保存消息,但其实它还会对消息进行缓存,而这个消息缓存的地方就是内存,具体来说是操作系统的页缓存(page cache).<br>Kafka虽然会持久化每条消息,但其实这个工作都是底层的文件系统来完成的,Kafka仅仅将消息写入pagecache而已,之后将消息&quot;冲刷&quot;到磁盘的任务完全交由操作系统来完成.</p>
+<p>另外consumer在读取消息时也会首先尝试从该区域中查找,如果直接命中则完全不用执行耗时的物理 I/O 操作,从而提升了 consumer 的整体性能.不论是缓冲已发送消息还是待读取消息,操作系统都要先开辟一块内存区域用于存放接收的 Kafka消息,因此这块内存区域大小的设置对于Kafka的性能就显得尤为关键了.</p>
+<p>Kafka对于Java堆内存的使用反而不是很多,因为 Kafka中的消息通常都属于&quot;朝生夕灭&quot;的对象实例,可以很快地垃圾回收(GC).<br>一般情况下,broker所需的堆内存都不会超过6GB.所以对于一台16GB内存的机器而言,文件系统page cache的大小甚至可以达到10～14GB.<br>除以上这些考量之外,还需要把page cache大小与实际线上环境中设置的日志段大小相比较.<br>假设单个日志段文件大小设置为10GB,那么至少应该给予page cache 10GB以上的内存空间.<br>这样,待消费的消息有很大概率会保存在页缓存中,故consumer能够直接命中页缓存而无须执行缓慢的磁盘I/O读操作.</p>
+<blockquote>
+<p>内存规划:<br>尽量分配更多的内存给操作系统的page cache.<br>不要为broker设置过大的堆内存,最好不超过6GB.<br>page cache大小至少要大于一个日志段的大小.</p>
+</blockquote>
+<h3 id="cpu"><a href="#cpu" class="headerlink" title="cpu"></a>cpu</h3><p>Kafka不属于计算密集型(CPU-bound)的系统,追求多核而非高时钟频率.<br>Kafkabroker通常会创建几十个后台线程,再加上多个垃圾回收线程,多核系统显然是最佳的配置选择(使用多核系统,CPU核数最好大于8).</p>
+<h3 id="带宽"><a href="#带宽" class="headerlink" title="带宽"></a>带宽</h3><p>对于Kafka这种在网络间传输大量数据的分布式数据管道而言,带宽资源至关重要,并且特别容易成为系统的瓶颈.</p>
+<h3 id="配置示例"><a href="#配置示例" class="headerlink" title="配置示例"></a>配置示例</h3><p>CPU 24核.<br>内存32GB.<br>磁盘1TB 7200转SAS盘两块.<br>带宽1Gb/s.<br>ulimit-n 1000000.<br>Socket Buffer至少64KB,适用于跨机房网络传输.</p>
+<h2 id="节点部署"><a href="#节点部署" class="headerlink" title="节点部署"></a>节点部署</h2><h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">broker.id&#x3D;0</span><br><span class="line">#delete.topic.enable&#x3D;true</span><br><span class="line">#listeners&#x3D;PLAINTEXT:&#x2F;&#x2F;kafka1:9092</span><br><span class="line">#advertised.listeners&#x3D;PLAINTEXT:&#x2F;&#x2F;your.host.name:9092</span><br><span class="line">#listener.security.protocol.map&#x3D;PLAINTEXT:PLAINTEXT,SSL:SSL,SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_SSL:SASL_SSL</span><br><span class="line">num.network.threads&#x3D;3</span><br><span class="line">num.io.threads&#x3D;8</span><br><span class="line">socket.send.buffer.bytes&#x3D;102400</span><br><span class="line">socket.receive.buffer.bytes&#x3D;102400</span><br><span class="line">socket.request.max.bytes&#x3D;104857600</span><br><span class="line"></span><br><span class="line">log.dirs&#x3D;&#x2F;opt&#x2F;kafka&#x2F;logs</span><br><span class="line">num.partitions&#x3D;1</span><br><span class="line">num.recovery.threads.per.data.dir&#x3D;1</span><br><span class="line"></span><br><span class="line">#log.flush.interval.messages&#x3D;10000</span><br><span class="line">#log.flush.interval.ms&#x3D;1000</span><br><span class="line"></span><br><span class="line">log.retention.hours&#x3D;168</span><br><span class="line">#log.retention.bytes&#x3D;1073741824</span><br><span class="line">log.segment.bytes&#x3D;1073741824</span><br><span class="line">log.retention.check.interval.ms&#x3D;300000</span><br><span class="line"></span><br><span class="line">zookeeper.connect&#x3D;localhost:2181</span><br><span class="line">zookeeper.connection.timeout.ms&#x3D;6000</span><br><span class="line"></span><br><span class="line">#可以接收的消息最大尺寸</span><br><span class="line">message.max.bytes&#x3D;10240000</span><br><span class="line"></span><br><span class="line">log.cleaner.enable&#x3D;true</span><br><span class="line">log.cleanup.policy&#x3D;delete</span><br><span class="line"></span><br><span class="line">num.replica.fetchers&#x3D;8</span><br><span class="line">auto.leader.rebalance.enable&#x3D;true</span><br><span class="line">#在网络线程停止读取新请求之前,可以排队等待I&#x2F;O线程处理的最大请求个数</span><br><span class="line">queued.max.requests&#x3D;5000</span><br><span class="line">replica.fetch.max.bytes&#x3D;10240000</span><br><span class="line">controller.socket.timeout.ms&#x3D;30000</span><br><span class="line">controlled.shutdown.enable&#x3D;true</span><br></pre></td></tr></table></figure>
+
+<h3 id="节点部署-1"><a href="#节点部署-1" class="headerlink" title="节点部署"></a>节点部署</h3><p>使用单机器部署多节点.<br>在config目录下创建多份配置文件,server1.properties/server2.properties/server3.properties.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">broker.id&#x3D;0</span><br><span class="line">delete.topic.enable&#x3D;true</span><br><span class="line">listeners&#x3D;PLAINTEXT:&#x2F;&#x2F;kafka1:9092</span><br><span class="line">log.dirs&#x3D;&#x2F;xxx&#x2F;kafka1&#x2F;logs</span><br><span class="line"></span><br><span class="line">zookeeper.connect&#x3D;zk1:2181,zk2:2182,zk3:2183</span><br><span class="line">unclean.leader.election.enable&#x3D;false</span><br><span class="line">zookeeper.connection.timeout.ms&#x3D;6000</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">broker.id&#x3D;1</span><br><span class="line">delete.topic.enable&#x3D;true</span><br><span class="line">listeners&#x3D;PLAINTEXT:&#x2F;&#x2F;kafka2:9093</span><br><span class="line">log.dirs&#x3D;&#x2F;xxx&#x2F;kafka2&#x2F;logs</span><br><span class="line"></span><br><span class="line">zookeeper.connect&#x3D;zk1:2181,zk2:2182,zk3:2183</span><br><span class="line">unclean.leader.election.enable&#x3D;false</span><br><span class="line">zookeeper.connection.timeout.ms&#x3D;6000</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">broker.id&#x3D;2</span><br><span class="line">delete.topic.enable&#x3D;true</span><br><span class="line">listeners&#x3D;PLAINTEXT:&#x2F;&#x2F;kafka3:9094</span><br><span class="line">log.dirs&#x3D;&#x2F;xxx&#x2F;kafka3&#x2F;logs</span><br><span class="line"></span><br><span class="line">zookeeper.connect&#x3D;zk1:2181,zk2:2182,zk3:2183</span><br><span class="line">unclean.leader.election.enable&#x3D;false</span><br><span class="line">zookeeper.connection.timeout.ms&#x3D;6000</span><br></pre></td></tr></table></figure>
+
+<p>3个配置文件中需要每台Kafka服务器指定不同的brokerID,该ID在整个集群中必须是唯一的.<br>而配置listeners时最好使用节点全称域名,尽量不要使用IP地址.<br>配置<code>zookeeper.connect</code>必须同时指定所有的ZooKeeper节点.</p>
+<h3 id="启动kafka"><a href="#启动kafka" class="headerlink" title="启动kafka"></a>启动kafka</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">bin&#x2F;kafka-server-start.sh -daemon config&#x2F;server1.properties</span><br><span class="line">bin&#x2F;kafka-server-start.sh -daemon config&#x2F;server2.properties</span><br><span class="line">bin&#x2F;kafka-server-start.sh -daemon config&#x2F;server3.properties</span><br></pre></td></tr></table></figure>
+
+<p>查看日志,确认kafka broker进程启动成功.<br>kafka进程名为Kafka.</p>
+<p>需要为集群增加更多的Kafka broker节点,只需要配置一份类似的配置文件,然后利用该文件直接运行启动命令即可.</p>
+<h3 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h3><p>topic是否会被真正删除取决于broker端参数<code>delete.topic.enable</code>.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">## 创建topic</span><br><span class="line">&#x2F;usr&#x2F;local&#x2F;kafka&#x2F;bin&#x2F;kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic test</span><br><span class="line">## 验证</span><br><span class="line">&#x2F;usr&#x2F;local&#x2F;kafka&#x2F;bin&#x2F;kafka-topics.sh --zookeeper localhost:2181 --describe --topic test</span><br><span class="line">## 发消息</span><br><span class="line">&#x2F;usr&#x2F;local&#x2F;kafka&#x2F;bin&#x2F;kafka-console-producer.sh --broker-list localhost:9092 --topic test</span><br><span class="line">## 接收消息(新&#x2F;旧命令)</span><br><span class="line">&#x2F;usr&#x2F;local&#x2F;kafka&#x2F;bin&#x2F;kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic test --from-beginning</span><br><span class="line">&#x2F;usr&#x2F;local&#x2F;kafka&#x2F;bin&#x2F;kafka-console-consumer.sh --zookeeper localhost:2181 --topic test --from-beginning</span><br><span class="line"></span><br><span class="line">## 删除主题</span><br><span class="line">kafka-topics.sh --zookeeper localhost:2181 --delete --topic my-topic</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>吞吐量测试<br>kafka-producer-perf-test<br>kafkaconsumer-perf-test</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">bin&#x2F;kafka-producer-perf-test.sh --topic test --num-records 500000 --record-size 200 --throughput -1 --producer-props bootstrap.servers&#x3D;localhost:9092 acks&#x3D;-1</span><br><span class="line">bin&#x2F;kafka-consumer-perf-test.sh --broker-list localhost:9092 --fetch-size 2000 --messages 500000 --topic test</span><br><span class="line">bin&#x2F;kafka-consumer-perf-test.sh --zookeeper localhost:2181 --fetch-size 2000 --messages 500000 --topic test</span><br></pre></td></tr></table></figure>
+
+<h2 id="参数配置"><a href="#参数配置" class="headerlink" title="参数配置"></a>参数配置</h2><h3 id="broker"><a href="#broker" class="headerlink" title="broker"></a>broker</h3><p>broker端参数需要在Kafka目录下的<code>config/server.properties</code>文件中进行设置.<br>当前对于绝大多数的broker端参数而言,Kafka尚不支持动态修改,如果要新增/修改/删除某些broker参数的话,需要重启对应的broker服务器.</p>
+<p><code>broker.id</code><br>Kafka使用唯一的一个整数来标识每个broker,该参数默认是-1.<br>如果不指定,Kafka会自动生成一个唯一值.不管用户指定什么都必须保证该值在Kafka集群中是唯一的,不能与其他 broker冲突.在实际使用中,推荐使用从0开始的数字.序列,如0/1/2...</p>
+<p><code>log.dirs</code><br>该参数指定了Kafka持久化消息的目录.<br>若待保存的消息数量非常多,那么最好确保该文件夹下有充足的磁盘空间.<br>该参数可以设置多个目录,以逗号分隔,比如/home/kafka1,/home/kafka2.<br>在实际使用过程中,指定多个目录的做法通常是被推荐的,因为这样Kafka可以把负载均匀地分配到多个目录下.<br>若用户机器上有N块物理硬盘(并且假设这台机器完全给Kafka使用),那么设置N个目录(须挂载在不同磁盘上的目录)是一个很好的选择.<br>N个磁头可以同时执行写操作,极大地提升了吞吐量.<br>注意,这里的&quot;均匀&quot;是根据目录下的分区数进行比较的,而不是根据实际的磁盘空间.若不设置该参数,Kafka默认使用/tmp/kafka-logs作为消息保存的目录.把消息保存在/tmp目录下,在实际的生产环境中是极其不可取的.</p>
+<p><code>zookeeper.connect</code><br>没有默认值,如果要使用一套ZooKeeper环境管理多套Kafka集群,那么设置该参数的时候就必须指定ZooKeeper的chroot,比如<br>zk1:2181,zk2:2181,zk3:2181/kafka_cluster1.<br>结尾的/kafka_cluster1就是chroot,它是可选的配置,如果不指定则默认使用ZooKeeper的根路径.<br>在实际使用过程中,配置chroot可以起到很好的隔离效果.这样管理Kafka集群将变得更加容易.</p>
+<p><code>listeners</code><br>broker监听器的列表,格式是<code>[协议]://[主机名]:[端口]</code>,<code>[[协议]]://[主机名]:[端口]]</code>.<br>该参数主要用于客户端连接broker使用,可以认为是broker端开放给clients的监听端口.<br>如果不指定主机名,则表示绑定默认网卡.如果主机名是0.0.0.0,则表示绑定所有网卡.Kafka当前支持的协议类型包括PLAINTEXT/SSL及SASL_SSL等.<br>对于新版本的Kafka,推荐只设置listeners一个参数就够了,对于已经过时的两个参数host.name和port,就不用再配置了.<br>对于未启用安全的Kafka集群,使用PLAINTEXT协议足矣.如果启用了安全认证,可以考虑使用SSL或SASL_SSL协议.</p>
+<p><code>advertised.listeners</code><br>和listeners类似,该参数也是用于发布给clients的监听器,不过该参数主要用于IaaS环境,比如云上的机器通常都配有多块网卡(私网网卡和公网网卡).对于这种机器,用户可以设置该参数绑定公网IP供外部clients使用,然后配置上面的listeners来绑定私网 IP供broker间通信使用.当然不设置该参数也是可以的,只是云上的机器很容易出现clients无法获取数据的问题,原因就是listeners绑定<br>的是默认网卡,而默认网卡通常都是绑定私网IP的.在实际使用场景中,对于配有多块网卡的机器而言,这个参数通常都是需要配置的.</p>
+<p><code>unclean.leader.election.enable</code><br>是否开启unclean leader选举.<br>ISR中的所有副本都有资格随时成为新的leader,但若ISR变空而此时leader又宕机了,Kafka应该如何选举新的leader呢?为了不影响Kafka服务,该参数默认值是false,即表明如果发生这种情况,Kafka不允许从剩下存活的非ISR副本中选择一个当leader.因为如果允许,这样做固然可以让Kafka继续提供服务给clients,但会造成消息数据的丢失,而在一般的用户使用场景中,数据不丢失是基本的业务需求,因此设置此参数为false 显得很有必要.</p>
+<p><code>delete.topic.enable</code><br>是否允许Kafka删除topic.默认情况下,Kafka集群允许用户删除topic及其数据.这样当用户发起删除topic操作时,broker端会执行topic删除逻辑.在实际生产环境中我们发现允许Kafka删除topic其实是一个很方便的功能.</p>
+<p><code>log.retention.&#123;hours|minutes|ms&#125;</code><br>这组参数控制了消息数据的留存时间,它们是&quot;三兄弟&quot;.<br>如果同时设置,优先选取ms的设置,minutes次之,hours最后.<br>有了这3个参数,用户可以很方便地在3个时间维度上设置日志的留存时间.<br>默认的留存时间是7天,即Kafka只会保存最近7天的数据,并自动删除7天前的数据.<br>当前较新版本的Kafka会根据消息的时间戳信息进行留存与否的判断.对于没有时间戳的老版本消息格式,Kafka会根据日志文件的最近修改时间(last modified time)进行判断.<br>可以这样说,这组参数定义的是时间维度上的留存策略.实际线上环境中,需要根据用户的业务需求进行设置.保存消息很长时间的业务通常都需要设置一个较大的值.</p>
+<p><code>log.retention.bytes</code><br>如果说上面那组参数定义了时间维度上的留存策略,那么这个参数便定义了空间维度上的留存策略,即它控制着Kafka集群需要为每个消息日志保存多大的数据.对于大小超过该参数的分区日志而言,Kafka会自动清理该分区的过期日志段文件.<br>该参数默认值是-1,表示Kafka永远不会根据消息日志文件总大小来删除日志.<br>和上面的参数一样,生产环境中需要根据实际业务场景设置该参数的值.</p>
+<p><code>min.insync.replicas</code><br>该参数其实是与producer端的acks参数配合使用的.</p>
+<p><code>num.network.threads</code><br>一个非常重要的参数.它控制了一个broker在后台用于处理网络请求的线程数,默认是3.<br>通常情况下,broker启动时会创建多个线程处理来自其他broker和clients发送过来的各种请求.<br>注意,这里的&quot;处理&quot;其实只是负责转发请求,它会将接收到的请求转发到后面的处理线程中.<br>在真实的环境中,用户需要不断地监控<code>NetworkProcessorAvgIdlePercent JMX</code>指标.如果该指标持续低于0.3,建议适当增加该参数的值.</p>
+<p><code>num.io.threads</code><br>这个参数就是控制broker端实际处理网络请求的线程数,默认值是8,即Kafkabroker默认创建8个线程以轮询方式不停地监听转发过来的网络请求并进行实时处理.<br>Kafka同样也为请求处理提供了一个JMX监控指标<code>Request HandlerAvgIdlePercent</code>.<br>如果发现该指标持续低于0.3,则可以考虑适当增加该参数的值.</p>
+<p><code>message.max.bytes</code><br>Kafka broker能够接收的最大消息大小,默认是977KB,还不到1MB,可见是非常小的.<br>在实际使用场景中,突破1MB大小的消息十分常见,因此用户有必要综合考虑Kafka集群可能处理的最大消息尺寸并设置该参数值.</p>
+<h3 id="topic"><a href="#topic" class="headerlink" title="topic"></a>topic</h3><p>topic级别,是指覆盖 broker端全局参数.每个不同的topic都可以设置自己的参数值.</p>
+<p><code>delete.retention.ms</code><br>每个topic可以设置自己的日志留存时间以覆盖全局默认值.</p>
+<p><code>max.message.bytes</code><br>覆盖全局的<code>message.max.bytes</code>,即为每个topic指定不同的最大消息尺寸.</p>
+<p><code>retention.bytes</code><br>覆盖全局的log.retention.bytes,每个topic设置不同的日志留存尺寸.</p>
+<h3 id="gc"><a href="#gc" class="headerlink" title="gc"></a>gc</h3><p>java8使用G1收集器.<br>还需要打开GC日志的监控,并实时确保不会出现&quot;G1HR #StartFullGC&quot;.</p>
+<h3 id="jvm"><a href="#jvm" class="headerlink" title="jvm"></a>jvm</h3><p>Kafka broker主要使用的是堆外内存,即大量使用操作系统的页缓存,因此其实并不需要为JVM分配太多的内存.在实际使用中,通常为broker设置不超过6GB的堆空间.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-Xmx6g -Xms6g -XX:MetaspaceSize&#x3D;96m -XX:+UseG1GC -XX:MaxGCPauseMillis&#x3D;20 -XX:InitiatingHeapOccupancyPercent&#x3D;35 -XX:G1HeapRegionSize&#x3D;16M -XX:MinMe-taspaceFreeRatio&#x3D;50 -XX:MaxMetaspaceFreeRatio&#x3D;80</span><br></pre></td></tr></table></figure>
+
+<h3 id="os"><a href="#os" class="headerlink" title="os"></a>os</h3><p>文件描述符限制,<code>ulimit-n 100000</code>.<br>使用Ext4或XFS文件系统.<br>关闭swap.<br>设置更长的flush时间.Kafka依赖OS页缓存的&quot;刷盘&quot;功能实现消息真正写入物理磁盘,默认的刷盘间隔是5秒.通常情况下,这个间隔太短了,适当增加该值可以在很大程度上提升OS物理写入操作的性能.设置为2分钟以增加整体的物理写入吞吐量.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/kafka/" rel="tag"># kafka</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/03/14/kafka%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86/" rel="prev" title="kafka集群管理">
+                  <i class="fa fa-chevron-left"></i> kafka集群管理
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/03/14/kafka%20producer/" rel="next" title="kafka producer">
+                  kafka producer <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

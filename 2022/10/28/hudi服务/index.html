@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="Compaction异步压缩默认情况下,Compaction 与 Hudi 异步执行.异步压缩分两步执行:  压缩调度:这是由摄取作业完成的.在这一步中,Hudi 会扫描分区并选择要压缩的文件切片.最终将压缩计划写入 Hudi 时间线. 压缩执行:在这一步中,读取压缩计划并压缩文件切片.  我们可以通过几种方式异步执行压缩.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hudi服务">
+<meta property="og:url" content="https://maoeryu.github.io/2022/10/28/hudi%E6%9C%8D%E5%8A%A1/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="Compaction异步压缩默认情况下,Compaction 与 Hudi 异步执行.异步压缩分两步执行:  压缩调度:这是由摄取作业完成的.在这一步中,Hudi 会扫描分区并选择要压缩的文件切片.最终将压缩计划写入 Hudi 时间线. 压缩执行:在这一步中,读取压缩计划并压缩文件切片.  我们可以通过几种方式异步执行压缩.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1188.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1189.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1190.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1191.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1192.png">
+<meta property="article:published_time" content="2022-10-27T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-11-08T11:54:06.542Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hudi">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1188.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/10/28/hudi%E6%9C%8D%E5%8A%A1/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hudi服务 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Compaction"><span class="nav-number">1.</span> <span class="nav-text">Compaction</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E5%8E%8B%E7%BC%A9"><span class="nav-number">1.1.</span> <span class="nav-text">异步压缩</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Spark-Structured-Streaming"><span class="nav-number">1.1.1.</span> <span class="nav-text">Spark Structured Streaming</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DeltaStreamer-%E8%BF%9E%E7%BB%AD%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.1.2.</span> <span class="nav-text">DeltaStreamer 连续模式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E5%8E%8B%E7%BC%A9"><span class="nav-number">1.2.</span> <span class="nav-text">同步压缩</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A6%BB%E7%BA%BF%E5%8E%8B%E7%BC%A9"><span class="nav-number">1.3.</span> <span class="nav-text">离线压缩</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Hudi-%E5%8E%8B%E7%BC%A9%E6%9C%BA%E5%AE%9E%E7%94%A8%E7%A8%8B%E5%BA%8F"><span class="nav-number">1.3.1.</span> <span class="nav-text">Hudi 压缩机实用程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hudi-CLI"><span class="nav-number">1.3.2.</span> <span class="nav-text">Hudi CLI</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Flink-%E7%A6%BB%E7%BA%BF%E5%8E%8B%E7%BC%A9"><span class="nav-number">1.3.3.</span> <span class="nav-text">Flink 离线压缩</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Clustering"><span class="nav-number">2.</span> <span class="nav-text">Clustering</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">2.1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84"><span class="nav-number">2.2.</span> <span class="nav-text">集群架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E9%9B%86%E7%BE%A4"><span class="nav-number">2.2.1.</span> <span class="nav-text">调度集群</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E9%9B%86%E7%BE%A4"><span class="nav-number">2.2.2.</span> <span class="nav-text">运行集群</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E9%9B%86%E7%BE%A4"><span class="nav-number">2.3.</span> <span class="nav-text">设置集群</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E9%9B%86%E7%BE%A4-%E7%AD%96%E7%95%A5"><span class="nav-number">2.4.</span> <span class="nav-text">异步集群-策略</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%A1%E5%88%92%E7%AD%96%E7%95%A5"><span class="nav-number">2.4.1.</span> <span class="nav-text">计划策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E7%AD%96%E7%95%A5"><span class="nav-number">2.4.2.</span> <span class="nav-text">执行策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9B%B4%E6%96%B0%E7%AD%96%E7%95%A5"><span class="nav-number">2.4.3.</span> <span class="nav-text">更新策略</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E9%9B%86%E7%BE%A4"><span class="nav-number">2.5.</span> <span class="nav-text">异步集群</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#HoodieClusteringJob"><span class="nav-number">2.5.1.</span> <span class="nav-text">HoodieClusteringJob</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HoodieDeltaStreamer"><span class="nav-number">2.5.2.</span> <span class="nav-text">HoodieDeltaStreamer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Spark-Structured-Streaming-1"><span class="nav-number">2.5.3.</span> <span class="nav-text">Spark Structured Streaming</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%83%E6%95%B0%E6%8D%AE%E7%B4%A2%E5%BC%95"><span class="nav-number">3.</span> <span class="nav-text">元数据索引</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E5%BC%82%E6%AD%A5%E7%B4%A2%E5%BC%95"><span class="nav-number">3.1.</span> <span class="nav-text">设置异步索引</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Schedule-indexing"><span class="nav-number">3.1.1.</span> <span class="nav-text">Schedule indexing</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Execute-Indexing"><span class="nav-number">3.1.2.</span> <span class="nav-text">Execute Indexing</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Drop-Index"><span class="nav-number">3.1.3.</span> <span class="nav-text">Drop Index</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="nav-number">3.2.</span> <span class="nav-text">注意事项</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Cleaning"><span class="nav-number">4.</span> <span class="nav-text">Cleaning</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B8%85%E6%B4%81%E4%BF%9D%E7%95%99%E6%94%BF%E7%AD%96"><span class="nav-number">4.1.</span> <span class="nav-text">清洁保留政策</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">4.2.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8B%AC%E7%AB%8B%E8%BF%90%E8%A1%8C"><span class="nav-number">4.3.</span> <span class="nav-text">独立运行</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E8%BF%90%E8%A1%8C"><span class="nav-number">4.4.</span> <span class="nav-text">异步运行</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%91%BD%E4%BB%A4%E8%A1%8C%E7%95%8C%E9%9D%A2"><span class="nav-number">4.5.</span> <span class="nav-text">命令行界面</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Transformers"><span class="nav-number">5.</span> <span class="nav-text">Transformers</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#SQL-Query"><span class="nav-number">5.1.</span> <span class="nav-text">SQL Query</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SQL-File"><span class="nav-number">5.2.</span> <span class="nav-text">SQL File</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Flattening"><span class="nav-number">5.3.</span> <span class="nav-text">Flattening</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Chained"><span class="nav-number">5.4.</span> <span class="nav-text">Chained</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%8F%98%E5%8E%8B%E5%99%A8%E5%AE%9E%E6%96%BD"><span class="nav-number">5.4.1.</span> <span class="nav-text">自定义变压器实施</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%87%E8%AE%B0%E6%9C%BA%E5%88%B6"><span class="nav-number">6.</span> <span class="nav-text">标记机制</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%87%E8%AE%B0%E7%9A%84%E7%9B%AE%E7%9A%84"><span class="nav-number">6.1.</span> <span class="nav-text">标记的目的</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E9%87%8D%E5%A4%8D-%E9%83%A8%E5%88%86%E6%95%B0%E6%8D%AE%E6%96%87%E4%BB%B6"><span class="nav-number">6.1.1.</span> <span class="nav-text">删除重复&#x2F;部分数据文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%9E%E6%BB%9A%E5%A4%B1%E8%B4%A5%E7%9A%84%E6%8F%90%E4%BA%A4"><span class="nav-number">6.1.2.</span> <span class="nav-text">回滚失败的提交</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%87%E8%AE%B0%E7%BB%93%E6%9E%84"><span class="nav-number">6.2.</span> <span class="nav-text">标记结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%87%E8%AE%B0%E4%B9%A6%E5%86%99%E9%80%89%E9%A1%B9"><span class="nav-number">6.3.</span> <span class="nav-text">标记书写选项</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%B4%E5%86%99%E6%A0%87%E8%AE%B0"><span class="nav-number">6.3.1.</span> <span class="nav-text">直写标记</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E7%BA%BF%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%A0%87%E8%AE%B0-%E9%BB%98%E8%AE%A4"><span class="nav-number">6.3.2.</span> <span class="nav-text">时间线服务器标记(默认)</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E5%A4%A7%E5%B0%8F"><span class="nav-number">7.</span> <span class="nav-text">文件大小</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%91%84%E5%8F%96%E6%9C%9F%E9%97%B4%E8%87%AA%E5%8A%A8%E8%B0%83%E6%95%B4%E5%A4%A7%E5%B0%8F"><span class="nav-number">7.1.</span> <span class="nav-text">摄取期间自动调整大小</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Copy-On-Write"><span class="nav-number">7.1.1.</span> <span class="nav-text">Copy-On-Write</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Merge-On-Read"><span class="nav-number">7.1.2.</span> <span class="nav-text">Merge-On-Read</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E8%81%9A%E7%B1%BB"><span class="nav-number">7.2.</span> <span class="nav-text">使用聚类</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%81%BE%E9%9A%BE%E6%81%A2%E5%A4%8D"><span class="nav-number">8.</span> <span class="nav-text">灾难恢复</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Savepoint-%E4%BF%9D%E5%AD%98%E7%82%B9"><span class="nav-number">8.1.</span> <span class="nav-text">Savepoint(保存点)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Restore-%E6%81%A2%E5%A4%8D"><span class="nav-number">8.2.</span> <span class="nav-text">Restore(恢复)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Runbook-%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C"><span class="nav-number">8.3.</span> <span class="nav-text">Runbook(操作手册)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Exporter"><span class="nav-number">9.</span> <span class="nav-text">Exporter</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">9.1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BA%E6%8D%AE"><span class="nav-number">9.2.</span> <span class="nav-text">论据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%8B%E5%AD%90"><span class="nav-number">9.3.</span> <span class="nav-text">例子</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E5%88%B6Hudi%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">9.3.1.</span> <span class="nav-text">复制Hudi数据集</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%BC%E5%87%BA%E5%88%B0-json-%E6%88%96-parquet%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">9.3.2.</span> <span class="nav-text">导出到 json 或 parquet数据集</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E6%96%B0%E5%88%86%E5%8C%BA"><span class="nav-number">9.3.3.</span> <span class="nav-text">重新分区</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E9%87%8D%E6%96%B0%E5%88%86%E5%8C%BA"><span class="nav-number">9.3.4.</span> <span class="nav-text">自定义重新分区</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E8%B4%A8%E9%87%8F"><span class="nav-number">10.</span> <span class="nav-text">数据质量</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#SQL%E6%9F%A5%E8%AF%A2%E5%8D%95%E4%B8%AA%E7%BB%93%E6%9E%9C"><span class="nav-number">10.1.</span> <span class="nav-text">SQL查询单个结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SQL-%E6%9F%A5%E8%AF%A2%E7%9B%B8%E7%AD%89%E6%80%A7"><span class="nav-number">10.2.</span> <span class="nav-text">SQL 查询相等性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SQL-%E6%9F%A5%E8%AF%A2%E4%B8%8D%E7%AD%89%E5%BC%8F"><span class="nav-number">10.3.</span> <span class="nav-text">SQL 查询不等式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%A9%E5%B1%95%E8%87%AA%E5%AE%9A%E4%B9%89%E9%AA%8C%E8%AF%81%E5%99%A8"><span class="nav-number">10.4.</span> <span class="nav-text">扩展自定义验证器</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2"><span class="nav-number">11.</span> <span class="nav-text">部署</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#DeltaStreamer"><span class="nav-number">11.1.</span> <span class="nav-text">DeltaStreamer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E4%B8%80%E6%AC%A1%E6%A8%A1%E5%BC%8F"><span class="nav-number">11.1.1.</span> <span class="nav-text">运行一次模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9E%E7%BB%AD%E6%A8%A1%E5%BC%8F"><span class="nav-number">11.1.2.</span> <span class="nav-text">连续模式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Spark-%E6%95%B0%E6%8D%AE%E6%BA%90%E7%BC%96%E5%86%99%E5%99%A8%E4%BD%9C%E4%B8%9A"><span class="nav-number">11.2.</span> <span class="nav-text">Spark 数据源编写器作业</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A1%A8%E7%8E%B0"><span class="nav-number">12.</span> <span class="nav-text">表现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E7%9A%84-DFS%E8%AE%BF%E9%97%AE"><span class="nav-number">12.1.</span> <span class="nav-text">优化的 DFS访问</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96"><span class="nav-number">12.2.</span> <span class="nav-text">性能优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E8%B7%AF%E5%BE%84"><span class="nav-number">12.2.1.</span> <span class="nav-text">写入路径</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Bulk-Insert"><span class="nav-number">12.2.1.1.</span> <span class="nav-text">Bulk Insert</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Upserts"><span class="nav-number">12.2.1.2.</span> <span class="nav-text">Upserts</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95"><span class="nav-number">12.2.1.3.</span> <span class="nav-text">索引</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%BB%E5%8F%96%E8%B7%AF%E5%BE%84"><span class="nav-number">12.2.2.</span> <span class="nav-text">读取路径</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E8%B7%B3%E8%BF%87-Data-Skipping"><span class="nav-number">12.2.2.1.</span> <span class="nav-text">数据跳过(Data Skipping)</span></a></li></ol></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/10/28/hudi%E6%9C%8D%E5%8A%A1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hudi服务
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-10-28 00:00:00" itemprop="dateCreated datePublished" datetime="2022-10-28T00:00:00+08:00">2022-10-28</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-11-08 19:54:06" itemprop="dateModified" datetime="2022-11-08T19:54:06+08:00">2022-11-08</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="Compaction"><a href="#Compaction" class="headerlink" title="Compaction"></a>Compaction</h1><h2 id="异步压缩"><a href="#异步压缩" class="headerlink" title="异步压缩"></a>异步压缩</h2><p>默认情况下,Compaction 与 Hudi 异步执行.<br>异步压缩分两步执行:</p>
+<ol>
+<li>压缩调度:这是由摄取作业完成的.<br>在这一步中,Hudi 会扫描分区并选择要压缩的文件切片.<br>最终将压缩计划写入 Hudi 时间线.</li>
+<li>压缩执行:在这一步中,读取压缩计划并压缩文件切片.</li>
+</ol>
+<p>我们可以通过几种方式异步执行压缩.</p>
+<span id="more"></span>
+<h3 id="Spark-Structured-Streaming"><a href="#Spark-Structured-Streaming" class="headerlink" title="Spark Structured Streaming"></a>Spark Structured Streaming</h3><p>压缩在流式作业中异步调度和执行.<br>默认情况下,异步压缩对 Merge-On-Read 表上的结构化流作业启用.</p>
+<p>这是java中的示例片段.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.hudi.DataSourceWriteOptions;</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.HoodieDataSourceHelpers;</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.config.HoodieCompactionConfig;</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.config.HoodieWriteConfig;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.streaming.OutputMode;</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.streaming.ProcessingTime;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"> DataStreamWriter&lt;Row&gt; writer = streamingInput.writeStream().format(<span class="string">&quot;org.apache.hudi&quot;</span>)</span><br><span class="line">        .option(DataSourceWriteOptions.OPERATION_OPT_KEY(), operationType)</span><br><span class="line">        .option(DataSourceWriteOptions.TABLE_TYPE_OPT_KEY(), tableType)</span><br><span class="line">        .option(DataSourceWriteOptions.RECORDKEY_FIELD_OPT_KEY(), <span class="string">&quot;_row_key&quot;</span>)</span><br><span class="line">        .option(DataSourceWriteOptions.PARTITIONPATH_FIELD_OPT_KEY(), <span class="string">&quot;partition&quot;</span>)</span><br><span class="line">        .option(DataSourceWriteOptions.PRECOMBINE_FIELD_OPT_KEY(), <span class="string">&quot;timestamp&quot;</span>)</span><br><span class="line">        .option(HoodieCompactionConfig.INLINE_COMPACT_NUM_DELTA_COMMITS_PROP, <span class="string">&quot;10&quot;</span>)</span><br><span class="line">        .option(DataSourceWriteOptions.ASYNC_COMPACT_ENABLE_OPT_KEY(), <span class="string">&quot;true&quot;</span>)</span><br><span class="line">        .option(HoodieWriteConfig.TABLE_NAME, tableName).option(<span class="string">&quot;checkpointLocation&quot;</span>, checkpointLocation)</span><br><span class="line">        .outputMode(OutputMode.Append());</span><br><span class="line"> writer.trigger(<span class="keyword">new</span> ProcessingTime(<span class="number">30000</span>)).start(tablePath);</span><br></pre></td></tr></table></figure>
+
+<h3 id="DeltaStreamer-连续模式"><a href="#DeltaStreamer-连续模式" class="headerlink" title="DeltaStreamer 连续模式"></a>DeltaStreamer 连续模式</h3><p>Hudi DeltaStreamer 提供连续摄取模式,其中单个长时间运行的 Spark 应用程序<br>从上游源连续将数据摄取到 Hudi 表.<br>在这种模式下,Hudi 支持管理异步压缩.<br>这是一个使用异步压缩在连续模式下运行的示例片段.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">spark-submit \</span><br><span class="line">--conf &#x27;spark.serializer=org.apache.spark.serializer.KryoSerializer&#x27; \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer \</span><br><span class="line">/opt/spark/jars/hudi-utilities-bundle_2.11-0.12.0.jar \</span><br><span class="line">--table-type MERGE_ON_READ \</span><br><span class="line">--target-base-path &lt;hudi_base_path&gt; \</span><br><span class="line">--target-table &lt;hudi_table&gt; \</span><br><span class="line">--source-class org.apache.hudi.utilities.sources.JsonDFSSource \</span><br><span class="line">--source-ordering-field ts \</span><br><span class="line">--schemaprovider-class org.apache.hudi.utilities.schema.FilebasedSchemaProvider \</span><br><span class="line">--props /path/to/source.properties \</span><br><span class="line">--continous</span><br></pre></td></tr></table></figure>
+
+<h2 id="同步压缩"><a href="#同步压缩" class="headerlink" title="同步压缩"></a>同步压缩</h2><p>默认情况下,压缩是异步运行的.</p>
+<p>如果摄取记录的延迟对您很重要,那么您很可能使用 Merge-On-Read 表.<br>Merge-On-Read 表使用列(例如 parquet)+ 基于行(例如 avro)文件格式的组合存储数据.<br>更新被记录到增量文件中,然后被压缩以生成新版本的柱状文件.<br>为了改善摄取延迟,异步压缩是默认配置.</p>
+<p>如果新提交的立即读取性能对您很重要,或者您希望不管理单独的压缩作业的简单性,您可能需要同步压缩,这意味着在写入提交时,它也会被同一个作业压缩.</p>
+<p>通过传递标志&quot;--disable-compaction&quot;(意味着禁用异步压缩调度)同步运行压缩.<br>当摄取和压缩都在同一个 Spark 上下文中运行时,您可以在 DeltaStreamer CLI 中使用资源分配配置,例如 (&quot;--delta-sync-scheduling-weight&quot;, &quot;--compact-scheduling-weight&quot;, &quot;&quot;- -delta-sync-scheduling-minshare&quot;和&quot;--compact-scheduling-minshare&quot;)来控制摄取和压缩之间的执行程序分配.</p>
+<h2 id="离线压缩"><a href="#离线压缩" class="headerlink" title="离线压缩"></a>离线压缩</h2><p>默认情况下启用 MERGE_ON_READ 表的压缩.<br>触发策略是在完成五次提交后执行压缩.<br>因为compaction会消耗大量内存,并且和写操作放在同一个管道中,所以当数据量很大(&gt;100000/s)时很容易干扰写操作.<br>由于这一次,使用离线压缩执行压缩任务更加稳定.</p>
+<p>一个compaction任务的执行包括两个部分:调度compaction plan和execute compaction plan.<br>建议schedule compaction plan的进程由write任务周期性触发,write参数<code>compaction.schedule.enable</code> 默认开启.</p>
+<h3 id="Hudi-压缩机实用程序"><a href="#Hudi-压缩机实用程序" class="headerlink" title="Hudi 压缩机实用程序"></a>Hudi 压缩机实用程序</h3><p>Hudi 提供了一个独立的工具来异步执行特定的压缩.<br>例子:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --packages org.apache.hudi:hudi-utilities-bundle_2.11:0.6.0 \</span><br><span class="line">--class org.apache.hudi.utilities.HoodieCompactor \</span><br><span class="line">--base-path &lt;base_path&gt; \</span><br><span class="line">--table-name &lt;table_name&gt; \</span><br><span class="line">--schema-file &lt;schema_file&gt; \</span><br><span class="line">--instant-time &lt;compaction_instant&gt;</span><br></pre></td></tr></table></figure>
+
+<p>请注意,该instant-time参数现在对于 Hudi Compactor Utility 是可选的.<br>如果在没有<code>--instant time</code>的情况下使用该实用程序,则 spark-submit 将在 Hudi 时间轴上执行最早的计划压缩.</p>
+<h3 id="Hudi-CLI"><a href="#Hudi-CLI" class="headerlink" title="Hudi CLI"></a>Hudi CLI</h3><p>Hudi CLI 是另一种异步执行特定压缩的方法.<br>例子:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hudi:trips-&gt;compaction run --tableName &lt;table_name&gt; --parallelism &lt;parallelism&gt; --compactionInstant &lt;InstantTime&gt;</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<h3 id="Flink-离线压缩"><a href="#Flink-离线压缩" class="headerlink" title="Flink 离线压缩"></a>Flink 离线压缩</h3><p>离线 compaction 需要在命令行提交 Flink 任务.<br>程序入口如下hudi-flink-bundle_2.11-0.9.0-SNAPSHOT.jar: org.apache.hudi.sink.compact.HoodieFlinkCompactor</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># Command line</span><br><span class="line">.&#x2F;bin&#x2F;flink run -c org.apache.hudi.sink.compact.HoodieFlinkCompactor lib&#x2F;hudi-flink-bundle_2.11-0.9.0.jar --path hdfs:&#x2F;&#x2F;xxx:9000&#x2F;table</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">选项名称</th>
+<th align="left">必需的</th>
+<th align="left">默认</th>
+<th align="left">评论</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">--path</td>
+<td align="left">frue</td>
+<td align="left">--</td>
+<td align="left">目标表在hudi上的存储路径</td>
+</tr>
+<tr>
+<td align="left">--compaction-max-memory</td>
+<td align="left">FALSE</td>
+<td align="left">100</td>
+<td align="left">压缩时日志数据的索引图大小,默认为100MB.如果你有足够的内存,你可以把这个参数调大</td>
+</tr>
+<tr>
+<td align="left">--schedule</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+<td align="left">是否执行调度压缩计划的操作.当写入过程还在写入时,开启该参数有丢失数据的风险.因此,开启该参数时,必须保证当前没有写任务向该表写入数据</td>
+</tr>
+<tr>
+<td align="left">--seq</td>
+<td align="left">FALSE</td>
+<td align="left">LIFO</td>
+<td align="left">执行压缩任务的顺序.默认从最新的压缩计划执行.LIFO:从最新的计划执行.FIFO:从最旧的计划执行.</td>
+</tr>
+<tr>
+<td align="left">--service</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+<td align="left">是否启动监控服务,以配置的时间间隔检查和调度新的压缩任务.</td>
+</tr>
+<tr>
+<td align="left">--min-compaction-interval-seconds</td>
+<td align="left">FALSE</td>
+<td align="left">600(s)</td>
+<td align="left">服务模式的检查间隔,默认为 10 分钟.</td>
+</tr>
+</tbody></table>
+<h1 id="Clustering"><a href="#Clustering" class="headerlink" title="Clustering"></a>Clustering</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>Apache Hudi 将流处理引入大数据,提供新鲜数据,同时比传统批处理效率高一个数量级.<br>在数据湖/仓库中,关键的权衡之一是摄取速度和查询性能.<br>数据摄取通常更喜欢小文件,以提高并行性并尽快使数据可用于查询.<br>但是,如果有很多小文件,查询性能会很差.<br>此外,在摄取期间,数据通常基于到达时间位于同一位置.<br>但是,当频繁查询的数据位于同一位置时,查询引擎的性能会更好.<br>在大多数架构中,这些系统中的每一个都倾向于独立添加优化以提高由于未优化的数据布局而受到限制的性能.</p>
+<h2 id="集群架构"><a href="#集群架构" class="headerlink" title="集群架构"></a>集群架构</h2><p>在高层次上,Hudi 通过其写入客户端 API 提供了不同的操作,例如 insert/upsert/bulk_insert,以便能够将数据写入 Hudi 表.<br>为了能够在文件大小和摄取速度之间进行权衡,Hudi 提供了一个旋钮<code>hoodie.parquet.small.file.limit</code>来配置允许的最小文件大小.<br>用户可以将小文件软限制配置为0强制新数据进入一组新文件组或将其设置为更高的值以确保新数据&quot;填充&quot;到现有文件中,直到满足增加摄取的限制延迟.</p>
+<p>为了能够支持允许快速摄取而不影响查询性能的架构,我们引入了&quot;集群&quot;服务来重写数据以优化 Hudi 数据湖文件布局.</p>
+<p>集群表服务可以异步或同步运行,添加一个名为&quot;REPLACE&quot;的新动作类型,它将在 Hudi 元数据时间轴中标记集群动作.</p>
+<ol>
+<li>Scheduling clustering:使用可插拔集群策略创建集群计划.</li>
+<li>Execute clustering:使用执行策略处理计划以创建新文件并替换旧文件.</li>
+</ol>
+<h3 id="调度集群"><a href="#调度集群" class="headerlink" title="调度集群"></a>调度集群</h3><p>识别适合集群的文件:根据选择的集群策略,调度逻辑将识别适合集群的文件.<br>根据特定标准对符合聚类条件的文件进行分组.<br>每个组的数据大小都应为&quot;targetFileSize&quot;的倍数.<br>分组是计划中定义的&quot;策略&quot;的一部分.<br>此外,还有一个选项可以限制组大小,以提高并行性并避免对大量数据进行混洗.<br>最后,聚类计划以 avro元数据格式保存到时间轴中.</p>
+<h3 id="运行集群"><a href="#运行集群" class="headerlink" title="运行集群"></a>运行集群</h3><p>阅读集群计划并获取标记需要集群的文件组的&quot;clusteringGroups&quot;.<br>对于每个组,我们使用 strategyParams 实例化适当的策略类(例如:sortColumns)并应用该策略来重写数据.<br>创建一个&quot;REPLACE&quot;提交并更新HoodieReplaceCommitMetadata中的元数据.</p>
+<p>集群服务建立在 Hudi 基于 MVCC 的设计之上,允许写入者继续插入新数据,同时集群操作在后台运行以重新格式化数据布局,确保并发读取者和写入者之间的快照隔离.</p>
+<p>注意:只能为不接收任何并发更新的表/分区安排集群.<br>将来,还将支持并发更新用例.</p>
+<img src="/images/fly1188.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="设置集群"><a href="#设置集群" class="headerlink" title="设置集群"></a>设置集群</h2><p>可以使用 spark 数据框选项轻松设置内联集群.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.hudi.<span class="type">QuickstartUtils</span>._</span><br><span class="line"><span class="keyword">import</span> scala.collection.<span class="type">JavaConversions</span>._</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SaveMode</span>._</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.<span class="type">DataSourceReadOptions</span>._</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.<span class="type">DataSourceWriteOptions</span>._</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.config.<span class="type">HoodieWriteConfig</span>._</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> df =  <span class="comment">//generate data frame</span></span><br><span class="line">df.write.format(<span class="string">&quot;org.apache.hudi&quot;</span>).</span><br><span class="line">        options(getQuickstartWriteConfigs).</span><br><span class="line">        option(<span class="type">PRECOMBINE_FIELD_OPT_KEY</span>, <span class="string">&quot;ts&quot;</span>).</span><br><span class="line">        option(<span class="type">RECORDKEY_FIELD_OPT_KEY</span>, <span class="string">&quot;uuid&quot;</span>).</span><br><span class="line">        option(<span class="type">PARTITIONPATH_FIELD_OPT_KEY</span>, <span class="string">&quot;partitionpath&quot;</span>).</span><br><span class="line">        option(<span class="type">TABLE_NAME</span>, <span class="string">&quot;tableName&quot;</span>).</span><br><span class="line">        option(<span class="string">&quot;hoodie.parquet.small.file.limit&quot;</span>, <span class="string">&quot;0&quot;</span>).</span><br><span class="line">        option(<span class="string">&quot;hoodie.clustering.inline&quot;</span>, <span class="string">&quot;true&quot;</span>).</span><br><span class="line">        option(<span class="string">&quot;hoodie.clustering.inline.max.commits&quot;</span>, <span class="string">&quot;4&quot;</span>).</span><br><span class="line">        option(<span class="string">&quot;hoodie.clustering.plan.strategy.target.file.max.bytes&quot;</span>, <span class="string">&quot;1073741824&quot;</span>).</span><br><span class="line">        option(<span class="string">&quot;hoodie.clustering.plan.strategy.small.file.limit&quot;</span>, <span class="string">&quot;629145600&quot;</span>).</span><br><span class="line">        option(<span class="string">&quot;hoodie.clustering.plan.strategy.sort.columns&quot;</span>, <span class="string">&quot;column1,column2&quot;</span>). <span class="comment">//optional, if sorting is needed as part of rewriting data</span></span><br><span class="line">        mode(<span class="type">Append</span>).</span><br><span class="line">        save(<span class="string">&quot;dfs://location&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<h2 id="异步集群-策略"><a href="#异步集群-策略" class="headerlink" title="异步集群-策略"></a>异步集群-策略</h2><p>对于更高级的用例,还可以设置异步集群管道.<br><a target="_blank" rel="noopener" href="https://cwiki.apache.org/confluence/display/HUDI/RFC+-+19+Clustering+data+for+freshness+and+query+performance#RFC19Clusteringdataforfreshnessandqueryperformance-SetupforAsyncclusteringJob">https://cwiki.apache.org/confluence/display/HUDI/RFC+-+19+Clustering+data+for+freshness+and+query+performance#RFC19Clusteringdataforfreshnessandqueryperformance-SetupforAsyncclusteringJob</a></p>
+<p>在高层次上,集群基于可配置的策略创建计划,根据特定标准对符合条件的文件进行分组,然后执行该计划.<br>Hudi 支持多写入器,它在多个表服务之间提供快照隔离,从而允许写入器在集群在后台运行时继续摄取.</p>
+<p>如前所述,集群计划和执行取决于可配置的策略.<br>这些策略大致可以分为三种类型:集群计划策略、执行策略和更新策略.</p>
+<h3 id="计划策略"><a href="#计划策略" class="headerlink" title="计划策略"></a>计划策略</h3><p>该策略在创建集群计划时发挥作用.<br>它有助于决定应该对哪些文件组进行集群.</p>
+<ol>
+<li>SparkSizeBasedClusteringPlanStrategy<br>它根据基本文件的小文件限制选择文件切片,并创建集群组,直到每个组允许的最大文件大小.<br>可以使用此配置指定最大大小.<br>此策略对于将中等大小的文件拼接成较大的文件很有用,以减少散布在冷分区中的大量文件.</li>
+<li>SparkRecentDaysClusteringPlanStrategy<br>它回顾以前的&quot;N&quot;天分区并创建一个计划,将这些分区内的&quot;小&quot;文件片聚集在一起.<br>这是默认策略.<br>当工作负载是可预测的并且数据按时间分区时,它可能很有用.</li>
+<li>SparkSelectedPartitionsClusteringPlanStrategy<br>如果您只想对一个范围内的特定分区进行集群,无论这些分区是旧的还是新的,那么这个策略可能很有用.<br>要使用此策略,需要另外设置以下两个配置(包括开始和结束分区):</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hoodie.clustering.plan.strategy.cluster.begin.partition</span><br><span class="line">hoodie.clustering.plan.strategy.cluster.end.partition</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>所有策略都是分区感知的,后两个仍然受第一个策略的大小限制的约束.</p>
+</blockquote>
+<h3 id="执行策略"><a href="#执行策略" class="headerlink" title="执行策略"></a>执行策略</h3><p>在规划阶段构建集群组后,Hudi 对每个组应用执行策略,主要基于排序列和大小.</p>
+<p>SparkSortAndSizeExecutionStrategy是默认策略.<br>使用此配置进行聚类时,用户可以指定对数据进行排序的列.<br>除此之外,我们还可以为 由于集群生成的 parquet 文件设置最大文件大小.<br>该策略使用批量插入将数据写入新文件,在这种情况下,Hudi 隐式使用分区器,根据指定的列进行排序.<br>通过这种方式,该策略改变了数据布局,不仅提高了查询性能,而且自动平衡了重写开销.</p>
+<p>现在,此策略可以作为单个 Spark 作业或多个作业执行,具体取决于在规划阶段创建的集群组的数量.<br>默认情况下,Hudi 将提交多个 Spark 作业并将结果合并.<br>如果您想强制 Hudi 使用单火花作业,请将执行策略类配置设置 为SingleSparkJobExecutionStrategy.</p>
+<h3 id="更新策略"><a href="#更新策略" class="headerlink" title="更新策略"></a>更新策略</h3><p>目前,只能为不接收任何并发更新的表/分区安排集群.<br>默认情况下,更新策略的配置设置为SparkRejectUpdateStrategy.<br>如果某个文件组在集群期间有更新,那么它将拒绝更新并抛出异常.<br>但是,在某些用例中,更新非常稀疏,不会触及大多数文件组.<br>简单地拒绝更新的默认策略似乎不公平.<br>在这种用例中,用户可以将配置设置为SparkAllowUpdateStrategy.</p>
+<p>在此列表中,一些非常有用的配置是:</p>
+<p>hoodie.clustering.async.enabled<br>false<br>启用集群服务的运行,在表上发生写入时异步运行.</p>
+<p>hoodie.clustering.async.max.commits<br>4<br>通过指定应在多少次提交后触发集群来控制异步集群的频率.</p>
+<p>hoodie.clustering.preserve.commit.metadata<br>false<br>重写数据时,保留现有的 _hoodie_commit_time.<br>这意味着用户可以对集群数据运行增量查询,而不会产生任何副作用.</p>
+<h2 id="异步集群"><a href="#异步集群" class="headerlink" title="异步集群"></a>异步集群</h2><p>用户可以利用HoodieClusteringJob 设置两步异步集群.</p>
+<h3 id="HoodieClusteringJob"><a href="#HoodieClusteringJob" class="headerlink" title="HoodieClusteringJob"></a>HoodieClusteringJob</h3><p>通过指定scheduleAndExecute模式,调度和集群都可以在同一步骤中实现.<br>可以使用-mode/-m选项指定适当的模式.<br>共有三种模式:</p>
+<ol>
+<li>schedule: 制定集群计划.<br>这给出了一个可以在执行模式下传递的瞬间.</li>
+<li>execute:在特定时刻执行集群计划.<br>如果没有指定即时时间,HoodieClusteringJob 将在 Hudi 时间线上的最早时刻执行.</li>
+<li>scheduleAndExecute:首先制定集群计划并立即执行该计划.</li>
+</ol>
+<p>请注意,要在原始写入器仍在运行时运行此作业,请启用多写入:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hoodie.write.concurrency.mode&#x3D;optimistic_concurrency_control</span><br><span class="line">hoodie.write.lock.provider&#x3D;org.apache.hudi.client.transaction.lock.ZookeeperBasedLockProvider</span><br></pre></td></tr></table></figure>
+
+<p>用于设置 HoodieClusteringJob 的示例 spark-submit 命令如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">spark-submit \</span><br><span class="line">--class org.apache.hudi.utilities.HoodieClusteringJob \</span><br><span class="line">&#x2F;path&#x2F;to&#x2F;hudi-utilities-bundle&#x2F;target&#x2F;hudi-utilities-bundle_2.12-0.9.0-SNAPSHOT.jar \</span><br><span class="line">--props &#x2F;path&#x2F;to&#x2F;config&#x2F;clusteringjob.properties \</span><br><span class="line">--mode scheduleAndExecute \</span><br><span class="line">--base-path &#x2F;path&#x2F;to&#x2F;hudi_table&#x2F;basePath \</span><br><span class="line">--table-name hudi_table_schedule_clustering \</span><br><span class="line">--spark-memory 1g</span><br></pre></td></tr></table></figure>
+
+<p>示例clusteringjob.properties文件:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">hoodie.clustering.async.enabled&#x3D;true</span><br><span class="line">hoodie.clustering.async.max.commits&#x3D;4</span><br><span class="line">hoodie.clustering.plan.strategy.target.file.max.bytes&#x3D;1073741824</span><br><span class="line">hoodie.clustering.plan.strategy.small.file.limit&#x3D;629145600</span><br><span class="line">hoodie.clustering.execution.strategy.class&#x3D;org.apache.hudi.client.clustering.run.strategy.SparkSortAndSizeExecutionStrategy</span><br><span class="line">hoodie.clustering.plan.strategy.sort.columns&#x3D;column1,column2</span><br></pre></td></tr></table></figure>
+
+<h3 id="HoodieDeltaStreamer"><a href="#HoodieDeltaStreamer" class="headerlink" title="HoodieDeltaStreamer"></a>HoodieDeltaStreamer</h3><p>现在,我们可以使用 DeltaStreamer 触发异步集群.<br>只需将<code>hoodie.clustering.async.enabled</code>配置设置为 true 并在属性文件中指定其他集群配置,其位置可以与<code>—props</code>启动 deltastreamer 时一样(就像在 HoodieClusteringJob 的情况下一样).</p>
+<p>用于设置 HoodieDeltaStreamer 的示例 spark-submit 命令如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">spark-submit \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer \</span><br><span class="line">&#x2F;path&#x2F;to&#x2F;hudi-utilities-bundle&#x2F;target&#x2F;hudi-utilities-bundle_2.12-0.9.0-SNAPSHOT.jar \</span><br><span class="line">--props &#x2F;path&#x2F;to&#x2F;config&#x2F;clustering_kafka.properties \</span><br><span class="line">--schemaprovider-class org.apache.hudi.utilities.schema.SchemaRegistryProvider \</span><br><span class="line">--source-class org.apache.hudi.utilities.sources.AvroKafkaSource \</span><br><span class="line">--source-ordering-field impresssiontime \</span><br><span class="line">--table-type COPY_ON_WRITE \</span><br><span class="line">--target-base-path &#x2F;path&#x2F;to&#x2F;hudi_table&#x2F;basePath \</span><br><span class="line">--target-table impressions_cow_cluster \</span><br><span class="line">--op INSERT \</span><br><span class="line">--hoodie-conf hoodie.clustering.async.enabled&#x3D;true \</span><br><span class="line">--continuous</span><br></pre></td></tr></table></figure>
+
+<h3 id="Spark-Structured-Streaming-1"><a href="#Spark-Structured-Streaming-1" class="headerlink" title="Spark Structured Streaming"></a>Spark Structured Streaming</h3><p>我们还可以使用 Spark 结构化流式接收器启用异步集群,如下所示.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">val commonOpts &#x3D; Map(</span><br><span class="line">   &quot;hoodie.insert.shuffle.parallelism&quot; -&gt; &quot;4&quot;,</span><br><span class="line">   &quot;hoodie.upsert.shuffle.parallelism&quot; -&gt; &quot;4&quot;,</span><br><span class="line">   DataSourceWriteOptions.RECORDKEY_FIELD.key -&gt; &quot;_row_key&quot;,</span><br><span class="line">   DataSourceWriteOptions.PARTITIONPATH_FIELD.key -&gt; &quot;partition&quot;,</span><br><span class="line">   DataSourceWriteOptions.PRECOMBINE_FIELD.key -&gt; &quot;timestamp&quot;,</span><br><span class="line">   HoodieWriteConfig.TBL_NAME.key -&gt; &quot;hoodie_test&quot;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">def getAsyncClusteringOpts(isAsyncClustering: String, </span><br><span class="line">                           clusteringNumCommit: String, </span><br><span class="line">                           executionStrategy: String):Map[String, String] &#x3D; &#123;</span><br><span class="line">   commonOpts + (DataSourceWriteOptions.ASYNC_CLUSTERING_ENABLE.key -&gt; isAsyncClustering,</span><br><span class="line">           HoodieClusteringConfig.ASYNC_CLUSTERING_MAX_COMMITS.key -&gt; clusteringNumCommit,</span><br><span class="line">           HoodieClusteringConfig.EXECUTION_STRATEGY_CLASS_NAME.key -&gt; executionStrategy</span><br><span class="line">   )</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">def initStreamingWriteFuture(hudiOptions: Map[String, String]): Future[Unit] &#x3D; &#123;</span><br><span class="line">   val streamingInput &#x3D; &#x2F;&#x2F; define the source of streaming</span><br><span class="line">   Future &#123;</span><br><span class="line">      println(&quot;streaming starting&quot;)</span><br><span class="line">      streamingInput</span><br><span class="line">              .writeStream</span><br><span class="line">              .format(&quot;org.apache.hudi&quot;)</span><br><span class="line">              .options(hudiOptions)</span><br><span class="line">              .option(&quot;checkpointLocation&quot;, basePath + &quot;&#x2F;checkpoint&quot;)</span><br><span class="line">              .mode(Append)</span><br><span class="line">              .start()</span><br><span class="line">              .awaitTermination(10000)</span><br><span class="line">      println(&quot;streaming ends&quot;)</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">def structuredStreamingWithClustering(): Unit &#x3D; &#123;</span><br><span class="line">   val df &#x3D; &#x2F;&#x2F;generate data frame</span><br><span class="line">   val hudiOptions &#x3D; getClusteringOpts(&quot;true&quot;, &quot;1&quot;, &quot;org.apache.hudi.client.clustering.run.strategy.SparkSortAndSizeExecutionStrategy&quot;)</span><br><span class="line">   val f1 &#x3D; initStreamingWriteFuture(hudiOptions)</span><br><span class="line">   Await.result(f1, Duration.Inf)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="元数据索引"><a href="#元数据索引" class="headerlink" title="元数据索引"></a>元数据索引</h1><p>我们现在可以在 Hudi 中异步创建不同的元数据索引,包括文件、布隆过滤器和列统计信息,然后用于查询和写入以提高性能.<br>能够在不阻塞写入的情况下进行索引有两个好处,</p>
+<ol>
+<li>改善写入延迟</li>
+<li>由于写入和索引之间的争用减少了资源浪费.</li>
+</ol>
+<h2 id="设置异步索引"><a href="#设置异步索引" class="headerlink" title="设置异步索引"></a>设置异步索引</h2><p>首先,我们将生成一个连续的工作负载.<br>在下面的示例中,我们将启动一个deltastreamer,它将不断将原始 parquet 中的数据写入 Hudi 表.<br>我们使用了广泛可用的NY Taxi 数据集,其设置详情如下:</p>
+<p>摄取写入配置</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">hoodie.datasource.write.recordkey.field&#x3D;VendorID</span><br><span class="line">hoodie.datasource.write.partitionpath.field&#x3D;tpep_dropoff_datetime</span><br><span class="line">hoodie.datasource.write.precombine.field&#x3D;tpep_dropoff_datetime</span><br><span class="line">hoodie.deltastreamer.source.dfs.root&#x3D;&#x2F;Users&#x2F;home&#x2F;path&#x2F;to&#x2F;data&#x2F;parquet_files&#x2F;</span><br><span class="line">hoodie.deltastreamer.schemaprovider.target.schema.file&#x3D;&#x2F;Users&#x2F;home&#x2F;path&#x2F;to&#x2F;schema&#x2F;schema.avsc</span><br><span class="line">hoodie.deltastreamer.schemaprovider.source.schema.file&#x3D;&#x2F;Users&#x2F;home&#x2F;path&#x2F;to&#x2F;schema&#x2F;schema.avsc</span><br><span class="line">&#x2F;&#x2F; set lock provider configs</span><br><span class="line">hoodie.write.lock.provider&#x3D;org.apache.hudi.client.transaction.lock.ZookeeperBasedLockProvider</span><br><span class="line">hoodie.write.lock.zookeeper.url&#x3D;&lt;zk_url&gt;</span><br><span class="line">hoodie.write.lock.zookeeper.port&#x3D;&lt;zk_port&gt;</span><br><span class="line">hoodie.write.lock.zookeeper.lock_key&#x3D;&lt;zk_key&gt;</span><br><span class="line">hoodie.write.lock.zookeeper.base_path&#x3D;&lt;zk_base_path&gt;</span><br></pre></td></tr></table></figure>
+
+<p>运行 deltastreamer</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">spark-submit \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer &#96;ls &#x2F;Users&#x2F;home&#x2F;path&#x2F;to&#x2F;hudi-utilities-bundle&#x2F;target&#x2F;hudi-utilities-bundle_2.11-0.12.1-SNAPSHOT.jar&#96; \</span><br><span class="line">--props &#96;ls &#x2F;Users&#x2F;home&#x2F;path&#x2F;to&#x2F;write&#x2F;config.properties&#96; \</span><br><span class="line">--source-class org.apache.hudi.utilities.sources.ParquetDFSSource  --schemaprovider-class org.apache.hudi.utilities.schema.FilebasedSchemaProvider \</span><br><span class="line">--source-ordering-field tpep_dropoff_datetime   \</span><br><span class="line">--table-type COPY_ON_WRITE \</span><br><span class="line">--target-base-path file:&#x2F;&#x2F;&#x2F;tmp&#x2F;hudi-ny-taxi&#x2F;   \</span><br><span class="line">--target-table ny_hudi_tbl  \</span><br><span class="line">--op UPSERT  \</span><br><span class="line">--continuous \</span><br><span class="line">--source-limit 5000000 \</span><br><span class="line">--min-sync-interval-seconds 60</span><br></pre></td></tr></table></figure>
+
+<p>从 0.11.0 版本开始,默认启用 Hudi 元数据表,并自动创建文件索引.<br>当 deltastreamer 在连续模式下运行时,让我们为 COLUMN_STATS 索引安排索引.<br>首先,我们需要为索引器定义一个属性文件.</p>
+<blockquote>
+<p>启用元数据表和配置锁提供程序是使用异步索引器的先决条件.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># ensure that both metadata and async indexing is enabled as below two configs</span><br><span class="line">hoodie.metadata.enable&#x3D;true</span><br><span class="line">hoodie.metadata.index.async&#x3D;true</span><br><span class="line"># enable column_stats index config</span><br><span class="line">hoodie.metadata.index.column.stats.enable&#x3D;true</span><br><span class="line"># set concurrency mode and lock configs as this is a multi-writer scenario</span><br><span class="line"># check https:&#x2F;&#x2F;hudi.apache.org&#x2F;docs&#x2F;concurrency_control&#x2F; for differnt lock provider configs</span><br><span class="line">hoodie.write.concurrency.mode&#x3D;optimistic_concurrency_control</span><br><span class="line">hoodie.write.lock.provider&#x3D;org.apache.hudi.client.transaction.lock.ZookeeperBasedLockProvider</span><br><span class="line">hoodie.write.lock.zookeeper.url&#x3D;&lt;zk_url&gt;</span><br><span class="line">hoodie.write.lock.zookeeper.port&#x3D;&lt;zk_port&gt;</span><br><span class="line">hoodie.write.lock.zookeeper.lock_key&#x3D;&lt;zk_key&gt;</span><br><span class="line">hoodie.write.lock.zookeeper.base_path&#x3D;&lt;zk_base_path&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Schedule-indexing"><a href="#Schedule-indexing" class="headerlink" title="Schedule indexing"></a>Schedule indexing</h3><p>HoodieIndexer现在,我们可以使用in模式来安排索引schedule,如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">spark-submit \</span><br><span class="line">--class org.apache.hudi.utilities.HoodieIndexer \</span><br><span class="line">&#x2F;Users&#x2F;home&#x2F;path&#x2F;to&#x2F;hudi-utilities-bundle&#x2F;target&#x2F;hudi-utilities-bundle_2.11-0.12.1-SNAPSHOT.jar \</span><br><span class="line">--props &#x2F;Users&#x2F;home&#x2F;path&#x2F;to&#x2F;indexer.properties \</span><br><span class="line">--mode schedule \</span><br><span class="line">--base-path &#x2F;tmp&#x2F;hudi-ny-taxi \</span><br><span class="line">--table-name ny_hudi_tbl \</span><br><span class="line">--index-types COLUMN_STATS \</span><br><span class="line">--parallelism 1 \</span><br><span class="line">--spark-memory 1g</span><br></pre></td></tr></table></figure>
+
+<p>这将向时间线写入一个indexing.requested瞬间.</p>
+<h3 id="Execute-Indexing"><a href="#Execute-Indexing" class="headerlink" title="Execute Indexing"></a>Execute Indexing</h3><p>要执行索引,请execute以如下模式运行索引器.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">spark-submit \</span><br><span class="line">--class org.apache.hudi.utilities.HoodieIndexer \</span><br><span class="line">&#x2F;Users&#x2F;home&#x2F;path&#x2F;to&#x2F;hudi-utilities-bundle&#x2F;target&#x2F;hudi-utilities-bundle_2.11-0.12.1-SNAPSHOT.jar \</span><br><span class="line">--props &#x2F;Users&#x2F;home&#x2F;path&#x2F;to&#x2F;indexer.properties \</span><br><span class="line">--mode execute \</span><br><span class="line">--base-path &#x2F;tmp&#x2F;hudi-ny-taxi \</span><br><span class="line">--table-name ny_hudi_tbl \</span><br><span class="line">--index-types COLUMN_STATS \</span><br><span class="line">--parallelism 1 \</span><br><span class="line">--spark-memory 1g</span><br></pre></td></tr></table></figure>
+
+<p>我们也可以在scheduleAndExecute模式下运行索引器,一次性完成上述两个步骤.<br>单独执行可以让我们更好地控制何时要执行.</p>
+<p>让我们看一下数据时间线.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">ls -lrt &#x2F;tmp&#x2F;hudi-ny-taxi&#x2F;.hoodie</span><br><span class="line">total 1816</span><br><span class="line">-rw-r--r--  1 sagars  wheel       0 Apr 14 19:53 20220414195327683.commit.requested</span><br><span class="line">-rw-r--r--  1 sagars  wheel  153423 Apr 14 19:54 20220414195327683.inflight</span><br><span class="line">-rw-r--r--  1 sagars  wheel  207061 Apr 14 19:54 20220414195327683.commit</span><br><span class="line">-rw-r--r--  1 sagars  wheel       0 Apr 14 19:54 20220414195423420.commit.requested</span><br><span class="line">-rw-r--r--  1 sagars  wheel     659 Apr 14 19:54 20220414195437837.indexing.requested</span><br><span class="line">-rw-r--r--  1 sagars  wheel  323950 Apr 14 19:54 20220414195423420.inflight</span><br><span class="line">-rw-r--r--  1 sagars  wheel       0 Apr 14 19:55 20220414195437837.indexing.inflight</span><br><span class="line">-rw-r--r--  1 sagars  wheel  222920 Apr 14 19:55 20220414195423420.commit</span><br><span class="line">-rw-r--r--  1 sagars  wheel     734 Apr 14 19:55 hoodie.properties</span><br><span class="line">-rw-r--r--  1 sagars  wheel     979 Apr 14 19:55 20220414195437837.indexing</span><br></pre></td></tr></table></figure>
+
+<p>在数据时间线中,我们可以看到索引是在一个提交完成(20220414195327683.commit)和另一个被请求(20220414195423420.commit.requested)之后安排的.<br>这将被20220414195327683选为基础瞬间.<br>索引也与飞行作家一起飞行.<br>20220414195423420如果我们解析索引器日志,我们会发现它确实在索引到基本瞬间后赶上了瞬间.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">22&#x2F;04&#x2F;14 19:55:22 INFO HoodieTableMetaClient: Finished Loading Table of type MERGE_ON_READ(version&#x3D;1, baseFileFormat&#x3D;HFILE) from &#x2F;tmp&#x2F;hudi-ny-taxi&#x2F;.hoodie&#x2F;metadata</span><br><span class="line">22&#x2F;04&#x2F;14 19:55:22 INFO RunIndexActionExecutor: Starting Index Building with base instant: 20220414195327683</span><br><span class="line">22&#x2F;04&#x2F;14 19:55:22 INFO HoodieBackedTableMetadataWriter: Creating a new metadata index for partition &#39;column_stats&#39; under path &#x2F;tmp&#x2F;hudi-ny-taxi&#x2F;.hoodie&#x2F;metadata upto instant 20220414195327683</span><br><span class="line">...</span><br><span class="line">...</span><br><span class="line">22&#x2F;04&#x2F;14 19:55:38 INFO RunIndexActionExecutor: Total remaining instants to index: 1</span><br><span class="line">22&#x2F;04&#x2F;14 19:55:38 INFO HoodieTableMetaClient: Loading HoodieTableMetaClient from &#x2F;tmp&#x2F;hudi-ny-taxi&#x2F;.hoodie&#x2F;metadata</span><br><span class="line">22&#x2F;04&#x2F;14 19:55:38 INFO HoodieTableConfig: Loading table properties from &#x2F;tmp&#x2F;hudi-ny-taxi&#x2F;.hoodie&#x2F;metadata&#x2F;.hoodie&#x2F;hoodie.properties</span><br><span class="line">22&#x2F;04&#x2F;14 19:55:38 INFO HoodieTableMetaClient: Finished Loading Table of type MERGE_ON_READ(version&#x3D;1, baseFileFormat&#x3D;HFILE) from &#x2F;tmp&#x2F;hudi-ny-taxi&#x2F;.hoodie&#x2F;metadata</span><br><span class="line">22&#x2F;04&#x2F;14 19:55:38 INFO HoodieActiveTimeline: Loaded instants upto : Option&#123;val&#x3D;[20220414195423420__deltacommit__COMPLETED]&#125;</span><br><span class="line">22&#x2F;04&#x2F;14 19:55:38 INFO RunIndexActionExecutor: Starting index catchup task</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<h3 id="Drop-Index"><a href="#Drop-Index" class="headerlink" title="Drop Index"></a>Drop Index</h3><p>要删除索引,只需在dropindex模式下运行索引.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">spark-submit \</span><br><span class="line">--class org.apache.hudi.utilities.HoodieIndexer \</span><br><span class="line">&#x2F;Users&#x2F;home&#x2F;path&#x2F;to&#x2F;hudi-utilities-bundle&#x2F;target&#x2F;hudi-utilities-bundle_2.11-0.12.1-SNAPSHOT.jar \</span><br><span class="line">--props &#x2F;Users&#x2F;home&#x2F;path&#x2F;to&#x2F;indexer.properties \</span><br><span class="line">--mode dropindex \</span><br><span class="line">--base-path &#x2F;tmp&#x2F;hudi-ny-taxi \</span><br><span class="line">--table-name ny_hudi_tbl \</span><br><span class="line">--index-types COLUMN_STATS \</span><br><span class="line">--parallelism 1 \</span><br><span class="line">--spark-memory 2g</span><br></pre></td></tr></table></figure>
+
+<h2 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h2><p>异步索引功能仍在不断发展.<br>在运行索引器时,从部署的角度来看有几点需要注意:</p>
+<p>虽然可以与摄取同时创建索引,但不能同时删除它.<br>请在删除索引之前停止所有作者.</p>
+<p>只要启用了元数据表,就会默认创建文件索引.</p>
+<p>一次为一个元数据分区(或索引类型)触发索引.</p>
+<p>如果通过异步 HoodieIndexer 启用了索引,则确保在与常规摄取编写器相对应的配置中也启用了索引.<br>否则,元数据编写器会认为特定索引已被禁用并清理元数据分区.</p>
+<p>在多写入器的情况下,为所有写入器启用异步索引和特定索引配置.</p>
+<p>与压缩和集群等其他表服务不同,我们有单独的配置来内联运行,这里没有这样的内联配置.<br>例如,如果禁用异步索引并启用元数据以及列统计索引类型,则文件和列统计索引将与摄取同步创建.</p>
+<h1 id="Cleaning"><a href="#Cleaning" class="headerlink" title="Cleaning"></a>Cleaning</h1><p>Hoodie Cleaner 是一种实用程序,可帮助您回收空间并控制存储成本.<br>Apache Hudi 通过使用 MVCC 并发管理多个文件来提供写入者和读取者之间的快照隔离.<br>这些文件版本提供历史记录并启用时间旅行和回滚,但重要的是管理您保留多少历史记录以平衡成本.</p>
+<p>默认情况下启用自动 Hudi 清洁(<code>hoodie.clean.automatic</code>).<br>每次提交后立即调用清理,以删除较旧的文件切片.<br>建议启用此功能以确保元数据和数据存储增长受到限制.</p>
+<h2 id="清洁保留政策"><a href="#清洁保留政策" class="headerlink" title="清洁保留政策"></a>清洁保留政策</h2><p>清理旧文件时,应注意不要删除长时间运行的查询正在使用的文件.<br>Hudi 清理器目前支持以下清理策略来保留一定数量的提交或文件版本:</p>
+<ol>
+<li>KEEP_LATEST_COMMITS:这是默认策略.<br>这是一种临时清理策略,可确保回溯上次 X 提交中发生的所有更改的效果.<br>假设作者每 30 分钟将数据摄取到 Hudi 数据集中,并且运行时间最长的查询可能需要 5 小时才能完成,那么用户应该至少保留最后 10 次提交.<br>通过这样的配置,我们确保文件的最旧版本在磁盘上至少保留 5 小时,从而防止运行时间最长的查询在任何时间点失败.<br>使用此策略也可以进行增量清理.<br>要保留的提交数可以通过配置<code>hoodie.cleaner.commits.retained</code>.</li>
+<li>KEEP_LATEST_FILE_VERSIONS:此策略具有保持 N 个文件版本的效果,而与时间无关.<br>当知道在任何给定时间想要保留多少个文件的 MAX 版本时,此策略很有用.<br>为了实现与以前相同的行为来防止长时间运行的查询失败,应该根据数据模式进行计算.<br>或者,如果用户只想维护文件的 1 个最新版本,此策略也很有用.<br>要保留的文件版本数可以通过 配置<code>hoodie.cleaner.fileversions.retained</code>.</li>
+<li>KEEP_LATEST_BY_HOURS:此策略基于小时进行清理.<br>当您知道要在任何给定时间保留文件时,它既简单又有用.<br>对应于提交时间早于配置的保留小时数的提交将被清除.<br>目前可以通过参数配置<code>hoodie.cleaner.hours.retained</code>.</li>
+</ol>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p><a target="_blank" rel="noopener" href="https://hudi.apache.org/docs/configurations/#Compaction-Configs">https://hudi.apache.org/docs/configurations/#Compaction-Configs</a></p>
+<h2 id="独立运行"><a href="#独立运行" class="headerlink" title="独立运行"></a>独立运行</h2><p>Hoodie Cleaner 可以作为单独的进程运行,也可以与您的数据摄取一起运行.<br>如果您想在摄取数据的同时运行它,可以使用配置来同步或异步运行它.</p>
+<p>您可以使用此命令独立运行清理程序:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --master local --class org.apache.hudi.utilities.HoodieCleaner &#96;ls packaging&#x2F;hudi-utilities-bundle&#x2F;target&#x2F;hudi-utilities-bundle-*.jar&#96; --help</span><br><span class="line">        Usage: &lt;main class&gt; [options]</span><br><span class="line">        Options:</span><br><span class="line">        --help, -h</span><br><span class="line"></span><br><span class="line">        --hoodie-conf</span><br><span class="line">        Any configuration that can be set in the properties file (using the CLI</span><br><span class="line">        parameter &quot;--props&quot;) can also be passed command line using this</span><br><span class="line">        parameter. This can be repeated</span><br><span class="line">        Default: []</span><br><span class="line">        --props</span><br><span class="line">        path to properties file on localfs or dfs, with configurations for</span><br><span class="line">        hoodie client for cleaning</span><br><span class="line">        --spark-master</span><br><span class="line">        spark master to use.</span><br><span class="line">        Default: local[2]</span><br><span class="line">        * --target-base-path</span><br><span class="line">        base path for the hoodie table to be cleaner.</span><br></pre></td></tr></table></figure>
+
+<p>运行清洁器的一些示例.<br>保留最近的 10 次提交</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --master local --class org.apache.hudi.utilities.HoodieCleaner &#96;ls packaging&#x2F;hudi-utilities-bundle&#x2F;target&#x2F;hudi-utilities-bundle-*.jar&#96;\</span><br><span class="line">  --target-base-path &#x2F;path&#x2F;to&#x2F;hoodie_table \</span><br><span class="line">  --hoodie-conf hoodie.cleaner.policy&#x3D;KEEP_LATEST_COMMITS \</span><br><span class="line">  --hoodie-conf hoodie.cleaner.commits.retained&#x3D;10 \</span><br><span class="line">  --hoodie-conf hoodie.cleaner.parallelism&#x3D;200</span><br></pre></td></tr></table></figure>
+
+<p>保留最新的 3 个文件版本</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --master local --class org.apache.hudi.utilities.HoodieCleaner &#96;ls packaging&#x2F;hudi-utilities-bundle&#x2F;target&#x2F;hudi-utilities-bundle-*.jar&#96;\</span><br><span class="line">  --target-base-path &#x2F;path&#x2F;to&#x2F;hoodie_table \</span><br><span class="line">  --hoodie-conf hoodie.cleaner.policy&#x3D;KEEP_LATEST_FILE_VERSIONS \</span><br><span class="line">  --hoodie-conf hoodie.cleaner.fileversions.retained&#x3D;3 \</span><br><span class="line">  --hoodie-conf hoodie.cleaner.parallelism&#x3D;200</span><br></pre></td></tr></table></figure>
+
+<p>超过 24 小时的清理提交</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --master local --class org.apache.hudi.utilities.HoodieCleaner &#96;ls packaging&#x2F;hudi-utilities-bundle&#x2F;target&#x2F;hudi-utilities-bundle-*.jar&#96;\</span><br><span class="line">  --target-base-path &#x2F;path&#x2F;to&#x2F;hoodie_table \</span><br><span class="line">  --hoodie-conf hoodie.cleaner.policy&#x3D;KEEP_LATEST_BY_HOURS \</span><br><span class="line">  --hoodie-conf hoodie.cleaner.hours.retained&#x3D;24 \</span><br><span class="line">  --hoodie-conf hoodie.cleaner.parallelism&#x3D;200</span><br></pre></td></tr></table></figure>
+
+<p>注意:并行度采用要清理的分区数的最小值和<code>hoodie.cleaner.parallelism</code>.</p>
+<h2 id="异步运行"><a href="#异步运行" class="headerlink" title="异步运行"></a>异步运行</h2><p>如果您希望与写入异步运行清洁服务,请配置以下内容:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hoodie.clean.automatic&#x3D;true</span><br><span class="line">hoodie.clean.async&#x3D;true</span><br></pre></td></tr></table></figure>
+
+<h2 id="命令行界面"><a href="#命令行界面" class="headerlink" title="命令行界面"></a>命令行界面</h2><p>您还可以使用Hudi CLI运行 Hoodie Cleaner.<br>CLI 为清洁服务提供以下命令:<br>cleans show<br>clean showpartitions<br>cleans run</p>
+<p>保持最新 10 次提交的清洁器示例</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cleans run --sparkMaster local --hoodieConfigs hoodie.cleaner.policy&#x3D;KEEP_LATEST_COMMITS hoodie.cleaner.commits.retained&#x3D;3 hoodie.cleaner.parallelism&#x3D;200</span><br></pre></td></tr></table></figure>
+
+<p><code>org.apache.hudi.cli.commands.CleansCommand</code>您可以在课堂上找到这些命令的更多详细信息和相关代码.</p>
+<h1 id="Transformers"><a href="#Transformers" class="headerlink" title="Transformers"></a>Transformers</h1><p>Apache Hudi 提供了 HoodieTransformer Utility,它允许您在将源数据写入 Hudi 表之前对其进行转换.<br>有几个开箱即用的变压器可用,您也可以构建自己的自定义变压器类.<br>org.apache.hudi.utilities.transform<br>SqlQueryBasedTransformer<br>SqlFileBasedTransformer<br>FlatteningTransformer<br>ChainedTransformer</p>
+<h2 id="SQL-Query"><a href="#SQL-Query" class="headerlink" title="SQL Query"></a>SQL Query</h2><p>您可以传递要在写入期间执行的 SQL 查询.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">--transformer-class org.apache.hudi.utilities.transform.SqlQueryBasedTransformer</span><br><span class="line">--hoodie-conf hoodie.deltastreamer.transformer.sql&#x3D;SELECT a.col1, a.col3, a.col4 FROM &lt;SRC&gt; a</span><br></pre></td></tr></table></figure>
+
+<h2 id="SQL-File"><a href="#SQL-File" class="headerlink" title="SQL File"></a>SQL File</h2><p>您可以使用要在写入期间执行的 SQL 脚本指定文件.<br>SQL 文件配置了这个 hoodie 属性:<code>hoodie.deltastreamer.transformer.sql.file</code></p>
+<p>查询应将源引用为名为&quot;&lt;SRC &gt; &quot;的表</p>
+<p>最终的 sql 语句结果用作写入有效负载.<br>示例 Spark SQL 查询:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CACHE TABLE tmp_personal_trips AS</span><br><span class="line">SELECT * FROM &lt;SRC&gt; WHERE trip_type&#x3D;&#39;personal_trips&#39;;</span><br><span class="line"></span><br><span class="line">SELECT * FROM tmp_personal_trips;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Flattening"><a href="#Flattening" class="headerlink" title="Flattening"></a>Flattening</h2><p>该转换器可以展平嵌套对象.<br>它通过以嵌套方式为内部字段添加外部字段和 _ 前缀来展平传入记录中的嵌套字段.<br>目前不支持扁平化数组.</p>
+<p>示例模式可能如下所示,其中名称是原始源中 StructType 的嵌套字段</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">age as intColumn,address as stringColumn,name.first as name_first,name.last as name_last, name.middle as name_middle</span><br></pre></td></tr></table></figure>
+
+<p>将配置设置为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--transformer-class org.apache.hudi.utilities.transform.FlatteningTransformer</span><br></pre></td></tr></table></figure>
+
+<h2 id="Chained"><a href="#Chained" class="headerlink" title="Chained"></a>Chained</h2><p>如果您希望同时使用多个转换器,您可以使用链式转换器传递多个以顺序执行.</p>
+<p>下面的示例首先展平传入的记录,然后根据指定的查询进行 sql 投影:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">--transformer-class org.apache.hudi.utilities.transform.FlatteningTransformer,org.apache.hudi.utilities.transform.SqlQueryBasedTransformer   </span><br><span class="line">--hoodie-conf hoodie.deltastreamer.transformer.sql&#x3D;SELECT a.col1, a.col3, a.col4 FROM &lt;SRC&gt; a</span><br></pre></td></tr></table></figure>
+
+<h3 id="自定义变压器实施"><a href="#自定义变压器实施" class="headerlink" title="自定义变压器实施"></a>自定义变压器实施</h3><p>您可以通过扩展此类来编写自己的自定义转换器</p>
+<h1 id="标记机制"><a href="#标记机制" class="headerlink" title="标记机制"></a>标记机制</h1><h2 id="标记的目的"><a href="#标记的目的" class="headerlink" title="标记的目的"></a>标记的目的</h2><p>写入操作在完成之前可能会失败,从而在存储中留下部分或损坏的数据文件.<br>标记用于跟踪和清理任何部分或失败的写入操作.<br>当写入操作开始时,会创建一个标记,指示正在写入文件.<br>当写入提交成功时,标记被删除.<br>如果写入操作中途失败,则会留下一个标记,指示文件不完整.<br>使用标记的两个重要操作包括.</p>
+<h3 id="删除重复-部分数据文件"><a href="#删除重复-部分数据文件" class="headerlink" title="删除重复/部分数据文件"></a>删除重复/部分数据文件</h3><p>在 Spark 中,Hudi 写入客户端将数据文件写入委托给多个执行器.<br>一个执行者可以使任务失败,留下部分数据文件被写入,在这种情况下,Spark 会重试该任务,直到它成功.</p>
+<p>当启用推测执行时,也可以多次成功尝试将相同的数据写入不同的文件,最终只有其中一个被提交给 Spark 驱动程序进程进行提交.<br>标记有助于有效地识别写入的部分数据文件,这些数据文件与后来成功试验写入的数据文件相比包含重复数据,并且这些重复数据文件在提交完成时被清除.</p>
+<h3 id="回滚失败的提交"><a href="#回滚失败的提交" class="headerlink" title="回滚失败的提交"></a>回滚失败的提交</h3><p>如果写入操作失败,下一个写入客户端将在继续新的写入之前回滚失败的提交.<br>回滚是在标记的帮助下完成的,以识别作为失败提交的一部分写入的数据文件.</p>
+<p>如果我们没有标记来跟踪每次提交的数据文件,我们将不得不列出文件系统中的所有文件,将其与时间线中看到的文件相关联,然后删除属于部分写入失败的文件.<br>正如您可以想象的那样,在非常大的数据湖安装中,这将是非常昂贵的.</p>
+<h2 id="标记结构"><a href="#标记结构" class="headerlink" title="标记结构"></a>标记结构</h2><p>每个标记条目由三部分组成,数据文件名、标记扩展名 ( .marker) 和创建文件的 I/O 操作(CREATE-插入、MERGE-更新/删除或APPEND- 两者之一).<br>例如,标记91245ce3-bb82-4f9f-969e-343364159174-0_140-579-0_20210820173605.parquet.marker.CREATE表示对应的数据文件是91245ce3-bb82-4f9f-969e-343364159174-0_140-579-0_20210820173605.parquet,I/O 类型是CREATE.</p>
+<h2 id="标记书写选项"><a href="#标记书写选项" class="headerlink" title="标记书写选项"></a>标记书写选项</h2><p>有两种编写标记的方法:</p>
+<ol>
+<li>直接将标记写入存储,这是一种遗留配置.</li>
+<li>将标记写入时间线服务器,该服务器在将标记请求写入存储之前对其进行批处理(默认).<br>此选项可提高大文件的写入性能,如下所述.</li>
+</ol>
+<h3 id="直写标记"><a href="#直写标记" class="headerlink" title="直写标记"></a>直写标记</h3><p>直接写入存储会创建一个与每个数据文件对应的新标记文件,其标记文件名如上所述.<br>标记文件没有任何内容,即为空.<br>每个标记文件都被写入同一目录层次结构中的存储,即提交即时和分区路径,<code>.hoodie/.temp</code>位于 Hudi 表的基本路径下的临时文件夹下.<br>例如,下图显示了向 Hudi 表写入数据时创建的标记文件和对应的数据文件的一个示例.<br>在获取或删除所有标记文件路径时,该机制首先列出临时文件夹下的所有路径<code>.hoodie/.temp/&lt;commit_instant&gt;</code>,然后进行操作.</p>
+<img src="/images/fly1189.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>虽然扫描整个表以查找未提交的数据文件要高效得多,但随着要写入的数据文件数量的增加,要创建的标记文件的数量也会增加.<br>对于需要写入大量数据文件(例如 10K 或更多)的大型写入,这可能会为 AWS S3 等云存储造成性能瓶颈.<br>在 AWS S3 中,每个文件创建和删除调用都会触发一个 HTTP 请求,并且 对存储桶中每个前缀每秒可以处理多少个请求有速率限制.<br>当要并发写入的数据文件数量和标记文件的数量很大时,标记文件操作可能会在写入操作期间占用不小的时间,有时大约为几分钟或更长时间.</p>
+<h3 id="时间线服务器标记-默认"><a href="#时间线服务器标记-默认" class="headerlink" title="时间线服务器标记(默认)"></a>时间线服务器标记(默认)</h3><p>为了解决上述由于 AWS S3 的速率限制而导致的性能瓶颈,我们引入了一种利用时间线服务器的新标记机制,该机制通过非平凡的文件 I/O 延迟优化了与标记相关的存储延迟.<br>在下图中,您可以看到基于时间线服务器的标记机制将标记创建和其他与标记相关的操作从各个执行器委托给时间线服务器以进行集中处理.<br>时间线服务器批处理标记创建请求,并以可配置的批处理间隔(默认 50 毫秒)将标记写入文件系统中的一组有界文件.<br>这样,即使在数据文件数量巨大的情况下,也可以显着减少与标记相关的实际文件操作次数和延迟,从而提高大写的性能.</p>
+<img src="/images/fly1190.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>每个标记创建请求都在 Javalin 时间线服务器中异步处理,并在处理前排队.<br>对于每个批处理间隔,时间线服务器从队列中拉出待处理的标记创建请求,并以循环方式将所有标记写入下一个文件.<br>在时间线服务器内部,这种批处理是多线程的,旨在保证一致性和正确性.<br>批处理间隔和批处理并发都可以通过写入选项进行配置.</p>
+<img src="/images/fly1191.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>请注意,工作线程始终通过将请求中的标记名称与时间线服务器上维护的所有标记的内存副本进行比较来检查标记是否已经创建.<br>存储标记的基础文件仅在第一个标记请求(延迟加载)时读取.<br>请求的响应只有在新标记刷新到文件后才会发回,因此在时间线服务器发生故障的情况下,时间线服务器可以恢复已经创建的标记.<br>这些确保了存储和内存副本之间的一致性,并提高了处理标记请求的性能.</p>
+<blockquote>
+<p>HDFS 尚不支持基于时间线的标记,但是,用户可能几乎不会注意到直接标记的性能挑战,因为文件系统元数据有效地缓存在内存中,并且不会面临与 S3 相同的速率限制.</p>
+</blockquote>
+<p>hoodie.write.markers.type<br>timeline_server_based<br>要使用的标记类型,支持两种模式:<br>1)direct<br>每个数据文件对应的单独的marker文件由executor直接创建.<br>2)timeline_server_based<br>标记操作都在作为代理的时间线服务中处理.为了提高效率,新的标记条目被批量处理并存储在有限数量的基础文件中.</p>
+<p>hoodie.markers.timeline_server_based.batch.num_threads<br>20<br>在时间线服务器上用于批处理标记创建请求的线程数.</p>
+<p>hoodie.markers.timeline_server_based.batch.interval_ms<br>50<br>标记创建批处理的批处理间隔(以毫秒为单位).</p>
+<h1 id="文件大小"><a href="#文件大小" class="headerlink" title="文件大小"></a>文件大小</h1><p>本文档将向您展示 Apache Hudi 如何克服可怕的小文件问题.<br>Hudi 的一个关键设计决策是首先避免创建小文件,并始终编写适当大小的文件.<br>Hudi 中有两种管理小文件的方法,下面将描述每种方法的优点和权衡.</p>
+<h2 id="摄取期间自动调整大小"><a href="#摄取期间自动调整大小" class="headerlink" title="摄取期间自动调整大小"></a>摄取期间自动调整大小</h2><p>您可以在摄取期间自动管理文件的大小.<br>此解决方案在摄取期间增加了一点延迟,但它确保了一旦提交写入,读取查询总是有效的.<br>如果您在编写时不管理文件大小,而是尝试定期运行文件大小清理,那么在定期执行调整大小清理之前,您的查询将会很慢.</p>
+<blockquote>
+<p>bulk_insert写入操作在摄取期间不提供自动调整大小</p>
+</blockquote>
+<h3 id="Copy-On-Write"><a href="#Copy-On-Write" class="headerlink" title="Copy-On-Write"></a>Copy-On-Write</h3><p>这就像配置base/parquet文件(<code>hoodie.parquet.max.file.size</code>)的最大大小以及文件应被视为小文件 的软限制一样简单.<br>对于 Hudi 表的初始引导,调整记录大小估计对于确保将足够的记录打包到 parquet 文件中也很重要.<br>对于后续写入,Hudi 自动使用基于先前提交的平均记录大小.<br>Hudi 将尝试在写入时向小文件添加足够的记录,以使其达到配置的最大限制.<br>例如,当<code>compactionSmallFileSize=100MB</code>/<code>limitFileSize=120MB</code> 时,Hudi 将挑选所有小于100MB 的文件并尝试将它们增加到120MB.</p>
+<h3 id="Merge-On-Read"><a href="#Merge-On-Read" class="headerlink" title="Merge-On-Read"></a>Merge-On-Read</h3><p>MergeOnRead 对于不同的 INDEX 选择的工作方式不同,因此需要设置的配置很少.</p>
+<p><code>canIndexLogFiles = true</code>的索引:新数据的插入直接进入日志文件.<br>在这种情况下,您可以配置最大日志大小(<code>hoodie.logfile.max.size</code>)和一个表示当数据从 avro 移动到 parquet 文件时大小减小的因子(<code>hoodie.logfile.to.parquet.compression.ratio</code>).</p>
+<p>带有<code>canIndexLogFiles = false</code>的索引:新数据的插入仅用于 parquet 文件.<br>在这种情况下,适用与上述 COPY_ON_WRITE 情况相同的配置.</p>
+<p>在任何一种情况下,只有当特定文件片没有 PENDING 压缩或关联的日志文件时,小文件才会自动调整大小.<br>例如,对于案例 1:如果您有一个日志文件,并且计划进行压缩 C1 将该日志文件转换为 Parquet,则无法再向该日志文件中插入任何内容.<br>对于案例 2:如果您有一个 parquet 文件并且更新最终创建了关联的 delta 日志文件,则不能再有插入到该 parquet 文件中.<br>只有在执行了压缩并且没有与基本 parquet 文件关联的日志文件之后,才能将新插入发送到自动调整该 parquet 文件的大小.</p>
+<h2 id="使用聚类"><a href="#使用聚类" class="headerlink" title="使用聚类"></a>使用聚类</h2><p>Clustering是 Hudi 中的一项功能,可以将小文件同步或异步分组为较大的文件.<br>由于自动调整小文件大小的第一个解决方案在摄取速度上进行了权衡(因为小文件在摄取期间调整大小),如果您的用例对摄取延迟非常敏感,您不想在摄取速度上妥协,这可能最终创建了很多小文件,集群来救援.<br>可以通过摄取作业安排集群,异步作业可以在后台将小文件拼接在一起以生成更大的文件.<br>请注意,在此期间,摄取可以继续同时运行.</p>
+<p>请注意,Hudi 总是在磁盘上创建不可变文件.<br>为了能够进行自动调整大小或集群,Hudi 将始终创建较小文件的更新版本,从而产生同一文件的 2 个版本.<br>清洁服务稍后将启动并删除旧版本的小文件并保留最新的小文件.</p>
+<h1 id="灾难恢复"><a href="#灾难恢复" class="headerlink" title="灾难恢复"></a>灾难恢复</h1><p>灾难恢复对于任何软件来说都是非常关键的任务.<br>尤其是在数据系统方面,影响可能非常严重,导致业务决策延迟,甚至有时会出现错误的业务决策.<br>Apache Hudi 有两个操作可以帮助您从以前的状态恢复数据:&quot;保存点&quot;和&quot;恢复&quot;.</p>
+<h2 id="Savepoint-保存点"><a href="#Savepoint-保存点" class="headerlink" title="Savepoint(保存点)"></a>Savepoint(保存点)</h2><p>顾名思义,&quot;保存点&quot;将表保存到提交时间,以便您可以在以后需要时将表恢复到此保存点.<br>注意确保清理器不会清理任何保存点的文件.<br>在类似的行中,无法在已清理的提交上触发保存点.<br>简单来说,这就是备份的同义词,只是我们不制作表的新副本,而只是优雅地保存表的状态,以便我们以后需要时可以恢复它.</p>
+<h2 id="Restore-恢复"><a href="#Restore-恢复" class="headerlink" title="Restore(恢复)"></a>Restore(恢复)</h2><p>此操作使您可以将表还原到保存点提交之一.<br>此操作无法撤消(或撤消),因此在进行还原之前应小心.<br>Hudi 将删除所有大于要恢复表的保存点提交的数据文件和提交文件(时间线文件).<br>您应该在执行恢复时暂停对表的所有写入,因为在恢复过程中它们可能会失败.<br>此外,读取也可能会失败,因为快照查询将访问最新的文件,这些文件很有可能在还原时被删除.</p>
+<h2 id="Runbook-操作手册"><a href="#Runbook-操作手册" class="headerlink" title="Runbook(操作手册)"></a>Runbook(操作手册)</h2><p>保存点和恢复只能从 hudi-cli 触发.<br>让我们通过一个示例来了解如何获取保存点并稍后恢复表的状态.</p>
+<p>让我们通过 spark-shell 创建一个 hudi 表.<br>我将触发几批插入.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.hudi.QuickstartUtils._</span><br><span class="line">import scala.collection.JavaConversions._</span><br><span class="line">import org.apache.spark.sql.SaveMode._</span><br><span class="line">import org.apache.hudi.DataSourceReadOptions._</span><br><span class="line">import org.apache.hudi.DataSourceWriteOptions._</span><br><span class="line">import org.apache.hudi.config.HoodieWriteConfig._</span><br><span class="line"></span><br><span class="line">val tableName &#x3D; &quot;hudi_trips_cow&quot;</span><br><span class="line">val basePath &#x3D; &quot;file:&#x2F;&#x2F;&#x2F;tmp&#x2F;hudi_trips_cow&quot;</span><br><span class="line">val dataGen &#x3D; new DataGenerator</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; spark-shell</span><br><span class="line">val inserts &#x3D; convertToStringList(dataGen.generateInserts(10))</span><br><span class="line">val df &#x3D; spark.read.json(spark.sparkContext.parallelize(inserts, 2))</span><br><span class="line">df.write.format(&quot;hudi&quot;).</span><br><span class="line">  options(getQuickstartWriteConfigs).</span><br><span class="line">  option(PRECOMBINE_FIELD_OPT_KEY, &quot;ts&quot;).</span><br><span class="line">  option(RECORDKEY_FIELD_OPT_KEY, &quot;uuid&quot;).</span><br><span class="line">  option(PARTITIONPATH_FIELD_OPT_KEY, &quot;partitionpath&quot;).</span><br><span class="line">  option(TABLE_NAME, tableName).</span><br><span class="line">  mode(Overwrite).</span><br><span class="line">  save(basePath)</span><br></pre></td></tr></table></figure>
+
+<p>每批插入 10 条记录.<br>重复4个批次.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">val inserts &#x3D; convertToStringList(dataGen.generateInserts(10))</span><br><span class="line">val df &#x3D; spark.read.json(spark.sparkContext.parallelize(inserts, 2))</span><br><span class="line">df.write.format(&quot;hudi&quot;).</span><br><span class="line">  options(getQuickstartWriteConfigs).</span><br><span class="line">  option(PRECOMBINE_FIELD_OPT_KEY, &quot;ts&quot;).</span><br><span class="line">  option(RECORDKEY_FIELD_OPT_KEY, &quot;uuid&quot;).</span><br><span class="line">  option(PARTITIONPATH_FIELD_OPT_KEY, &quot;partitionpath&quot;).</span><br><span class="line">  option(TABLE_NAME, tableName).</span><br><span class="line">  mode(Append).</span><br><span class="line">  save(basePath)</span><br></pre></td></tr></table></figure>
+
+<p>总记录数应为 50.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">val tripsSnapshotDF &#x3D; spark.</span><br><span class="line">  read.</span><br><span class="line">  format(&quot;hudi&quot;).</span><br><span class="line">  load(basePath)</span><br><span class="line">tripsSnapshotDF.createOrReplaceTempView(&quot;hudi_trips_snapshot&quot;)</span><br><span class="line"></span><br><span class="line">spark.sql(&quot;select count(partitionpath, uuid) from  hudi_trips_snapshot &quot;).show()</span><br><span class="line"></span><br><span class="line">+--------------------------+</span><br><span class="line">|count(partitionpath, uuid)|</span><br><span class="line">  +--------------------------+</span><br><span class="line">|                        50|</span><br><span class="line">  +--------------------------+</span><br></pre></td></tr></table></figure>
+
+<p>让我们看一下 5 批插入后的时间线.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">ls -ltr &#x2F;tmp&#x2F;hudi_trips_cow&#x2F;.hoodie </span><br><span class="line">total 128</span><br><span class="line">drwxr-xr-x  2 nsb  wheel    64 Jan 28 16:00 archived</span><br><span class="line">-rw-r--r--  1 nsb  wheel   546 Jan 28 16:00 hoodie.properties</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:00 20220128160040171.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:00 20220128160040171.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4374 Jan 28 16:00 20220128160040171.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:01 20220128160124637.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:01 20220128160124637.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4414 Jan 28 16:01 20220128160124637.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:02 20220128160226172.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:02 20220128160226172.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4427 Jan 28 16:02 20220128160226172.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:02 20220128160229636.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:02 20220128160229636.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4428 Jan 28 16:02 20220128160229636.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:02 20220128160245447.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:02 20220128160245447.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4428 Jan 28 16:02 20220128160245447.commit</span><br></pre></td></tr></table></figure>
+
+<p>让我们在最新提交时触发一个保存点.<br>Savepoint 只能通过 hudi-cli 完成.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;hudi-cli.sh</span><br><span class="line"></span><br><span class="line">connect --path &#x2F;tmp&#x2F;hudi_trips_cow&#x2F;</span><br><span class="line">commits show</span><br><span class="line">set --conf SPARK_HOME&#x3D;&lt;SPARK_HOME&gt;</span><br><span class="line">savepoint create --commit 20220128160245447 --sparkMaster local[2]</span><br></pre></td></tr></table></figure>
+
+<p>让我们检查保存点之后的时间线.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">ls -ltr &#x2F;tmp&#x2F;hudi_trips_cow&#x2F;.hoodie</span><br><span class="line">total 136</span><br><span class="line">drwxr-xr-x  2 nsb  wheel    64 Jan 28 16:00 archived</span><br><span class="line">-rw-r--r--  1 nsb  wheel   546 Jan 28 16:00 hoodie.properties</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:00 20220128160040171.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:00 20220128160040171.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4374 Jan 28 16:00 20220128160040171.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:01 20220128160124637.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:01 20220128160124637.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4414 Jan 28 16:01 20220128160124637.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:02 20220128160226172.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:02 20220128160226172.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4427 Jan 28 16:02 20220128160226172.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:02 20220128160229636.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:02 20220128160229636.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4428 Jan 28 16:02 20220128160229636.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:02 20220128160245447.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:02 20220128160245447.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4428 Jan 28 16:02 20220128160245447.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:05 20220128160245447.savepoint.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  1168 Jan 28 16:05 20220128160245447.savepoint</span><br></pre></td></tr></table></figure>
+
+<p>您可能会注意到添加了保存点元文件,以跟踪作为最新表快照的一部分的文件.</p>
+<p>现在,让我们继续添加几批插入.<br>重复以下命令 3 次.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">val inserts &#x3D; convertToStringList(dataGen.generateInserts(10))</span><br><span class="line">val df &#x3D; spark.read.json(spark.sparkContext.parallelize(inserts, 2))</span><br><span class="line">df.write.format(&quot;hudi&quot;).</span><br><span class="line">  options(getQuickstartWriteConfigs).</span><br><span class="line">  option(PRECOMBINE_FIELD_OPT_KEY, &quot;ts&quot;).</span><br><span class="line">  option(RECORDKEY_FIELD_OPT_KEY, &quot;uuid&quot;).</span><br><span class="line">  option(PARTITIONPATH_FIELD_OPT_KEY, &quot;partitionpath&quot;).</span><br><span class="line">  option(TABLE_NAME, tableName).</span><br><span class="line">  mode(Append).</span><br><span class="line">  save(basePath)</span><br></pre></td></tr></table></figure>
+
+<p>因为我们总共做了 8 批,所以总记录数将是 80.<br>(5个直到保存点,3个在保存点之后)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">val tripsSnapshotDF &#x3D; spark.</span><br><span class="line">  read.</span><br><span class="line">  format(&quot;hudi&quot;).</span><br><span class="line">  load(basePath)</span><br><span class="line">tripsSnapshotDF.createOrReplaceTempView(&quot;hudi_trips_snapshot&quot;)</span><br><span class="line"></span><br><span class="line">spark.sql(&quot;select count(partitionpath, uuid) from  hudi_trips_snapshot &quot;).show()</span><br><span class="line">+--------------------------+</span><br><span class="line">|count(partitionpath, uuid)|</span><br><span class="line">  +--------------------------+</span><br><span class="line">|                        80|</span><br><span class="line">  +--------------------------+</span><br></pre></td></tr></table></figure>
+
+<p>假设发生了一些不好的事情,您想将表恢复到较旧的快照.<br>正如我们之前所说,我们只能从 hudi-cli 触发恢复.<br>并且请记住在进行还原时关闭所有编写器进程.</p>
+<p>在我们触发还原之前,让我们检查一次时间线.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">ls -ltr &#x2F;tmp&#x2F;hudi_trips_cow&#x2F;.hoodie</span><br><span class="line">total 208</span><br><span class="line">drwxr-xr-x  2 nsb  wheel    64 Jan 28 16:00 archived</span><br><span class="line">-rw-r--r--  1 nsb  wheel   546 Jan 28 16:00 hoodie.properties</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:00 20220128160040171.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:00 20220128160040171.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4374 Jan 28 16:00 20220128160040171.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:01 20220128160124637.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:01 20220128160124637.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4414 Jan 28 16:01 20220128160124637.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:02 20220128160226172.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:02 20220128160226172.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4427 Jan 28 16:02 20220128160226172.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:02 20220128160229636.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:02 20220128160229636.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4428 Jan 28 16:02 20220128160229636.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:02 20220128160245447.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:02 20220128160245447.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4428 Jan 28 16:02 20220128160245447.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:05 20220128160245447.savepoint.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  1168 Jan 28 16:05 20220128160245447.savepoint</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:06 20220128160620557.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:06 20220128160620557.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4428 Jan 28 16:06 20220128160620557.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:06 20220128160627501.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:06 20220128160627501.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4428 Jan 28 16:06 20220128160627501.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:06 20220128160630785.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:06 20220128160630785.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4428 Jan 28 16:06 20220128160630785.commit</span><br></pre></td></tr></table></figure>
+
+<p>如果您在同一个 hudi-cli 会话中继续,您只需执行&quot;刷新&quot;,以便将表状态刷新到其最新状态.<br>如果没有,请再次连接到表.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;hudi-cli.sh</span><br><span class="line"></span><br><span class="line">connect --path &#x2F;tmp&#x2F;hudi_trips_cow&#x2F;</span><br><span class="line">commits show</span><br><span class="line">set --conf SPARK_HOME&#x3D;&lt;SPARK_HOME&gt;</span><br><span class="line">savepoints show</span><br><span class="line">╔═══════════════════╗</span><br><span class="line">║ SavepointTime     ║</span><br><span class="line">╠═══════════════════╣</span><br><span class="line">║ 20220128160245447 ║</span><br><span class="line">╚═══════════════════╝</span><br><span class="line">savepoint rollback --savepoint 20220128160245447 --sparkMaster local[2]</span><br></pre></td></tr></table></figure>
+
+<p>Hudi 表应该已经恢复到保存点提交 20220128160245447.<br>数据文件和时间线文件都应该被删除.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">ls -ltr &#x2F;tmp&#x2F;hudi_trips_cow&#x2F;.hoodie</span><br><span class="line">total 152</span><br><span class="line">drwxr-xr-x  2 nsb  wheel    64 Jan 28 16:00 archived</span><br><span class="line">-rw-r--r--  1 nsb  wheel   546 Jan 28 16:00 hoodie.properties</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:00 20220128160040171.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:00 20220128160040171.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4374 Jan 28 16:00 20220128160040171.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:01 20220128160124637.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:01 20220128160124637.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4414 Jan 28 16:01 20220128160124637.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:02 20220128160226172.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:02 20220128160226172.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4427 Jan 28 16:02 20220128160226172.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:02 20220128160229636.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:02 20220128160229636.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4428 Jan 28 16:02 20220128160229636.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:02 20220128160245447.commit.requested</span><br><span class="line">-rw-r--r--  1 nsb  wheel  2594 Jan 28 16:02 20220128160245447.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4428 Jan 28 16:02 20220128160245447.commit</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:05 20220128160245447.savepoint.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  1168 Jan 28 16:05 20220128160245447.savepoint</span><br><span class="line">-rw-r--r--  1 nsb  wheel     0 Jan 28 16:07 20220128160732437.restore.inflight</span><br><span class="line">-rw-r--r--  1 nsb  wheel  4152 Jan 28 16:07 20220128160732437.restore</span><br></pre></td></tr></table></figure>
+
+<p>让我们检查表中的总记录数.<br>应该匹配我们的记录,就在我们触发保存点之前.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">val tripsSnapshotDF &#x3D; spark.</span><br><span class="line">  read.</span><br><span class="line">  format(&quot;hudi&quot;).</span><br><span class="line">  load(basePath)</span><br><span class="line">tripsSnapshotDF.createOrReplaceTempView(&quot;hudi_trips_snapshot&quot;)</span><br><span class="line"></span><br><span class="line">spark.sql(&quot;select count(partitionpath, uuid) from  hudi_trips_snapshot &quot;).show()</span><br><span class="line">+--------------------------+</span><br><span class="line">|count(partitionpath, uuid)|</span><br><span class="line">  +--------------------------+</span><br><span class="line">|                        50|</span><br><span class="line">  +--------------------------+</span><br></pre></td></tr></table></figure>
+
+<p>如您所见,整个表状态恢复到保存点的提交.<br>用户可以选择定期触发保存点,并在创建新保存点时继续删除旧保存点.<br>Hudi-cli 有一个命令&quot;savepoint delete&quot;来帮助删除一个保存点.<br>请记住,清理器可能不会清理保存点的文件.<br>因此,用户应确保他们不时删除保存点.<br>否则,存储回收可能不会发生.</p>
+<p>注意:MOR 表的保存点和恢复仅从 0.11 开始可用.</p>
+<h1 id="Exporter"><a href="#Exporter" class="headerlink" title="Exporter"></a>Exporter</h1><h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>HoodieSnapshotExporter 允许您将数据从一个位置复制到另一个位置以进行备份或其他目的.<br>您可以将数据写入 Hudi、Json、Orc 或 Parquet 文件格式.<br>除了复制数据之外,您还可以使用提供的字段重新分区数据或通过扩展下面详细显示的类来实现自定义重新分区.</p>
+<h2 id="论据"><a href="#论据" class="headerlink" title="论据"></a>论据</h2><p>HoodieSnapshotExporter 接受对源路径和目标路径的引用.<br>该实用程序将发出查询,根据需要执行任何重新分区,并将数据写入 Hudi、parquet 或 json 格式.</p>
+<img src="/images/fly1192.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="例子"><a href="#例子" class="headerlink" title="例子"></a>例子</h2><h3 id="复制Hudi数据集"><a href="#复制Hudi数据集" class="headerlink" title="复制Hudi数据集"></a>复制Hudi数据集</h3><p>导出器扫描源数据集,然后将其复制到目标输出路径.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">spark-submit \</span><br><span class="line">  --jars &quot;packaging&#x2F;hudi-spark-bundle&#x2F;target&#x2F;hudi-spark-bundle_2.11-0.6.0-SNAPSHOT.jar&quot; \</span><br><span class="line">  --deploy-mode &quot;client&quot; \</span><br><span class="line">  --class &quot;org.apache.hudi.utilities.HoodieSnapshotExporter&quot; \</span><br><span class="line">      packaging&#x2F;hudi-utilities-bundle&#x2F;target&#x2F;hudi-utilities-bundle_2.11-0.6.0-SNAPSHOT.jar \</span><br><span class="line">  --source-base-path &quot;&#x2F;tmp&#x2F;&quot; \</span><br><span class="line">  --target-output-path &quot;&#x2F;tmp&#x2F;exported&#x2F;hudi&#x2F;&quot; \</span><br><span class="line">  --output-format &quot;hudi&quot;</span><br></pre></td></tr></table></figure>
+
+<h3 id="导出到-json-或-parquet数据集"><a href="#导出到-json-或-parquet数据集" class="headerlink" title="导出到 json 或 parquet数据集"></a>导出到 json 或 parquet数据集</h3><p>导出器还可以将源数据集转换为其他格式.<br>目前仅支持&quot;json&quot;和&quot;parquet&quot;.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">spark-submit \</span><br><span class="line">  --jars &quot;packaging&#x2F;hudi-spark-bundle&#x2F;target&#x2F;hudi-spark-bundle_2.11-0.6.0-SNAPSHOT.jar&quot; \</span><br><span class="line">  --deploy-mode &quot;client&quot; \</span><br><span class="line">  --class &quot;org.apache.hudi.utilities.HoodieSnapshotExporter&quot; \</span><br><span class="line">      packaging&#x2F;hudi-utilities-bundle&#x2F;target&#x2F;hudi-utilities-bundle_2.11-0.6.0-SNAPSHOT.jar \</span><br><span class="line">  --source-base-path &quot;&#x2F;tmp&#x2F;&quot; \</span><br><span class="line">  --target-output-path &quot;&#x2F;tmp&#x2F;exported&#x2F;json&#x2F;&quot; \</span><br><span class="line">  --output-format &quot;json&quot;  # or &quot;parquet&quot;</span><br></pre></td></tr></table></figure>
+
+<h3 id="重新分区"><a href="#重新分区" class="headerlink" title="重新分区"></a>重新分区</h3><p>当导出为不同的格式时,Exporter 会使用该<code>--output-partition-field</code>参数进行一些自定义的重新分区.<br>注意:所有<code>_hoodie_*</code>元数据字段将在导出期间被剥离,因此请确保使用现有的非元数据字段作为输出分区.</p>
+<p>默认情况下,如果没有给出分区参数,则输出数据集将没有分区.<br>例子:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">spark-submit \</span><br><span class="line">  --jars &quot;packaging&#x2F;hudi-spark-bundle&#x2F;target&#x2F;hudi-spark-bundle_2.11-0.6.0-SNAPSHOT.jar&quot; \</span><br><span class="line">  --deploy-mode &quot;client&quot; \</span><br><span class="line">  --class &quot;org.apache.hudi.utilities.HoodieSnapshotExporter&quot; \</span><br><span class="line">      packaging&#x2F;hudi-utilities-bundle&#x2F;target&#x2F;hudi-utilities-bundle_2.11-0.6.0-SNAPSHOT.jar \  </span><br><span class="line">  --source-base-path &quot;&#x2F;tmp&#x2F;&quot; \</span><br><span class="line">  --target-output-path &quot;&#x2F;tmp&#x2F;exported&#x2F;json&#x2F;&quot; \</span><br><span class="line">  --output-format &quot;json&quot; \</span><br><span class="line">  --output-partition-field &quot;symbol&quot;  # assume the source dataset contains a field &#96;symbol&#96;</span><br></pre></td></tr></table></figure>
+
+<p>输出目录将如下所示</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#96;_SUCCESS symbol&#x3D;AMRS symbol&#x3D;AYX symbol&#x3D;CDMO symbol&#x3D;CRC symbol&#x3D;DRNA ...&#96;</span><br></pre></td></tr></table></figure>
+
+<h3 id="自定义重新分区"><a href="#自定义重新分区" class="headerlink" title="自定义重新分区"></a>自定义重新分区</h3><p><code>--output-partitioner</code>参数接受实现的类的完全限定名称<code>HoodieSnapshotExporter.Partitioner</code>.<br>此参数的优先级高于<code>--output-partition-field</code>,如果提供此参数将被忽略.<br>一个示例实现如下所示:<br>MyPartitioner.java</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">package com.foo.bar;</span><br><span class="line">public class MyPartitioner implements HoodieSnapshotExporter.Partitioner &#123;</span><br><span class="line"></span><br><span class="line">  private static final String PARTITION_NAME &#x3D; &quot;date&quot;;</span><br><span class="line"> </span><br><span class="line">  @Override</span><br><span class="line">  public DataFrameWriter&lt;Row&gt; partition(Dataset&lt;Row&gt; source) &#123;</span><br><span class="line">    &#x2F;&#x2F; use the current hoodie partition path as the output partition</span><br><span class="line">    return source</span><br><span class="line">        .withColumnRenamed(HoodieRecord.PARTITION_PATH_METADATA_FIELD, PARTITION_NAME)</span><br><span class="line">        .repartition(new Column(PARTITION_NAME))</span><br><span class="line">        .write()</span><br><span class="line">        .partitionBy(PARTITION_NAME);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>将这个类放入之后my-custom.jar,然后将其放在作业类路径中,提交命令将如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">spark-submit \</span><br><span class="line">  --jars &quot;packaging&#x2F;hudi-spark-bundle&#x2F;target&#x2F;hudi-spark-bundle_2.11-0.6.0-SNAPSHOT.jar,my-custom.jar&quot; \</span><br><span class="line">  --deploy-mode &quot;client&quot; \</span><br><span class="line">  --class &quot;org.apache.hudi.utilities.HoodieSnapshotExporter&quot; \</span><br><span class="line">      packaging&#x2F;hudi-utilities-bundle&#x2F;target&#x2F;hudi-utilities-bundle_2.11-0.6.0-SNAPSHOT.jar \</span><br><span class="line">  --source-base-path &quot;&#x2F;tmp&#x2F;&quot; \</span><br><span class="line">  --target-output-path &quot;&#x2F;tmp&#x2F;exported&#x2F;json&#x2F;&quot; \</span><br><span class="line">  --output-format &quot;json&quot; \</span><br><span class="line">  --output-partitioner &quot;com.foo.bar.MyPartitioner&quot;</span><br></pre></td></tr></table></figure>
+
+<h1 id="数据质量"><a href="#数据质量" class="headerlink" title="数据质量"></a>数据质量</h1><p>Apache Hudi 具有所谓的Pre-Commit Validators,允许您在使用 DeltaStreamer 或 Spark 数据源编写器编写数据时验证您的数据是否满足特定的数据质量预期.</p>
+<p>要配置预提交验证器,请使用此设置<code>hoodie.precommit.validators=&lt;comma separated list of validator class names&gt;</code>.<br>例子:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spark.write.format(&quot;hudi&quot;)</span><br><span class="line">    .option(&quot;hoodie.precommit.validators&quot;, &quot;org.apache.hudi.client.validator.SqlQueryEqualityPreCommitValidator&quot;)</span><br></pre></td></tr></table></figure>
+
+<p>今天,您可以使用这些验证器中的任何一个,甚至可以灵活地扩展您自己的验证器.</p>
+<h2 id="SQL查询单个结果"><a href="#SQL查询单个结果" class="headerlink" title="SQL查询单个结果"></a>SQL查询单个结果</h2><p>可用于验证对表的查询是否产生特定值.<br><code>org.apache.hudi.client.validator.SqlQuerySingleResultPreCommitValidator</code><br>多个查询用&#39;;&#39;分隔 支持分隔符.<br>预期结果包含在查询中,以&quot;#&quot;分隔.<br>示例查询:<code>query1#result1;query2#result2</code></p>
+<p>例如,&quot;期望正好 0 个空行&quot;:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.hudi.config.HoodiePreCommitValidatorConfig._</span><br><span class="line"></span><br><span class="line">df.write.format(&quot;hudi&quot;).mode(Overwrite).</span><br><span class="line">  option(TABLE_NAME, tableName).</span><br><span class="line">  option(&quot;hoodie.precommit.validators&quot;, &quot;org.apache.hudi.client.validator.SqlQuerySingleResultPreCommitValidator&quot;).</span><br><span class="line">  option(&quot;hoodie.precommit.validators.single.value.sql.queries&quot;, &quot;select count(*) from &lt;TABLE_NAME&gt; where col&#x3D;null#0&quot;).</span><br><span class="line">  save(basePath)</span><br></pre></td></tr></table></figure>
+
+<h2 id="SQL-查询相等性"><a href="#SQL-查询相等性" class="headerlink" title="SQL 查询相等性"></a>SQL 查询相等性</h2><p>可用于验证提交前后的行是否相等.<br><code>org.apache.hudi.client.validator.SqlQueryEqualityPreCommitValidator</code><br>例如,&quot;预计此提交不会更改空行&quot;:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.hudi.config.HoodiePreCommitValidatorConfig._</span><br><span class="line"></span><br><span class="line">df.write.format(&quot;hudi&quot;).mode(Overwrite).</span><br><span class="line">  option(TABLE_NAME, tableName).</span><br><span class="line">  option(&quot;hoodie.precommit.validators&quot;, &quot;org.apache.hudi.client.validator.SqlQueryEqualityPreCommitValidator&quot;).</span><br><span class="line">  option(&quot;hoodie.precommit.validators.equality.sql.queries&quot;, &quot;select count(*) from &lt;TABLE_NAME&gt; where col&#x3D;null&quot;).</span><br><span class="line">  save(basePath)</span><br></pre></td></tr></table></figure>
+
+<h2 id="SQL-查询不等式"><a href="#SQL-查询不等式" class="headerlink" title="SQL 查询不等式"></a>SQL 查询不等式</h2><p>可用于验证提交前后行的不等式.<br><code>org.apache.hudi.client.validator.SqlQueryInequalityPreCommitValidator</code><br>例如,&quot;预计此提交必须更改空行&quot;:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.hudi.config.HoodiePreCommitValidatorConfig._</span><br><span class="line"></span><br><span class="line">df.write.format(&quot;hudi&quot;).mode(Overwrite).</span><br><span class="line">  option(TABLE_NAME, tableName).</span><br><span class="line">  option(&quot;hoodie.precommit.validators&quot;, &quot;org.apache.hudi.client.validator.SqlQueryEqualityPreCommitValidator&quot;).</span><br><span class="line">  option(&quot;hoodie.precommit.validators.inequality.sql.queries&quot;, &quot;select count(*) from &lt;TABLE_NAME&gt; where col&#x3D;null&quot;).</span><br><span class="line">  save(basePath)</span><br></pre></td></tr></table></figure>
+
+<h2 id="扩展自定义验证器"><a href="#扩展自定义验证器" class="headerlink" title="扩展自定义验证器"></a>扩展自定义验证器</h2><p>用户还可以通过扩展抽象类SparkPreCommitValidator 并覆盖该方法来提供自己的实现.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">void validateRecordsBeforeAndAfter(Dataset&lt;Row&gt; before, </span><br><span class="line">                                   Dataset&lt;Row&gt; after, </span><br><span class="line">                                   Set&lt;String&gt; partitionsAffected)</span><br></pre></td></tr></table></figure>
+
+<h1 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h1><p>Hudi 无需长时间运行的服务器或额外的基础架构成本即可部署到您的数据湖.<br>事实上,Hudi 开创了这种使用现有基础架构构建事务分布式存储层的模型,并且看到其他系统也采用类似方法令人振奋.<br>Hudi 编写是通过 Spark 作业(DeltaStreamer 或自定义 Spark 数据源作业)完成的,根据标准 Apache Spark建议进行部署.<br>通过安装在 Apache Hive、Apache Spark 或 PrestoDB 中的库来查询 Hudi 表,因此不需要额外的基础设施.</p>
+<p>典型的 Hudi 数据摄取可以通过 2 种模式实现.<br>在单次运行模式下,Hudi 摄取读取下一批数据,将它们摄取到 Hudi 表并退出.<br>在连续模式下,Hudi 摄取作为一个长时间运行的服务在循环中执行摄取.</p>
+<p>使用 Merge_On_Read Table,Hudi 摄取还需要处理压缩增量文件.<br>同样,可以通过让压缩与摄取同时运行或以串行方式一个接一个地以异步模式执行压缩.</p>
+<h2 id="DeltaStreamer"><a href="#DeltaStreamer" class="headerlink" title="DeltaStreamer"></a>DeltaStreamer</h2><p>DeltaStreamer是一个独立的实用程序,可以从 DFS、Kafka 和 DB Changelogs 等不同来源逐步拉取上游更改,并将它们摄取到 hudi 表中.<br>它以两种模式作为 spark 应用程序运行.</p>
+<h3 id="运行一次模式"><a href="#运行一次模式" class="headerlink" title="运行一次模式"></a>运行一次模式</h3><p>在这种模式下,Deltastreamer 执行一轮摄取,包括从上游源增量提取事件并将它们摄取到 hudi 表.<br>清理旧文件版本和归档 hoodie 时间线等后台操作会作为运行的一部分自动执行.<br>对于 Merge-On-Read 表,压缩也作为摄取的一部分内联运行,除非通过传递标志&quot;<code>--disable-compaction</code>&quot;禁用.<br>默认情况下,每次摄取运行都会内联运行压缩,这可以通过设置属性&quot;<code>hoodie.compact.inline.max.delta.commits</code>&quot;来更改.<br>您可以手动运行此 spark 应用程序,也可以使用任何 cron 触发器或工作流编排器(最常见的部署策略)(例如 Apache Airflow)来生成此应用程序.<br>用于运行 spark 应用程序.</p>
+<p>这是一个示例调用,用于在单次运行模式下从 kafka 主题读取并写入纱线集群中的 Merge On Read 表类型.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --packages org.apache.hudi:hudi-utilities-bundle_2.11:0.12.1 \</span><br><span class="line"> --master yarn \</span><br><span class="line"> --deploy-mode cluster \</span><br><span class="line"> --num-executors 10 \</span><br><span class="line"> --executor-memory 3g \</span><br><span class="line"> --driver-memory 6g \</span><br><span class="line"> --conf spark.driver.extraJavaOptions&#x3D;&quot;-XX:+PrintGCApplicationStoppedTime -XX:+PrintGCApplicationConcurrentTime -XX:+PrintGCTimeStamps -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath&#x3D;&#x2F;tmp&#x2F;varadarb_ds_driver.hprof&quot; \</span><br><span class="line"> --conf spark.executor.extraJavaOptions&#x3D;&quot;-XX:+PrintGCApplicationStoppedTime -XX:+PrintGCApplicationConcurrentTime -XX:+PrintGCTimeStamps -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath&#x3D;&#x2F;tmp&#x2F;varadarb_ds_executor.hprof&quot; \</span><br><span class="line"> --queue hadoop-platform-queue \</span><br><span class="line"> --conf spark.scheduler.mode&#x3D;FAIR \</span><br><span class="line"> --conf spark.yarn.executor.memoryOverhead&#x3D;1072 \</span><br><span class="line"> --conf spark.yarn.driver.memoryOverhead&#x3D;2048 \</span><br><span class="line"> --conf spark.task.cpus&#x3D;1 \</span><br><span class="line"> --conf spark.executor.cores&#x3D;1 \</span><br><span class="line"> --conf spark.task.maxFailures&#x3D;10 \</span><br><span class="line"> --conf spark.memory.fraction&#x3D;0.4 \</span><br><span class="line"> --conf spark.rdd.compress&#x3D;true \</span><br><span class="line"> --conf spark.kryoserializer.buffer.max&#x3D;200m \</span><br><span class="line"> --conf spark.serializer&#x3D;org.apache.spark.serializer.KryoSerializer \</span><br><span class="line"> --conf spark.memory.storageFraction&#x3D;0.1 \</span><br><span class="line"> --conf spark.shuffle.service.enabled&#x3D;true \</span><br><span class="line"> --conf spark.sql.hive.convertMetastoreParquet&#x3D;false \</span><br><span class="line"> --conf spark.ui.port&#x3D;5555 \</span><br><span class="line"> --conf spark.driver.maxResultSize&#x3D;3g \</span><br><span class="line"> --conf spark.executor.heartbeatInterval&#x3D;120s \</span><br><span class="line"> --conf spark.network.timeout&#x3D;600s \</span><br><span class="line"> --conf spark.eventLog.overwrite&#x3D;true \</span><br><span class="line"> --conf spark.eventLog.enabled&#x3D;true \</span><br><span class="line"> --conf spark.eventLog.dir&#x3D;hdfs:&#x2F;&#x2F;&#x2F;user&#x2F;spark&#x2F;applicationHistory \</span><br><span class="line"> --conf spark.yarn.max.executor.failures&#x3D;10 \</span><br><span class="line"> --conf spark.sql.catalogImplementation&#x3D;hive \</span><br><span class="line"> --conf spark.sql.shuffle.partitions&#x3D;100 \</span><br><span class="line"> --driver-class-path $HADOOP_CONF_DIR \</span><br><span class="line"> --class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer \</span><br><span class="line"> --table-type MERGE_ON_READ \</span><br><span class="line"> --source-class org.apache.hudi.utilities.sources.JsonKafkaSource \</span><br><span class="line"> --source-ordering-field ts  \</span><br><span class="line"> --target-base-path &#x2F;user&#x2F;hive&#x2F;warehouse&#x2F;stock_ticks_mor \</span><br><span class="line"> --target-table stock_ticks_mor \</span><br><span class="line"> --props &#x2F;var&#x2F;demo&#x2F;config&#x2F;kafka-source.properties \</span><br><span class="line"> --schemaprovider-class org.apache.hudi.utilities.schema.FilebasedSchemaProvider</span><br></pre></td></tr></table></figure>
+
+<h3 id="连续模式"><a href="#连续模式" class="headerlink" title="连续模式"></a>连续模式</h3><p>这里,deltastreamer 运行一个无限循环,每一轮执行一个摄取轮,如运行一次模式中所述. 数据摄取的频率可以通过配置&quot;<code>--min-sync-interval-seconds</code>&quot;来控制.<br>对于 Merge-On-Read 表,压缩以异步方式与摄取同时运行,除非通过传递标志&quot;<code>--disable-compaction</code>&quot;禁用.<br>每次摄取运行都会异步触发压缩请求,并且可以通过设置属性&quot;<code>hoodie.compact.inline.max.delta.commits</code>&quot;来更改此频率.<br>由于摄取和压缩都在同一个 Spark 上下文中运行,您可以在 DeltaStreamer CLI 中使用资源分配配置,例如 (&quot;--delta-sync-scheduling-weight&quot;, &quot;--compact-scheduling-weight&quot;, &quot;&quot;- -delta-sync-scheduling-minshare&quot;和&quot;--compact-scheduling-minshare&quot;)来控制摄取和压缩之间的执行程序分配.</p>
+<p>这是一个示例调用,用于以连续模式读取 kafka 主题并写入纱线集群中的 Merge On Read 表类型.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --packages org.apache.hudi:hudi-utilities-bundle_2.11:0.12.1 \</span><br><span class="line"> --master yarn \</span><br><span class="line"> --deploy-mode cluster \</span><br><span class="line"> --num-executors 10 \</span><br><span class="line"> --executor-memory 3g \</span><br><span class="line"> --driver-memory 6g \</span><br><span class="line"> --conf spark.driver.extraJavaOptions&#x3D;&quot;-XX:+PrintGCApplicationStoppedTime -XX:+PrintGCApplicationConcurrentTime -XX:+PrintGCTimeStamps -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath&#x3D;&#x2F;tmp&#x2F;varadarb_ds_driver.hprof&quot; \</span><br><span class="line"> --conf spark.executor.extraJavaOptions&#x3D;&quot;-XX:+PrintGCApplicationStoppedTime -XX:+PrintGCApplicationConcurrentTime -XX:+PrintGCTimeStamps -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath&#x3D;&#x2F;tmp&#x2F;varadarb_ds_executor.hprof&quot; \</span><br><span class="line"> --queue hadoop-platform-queue \</span><br><span class="line"> --conf spark.scheduler.mode&#x3D;FAIR \</span><br><span class="line"> --conf spark.yarn.executor.memoryOverhead&#x3D;1072 \</span><br><span class="line"> --conf spark.yarn.driver.memoryOverhead&#x3D;2048 \</span><br><span class="line"> --conf spark.task.cpus&#x3D;1 \</span><br><span class="line"> --conf spark.executor.cores&#x3D;1 \</span><br><span class="line"> --conf spark.task.maxFailures&#x3D;10 \</span><br><span class="line"> --conf spark.memory.fraction&#x3D;0.4 \</span><br><span class="line"> --conf spark.rdd.compress&#x3D;true \</span><br><span class="line"> --conf spark.kryoserializer.buffer.max&#x3D;200m \</span><br><span class="line"> --conf spark.serializer&#x3D;org.apache.spark.serializer.KryoSerializer \</span><br><span class="line"> --conf spark.memory.storageFraction&#x3D;0.1 \</span><br><span class="line"> --conf spark.shuffle.service.enabled&#x3D;true \</span><br><span class="line"> --conf spark.sql.hive.convertMetastoreParquet&#x3D;false \</span><br><span class="line"> --conf spark.ui.port&#x3D;5555 \</span><br><span class="line"> --conf spark.driver.maxResultSize&#x3D;3g \</span><br><span class="line"> --conf spark.executor.heartbeatInterval&#x3D;120s \</span><br><span class="line"> --conf spark.network.timeout&#x3D;600s \</span><br><span class="line"> --conf spark.eventLog.overwrite&#x3D;true \</span><br><span class="line"> --conf spark.eventLog.enabled&#x3D;true \</span><br><span class="line"> --conf spark.eventLog.dir&#x3D;hdfs:&#x2F;&#x2F;&#x2F;user&#x2F;spark&#x2F;applicationHistory \</span><br><span class="line"> --conf spark.yarn.max.executor.failures&#x3D;10 \</span><br><span class="line"> --conf spark.sql.catalogImplementation&#x3D;hive \</span><br><span class="line"> --conf spark.sql.shuffle.partitions&#x3D;100 \</span><br><span class="line"> --driver-class-path $HADOOP_CONF_DIR \</span><br><span class="line"> --class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer \</span><br><span class="line"> --table-type MERGE_ON_READ \</span><br><span class="line"> --source-class org.apache.hudi.utilities.sources.JsonKafkaSource \</span><br><span class="line"> --source-ordering-field ts  \</span><br><span class="line"> --target-base-path &#x2F;user&#x2F;hive&#x2F;warehouse&#x2F;stock_ticks_mor \</span><br><span class="line"> --target-table stock_ticks_mor \</span><br><span class="line"> --props &#x2F;var&#x2F;demo&#x2F;config&#x2F;kafka-source.properties \</span><br><span class="line"> --schemaprovider-class org.apache.hudi.utilities.schema.FilebasedSchemaProvider \</span><br><span class="line"> --continuous</span><br></pre></td></tr></table></figure>
+
+<h2 id="Spark-数据源编写器作业"><a href="#Spark-数据源编写器作业" class="headerlink" title="Spark 数据源编写器作业"></a>Spark 数据源编写器作业</h2><p>如编写数据中所述,您可以使用 spark 数据源摄取到 hudi 表.<br>此机制允许您以 Hudi 格式摄取任何 spark 数据帧.<br>Hudi Spark DataSource 还支持 Spark 流式传输以将流式传输源摄取到 Hudi 表.<br>对于 Merge On Read 表类型,默认情况下会打开内联压缩,该压缩在每次摄取运行后运行.<br>可以通过设置属性&quot;<code>hoodie.compact.inline.max.delta.commits</code>&quot;来更改压缩频率.</p>
+<p>这是使用 spark 数据源的示例调用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">inputDF.write()</span><br><span class="line">       .format(&quot;org.apache.hudi&quot;)</span><br><span class="line">       .options(clientOpts) &#x2F;&#x2F; any of the Hudi client opts can be passed in as well</span><br><span class="line">       .option(DataSourceWriteOptions.RECORDKEY_FIELD_OPT_KEY(), &quot;_row_key&quot;)</span><br><span class="line">       .option(DataSourceWriteOptions.PARTITIONPATH_FIELD_OPT_KEY(), &quot;partition&quot;)</span><br><span class="line">       .option(DataSourceWriteOptions.PRECOMBINE_FIELD_OPT_KEY(), &quot;timestamp&quot;)</span><br><span class="line">       .option(HoodieWriteConfig.TABLE_NAME, tableName)</span><br><span class="line">       .mode(SaveMode.Append)</span><br><span class="line">       .save(basePath);</span><br></pre></td></tr></table></figure>
+
+<h1 id="表现"><a href="#表现" class="headerlink" title="表现"></a>表现</h1><h2 id="优化的-DFS访问"><a href="#优化的-DFS访问" class="headerlink" title="优化的 DFS访问"></a>优化的 DFS访问</h2><p>Hudi 还对存储在 Hudi 表中的数据执行多项关键存储管理功能.<br>在 DFS 上存储数据的一个关键方面是管理文件大小和数量以及回收存储空间.<br>例如,HDFS 因其处理小文件而臭名昭著,这会对 Name Node 施加内存/RPC 压力,并可能破坏整个集群的稳定性.<br>一般来说,查询引擎在足够大的列文件上提供更好的性能,因为它们可以有效地摊销获取列统计信息等的成本.<br>即使在一些云数据存储上,列出包含大量小文件的目录也经常会产生成本.</p>
+<p>以下是一些有效管理 Hudi 表存储的方法.</p>
+<ol>
+<li>Hudi 中的小文件处理功能分析传入的工作负载并将插入分配到现有文件组,而不是创建新的文件组,这可能会导致小文件.<br><code>hoodie.parquet.small.file.limit</code></li>
+<li>Cleaner 可以配置为清理较旧的文件切片,或多或少地取决于查询运行的最长时间和增量拉取所需的回溯<br><code>hoodie.cleaner.commits.retained</code></li>
+<li>用户还可以调整基本/parquet 文件的大小、日志文件和预期压缩率,以便将足够数量的插入分组到同一个文件组中,最终生成大小合适的基本文件.<br><code>hoodie.parquet.max.file.size</code><br><code>hoodie.logfile.max.size</code><br><code>hoodie.parquet.compression.ratio</code></li>
+<li>智能调整批量插入并行度,可以再次在大小合适的初始文件组中.<br>事实上,正确处理这一点至关重要,因为一旦创建文件组就无法在不重新集群表的情况下更改.<br>如前所述,写入将简单地使用新的更新/插入扩展给定的文件组.<br><code>hoodie.bulkinsert.shuffle.parallelism</code></li>
+<li>对于具有大量更新的工作负载,merge-on-read表提供了一种很好的机制,可以快速摄取到较小的文件中,然后通过压缩将它们合并到较大的基础文件中.</li>
+</ol>
+<h2 id="性能优化"><a href="#性能优化" class="headerlink" title="性能优化"></a>性能优化</h2><p>在本节中,我们将讨论 Hudi upsert、增量拉动的一些真实世界性能数据,并将它们与实现这些任务的传统替代方案进行比较.</p>
+<h3 id="写入路径"><a href="#写入路径" class="headerlink" title="写入路径"></a>写入路径</h3><h4 id="Bulk-Insert"><a href="#Bulk-Insert" class="headerlink" title="Bulk Insert"></a>Bulk Insert</h4><p>默认情况下,Hudi 中的写入配置针对增量更新插入进行了优化.<br>实际上,默认的写操作类型也是 UPSERT.<br>对于简单的仅追加用例来批量加载数据,建议使用以下配置集以实现最佳写入:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">-- Use &quot;bulk-insert&quot; write-operation instead of default &quot;upsert&quot;</span><br><span class="line">hoodie.datasource.write.operation &#x3D; BULK_INSERT</span><br><span class="line">-- Disable populating meta columns and metadata, and enable virtual keys</span><br><span class="line">hoodie.populate.meta.fields &#x3D; false</span><br><span class="line">hoodie.metadata.enable &#x3D; false</span><br><span class="line">-- Enable snappy compression codec for lesser CPU cycles (but more storage overhead)</span><br><span class="line">hoodie.parquet.compression.codec &#x3D; snappy</span><br></pre></td></tr></table></figure>
+
+<p>通过 spark-sql 摄取</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">-- Use &quot;bulk-insert&quot; write-operation instead of default &quot;upsert&quot;</span><br><span class="line">hoodie.sql.insert.mode &#x3D; non-strict,</span><br><span class="line">hoodie.sql.bulk.insert.enable &#x3D; true,</span><br><span class="line">-- Disable populating meta columns and metadata, and enable virtual keys</span><br><span class="line">hoodie.populate.meta.fields &#x3D; false</span><br><span class="line">hoodie.metadata.enable &#x3D; false</span><br><span class="line">-- Enable snappy compression codec for lesser CPU cycles (but more storage overhead)</span><br><span class="line">hoodie.parquet.compression.codec &#x3D; snappy</span><br></pre></td></tr></table></figure>
+
+<h4 id="Upserts"><a href="#Upserts" class="headerlink" title="Upserts"></a>Upserts</h4><h4 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h4><p>为了有效地 upsert 数据,Hudi 需要将写入批处理中的记录分类为插入和更新(用它所属的文件组标记).<br>为了加快这个操作,Hudi 采用了一种可插入的索引机制,存储了 recordKey 和它所属的文件组 id 之间的映射.<br>默认情况下,Hudi 使用内置索引,该索引使用文件范围和布隆过滤器来完成此操作,与 spark 连接相比,速度提高了 10 倍.</p>
+<h3 id="读取路径"><a href="#读取路径" class="headerlink" title="读取路径"></a>读取路径</h3><h4 id="数据跳过-Data-Skipping"><a href="#数据跳过-Data-Skipping" class="headerlink" title="数据跳过(Data Skipping)"></a>数据跳过(Data Skipping)</h4><p>数据跳过是一种技术(最初在 Hudi 0.10 中引入),它利用元数据非常有效地修剪查询的搜索空间,通过消除不可能包含与查询过滤器匹配的数据的文件.<br>通过在内部 Hudi 元数据表中维护此元数据,Hudi 避免了读取文件页脚来获取此信息,这对于跨越数万个文件的查询来说可能是昂贵的.</p>
+<p>数据跳过利用元数据表的col_stats分区承载列级统计信息(例如最小值、最大值、列中空值的计数等),用于 Hudi 表的每个文件.<br>然后,这允许 Hudi 处理每个传入查询,而不是枚举表中的每个文件并读取其相应的元数据(例如 Parquet 页脚)以分析它是否可以包含与查询过滤器匹配的任何数据,只需对 Column Stats 进行查询元数据表(本身是 Hudi 表)中的索引,并在几秒钟内(即使对于 TB 规模的表,具有成千上万个文件)获取可能包含数据的所有文件的列表匹配查询的过滤器具有关键属性,即可能被排除为不包含此类数据的文件(基于其列级统计信息)将被删除.</p>
+<p>分区可以被认为是索引的粗略形式,使用 col_stats 分区的数据跳过可以被认为是范围索引,数据库使用它来识别查询感兴趣的潜在数据块.<br>与使用物理分区的表的分区修剪不同,其中数据集中的记录根据某些列的值组织到文件夹结构中,使用 col_stats 的数据跳过提供了逻辑/虚拟分区.</p>
+<p>对于非常大的表(1Tb+,1000 个文件中的 10 个),数据跳过可以</p>
+<ol>
+<li>与在相同数据集上执行相同查询但未启用数据跳过功能相比,查询执行运行时间大幅提高10 倍.</li>
+<li>帮助避免达到 Cloud Storages 限制(对于发出太多请求,例如,AWS 限制 # of requests / sec 可以根据对象的前缀发出,这会使分区表的事情变得相当复杂)</li>
+</ol>
+<p>要释放数据跳过的力量,您需要</p>
+<ol>
+<li>在写入路径上启用元数据表和列统计索引(请参阅元数据索引),使用<code>hoodie.metadata.enable=true</code>(在写入路径上启用元数据表,默认启用)</li>
+<li>在查询中启用数据跳过,使用<code>hoodie.metadata.index.column.stats.enable=true</code>(启用在写入路径上填充的列统计索引,默认情况下禁用)</li>
+</ol>
+<p>如果您计划为现有表启用列统计索引,请查看元数据索引指南,了解如何为现有表构建元数据表索引(例如列统计索引).</p>
+<p>要在查询中启用数据跳过,请确保将以下属性设置为true(在读取路径上):<br>hoodie.enable.data.skipping(启用数据跳过)<br>hoodie.metadata.enable(在读取路径上启用元数据表)<br>hoodie.metadata.index.column.stats.enable(在读取路径上启用 Column Stats Index 使用)</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hudi/" rel="tag"># hudi</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/10/24/hudi%E5%AE%9E%E8%B7%B5%E7%BB%83%E4%B9%A0/" rel="prev" title="hudi实践练习">
+                  <i class="fa fa-chevron-left"></i> hudi实践练习
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/10/28/hudi%20cli/" rel="next" title="hudi cli">
+                  hudi cli <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

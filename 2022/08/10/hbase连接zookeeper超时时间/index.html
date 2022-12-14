@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="regionserver异常下线,日志如下,util.Sleeper: We slept 54143ms instead of 3000ms, this is likely due to a long garbage collecting pause and it&#39;s usually bad, see http:&#x2F;&#x2F;hbase.apache.org&#x2F;book.html#trouble.rs">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hbase连接zookeeper超时时间">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/10/hbase%E8%BF%9E%E6%8E%A5zookeeper%E8%B6%85%E6%97%B6%E6%97%B6%E9%97%B4/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="regionserver异常下线,日志如下,util.Sleeper: We slept 54143ms instead of 3000ms, this is likely due to a long garbage collecting pause and it&#39;s usually bad, see http:&#x2F;&#x2F;hbase.apache.org&#x2F;book.html#trouble.rs">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbq1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbq2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbq3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbq5.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbq4.png">
+<meta property="article:published_time" content="2022-08-09T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-08-30T03:15:14.712Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hbase">
+<meta property="article:tag" content="zookeeper">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/hbq1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/10/hbase%E8%BF%9E%E6%8E%A5zookeeper%E8%B6%85%E6%97%B6%E6%97%B6%E9%97%B4/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hbase连接zookeeper超时时间 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%9F%E5%9B%A0"><span class="nav-number">1.</span> <span class="nav-text">原因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B6%85%E6%97%B6%E6%97%B6%E9%97%B4"><span class="nav-number">2.</span> <span class="nav-text">超时时间</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zookeeper%E6%BA%90%E7%A0%81"><span class="nav-number">3.</span> <span class="nav-text">zookeeper源码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="nav-number">4.</span> <span class="nav-text">解决方法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#zk%E9%85%8D%E7%BD%AE"><span class="nav-number">4.1.</span> <span class="nav-text">zk配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hbase-gc%E9%85%8D%E7%BD%AE"><span class="nav-number">4.2.</span> <span class="nav-text">hbase gc配置</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/10/hbase%E8%BF%9E%E6%8E%A5zookeeper%E8%B6%85%E6%97%B6%E6%97%B6%E9%97%B4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hbase连接zookeeper超时时间
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-10 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-10T00:00:00+08:00">2022-08-10</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-08-30 11:15:14" itemprop="dateModified" datetime="2022-08-30T11:15:14+08:00">2022-08-30</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+          , 
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>regionserver异常下线,日志如下,<br>util.Sleeper: We slept 54143ms instead of 3000ms, this is likely due to a long garbage collecting pause and it&#39;s usually bad, see <a target="_blank" rel="noopener" href="http://hbase.apache.org/book.html#trouble.rs.runtime.zkexpired">http://hbase.apache.org/book.html#trouble.rs.runtime.zkexpired</a></p>
+<span id="more"></span>
+<h3 id="原因"><a href="#原因" class="headerlink" title="原因"></a>原因</h3><p>从下线的HRegionServer的日志中可以看到GC花了51038ms.<br>GC的时间过长,超过了HRegionServer与ZK的连接时间,被判定为异常,所以HRegionServer才被迫下线.</p>
+<h3 id="超时时间"><a href="#超时时间" class="headerlink" title="超时时间"></a>超时时间</h3><p>从HBase的配置页面上看到的信息是这样的,没有超过GC时间.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;zookeeper.session.timeout&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;90000&lt;&#x2F;value&gt;</span><br><span class="line">&lt;source&gt;hbase-site.xml&lt;&#x2F;source&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
+
+<p>官网参数描述如下,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;zookeeper.session.timeout&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;90000&lt;&#x2F;value&gt;</span><br><span class="line">&lt;description&gt;ZooKeeper session timeout in milliseconds. It is used in two different ways.</span><br><span class="line">First, this value is used in the ZK client that HBase uses to connect to the ensemble.</span><br><span class="line">It is also used by HBase when it starts a ZK server and it is passed as the &#39;maxSessionTimeout&#39;. See</span><br><span class="line">http:&#x2F;&#x2F;hadoop.apache.org&#x2F;zookeeper&#x2F;docs&#x2F;current&#x2F;zookeeperProgrammers.html#ch_zkSessions.</span><br><span class="line">For example, if a HBase region server connects to a ZK ensemble that&#39;s also managed by HBase, then the</span><br><span class="line">session timeout will be the one specified by this configuration. But, a region server that connects</span><br><span class="line">to an ensemble managed with a different configuration will be subjected that ensemble&#39;s maxSessionTimeout. So,</span><br><span class="line">even though HBase might propose using 90 seconds, the ensemble can have a max timeout lower than this and</span><br><span class="line">it will take precedence. The current default that ZK ships with is 40 seconds, which is lower than HBase&#39;s.</span><br><span class="line">&lt;&#x2F;description&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
+
+<p>HBase建议的时间是90秒,如果全局中有比这个值低的,将优先使用这个低的值,需要注意的是zk的默认时间是40秒.</p>
+<h3 id="zookeeper源码"><a href="#zookeeper源码" class="headerlink" title="zookeeper源码"></a>zookeeper源码</h3><p>zookeeper源码中对sessionTimeOut时间的计算方式,</p>
+<img src="/images/hbq1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/hbq2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/hbq3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>tickTime默认3000,minSessionTimeout/maxSessionTimeout默认-1,可配置.</p>
+<blockquote>
+<p>zk配置如下</p>
+</blockquote>
+<img src="/images/hbq5.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>查看zk启动日志,</p>
+<img src="/images/hbq4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>所以zk的连接最大超时时间应该是2000 * 20 = 40000,即40s.<br>也就是说HRegionServer与ZK的连接超时时间实际为40秒.</p>
+<p>HBase的GC一共花费了50多秒,超过了与ZK的连接时间,被判定为异常,所以被强制下线.</p>
+</blockquote>
+<h3 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h3><h4 id="zk配置"><a href="#zk配置" class="headerlink" title="zk配置"></a>zk配置</h4><p>修改zookeeper配置,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"># The number of milliseconds of each tick</span><br><span class="line">tickTime&#x3D;2000</span><br><span class="line">initLimit&#x3D;10</span><br><span class="line">syncLimit&#x3D;5</span><br><span class="line">maxClientCnxns&#x3D;2000</span><br><span class="line">minSessionTimeout&#x3D;4000</span><br><span class="line">maxSessionTimeout&#x3D;90000</span><br></pre></td></tr></table></figure>
+
+<h4 id="hbase-gc配置"><a href="#hbase-gc配置" class="headerlink" title="hbase gc配置"></a>hbase gc配置</h4><p>修改HBase配置文件hbase-env.sh,调整JVM参数.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">-XX:+UseParNewGC  #设置年轻代为并行收集</span><br><span class="line">-XX:+UseConcMarkSweepGC #使用CMS内存收集 </span><br><span class="line">-XX:+UseCompressedClassPointers #压缩类指针</span><br><span class="line">-XX:+UseCompressedOops  #压缩对象指针</span><br><span class="line">-XX:+UseCMSCompactAtFullCollection  #使用并发收集器时,开启对年老代的压缩</span><br><span class="line">-XX:CMSInitiatingOccupancyFraction&#x3D;80 #使用cms作为垃圾回收使用80％后开始CMS收集</span><br></pre></td></tr></table></figure>
+
+<p>export HBASE_OPTS=&quot;-XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseCompressedClassPointers -XX:+UseCompressedOops -XX:+UseCMSCompactAtFullCollection -XX:CMSInitiatingOccupancyFraction=80&quot;</p>
+<p>在使用下面这两个JVM参数的时候,JVM的HeapSize不能超过32G.<br>-XX:+UseCompressedClassPointers<br>-XX:+UseCompressedOops</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hbase/" rel="tag"># hbase</a>
+              <a href="/tags/zookeeper/" rel="tag"># zookeeper</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/08/hbase%20question/" rel="prev" title="hbase question">
+                  <i class="fa fa-chevron-left"></i> hbase question
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/11/hbase%E5%8D%8F%E5%A4%84%E7%90%86%E5%99%A8/" rel="next" title="hbase协处理器">
+                  hbase协处理器 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

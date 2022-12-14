@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="sqlsql ddlSpark Create TableOptions用户可以在创建 hudi 表时设置表选项.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hudi实践练习">
+<meta property="og:url" content="https://maoeryu.github.io/2022/10/24/hudi%E5%AE%9E%E8%B7%B5%E7%BB%83%E4%B9%A0/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="sqlsql ddlSpark Create TableOptions用户可以在创建 hudi 表时设置表选项.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1174.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1175.png">
+<meta property="article:published_time" content="2022-10-23T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-11-02T02:06:07.187Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hudi">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1174.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/10/24/hudi%E5%AE%9E%E8%B7%B5%E7%BB%83%E4%B9%A0/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hudi实践练习 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#sql"><span class="nav-number">1.</span> <span class="nav-text">sql</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#sql-ddl"><span class="nav-number">1.1.</span> <span class="nav-text">sql ddl</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Spark-Create-Table"><span class="nav-number">1.1.1.</span> <span class="nav-text">Spark Create Table</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Options"><span class="nav-number">1.1.1.1.</span> <span class="nav-text">Options</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Table-Type"><span class="nav-number">1.1.1.2.</span> <span class="nav-text">Table Type</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Primary-Key"><span class="nav-number">1.1.1.3.</span> <span class="nav-text">Primary Key</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#PreCombineField"><span class="nav-number">1.1.1.4.</span> <span class="nav-text">PreCombineField</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Partitioned-Table"><span class="nav-number">1.1.1.5.</span> <span class="nav-text">Partitioned Table</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E5%A4%96%E9%83%A8-Hudi-%E8%A1%A8%E5%88%9B%E5%BB%BA%E8%A1%A8"><span class="nav-number">1.1.1.6.</span> <span class="nav-text">为外部 Hudi 表创建表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Create-Table-AS-SELECT"><span class="nav-number">1.1.1.7.</span> <span class="nav-text">Create Table AS SELECT</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Set-hoodie-config-options"><span class="nav-number">1.1.1.8.</span> <span class="nav-text">Set hoodie config options</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Spark-Alter-Table"><span class="nav-number">1.1.2.</span> <span class="nav-text">Spark Alter Table</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Alter-hoodie-config-options"><span class="nav-number">1.1.2.1.</span> <span class="nav-text">Alter hoodie config options</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8set%E5%91%BD%E4%BB%A4"><span class="nav-number">1.1.2.2.</span> <span class="nav-text">使用set命令</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Flink"><span class="nav-number">1.1.3.</span> <span class="nav-text">Flink</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Create-Catalog"><span class="nav-number">1.1.3.1.</span> <span class="nav-text">Create Catalog</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Create-Table"><span class="nav-number">1.1.3.2.</span> <span class="nav-text">Create Table</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Alter-Table"><span class="nav-number">1.1.3.3.</span> <span class="nav-text">Alter Table</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Supported-Types"><span class="nav-number">1.1.4.</span> <span class="nav-text">Supported Types</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E8%BF%87%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">存储过程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E6%95%B0%E6%8D%AE"><span class="nav-number">2.</span> <span class="nav-text">写入数据</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Spark-Datasource-Writer"><span class="nav-number">2.1.</span> <span class="nav-text">Spark Datasource Writer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Insert-Overwrite-Table"><span class="nav-number">2.1.1.</span> <span class="nav-text">Insert Overwrite Table</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#shell"><span class="nav-number">2.1.1.1.</span> <span class="nav-text">shell</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#sql-1"><span class="nav-number">2.1.1.2.</span> <span class="nav-text">sql</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Insert-Overwrite"><span class="nav-number">2.1.2.</span> <span class="nav-text">Insert Overwrite</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#shell-1"><span class="nav-number">2.1.2.1.</span> <span class="nav-text">shell</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#sql-2"><span class="nav-number">2.1.2.2.</span> <span class="nav-text">sql</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Deletes"><span class="nav-number">2.1.3.</span> <span class="nav-text">Deletes</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BD%AF%E5%88%A0%E9%99%A4"><span class="nav-number">2.1.3.1.</span> <span class="nav-text">软删除</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A1%AC%E5%88%A0%E9%99%A4"><span class="nav-number">2.1.3.2.</span> <span class="nav-text">硬删除</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E6%8E%A7%E5%88%B6"><span class="nav-number">2.1.4.</span> <span class="nav-text">并发控制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%90%E4%BA%A4%E9%80%9A%E7%9F%A5"><span class="nav-number">2.1.5.</span> <span class="nav-text">提交通知</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#HTTP"><span class="nav-number">2.1.5.1.</span> <span class="nav-text">HTTP</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Kafka"><span class="nav-number">2.1.5.2.</span> <span class="nav-text">Kafka</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Pulsar"><span class="nav-number">2.1.5.3.</span> <span class="nav-text">Pulsar</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Flink-SQL-Writer"><span class="nav-number">2.2.</span> <span class="nav-text">Flink SQL Writer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#sink-table-options"><span class="nav-number">2.2.1.</span> <span class="nav-text">sink table options</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E5%8E%8B%E7%BC%A9%E7%AD%96%E7%95%A5"><span class="nav-number">2.2.2.</span> <span class="nav-text">异步压缩策略</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E5%88%B0catalogs"><span class="nav-number">3.</span> <span class="nav-text">同步到catalogs</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Hive-Metastore"><span class="nav-number">3.1.</span> <span class="nav-text">Hive Metastore</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Hive-Sync-Tool"><span class="nav-number">3.1.1.</span> <span class="nav-text">Hive Sync Tool</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#hive%E5%90%8C%E6%AD%A5%E9%85%8D%E7%BD%AE"><span class="nav-number">3.1.1.1.</span> <span class="nav-text">hive同步配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E6%A8%A1%E5%BC%8F"><span class="nav-number">3.1.1.2.</span> <span class="nav-text">同步模式</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#HMS"><span class="nav-number">3.1.1.2.1.</span> <span class="nav-text">HMS</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#HIVEQL"><span class="nav-number">3.1.1.2.2.</span> <span class="nav-text">HIVEQL</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#JDBC"><span class="nav-number">3.1.1.2.3.</span> <span class="nav-text">JDBC</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Flink%E8%AE%BE%E7%BD%AE"><span class="nav-number">3.1.1.3.</span> <span class="nav-text">Flink设置</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E6%A8%A1%E6%9D%BF"><span class="nav-number">3.1.1.3.1.</span> <span class="nav-text">同步模板</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.1.1.3.2.</span> <span class="nav-text">查询</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Spark%E6%95%B0%E6%8D%AE%E6%BA%90%E7%A4%BA%E4%BE%8B"><span class="nav-number">3.1.1.4.</span> <span class="nav-text">Spark数据源示例</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2%E6%95%B0%E6%8D%AE"><span class="nav-number">4.</span> <span class="nav-text">查询数据</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Spark%E6%95%B0%E6%8D%AE%E6%BA%90"><span class="nav-number">4.1.</span> <span class="nav-text">Spark数据源</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Snapshot-query"><span class="nav-number">4.1.1.</span> <span class="nav-text">Snapshot query</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Incremental-query"><span class="nav-number">4.1.2.</span> <span class="nav-text">Incremental query</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Spark-SQL"><span class="nav-number">4.1.3.</span> <span class="nav-text">Spark SQL</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Copy-On-Write-tables"><span class="nav-number">4.1.3.1.</span> <span class="nav-text">Copy On Write tables</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Merge-On-Read-tables"><span class="nav-number">4.1.3.2.</span> <span class="nav-text">Merge On Read tables</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Flink-SQL"><span class="nav-number">4.2.</span> <span class="nav-text">Flink SQL</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Streaming-Query"><span class="nav-number">4.2.1.</span> <span class="nav-text">Streaming Query</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Incremental-Query"><span class="nav-number">4.2.2.</span> <span class="nav-text">Incremental Query</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Metadata-Table"><span class="nav-number">4.2.3.</span> <span class="nav-text">Metadata Table</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Hive"><span class="nav-number">4.3.</span> <span class="nav-text">Hive</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Incremental-query-1"><span class="nav-number">4.3.1.</span> <span class="nav-text">Incremental query</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PrestoDB"><span class="nav-number">4.4.</span> <span class="nav-text">PrestoDB</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Trino"><span class="nav-number">4.5.</span> <span class="nav-text">Trino</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Impala"><span class="nav-number">4.6.</span> <span class="nav-text">Impala</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Snapshot-Query"><span class="nav-number">4.6.1.</span> <span class="nav-text">Snapshot Query</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E6%91%84%E5%8F%96"><span class="nav-number">5.</span> <span class="nav-text">流式摄取</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#DeltaStreamer"><span class="nav-number">5.1.</span> <span class="nav-text">DeltaStreamer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#MultiTableDeltaStreamer"><span class="nav-number">5.1.1.</span> <span class="nav-text">MultiTableDeltaStreamer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E6%8E%A7%E5%88%B6-1"><span class="nav-number">5.1.2.</span> <span class="nav-text">并发控制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5%E7%82%B9"><span class="nav-number">5.2.</span> <span class="nav-text">检查点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84%E6%8F%90%E4%BE%9B%E8%80%85"><span class="nav-number">5.3.</span> <span class="nav-text">架构提供者</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%BC%8F%E6%B3%A8%E5%86%8C%E8%A1%A8%E6%8F%90%E4%BE%9B%E8%80%85"><span class="nav-number">5.3.1.</span> <span class="nav-text">模式注册表提供者</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#JDBC-%E6%A8%A1%E5%BC%8F%E6%8F%90%E4%BE%9B%E7%A8%8B%E5%BA%8F"><span class="nav-number">5.3.2.</span> <span class="nav-text">JDBC 模式提供程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E6%96%87%E4%BB%B6%E7%9A%84%E6%A8%A1%E5%BC%8F%E6%8F%90%E4%BE%9B%E7%A8%8B%E5%BA%8F"><span class="nav-number">5.3.3.</span> <span class="nav-text">基于文件的模式提供程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hive-%E6%A8%A1%E5%BC%8F%E6%8F%90%E4%BE%9B%E7%A8%8B%E5%BA%8F"><span class="nav-number">5.3.4.</span> <span class="nav-text">Hive 模式提供程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%A6%E6%9C%89%E5%90%8E%E5%A4%84%E7%90%86%E5%99%A8"><span class="nav-number">5.3.5.</span> <span class="nav-text">带有后处理器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Sources"><span class="nav-number">5.4.</span> <span class="nav-text">Sources</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F-DFS"><span class="nav-number">5.4.1.</span> <span class="nav-text">分布式文件系统(DFS)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Kafka-1"><span class="nav-number">5.4.2.</span> <span class="nav-text">Kafka</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#JDBC-Source"><span class="nav-number">5.4.3.</span> <span class="nav-text">JDBC Source</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SQL-Source"><span class="nav-number">5.4.4.</span> <span class="nav-text">SQL Source</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Flink%E6%91%84%E5%8F%96"><span class="nav-number">5.5.</span> <span class="nav-text">Flink摄取</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#CDC-Ingestion"><span class="nav-number">5.5.1.</span> <span class="nav-text">CDC Ingestion</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Bulk-Insert"><span class="nav-number">5.5.2.</span> <span class="nav-text">Bulk Insert</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%89%E9%A1%B9"><span class="nav-number">5.5.2.1.</span> <span class="nav-text">选项</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Index-Bootstrap"><span class="nav-number">5.5.3.</span> <span class="nav-text">Index Bootstrap</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%89%E9%A1%B9-1"><span class="nav-number">5.5.3.1.</span> <span class="nav-text">选项</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8"><span class="nav-number">5.5.3.2.</span> <span class="nav-text">如何使用</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%98%E6%9B%B4%E6%97%A5%E5%BF%97%E6%A8%A1%E5%BC%8F-Changelog"><span class="nav-number">5.5.4.</span> <span class="nav-text">变更日志模式(Changelog)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%89%E9%A1%B9-2"><span class="nav-number">5.5.4.1.</span> <span class="nav-text">选项</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%BD%E5%8A%A0%E6%A8%A1%E5%BC%8F-Append"><span class="nav-number">5.5.5.</span> <span class="nav-text">追加模式(Append)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Inline%E9%9B%86%E7%BE%A4"><span class="nav-number">5.5.5.1.</span> <span class="nav-text">Inline集群</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Async%E9%9B%86%E7%BE%A4"><span class="nav-number">5.5.5.2.</span> <span class="nav-text">Async集群</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E8%A7%84%E5%88%92%E7%AD%96%E7%95%A5"><span class="nav-number">5.5.5.3.</span> <span class="nav-text">集群规划策略</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A1%B6%E7%B4%A2%E5%BC%95-Bucket-Index"><span class="nav-number">5.5.6.</span> <span class="nav-text">桶索引(Bucket Index)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%89%E9%A1%B9-3"><span class="nav-number">5.5.6.1.</span> <span class="nav-text">选项</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%9F%E7%8E%87%E9%99%90%E5%88%B6"><span class="nav-number">5.5.7.</span> <span class="nav-text">速率限制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%89%E9%A1%B9-4"><span class="nav-number">5.5.7.1.</span> <span class="nav-text">选项</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Kafka-Connect-Sink"><span class="nav-number">5.6.</span> <span class="nav-text">Kafka Connect Sink</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Flink-%E8%AE%BE%E7%BD%AE"><span class="nav-number">6.</span> <span class="nav-text">Flink 设置</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%A8%E5%B1%80%E9%85%8D%E7%BD%AE"><span class="nav-number">6.1.</span> <span class="nav-text">全局配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B6%E8%A1%8C%E6%80%A7"><span class="nav-number">6.1.1.</span> <span class="nav-text">并行性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98"><span class="nav-number">6.1.2.</span> <span class="nav-text">内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Checkpoint"><span class="nav-number">6.1.3.</span> <span class="nav-text">Checkpoint</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Table%E9%80%89%E9%A1%B9"><span class="nav-number">6.2.</span> <span class="nav-text">Table选项</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98-1"><span class="nav-number">6.2.1.</span> <span class="nav-text">内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B6%E8%A1%8C%E6%80%A7-1"><span class="nav-number">6.2.2.</span> <span class="nav-text">并行性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Compaction"><span class="nav-number">6.2.3.</span> <span class="nav-text">Compaction</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E4%BC%98%E5%8C%96"><span class="nav-number">6.3.</span> <span class="nav-text">内存优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#MOR"><span class="nav-number">6.3.1.</span> <span class="nav-text">MOR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#COW"><span class="nav-number">6.3.2.</span> <span class="nav-text">COW</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E9%80%9F%E7%8E%87%E9%99%90%E5%88%B6"><span class="nav-number">6.4.</span> <span class="nav-text">写入速率限制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%89%E9%A1%B9-5"><span class="nav-number">6.4.1.</span> <span class="nav-text">选项</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/10/24/hudi%E5%AE%9E%E8%B7%B5%E7%BB%83%E4%B9%A0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hudi实践练习
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-10-24 00:00:00" itemprop="dateCreated datePublished" datetime="2022-10-24T00:00:00+08:00">2022-10-24</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-11-02 10:06:07" itemprop="dateModified" datetime="2022-11-02T10:06:07+08:00">2022-11-02</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="sql"><a href="#sql" class="headerlink" title="sql"></a>sql</h1><h2 id="sql-ddl"><a href="#sql-ddl" class="headerlink" title="sql ddl"></a>sql ddl</h2><h3 id="Spark-Create-Table"><a href="#Spark-Create-Table" class="headerlink" title="Spark Create Table"></a>Spark Create Table</h3><h4 id="Options"><a href="#Options" class="headerlink" title="Options"></a>Options</h4><p>用户可以在创建 hudi 表时设置表选项.</p>
+<span id="more"></span>
+
+<img src="/images/fly1174.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="Table-Type"><a href="#Table-Type" class="headerlink" title="Table Type"></a>Table Type</h4><p>创建 COW 表的示例.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- create a non-primary key table</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> if <span class="keyword">not</span> <span class="keyword">exists</span> hudi_table2(</span><br><span class="line">  id <span class="type">int</span>, </span><br><span class="line">  name string, </span><br><span class="line">  price <span class="keyword">double</span></span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line">options (</span><br><span class="line">  type <span class="operator">=</span> <span class="string">&#x27;cow&#x27;</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h4 id="Primary-Key"><a href="#Primary-Key" class="headerlink" title="Primary Key"></a>Primary Key</h4><p>使用主键&quot;id&quot;创建 COW 表的示例.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- create a managed cow table</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> if <span class="keyword">not</span> <span class="keyword">exists</span> hudi_table0 (</span><br><span class="line">  id <span class="type">int</span>, </span><br><span class="line">  name string, </span><br><span class="line">  price <span class="keyword">double</span></span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line">options (</span><br><span class="line">  type <span class="operator">=</span> <span class="string">&#x27;cow&#x27;</span>,</span><br><span class="line">  primaryKey <span class="operator">=</span> <span class="string">&#x27;id&#x27;</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h4 id="PreCombineField"><a href="#PreCombineField" class="headerlink" title="PreCombineField"></a>PreCombineField</h4><p>创建 MOR 外部表的示例.<br>preCombineField选项用于指定合并的 preCombine 字段.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- create an external mor table</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> if <span class="keyword">not</span> <span class="keyword">exists</span> hudi_table1 (</span><br><span class="line">  id <span class="type">int</span>, </span><br><span class="line">  name string, </span><br><span class="line">  price <span class="keyword">double</span>,</span><br><span class="line">  ts <span class="type">bigint</span></span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line">options (</span><br><span class="line">  type <span class="operator">=</span> <span class="string">&#x27;mor&#x27;</span>,</span><br><span class="line">  primaryKey <span class="operator">=</span> <span class="string">&#x27;id,name&#x27;</span>,</span><br><span class="line">  preCombineField <span class="operator">=</span> <span class="string">&#x27;ts&#x27;</span> </span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h4 id="Partitioned-Table"><a href="#Partitioned-Table" class="headerlink" title="Partitioned Table"></a>Partitioned Table</h4><p>创建 COW 分区表的示例.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> if <span class="keyword">not</span> <span class="keyword">exists</span> hudi_table_p0 (</span><br><span class="line">id <span class="type">bigint</span>,</span><br><span class="line">name string,</span><br><span class="line">dt string,</span><br><span class="line">hh string  </span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line">options (</span><br><span class="line">  type <span class="operator">=</span> <span class="string">&#x27;cow&#x27;</span>,</span><br><span class="line">  primaryKey <span class="operator">=</span> <span class="string">&#x27;id&#x27;</span>,</span><br><span class="line">  preCombineField <span class="operator">=</span> <span class="string">&#x27;ts&#x27;</span></span><br><span class="line"> ) </span><br><span class="line">partitioned <span class="keyword">by</span> (dt, hh);</span><br></pre></td></tr></table></figure>
+
+<h4 id="为外部-Hudi-表创建表"><a href="#为外部-Hudi-表创建表" class="headerlink" title="为外部 Hudi 表创建表"></a>为外部 Hudi 表创建表</h4><p>可以使用location语句创建外部表.<br>如果未指定外部位置,则将其视为托管表.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> h_p1 <span class="keyword">using</span> hudi</span><br><span class="line">location <span class="string">&#x27;/path/to/hudi&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<h4 id="Create-Table-AS-SELECT"><a href="#Create-Table-AS-SELECT" class="headerlink" title="Create Table AS SELECT"></a>Create Table AS SELECT</h4><p>Hudi支持Spark SQL上的CTA(创建表作为选择).<br>为了更好地将数据加载到Hudi表,CTA使用批量插入作为写操作.</p>
+<p>Example CTAS command to create a non-partitioned COW table.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> h3 <span class="keyword">using</span> hudi</span><br><span class="line"><span class="keyword">as</span></span><br><span class="line"><span class="keyword">select</span> <span class="number">1</span> <span class="keyword">as</span> id, <span class="string">&#x27;a1&#x27;</span> <span class="keyword">as</span> name, <span class="number">10</span> <span class="keyword">as</span> price;</span><br></pre></td></tr></table></figure>
+
+<p>Example CTAS command to create a partitioned, primary key COW table.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> h2 <span class="keyword">using</span> hudi</span><br><span class="line">options (type <span class="operator">=</span> <span class="string">&#x27;cow&#x27;</span>, primaryKey <span class="operator">=</span> <span class="string">&#x27;id&#x27;</span>)</span><br><span class="line">partitioned <span class="keyword">by</span> (dt)</span><br><span class="line"><span class="keyword">as</span></span><br><span class="line"><span class="keyword">select</span> <span class="number">1</span> <span class="keyword">as</span> id, <span class="string">&#x27;a1&#x27;</span> <span class="keyword">as</span> name, <span class="number">10</span> <span class="keyword">as</span> price, <span class="number">1000</span> <span class="keyword">as</span> dt;</span><br></pre></td></tr></table></figure>
+
+<p>Example CTAS command to load data from another table.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"># <span class="keyword">create</span> managed parquet <span class="keyword">table</span> </span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> parquet_mngd <span class="keyword">using</span> parquet location <span class="string">&#x27;file:///tmp/parquet_dataset/*.parquet&#x27;</span>;</span><br><span class="line"></span><br><span class="line"># CTAS <span class="keyword">by</span> loading data <span class="keyword">into</span> hudi <span class="keyword">table</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> hudi_tbl <span class="keyword">using</span> hudi location <span class="string">&#x27;file:/tmp/hudi/hudi_tbl/&#x27;</span> options ( </span><br><span class="line">  type <span class="operator">=</span> <span class="string">&#x27;cow&#x27;</span>, </span><br><span class="line">  primaryKey <span class="operator">=</span> <span class="string">&#x27;id&#x27;</span>, </span><br><span class="line">  preCombineField <span class="operator">=</span> <span class="string">&#x27;ts&#x27;</span> </span><br><span class="line"> ) </span><br><span class="line">partitioned <span class="keyword">by</span> (datestr) <span class="keyword">as</span> <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> parquet_mngd;</span><br></pre></td></tr></table></figure>
+
+<h4 id="Set-hoodie-config-options"><a href="#Set-hoodie-config-options" class="headerlink" title="Set hoodie config options"></a>Set hoodie config options</h4><p>可以在创建表时使用表选项设置配置,该表仅适用于表范围并覆盖由 SET 命令设置的配置.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> if <span class="keyword">not</span> <span class="keyword">exists</span> h3(</span><br><span class="line">  id <span class="type">bigint</span>, </span><br><span class="line">  name string, </span><br><span class="line">  price <span class="keyword">double</span></span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line">options (</span><br><span class="line">  primaryKey <span class="operator">=</span> <span class="string">&#x27;id&#x27;</span>,</span><br><span class="line">  type <span class="operator">=</span> <span class="string">&#x27;mor&#x27;</span>,</span><br><span class="line">  $&#123;hoodie.config.key1&#125; = &#x27;$&#123;hoodie.config.value2&#125;&#x27;,</span><br><span class="line">  $&#123;hoodie.config.key2&#125; = &#x27;$&#123;hoodie.config.value2&#125;&#x27;,</span><br><span class="line">  ....</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">--e.g.</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> if <span class="keyword">not</span> <span class="keyword">exists</span> h3(</span><br><span class="line">  id <span class="type">bigint</span>, </span><br><span class="line">  name string, </span><br><span class="line">  price <span class="keyword">double</span></span><br><span class="line">) <span class="keyword">using</span> hudi</span><br><span class="line">options (</span><br><span class="line">  primaryKey <span class="operator">=</span> <span class="string">&#x27;id&#x27;</span>,</span><br><span class="line">  type <span class="operator">=</span> <span class="string">&#x27;mor&#x27;</span>,</span><br><span class="line">  hoodie.cleaner.fileversions.retained <span class="operator">=</span> <span class="string">&#x27;20&#x27;</span>,</span><br><span class="line">  hoodie.keep.max.commits <span class="operator">=</span> <span class="string">&#x27;20&#x27;</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h3 id="Spark-Alter-Table"><a href="#Spark-Alter-Table" class="headerlink" title="Spark Alter Table"></a>Spark Alter Table</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- Alter table name</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> oldTableName RENAME <span class="keyword">TO</span> newTableName</span><br><span class="line"></span><br><span class="line"><span class="comment">-- Alter table add columns</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tableIdentifier <span class="keyword">ADD</span> COLUMNS(colAndType (,colAndType)<span class="operator">*</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">-- Alter table column type</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tableIdentifier CHANGE <span class="keyword">COLUMN</span> colName colName colType</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> h0 rename <span class="keyword">to</span> h0_1;</span><br><span class="line"></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> h0_1 <span class="keyword">add</span> columns(ext0 string);</span><br><span class="line"></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> h0_1 change <span class="keyword">column</span> id id <span class="type">bigint</span>;</span><br></pre></td></tr></table></figure>
+
+<h4 id="Alter-hoodie-config-options"><a href="#Alter-hoodie-config-options" class="headerlink" title="Alter hoodie config options"></a>Alter hoodie config options</h4><p>可以通过ALTER SERDEPROPERTIES 更改表的写入配置.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> h3 <span class="keyword">set</span> serdeproperties (hoodie.keep.max.commits <span class="operator">=</span> <span class="string">&#x27;10&#x27;</span>) </span><br></pre></td></tr></table></figure>
+
+<h4 id="使用set命令"><a href="#使用set命令" class="headerlink" title="使用set命令"></a>使用set命令</h4><p>使用set命令设置任何自定义 hudi 的配置,这将适用于整个 spark 会话范围.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> hoodie.insert.shuffle.parallelism <span class="operator">=</span> <span class="number">100</span>;</span><br><span class="line"><span class="keyword">set</span> hoodie.upsert.shuffle.parallelism <span class="operator">=</span> <span class="number">100</span>;</span><br><span class="line"><span class="keyword">set</span> hoodie.delete.shuffle.parallelism <span class="operator">=</span> <span class="number">100</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Flink"><a href="#Flink" class="headerlink" title="Flink"></a>Flink</h3><h4 id="Create-Catalog"><a href="#Create-Catalog" class="headerlink" title="Create Catalog"></a>Create Catalog</h4><p>目录有助于管理 SQL 表,如果目录保留表 DDL,则可以在 CLI 会话之间共享表.<br>对于hms模式,目录还补充了hive 同步选项.</p>
+<p>HMS mode catalog SQL demo:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> CATALOG hoodie_catalog</span><br><span class="line">  <span class="keyword">WITH</span> (</span><br><span class="line">    <span class="string">&#x27;type&#x27;</span><span class="operator">=</span><span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;catalog.path&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;$&#123;catalog default root path&#125;&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;hive.conf.dir&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;$&#123;directory where hive-site.xml is located&#125;&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;mode&#x27;</span><span class="operator">=</span><span class="string">&#x27;hms&#x27;</span> <span class="comment">-- supports &#x27;dfs&#x27; mode that uses the DFS backend for table DDLs persistence</span></span><br><span class="line">  );</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">Option Name</th>
+<th align="left">Required</th>
+<th align="left">Default</th>
+<th align="left">Remarks</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">catalog.path</td>
+<td align="left">TRUE</td>
+<td align="left">--</td>
+<td align="left">目录的默认根路径,该路径用于自动推断表路径,默认表路径:<code>$&#123;catalog.path&#125;/$&#123;db_name&#125;/$&#123;table_name&#125;</code></td>
+</tr>
+<tr>
+<td align="left">default-database</td>
+<td align="left">FALSE</td>
+<td align="left">default</td>
+<td align="left">默认数据库名称</td>
+</tr>
+<tr>
+<td align="left">hive.conf.dir</td>
+<td align="left">FALSE</td>
+<td align="left">--</td>
+<td align="left">hive-site.xml所在目录,只在hms mode有效</td>
+</tr>
+<tr>
+<td align="left">mode</td>
+<td align="left">FALSE</td>
+<td align="left">dfs</td>
+<td align="left">支持hms使用 HMS 持久化表选项的模式</td>
+</tr>
+<tr>
+<td align="left">table.external</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+<td align="left">是否创建外部表,仅在hmsmode有效</td>
+</tr>
+</tbody></table>
+<h4 id="Create-Table"><a href="#Create-Table" class="headerlink" title="Create Table"></a>Create Table</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> hudi_table2(</span><br><span class="line">  id <span class="type">int</span>, </span><br><span class="line">  name string, </span><br><span class="line">  price <span class="keyword">double</span></span><br><span class="line">)</span><br><span class="line"><span class="keyword">WITH</span> (</span><br><span class="line"><span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;path&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;s3://bucket-name/hudi/&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;table.type&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;MERGE_ON_READ&#x27;</span> <span class="comment">-- this creates a MERGE_ON_READ table, by default is COPY_ON_WRITE</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h4 id="Alter-Table"><a href="#Alter-Table" class="headerlink" title="Alter Table"></a>Alter Table</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> h0 rename <span class="keyword">to</span> h0_1;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Supported-Types"><a href="#Supported-Types" class="headerlink" title="Supported Types"></a>Supported Types</h3><table>
+<thead>
+<tr>
+<th align="left">Spark</th>
+<th align="left">Hudi</th>
+<th align="left">Notes</th>
+<th align="left"></th>
+<th align="left">Spark</th>
+<th align="left">Hudi</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">boolean</td>
+<td align="left">boolean</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">decimal</td>
+<td align="left">decimal</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">byte</td>
+<td align="left">int</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">binary</td>
+<td align="left">bytes</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">short</td>
+<td align="left">int</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">array</td>
+<td align="left">array</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">integer</td>
+<td align="left">int</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">map</td>
+<td align="left">map</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">long</td>
+<td align="left">long</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">struct</td>
+<td align="left">struct</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">date</td>
+<td align="left">date</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">char</td>
+<td align="left"></td>
+<td align="left">not supported</td>
+</tr>
+<tr>
+<td align="left">timestamp</td>
+<td align="left">timestamp</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">varchar</td>
+<td align="left"></td>
+<td align="left">not supported</td>
+</tr>
+<tr>
+<td align="left">float</td>
+<td align="left">float</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">numeric</td>
+<td align="left"></td>
+<td align="left">not supported</td>
+</tr>
+<tr>
+<td align="left">double</td>
+<td align="left">double</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">null</td>
+<td align="left"></td>
+<td align="left">not supported</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">string</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">object</td>
+<td align="left"></td>
+<td align="left">not supported</td>
+</tr>
+</tbody></table>
+<h2 id="存储过程"><a href="#存储过程" class="headerlink" title="存储过程"></a>存储过程</h2><h1 id="写入数据"><a href="#写入数据" class="headerlink" title="写入数据"></a>写入数据</h1><p>从外部资源甚至其他 Hudi 表中获取新更改的方法.<br>可用的两个主要工具是DeltaStreamer工具,以及Spark Hudi 数据源.</p>
+<h2 id="Spark-Datasource-Writer"><a href="#Spark-Datasource-Writer" class="headerlink" title="Spark Datasource Writer"></a>Spark Datasource Writer</h2><p>hudi-spark模块提供 DataSource API 以将 Spark DataFrame 写入(和读取)到 Hudi 表中.<br>有许多可用选项:<br>1)HoodieWriteConfig<br>TABLE_NAME(必填)</p>
+<p>2)DataSourceWriteOptions<br>RECORDKEY_FIELD_OPT_KEY(必需):<br>主键字段.<br>记录键唯一标识每个分区内的记录/行.<br>如果想拥有全球唯一性,有两种选择.<br>您可以使数据集不分区,或者您可以利用全局索引来确保记录键是唯一的,而与分区路径无关.<br>记录键可以是单列或引用多列.<br>KEYGENERATOR_CLASS_OPT_KEY属性应根据是简单键还是复杂键进行相应设置.<br>例如:&quot;col1&quot;对于简单字段,&quot;col1,col2,col3,etc&quot;对于复杂字段.<br>可以使用点表示法指定嵌套字段,例如:a.b.c.<br>默认值:&quot;uuid&quot;</p>
+<p>PARTITIONPATH_FIELD_OPT_KEY(必需):<br>用于对表进行分区的列.<br>为防止分区,请提供空字符串作为值,例如:&quot;&quot;.<br>使用KEYGENERATOR_CLASS_OPT_KEY指定分区/不分区.<br>如果分区路径需要进行 url 编码,可以设置URL_ENCODE_PARTITIONING_OPT_KEY.<br>如果同步到 hive,还指定使用HIVE_PARTITION_EXTRACTOR_CLASS_OPT_KEY.<br>默认值:&quot;partitionpath&quot;</p>
+<p>PRECOMBINE_FIELD_OPT_KEY(必填):<br>当同一批次中的两条记录具有相同的键值时,将选择指定字段中值最大的记录.<br>如果您为 HoodieRecordPayload ( WRITE_PAYLOAD_CLASS) 使用 OverwriteWithLatestAvroPayload 的默认有效负载,则传入记录将始终优先于忽略 this 的存储记录PRECOMBINE_FIELD_OPT_KEY.<br>默认值:&quot;ts&quot;</p>
+<p>OPERATION_OPT_KEY:<br>要使用的写操作.<br>可用值:<br>UPSERT_OPERATION_OPT_VAL (default)<br>BULK_INSERT_OPERATION_OPT_VAL<br>INSERT_OPERATION_OPT_VAL<br>DELETE_OPERATION_OPT_VAL</p>
+<p>TABLE_TYPE_OPT_KEY:<br>要写入的表的类型.<br>注意:初始创建表后,使用 Spark <code>SaveMode.Append</code>模式写入(更新)表时,此值必须保持一致.<br>可用值:<br>COW_TABLE_TYPE_OPT_VAL (default)<br>MOR_TABLE_TYPE_OPT_VAL</p>
+<p>KEYGENERATOR_CLASS_OPT_KEY:<br>请参阅下面的密钥生成部分.</p>
+<p>HIVE_PARTITION_EXTRACTOR_CLASS_OPT_KEY:<br>如果使用 hive,请指定表是否应该分区.<br>可用值:<br>classOf[MultiPartKeysValueExtractor].getCanonicalName (default)<br>classOf[SlashEncodedDayPartitionValueExtractor].getCanonicalName<br>classOf[TimestampBasedKeyGenerator].getCanonicalName<br>classOf[NonPartitionedExtractor].getCanonicalName<br>classOf[GlobalDeleteKeyGenerator].getCanonicalName (to be used when OPERATION_OPT_KEY is set to DELETE_OPERATION_OPT_VAL)</p>
+<p>示例:Upsert 一个 DataFrame,为recordKey =&gt; _row_key、 partitionPath =&gt; partition和precombineKey =&gt; timestamp指定必要的字段名称.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">inputDF.write()</span><br><span class="line">  .format(&quot;org.apache.hudi&quot;)</span><br><span class="line">  .options(clientOpts) <span class="operator">/</span><span class="operator">/</span><span class="keyword">Where</span> clientOpts <span class="keyword">is</span> <span class="keyword">of</span> type Map[String, String]. clientOpts can include <span class="keyword">any</span> other options necessary.</span><br><span class="line">  .option(DataSourceWriteOptions.RECORDKEY_FIELD_OPT_KEY(), &quot;_row_key&quot;)</span><br><span class="line">  .option(DataSourceWriteOptions.PARTITIONPATH_FIELD_OPT_KEY(), &quot;partition&quot;)</span><br><span class="line">  .option(DataSourceWriteOptions.PRECOMBINE_FIELD_OPT_KEY(), &quot;timestamp&quot;)</span><br><span class="line">  .option(HoodieWriteConfig.TABLE_NAME, tableName)</span><br><span class="line">  .mode(SaveMode.Append)</span><br><span class="line">  .save(basePath);</span><br></pre></td></tr></table></figure>
+
+<p>生成一些新的行程,将它们加载到 DataFrame 中并将 DataFrame 写入 Hudi 表,如下所示.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// spark-shell</span></span><br><span class="line"><span class="keyword">val</span> inserts = convertToStringList(dataGen.generateInserts(<span class="number">10</span>))</span><br><span class="line"><span class="keyword">val</span> df = spark.read.json(spark.sparkContext.parallelize(inserts, <span class="number">2</span>))</span><br><span class="line">df.write.format(<span class="string">&quot;hudi&quot;</span>).</span><br><span class="line">  options(getQuickstartWriteConfigs).</span><br><span class="line">  option(<span class="type">PRECOMBINE_FIELD_OPT_KEY</span>, <span class="string">&quot;ts&quot;</span>).</span><br><span class="line">  option(<span class="type">RECORDKEY_FIELD_OPT_KEY</span>, <span class="string">&quot;uuid&quot;</span>).</span><br><span class="line">  option(<span class="type">PARTITIONPATH_FIELD_OPT_KEY</span>, <span class="string">&quot;partitionpath&quot;</span>).</span><br><span class="line">  option(<span class="type">TABLE_NAME</span>, tableName).</span><br><span class="line">  mode(<span class="type">Overwrite</span>).</span><br><span class="line">  save(basePath)</span><br></pre></td></tr></table></figure>
+
+<p>mode(Overwrite):<br>如果表已经存在,则覆盖并重新创建表.<br>您可以检查下生成的数据<code>/tmp/hudi_trips_cow/&lt;region&gt;/&lt;country&gt;/&lt;city&gt;/</code>.<br>我们提供了记录键(uuid在模式中)、分区字段(region/country/city)和组合逻辑(ts在模式中),以确保行程记录在每个分区中都是唯一的.</p>
+<p>查看<code>https://hudi.apache.org/blog/2021/02/13/hudi-key-generators</code>了解各种密钥生成器选项,例如基于时间戳的/复杂的/自定义的/非分区密钥生成器等.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> h0 <span class="keyword">select</span> <span class="number">1</span>, <span class="string">&#x27;a1&#x27;</span>, <span class="number">20</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- insert static partition</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> h_p0 <span class="keyword">partition</span>(dt <span class="operator">=</span> <span class="string">&#x27;2021-01-02&#x27;</span>) <span class="keyword">select</span> <span class="number">1</span>, <span class="string">&#x27;a1&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- insert dynamic partition</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> h_p0 <span class="keyword">select</span> <span class="number">1</span>, <span class="string">&#x27;a1&#x27;</span>, dt;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- insert dynamic partition</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> h_p1 <span class="keyword">select</span> <span class="number">1</span> <span class="keyword">as</span> id, <span class="string">&#x27;a1&#x27;</span>, <span class="string">&#x27;2021-01-03&#x27;</span> <span class="keyword">as</span> dt, <span class="string">&#x27;19&#x27;</span> <span class="keyword">as</span> hh;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- insert overwrite table</span></span><br><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">table</span> h0 <span class="keyword">select</span> <span class="number">1</span>, <span class="string">&#x27;a1&#x27;</span>, <span class="number">20</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- insert overwrite table with static partition</span></span><br><span class="line"><span class="keyword">insert</span> overwrite h_p0 <span class="keyword">partition</span>(dt <span class="operator">=</span> <span class="string">&#x27;2021-01-02&#x27;</span>) <span class="keyword">select</span> <span class="number">1</span>, <span class="string">&#x27;a1&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- insert overwrite table with dynamic partition</span></span><br><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">table</span> h_p1 <span class="keyword">select</span> <span class="number">2</span> <span class="keyword">as</span> id, <span class="string">&#x27;a2&#x27;</span>, <span class="string">&#x27;2021-01-03&#x27;</span> <span class="keyword">as</span> dt, <span class="string">&#x27;19&#x27;</span> <span class="keyword">as</span> hh;</span><br></pre></td></tr></table></figure>
+
+<p>Insert mode:<br>Hudi在向具有主键的表中插入数据时支持两种插入模式(我们称之为pk-table,如下所示):</p>
+<ol>
+<li>使用strict模式,insert语句将对不允许重复记录的COW表保持主键唯一性约束.<br>如果插入过程中已经存在记录,则会为 COW 表抛出 HoodieDuplicateKeyException.<br>对于 MOR 表,允许对现有记录进行更新.</li>
+<li>使用non-strictmode 时,hudi 使用与insertspark 数据源中的操作相同的代码路径用于 pk-table.<br>可以使用配置设置插入模式:<code>hoodie.sql.insert.mode</code></li>
+</ol>
+<p>Bulk Insert:<br>默认情况下,hudi 对插入语句使用正常的插入操作.<br>用户可以将<code>hoodie.sql.bulk.insert.enable</code>设置 为 true 以启用对 insert 语句的批量插入.</p>
+<h3 id="Insert-Overwrite-Table"><a href="#Insert-Overwrite-Table" class="headerlink" title="Insert Overwrite Table"></a>Insert Overwrite Table</h3><p>生成一些新的行程,在 Hudi 元数据级别逻辑覆盖表.<br>Hudi 清理器最终会清理之前的表快照的文件组.<br>这比删除旧表并在Overwrite模式下重新创建要快.</p>
+<h4 id="shell"><a href="#shell" class="headerlink" title="shell"></a>shell</h4><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// spark-shell</span></span><br><span class="line">spark.</span><br><span class="line">  read.format(<span class="string">&quot;hudi&quot;</span>).</span><br><span class="line">  load(basePath).</span><br><span class="line">  select(<span class="string">&quot;uuid&quot;</span>,<span class="string">&quot;partitionpath&quot;</span>).</span><br><span class="line">  show(<span class="number">10</span>, <span class="literal">false</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> inserts = convertToStringList(dataGen.generateInserts(<span class="number">10</span>))</span><br><span class="line"><span class="keyword">val</span> df = spark.read.json(spark.sparkContext.parallelize(inserts, <span class="number">2</span>))</span><br><span class="line">df.write.format(<span class="string">&quot;hudi&quot;</span>).</span><br><span class="line">  options(getQuickstartWriteConfigs).</span><br><span class="line">  option(<span class="type">OPERATION_OPT_KEY</span>,<span class="string">&quot;insert_overwrite_table&quot;</span>).</span><br><span class="line">  option(<span class="type">PRECOMBINE_FIELD_OPT_KEY</span>, <span class="string">&quot;ts&quot;</span>).</span><br><span class="line">  option(<span class="type">RECORDKEY_FIELD_OPT_KEY</span>, <span class="string">&quot;uuid&quot;</span>).</span><br><span class="line">  option(<span class="type">PARTITIONPATH_FIELD_OPT_KEY</span>, <span class="string">&quot;partitionpath&quot;</span>).</span><br><span class="line">  option(<span class="type">TABLE_NAME</span>, tableName).</span><br><span class="line">  mode(<span class="type">Append</span>).</span><br><span class="line">  save(basePath)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Should have different keys now, from query before.</span></span><br><span class="line">spark.</span><br><span class="line">  read.format(<span class="string">&quot;hudi&quot;</span>).</span><br><span class="line">  load(basePath).</span><br><span class="line">  select(<span class="string">&quot;uuid&quot;</span>,<span class="string">&quot;partitionpath&quot;</span>).</span><br><span class="line">  show(<span class="number">10</span>, <span class="literal">false</span>)</span><br></pre></td></tr></table></figure>
+
+<h4 id="sql-1"><a href="#sql-1" class="headerlink" title="sql"></a>sql</h4><p>insert overwrite 非分区表 sql 语句将转换为insert_overwrite_table操作.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">table</span> h0 <span class="keyword">select</span> <span class="number">1</span>, <span class="string">&#x27;a1&#x27;</span>, <span class="number">20</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Insert-Overwrite"><a href="#Insert-Overwrite" class="headerlink" title="Insert Overwrite"></a>Insert Overwrite</h3><p>生成一些新的行程,覆盖输入中存在的所有分区.<br>此操作可能比upsert批处理 ETL 作业更快,后者一次重新计算整个目标分区(与增量更新目标表相反).<br>这是因为,我们能够完全绕过 upsert 写入路径中的索引、预组合和其他重新分区步骤.</p>
+<h4 id="shell-1"><a href="#shell-1" class="headerlink" title="shell"></a>shell</h4><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// spark-shell</span></span><br><span class="line">spark.</span><br><span class="line">  read.format(<span class="string">&quot;hudi&quot;</span>).</span><br><span class="line">  load(basePath).</span><br><span class="line">  select(<span class="string">&quot;uuid&quot;</span>,<span class="string">&quot;partitionpath&quot;</span>).</span><br><span class="line">  sort(<span class="string">&quot;partitionpath&quot;</span>,<span class="string">&quot;uuid&quot;</span>).</span><br><span class="line">  show(<span class="number">100</span>, <span class="literal">false</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> inserts = convertToStringList(dataGen.generateInserts(<span class="number">10</span>))</span><br><span class="line"><span class="keyword">val</span> df = spark.</span><br><span class="line">  read.json(spark.sparkContext.parallelize(inserts, <span class="number">2</span>)).</span><br><span class="line">  filter(<span class="string">&quot;partitionpath = &#x27;americas/united_states/san_francisco&#x27;&quot;</span>)</span><br><span class="line">df.write.format(<span class="string">&quot;hudi&quot;</span>).</span><br><span class="line">  options(getQuickstartWriteConfigs).</span><br><span class="line">  option(<span class="type">OPERATION_OPT_KEY</span>,<span class="string">&quot;insert_overwrite&quot;</span>).</span><br><span class="line">  option(<span class="type">PRECOMBINE_FIELD_OPT_KEY</span>, <span class="string">&quot;ts&quot;</span>).</span><br><span class="line">  option(<span class="type">RECORDKEY_FIELD_OPT_KEY</span>, <span class="string">&quot;uuid&quot;</span>).</span><br><span class="line">  option(<span class="type">PARTITIONPATH_FIELD_OPT_KEY</span>, <span class="string">&quot;partitionpath&quot;</span>).</span><br><span class="line">  option(<span class="type">TABLE_NAME</span>, tableName).</span><br><span class="line">  mode(<span class="type">Append</span>).</span><br><span class="line">  save(basePath)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Should have different keys now for San Francisco alone, from query before.</span></span><br><span class="line">spark.</span><br><span class="line">  read.format(<span class="string">&quot;hudi&quot;</span>).</span><br><span class="line">  load(basePath).</span><br><span class="line">  select(<span class="string">&quot;uuid&quot;</span>,<span class="string">&quot;partitionpath&quot;</span>).</span><br><span class="line">  sort(<span class="string">&quot;partitionpath&quot;</span>,<span class="string">&quot;uuid&quot;</span>).</span><br><span class="line">  show(<span class="number">100</span>, <span class="literal">false</span>)</span><br></pre></td></tr></table></figure>
+
+<h4 id="sql-2"><a href="#sql-2" class="headerlink" title="sql"></a>sql</h4><p>insert overwrite 分区表 sql 语句将转换为insert_overwrite操作.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">table</span> h_p1 <span class="keyword">select</span> <span class="number">2</span> <span class="keyword">as</span> id, <span class="string">&#x27;a2&#x27;</span>, <span class="string">&#x27;2021-01-03&#x27;</span> <span class="keyword">as</span> dt, <span class="string">&#x27;19&#x27;</span> <span class="keyword">as</span> hh;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Deletes"><a href="#Deletes" class="headerlink" title="Deletes"></a>Deletes</h3><p>Hudi 支持对存储在 Hudi 表中的数据实现两种类型的删除,方法是允许用户指定不同的记录负载实现.</p>
+<h4 id="软删除"><a href="#软删除" class="headerlink" title="软删除"></a>软删除</h4><p>保留记录键,并将所有其他字段的值清空.<br>这可以通过确保适当的字段在表模式中可以为空并在将这些字段设置为空后简单地更新表来实现.<br>请注意,软删除始终保存在存储中并且永远不会被删除,但所有值都设置为空值.<br>因此,出于 GDPR 或其他合规性原因,如果记录键和分区路径包含 PII,用户应考虑进行硬删除.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// fetch two records for soft deletes</span></span><br><span class="line"><span class="keyword">val</span> softDeleteDs = spark.sql(<span class="string">&quot;select * from hudi_trips_snapshot&quot;</span>).limit(<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">// prepare the soft deletes by ensuring the appropriate fields are nullified</span></span><br><span class="line"><span class="keyword">val</span> nullifyColumns = softDeleteDs.schema.fields.</span><br><span class="line">  map(field =&gt; (field.name, field.dataType.typeName)).</span><br><span class="line">  filter(pair =&gt; (!<span class="type">HoodieRecord</span>.<span class="type">HOODIE_META_COLUMNS</span>.contains(pair._1)</span><br><span class="line">    &amp;&amp; !<span class="type">Array</span>(<span class="string">&quot;ts&quot;</span>, <span class="string">&quot;uuid&quot;</span>, <span class="string">&quot;partitionpath&quot;</span>).contains(pair._1)))</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> softDeleteDf = nullifyColumns.</span><br><span class="line">  foldLeft(softDeleteDs.drop(<span class="type">HoodieRecord</span>.<span class="type">HOODIE_META_COLUMNS</span>: _*))(</span><br><span class="line">    (ds, col) =&gt; ds.withColumn(col._1, lit(<span class="literal">null</span>).cast(col._2)))</span><br><span class="line"></span><br><span class="line"><span class="comment">// simply upsert the table after setting these fields to null</span></span><br><span class="line">softDeleteDf.write.format(<span class="string">&quot;hudi&quot;</span>).</span><br><span class="line">  options(getQuickstartWriteConfigs).</span><br><span class="line">  option(<span class="type">OPERATION_OPT_KEY</span>, <span class="string">&quot;upsert&quot;</span>).</span><br><span class="line">  option(<span class="type">PRECOMBINE_FIELD_OPT_KEY</span>, <span class="string">&quot;ts&quot;</span>).</span><br><span class="line">  option(<span class="type">RECORDKEY_FIELD_OPT_KEY</span>, <span class="string">&quot;uuid&quot;</span>).</span><br><span class="line">  option(<span class="type">PARTITIONPATH_FIELD_OPT_KEY</span>, <span class="string">&quot;partitionpath&quot;</span>).</span><br><span class="line">  option(<span class="type">TABLE_NAME</span>, tableName).</span><br><span class="line">  mode(<span class="type">Append</span>).</span><br><span class="line">  save(basePath)</span><br></pre></td></tr></table></figure>
+
+<h4 id="硬删除"><a href="#硬删除" class="headerlink" title="硬删除"></a>硬删除</h4><p>一种更强的删除形式是从表中物理删除记录的任何痕迹.<br>这可以通过 3 种不同的方式实现.</p>
+<p>1)使用数据源,设置OPERATION_OPT_KEY为DELETE_OPERATION_OPT_VAL.<br>这将删除正在提交的 DataSet 中的所有记录.</p>
+<p>例如,首先读入一个数据集.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> roViewDF = spark.</span><br><span class="line">        read.</span><br><span class="line">        format(<span class="string">&quot;org.apache.hudi&quot;</span>).</span><br><span class="line">        load(basePath + <span class="string">&quot;/*/*/*/*&quot;</span>)</span><br><span class="line">roViewDF.createOrReplaceTempView(<span class="string">&quot;hudi_ro_table&quot;</span>)</span><br><span class="line">spark.sql(<span class="string">&quot;select count(*) from hudi_ro_table&quot;</span>).show() <span class="comment">// should return 10 (number of records inserted above)</span></span><br><span class="line"><span class="keyword">val</span> riderValue = spark.sql(<span class="string">&quot;select distinct rider from hudi_ro_table&quot;</span>).show()</span><br><span class="line"><span class="comment">// copy the value displayed to be used in next step</span></span><br></pre></td></tr></table></figure>
+
+<p>现在写一个你想删除哪些记录的查询:</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> df = spark.sql(<span class="string">&quot;select uuid, partitionPath from hudi_ro_table where rider = &#x27;rider-213&#x27;&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>最后,执行删除这些记录:</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> deletes = dataGen.generateDeletes(df.collectAsList())</span><br><span class="line"><span class="keyword">val</span> df = spark.read.json(spark.sparkContext.parallelize(deletes, <span class="number">2</span>));</span><br><span class="line">df.write.format(<span class="string">&quot;org.apache.hudi&quot;</span>).</span><br><span class="line">options(getQuickstartWriteConfigs).</span><br><span class="line">option(<span class="type">OPERATION_OPT_KEY</span>,<span class="string">&quot;delete&quot;</span>).</span><br><span class="line">option(<span class="type">PRECOMBINE_FIELD_OPT_KEY</span>, <span class="string">&quot;ts&quot;</span>).</span><br><span class="line">option(<span class="type">RECORDKEY_FIELD_OPT_KEY</span>, <span class="string">&quot;uuid&quot;</span>).</span><br><span class="line">option(<span class="type">PARTITIONPATH_FIELD_OPT_KEY</span>, <span class="string">&quot;partitionpath&quot;</span>).</span><br><span class="line">option(<span class="type">TABLE_NAME</span>, tableName).</span><br><span class="line">mode(<span class="type">Append</span>).</span><br><span class="line">save(basePath);</span><br></pre></td></tr></table></figure>
+
+<p>2)使用数据源,设置PAYLOAD_CLASS_OPT_KEY为&quot;org.apache.hudi.EmptyHoodieRecordPayload&quot;.<br>这将删除正在提交的 DataSet 中的所有记录.</p>
+<p>此示例将从 DataSet 中存在的表中删除所有记录deleteDF:</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">deleteDF <span class="comment">// dataframe containing just records to be deleted</span></span><br><span class="line"> .write().format(<span class="string">&quot;org.apache.hudi&quot;</span>)</span><br><span class="line"> .option(...) <span class="comment">// Add HUDI options like record-key, partition-path and others as needed for your setup</span></span><br><span class="line"> <span class="comment">// specify record_key, partition_key, precombine_fieldkey &amp; usual params</span></span><br><span class="line"> .option(<span class="type">DataSourceWriteOptions</span>.<span class="type">PAYLOAD_CLASS_OPT_KEY</span>, <span class="string">&quot;org.apache.hudi.EmptyHoodieRecordPayload&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>3)使用 DataSource 或 DeltaStreamer,添加一个名为_hoodie_is_deletedDataSet 的列.<br>对于要删除的所有记录,必须将此列的值设置为true,对于要更新插入的任何记录,必须将其设置为 false 或保留为 null.</p>
+<p>假设原始模式是:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;type&quot;</span>:<span class="string">&quot;record&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;name&quot;</span>:<span class="string">&quot;example_tbl&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;fields&quot;</span>:[&#123;</span><br><span class="line">     <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;uuid&quot;</span>,</span><br><span class="line">     <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;String&quot;</span></span><br><span class="line">  &#125;, &#123;</span><br><span class="line">     <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;ts&quot;</span>,</span><br><span class="line">     <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span></span><br><span class="line">  &#125;,  &#123;</span><br><span class="line">     <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;partitionPath&quot;</span>,</span><br><span class="line">     <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span></span><br><span class="line">  &#125;, &#123;</span><br><span class="line">     <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;rank&quot;</span>,</span><br><span class="line">     <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;long&quot;</span></span><br><span class="line">  &#125;</span><br><span class="line">]&#125;</span><br></pre></td></tr></table></figure>
+
+<p>确保添加_hoodie_is_deleted列:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;type&quot;</span>:<span class="string">&quot;record&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;name&quot;</span>:<span class="string">&quot;example_tbl&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;fields&quot;</span>:[&#123;</span><br><span class="line">     <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;uuid&quot;</span>,</span><br><span class="line">     <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;String&quot;</span></span><br><span class="line">  &#125;, &#123;</span><br><span class="line">     <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;ts&quot;</span>,</span><br><span class="line">     <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span></span><br><span class="line">  &#125;,  &#123;</span><br><span class="line">     <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;partitionPath&quot;</span>,</span><br><span class="line">     <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span></span><br><span class="line">  &#125;, &#123;</span><br><span class="line">     <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;rank&quot;</span>,</span><br><span class="line">     <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;long&quot;</span></span><br><span class="line">  &#125;, &#123;</span><br><span class="line">    <span class="attr">&quot;name&quot;</span> : <span class="string">&quot;_hoodie_is_deleted&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;type&quot;</span> : <span class="string">&quot;boolean&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;default&quot;</span> : <span class="literal">false</span></span><br><span class="line">  &#125;</span><br><span class="line">]&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后您要删除的任何记录都可以标记_hoodie_is_deleted为真:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="attr">&quot;ts&quot;</span>: <span class="number">0.0</span>, <span class="attr">&quot;uuid&quot;</span>: <span class="string">&quot;19tdb048-c93e-4532-adf9-f61ce6afe10&quot;</span>, <span class="attr">&quot;rank&quot;</span>: <span class="number">1045</span>, <span class="attr">&quot;partitionpath&quot;</span>: <span class="string">&quot;americas/brazil/sao_paulo&quot;</span>, <span class="attr">&quot;_hoodie_is_deleted&quot;</span> : <span class="literal">true</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="并发控制"><a href="#并发控制" class="headerlink" title="并发控制"></a>并发控制</h3><p>该hudi-spark模块提供 DataSource API 以将 Spark DataFrame 写入(和读取)到 Hudi 表中.<br>以下是如何通过 spark 数据源使用optimistic_concurrency_control 的示例.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">inputDF.write.format(<span class="string">&quot;hudi&quot;</span>)</span><br><span class="line"> .options(getQuickstartWriteConfigs)</span><br><span class="line"> .option(<span class="type">PRECOMBINE_FIELD_OPT_KEY</span>, <span class="string">&quot;ts&quot;</span>)</span><br><span class="line"> .option(<span class="string">&quot;hoodie.cleaner.policy.failed.writes&quot;</span>, <span class="string">&quot;LAZY&quot;</span>)</span><br><span class="line"> .option(<span class="string">&quot;hoodie.write.concurrency.mode&quot;</span>, <span class="string">&quot;optimistic_concurrency_control&quot;</span>)</span><br><span class="line"> .option(<span class="string">&quot;hoodie.write.lock.zookeeper.url&quot;</span>, <span class="string">&quot;zookeeper&quot;</span>)</span><br><span class="line"> .option(<span class="string">&quot;hoodie.write.lock.zookeeper.port&quot;</span>, <span class="string">&quot;2181&quot;</span>)</span><br><span class="line"> .option(<span class="string">&quot;hoodie.write.lock.zookeeper.lock_key&quot;</span>, <span class="string">&quot;test_table&quot;</span>)</span><br><span class="line"> .option(<span class="string">&quot;hoodie.write.lock.zookeeper.base_path&quot;</span>, <span class="string">&quot;/test&quot;</span>)</span><br><span class="line"> .option(<span class="type">RECORDKEY_FIELD_OPT_KEY</span>, <span class="string">&quot;uuid&quot;</span>)</span><br><span class="line"> .option(<span class="type">PARTITIONPATH_FIELD_OPT_KEY</span>, <span class="string">&quot;partitionpath&quot;</span>)</span><br><span class="line"> .option(<span class="type">TABLE_NAME</span>, tableName)</span><br><span class="line"> .mode(<span class="type">Overwrite</span>)</span><br><span class="line"> .save(basePath)</span><br></pre></td></tr></table></figure>
+
+<h3 id="提交通知"><a href="#提交通知" class="headerlink" title="提交通知"></a>提交通知</h3><p>Apache Hudi 提供了发布关于写入提交的回调通知的能力.<br>如果您需要事件通知流在 Hudi 写入提交后对其他服务执行操作,这可能很有价值.<br>您可以将写入提交回调通知推送到 HTTP 端点或 Kafka 服务器.</p>
+<h4 id="HTTP"><a href="#HTTP" class="headerlink" title="HTTP"></a>HTTP</h4><h4 id="Kafka"><a href="#Kafka" class="headerlink" title="Kafka"></a>Kafka</h4><h4 id="Pulsar"><a href="#Pulsar" class="headerlink" title="Pulsar"></a>Pulsar</h4><h2 id="Flink-SQL-Writer"><a href="#Flink-SQL-Writer" class="headerlink" title="Flink SQL Writer"></a>Flink SQL Writer</h2><p>hudi-flink 模块为 hudi source 和 sink 定义了 Flink SQL 连接器.</p>
+<h3 id="sink-table-options"><a href="#sink-table-options" class="headerlink" title="sink table options"></a>sink table options</h3><p>path<br>必需|N/A<br>Base path for the target hoodie table. The path would be created if it does not exist, otherwise a hudi table expects to be initialized successfully</p>
+<p>table.type<br>非必需|COPY_ON_WRITE<br>Type of table to write. COPY_ON_WRITE (or) MERGE_ON_READ</p>
+<p>write.operation<br>非必需|upsert<br>The write operation, that this write should do (insert or upsert is supported)</p>
+<p>write.precombine.field<br>非必需|ts<br>Field used in preCombining before actual write. When two records have the same key value, we will pick the one with the largest value for the precombine field, determined by Object.compareTo(..)</p>
+<p>write.payload.class<br>非必需|OverwriteWithLatestAvroPayload.class<br>Payload class used. Override this, if you like to roll your own merge logic, when upserting/inserting. This will render any value set for the option in-effective</p>
+<p>write.insert.drop.duplicates<br>非必需|FALSE<br>Flag to indicate whether to drop duplicates upon insert. By default insert will accept duplicates, to gain extra performance</p>
+<p>write.ignore.failed<br>非必需|TRUE<br>Flag to indicate whether to ignore any non exception error (e.g. writestatus error). within a checkpoint batch. By default true (in favor of streaming progressing over data integrity)</p>
+<p>hoodie.datasource.write.recordkey.field<br>非必需|uuid<br>Record key field. Value to be used as the recordKey component of HoodieKey. Actual value will be obtained by invoking .toString() on the field value. Nested fields can be specified using the dot notation eg: a.b.c</p>
+<p>hoodie.datasource.write.keygenerator.class<br>非必需|SimpleAvroKeyGenerator.class<br>Key generator class, that implements will extract the key out of incoming record</p>
+<p>write.tasks<br>非必需|4<br>实际写入任务的并行度,默认为 4.</p>
+<p>write.batch.size.MB<br>非必需|128<br>以 MB 为单位的批处理缓冲区大小,用于将数据刷新到下面的文件系统中</p>
+<h3 id="异步压缩策略"><a href="#异步压缩策略" class="headerlink" title="异步压缩策略"></a>异步压缩策略</h3><p>如果表类型为 MERGE_ON_READ,也可以通过选项指定异步压缩策略.</p>
+<p>compaction.async.enabled<br>非必需|TRUE<br>异步压缩,默认为 MOR 启用.</p>
+<p>compaction.trigger.strategy<br>非必需|num_commits<br>触发压缩的策略,选项是:</p>
+<ol>
+<li>&#39;num_commits&#39;:当达到N个增量提交时触发压缩,默认值.</li>
+<li>&#39;time_elapsed&#39;:自上次压缩以来经过的时间 &gt; N 秒时触发压缩.</li>
+<li>&#39;num_and_time&#39;:当同时满足 NUM_COMMITS 和 TIME_ELAPSED 时触发压缩.</li>
+<li>&#39;num_or_time&#39;:当满足 NUM_COMMITS 或 TIME_ELAPSED 时触发压缩.</li>
+</ol>
+<p>compaction.delta_commits<br>非必需|5<br>触发压缩所需的最大增量提交.</p>
+<p>compaction.delta_seconds<br>非必需|3600<br>触发压缩所需的最大增量秒时间,default 1 hour</p>
+<p>可以使用INSERT INTO SQL语句写入数据.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> hudi_table <span class="keyword">select</span> ... <span class="keyword">from</span> ...; </span><br></pre></td></tr></table></figure>
+
+<h1 id="同步到catalogs"><a href="#同步到catalogs" class="headerlink" title="同步到catalogs"></a>同步到catalogs</h1><h2 id="Hive-Metastore"><a href="#Hive-Metastore" class="headerlink" title="Hive Metastore"></a>Hive Metastore</h2><h3 id="Hive-Sync-Tool"><a href="#Hive-Sync-Tool" class="headerlink" title="Hive Sync Tool"></a>Hive Sync Tool</h3><p>写入数据DataSource writer or HoodieDeltaStreamer支持将表的最新架构同步到hive metastore,以便查询可以获取新的列和分区.<br>在这种情况下,最好从命令行或在独立的jvm中运行它,Hudi提供了一个HiveSyncTool,一旦您构建了hudi-hive 模块,可以按如下方式调用它.<br>下面是我们如何将上面的Datasource Writer写入的表同步到hive metastore.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd hudi-hive</span><br><span class="line">./run_sync_tool.sh  --jdbc-url jdbc:hive2:\/\/hiveserver:10000 --user hive --pass hive --partitioned-by partition --base-path &lt;basePath&gt; --database default --table &lt;tableName&gt;</span><br></pre></td></tr></table></figure>
+
+<p>从hudi0.5.1版本开始,merge-on-read tables的优化版本默认后缀为&#39;_ro&#39;.<br>为了向后兼容旧的Hudi版本,一个可选的HiveSyncConfig(&#39;--skip-ro-suffix&#39;),可以根据需要关闭&#39;_ro后缀.<br>使用以下命令浏览其他hive 同步选项:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd hudi-hive</span><br><span class="line">./run_sync_tool.sh</span><br><span class="line">./run_sync_tool.sh --help</span><br></pre></td></tr></table></figure>
+
+<h4 id="hive同步配置"><a href="#hive同步配置" class="headerlink" title="hive同步配置"></a>hive同步配置</h4><p>请看一下可以传递给run_sync_tool在HiveSyncConfig里面.<br>其中,以下是必需的参数:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">@Parameter(names &#x3D; &#123;&quot;--database&quot;&#125;, description &#x3D; &quot;name of the target database in Hive&quot;, required &#x3D; true);</span><br><span class="line">@Parameter(names &#x3D; &#123;&quot;--table&quot;&#125;, description &#x3D; &quot;name of the target table in Hive&quot;, required &#x3D; true);</span><br><span class="line">@Parameter(names &#x3D; &#123;&quot;--base-path&quot;&#125;, description &#x3D; &quot;Basepath of hoodie table to sync&quot;, required &#x3D; true);## Sync modes</span><br></pre></td></tr></table></figure>
+
+<p>最常用的hive 同步配置对应的数据源选项如下:<br>--database<br>hoodie.datasource.hive_sync.database<br>hive 中目标数据库的名称</p>
+<p>--table<br>hoodie.datasource.hive_sync.table<br>hive 中目标表的名称</p>
+<p>--user<br>hoodie.datasource.hive_sync.username<br>hive 元存储的用户名</p>
+<p>--pass<br>hoodie.datasource.hive_sync.password<br>hive 元存储的密码</p>
+<p>--use-jdbc<br>hoodie.datasource.hive_sync.use_jdbc<br>使用JDBC连接到metastore</p>
+<p>--jdbc-url<br>hoodie.datasource.hive_sync.jdbcurl<br>hive 元存储url</p>
+<p>--sync-mode<br>hoodie.datasource.hive_sync.mode<br>为hive 操作选择的模式.有效值为hms、jdbc和hiveql.</p>
+<p>--partitioned-by<br>hoodie.datasource.hive_sync.partition_fields<br>表中用于确定hive 分区的逗号分隔列名.</p>
+<p>--partition-value-extractor<br>hoodie.datasource.hive_sync.partition_extractor_class<br>该类实现PartitionValueExtractor以提取分区值.<br>默认情况下SlashEncodedDayPartitionValueExtractor</p>
+<h4 id="同步模式"><a href="#同步模式" class="headerlink" title="同步模式"></a>同步模式</h4><p>HiveSyncTool支持三种模式,即HMS/HIVEQL/JDBC,以连接到hive 元存储服务器.<br>这些模式只是针对hive 执行DDL的三种不同方式.<br>在这些模式中,JDBC或HMS优于hiveql,hiveql主要用于运行DML而不是DDL.</p>
+<blockquote>
+<p>所有这些模式都假设hive metastore已配置,并且在hive-site.xml中设置了相应的属性.<br>如果使用spark shell/spark sql将Hudi表同步到hive ,那么hive-site.xml也需要放在<code>&lt;SPARK_HOME&gt;/conf</code>目录.</p>
+</blockquote>
+<h5 id="HMS"><a href="#HMS" class="headerlink" title="HMS"></a>HMS</h5><p>HMS模式使用hive 元存储客户端直接使用thrift API同步Hudi表.<br>要使用此模式,请通过<code>--sync-mode=hms</code>到运行同步工具然后设置<code>--use-jdbc=false</code>.<br>此外,如果您使用的是远程元存储,则<code>hive.metastore.uris</code>需要在hive-site.xml中设置.<br>否则,默认情况下,该工具假定metastore在端口9083上本地运行.<br>对带有Spark数据源的HMS模式的支持将是即将启用.</p>
+<h5 id="HIVEQL"><a href="#HIVEQL" class="headerlink" title="HIVEQL"></a>HIVEQL</h5><p>HQL是Hive自己的SQL方言.<br>此模式仅使用Hive QL&#39;s driver将DDL作为HQL命令执行.<br>要使用此模式,请通过<code>--sync-mode=hiveql</code>到运行同步工具然后设置<code>--use-jdbc=false</code>.</p>
+<h5 id="JDBC"><a href="#JDBC" class="headerlink" title="JDBC"></a>JDBC</h5><p>此模式使用JDBC规范连接到hive 元存储.<br>要使用此模式,只需将jdbc url传递到hive 服务器(<code>--use-jdbc</code>默认为true)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">@Parameter(names &#x3D; &#123;&quot;--jdbc-url&quot;&#125;, description &#x3D; &quot;Hive jdbc connect url&quot;);</span><br></pre></td></tr></table></figure>
+
+<h4 id="Flink设置"><a href="#Flink设置" class="headerlink" title="Flink设置"></a>Flink设置</h4><h5 id="同步模板"><a href="#同步模板" class="headerlink" title="同步模板"></a>同步模板</h5><p>Flink hive 同步现在支持两个hive 同步模式,hms和jdbc.hms模式只需要配置元存储uri.<br>jdbc模式下,JDBC属性和元存储uri都需要配置.<br>选项模板如下:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- hms mode template</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> t1(</span><br><span class="line">  uuid <span class="type">VARCHAR</span>(<span class="number">20</span>),</span><br><span class="line">  name <span class="type">VARCHAR</span>(<span class="number">10</span>),</span><br><span class="line">  age <span class="type">INT</span>,</span><br><span class="line">  ts <span class="type">TIMESTAMP</span>(<span class="number">3</span>),</span><br><span class="line">  `<span class="keyword">partition</span>` <span class="type">VARCHAR</span>(<span class="number">20</span>)</span><br><span class="line">)</span><br><span class="line">PARTITIONED <span class="keyword">BY</span> (`<span class="keyword">partition</span>`)</span><br><span class="line"><span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;path&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;$&#123;db_path&#125;/t1&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;table.type&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;COPY_ON_WRITE&#x27;</span>,  <span class="comment">-- If MERGE_ON_READ, hive query will not have output until the parquet file is generated</span></span><br><span class="line">  <span class="string">&#x27;hive_sync.enable&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span>,     <span class="comment">-- Required. To enable hive synchronization</span></span><br><span class="line">  <span class="string">&#x27;hive_sync.mode&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hms&#x27;</span>,        <span class="comment">-- Required. Setting hive sync mode to hms, default jdbc</span></span><br><span class="line">  <span class="string">&#x27;hive_sync.metastore.uris&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;thrift://$&#123;ip&#125;:9083&#x27;</span> <span class="comment">-- Required. The port need set on hive-site.xml</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- jdbc mode template</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> t1(</span><br><span class="line">  uuid <span class="type">VARCHAR</span>(<span class="number">20</span>),</span><br><span class="line">  name <span class="type">VARCHAR</span>(<span class="number">10</span>),</span><br><span class="line">  age <span class="type">INT</span>,</span><br><span class="line">  ts <span class="type">TIMESTAMP</span>(<span class="number">3</span>),</span><br><span class="line">  `<span class="keyword">partition</span>` <span class="type">VARCHAR</span>(<span class="number">20</span>)</span><br><span class="line">)</span><br><span class="line">PARTITIONED <span class="keyword">BY</span> (`<span class="keyword">partition</span>`)</span><br><span class="line"><span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;path&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;$&#123;db_path&#125;/t1&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;table.type&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;COPY_ON_WRITE&#x27;</span>,  <span class="comment">--If MERGE_ON_READ, hive query will not have output until the parquet file is generated</span></span><br><span class="line">  <span class="string">&#x27;hive_sync.enable&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span>,     <span class="comment">-- Required. To enable hive synchronization</span></span><br><span class="line">  <span class="string">&#x27;hive_sync.mode&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;jdbc&#x27;</span>,       <span class="comment">-- Required. Setting hive sync mode to hms, default jdbc</span></span><br><span class="line">  <span class="string">&#x27;hive_sync.metastore.uris&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;thrift://$&#123;ip&#125;:9083&#x27;</span>, <span class="comment">-- Required. The port need set on hive-site.xml</span></span><br><span class="line">  <span class="string">&#x27;hive_sync.jdbc_url&#x27;</span><span class="operator">=</span><span class="string">&#x27;jdbc:hive2://$&#123;ip&#125;:10000&#x27;</span>,    <span class="comment">-- required, hiveServer port</span></span><br><span class="line">  <span class="string">&#x27;hive_sync.table&#x27;</span><span class="operator">=</span><span class="string">&#x27;$&#123;table_name&#125;&#x27;</span>,                  <span class="comment">-- required, hive table name</span></span><br><span class="line">  <span class="string">&#x27;hive_sync.db&#x27;</span><span class="operator">=</span><span class="string">&#x27;$&#123;db_name&#125;&#x27;</span>,                        <span class="comment">-- required, hive database name</span></span><br><span class="line">  <span class="string">&#x27;hive_sync.username&#x27;</span><span class="operator">=</span><span class="string">&#x27;$&#123;user_name&#125;&#x27;</span>,                <span class="comment">-- required, JDBC username</span></span><br><span class="line">  <span class="string">&#x27;hive_sync.password&#x27;</span><span class="operator">=</span><span class="string">&#x27;$&#123;password&#125;&#x27;</span>                  <span class="comment">-- required, JDBC password</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h5 id="查询"><a href="#查询" class="headerlink" title="查询"></a>查询</h5><p>使用hive beeline查询时,需要输入设置:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> hive.input.format <span class="operator">=</span> org.apache.hudi.hadoop.hive.HoodieCombineHiveInputFormat;</span><br></pre></td></tr></table></figure>
+
+<h4 id="Spark数据源示例"><a href="#Spark数据源示例" class="headerlink" title="Spark数据源示例"></a>Spark数据源示例</h4><p>假设metastore配置正确,那么启动spark-shell.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spark-shell  --jars $HUDI_SPARK_BUNDLE \</span><br><span class="line">--conf &#39;spark.serializer&#x3D;org.apache.spark.serializer.KryoSerializer&#39;</span><br></pre></td></tr></table></figure>
+
+<p>可以运行以下脚本来创建一个示例hudi表并将其同步到hive .</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// spark-shell</span></span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.<span class="type">QuickstartUtils</span>._</span><br><span class="line"><span class="keyword">import</span> scala.collection.<span class="type">JavaConversions</span>._</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SaveMode</span>._</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.<span class="type">DataSourceReadOptions</span>._</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.<span class="type">DataSourceWriteOptions</span>._</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.config.<span class="type">HoodieWriteConfig</span>._</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.types._</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">Row</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> tableName = <span class="string">&quot;hudi_cow&quot;</span></span><br><span class="line"><span class="keyword">val</span> basePath = <span class="string">&quot;/user/hive/warehouse/hudi_cow&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> schema = <span class="type">StructType</span>(<span class="type">Array</span>(</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;rowId&quot;</span>, <span class="type">StringType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;partitionId&quot;</span>, <span class="type">StringType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;preComb&quot;</span>, <span class="type">LongType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;name&quot;</span>, <span class="type">StringType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;versionId&quot;</span>, <span class="type">StringType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;toBeDeletedStr&quot;</span>, <span class="type">StringType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;intToLong&quot;</span>, <span class="type">IntegerType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;longToInt&quot;</span>, <span class="type">LongType</span>,<span class="literal">true</span>)</span><br><span class="line">))</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> data0 = <span class="type">Seq</span>(<span class="type">Row</span>(<span class="string">&quot;row_1&quot;</span>, <span class="string">&quot;2021/01/01&quot;</span>,<span class="number">0</span>L,<span class="string">&quot;bob&quot;</span>,<span class="string">&quot;v_0&quot;</span>,<span class="string">&quot;toBeDel0&quot;</span>,<span class="number">0</span>,<span class="number">1000000</span>L), </span><br><span class="line">               <span class="type">Row</span>(<span class="string">&quot;row_2&quot;</span>, <span class="string">&quot;2021/01/01&quot;</span>,<span class="number">0</span>L,<span class="string">&quot;john&quot;</span>,<span class="string">&quot;v_0&quot;</span>,<span class="string">&quot;toBeDel0&quot;</span>,<span class="number">0</span>,<span class="number">1000000</span>L), </span><br><span class="line">               <span class="type">Row</span>(<span class="string">&quot;row_3&quot;</span>, <span class="string">&quot;2021/01/02&quot;</span>,<span class="number">0</span>L,<span class="string">&quot;tom&quot;</span>,<span class="string">&quot;v_0&quot;</span>,<span class="string">&quot;toBeDel0&quot;</span>,<span class="number">0</span>,<span class="number">1000000</span>L))</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> dfFromData0 = spark.createDataFrame(data0,schema)</span><br><span class="line"></span><br><span class="line">dfFromData0.write.format(<span class="string">&quot;hudi&quot;</span>).</span><br><span class="line">  options(getQuickstartWriteConfigs).</span><br><span class="line">  option(<span class="type">PRECOMBINE_FIELD_OPT_KEY</span>, <span class="string">&quot;preComb&quot;</span>).</span><br><span class="line">  option(<span class="type">RECORDKEY_FIELD_OPT_KEY</span>, <span class="string">&quot;rowId&quot;</span>).</span><br><span class="line">  option(<span class="type">PARTITIONPATH_FIELD_OPT_KEY</span>, <span class="string">&quot;partitionId&quot;</span>).</span><br><span class="line">  option(<span class="type">TABLE_NAME</span>, tableName).</span><br><span class="line">  option(<span class="type">TABLE_TYPE</span>.key, <span class="type">COW_TABLE_TYPE_OPT_VAL</span>).</span><br><span class="line">  option(<span class="type">OPERATION_OPT_KEY</span>, <span class="string">&quot;upsert&quot;</span>).</span><br><span class="line">  option(<span class="string">&quot;hoodie.index.type&quot;</span>,<span class="string">&quot;SIMPLE&quot;</span>).</span><br><span class="line">  option(<span class="string">&quot;hoodie.datasource.write.hive_style_partitioning&quot;</span>,<span class="string">&quot;true&quot;</span>).</span><br><span class="line">  option(<span class="string">&quot;hoodie.datasource.hive_sync.jdbcurl&quot;</span>,<span class="string">&quot;jdbc:hive2://hiveserver:10000/&quot;</span>).</span><br><span class="line">  option(<span class="string">&quot;hoodie.datasource.hive_sync.database&quot;</span>,<span class="string">&quot;default&quot;</span>).</span><br><span class="line">  option(<span class="string">&quot;hoodie.datasource.hive_sync.table&quot;</span>,<span class="string">&quot;hudi_cow&quot;</span>).</span><br><span class="line">  option(<span class="string">&quot;hoodie.datasource.hive_sync.partition_fields&quot;</span>,<span class="string">&quot;partitionId&quot;</span>).</span><br><span class="line">  option(<span class="string">&quot;hoodie.datasource.hive_sync.enable&quot;</span>,<span class="string">&quot;true&quot;</span>).</span><br><span class="line">  mode(<span class="type">Overwrite</span>).</span><br><span class="line">  save(basePath)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--hive sql</span></span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> hudi_cow limit <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+
+<h1 id="查询数据"><a href="#查询数据" class="headerlink" title="查询数据"></a>查询数据</h1><p>从概念上讲,Hudi在DFS上物理地存储数据一次,同时提供3种不同的查询方式.<br>一旦表同步到配置单元元存储,它将提供由Hudi的自定义输入格式支持的外部配置单元表.<br>一旦安装了适当的hudibundle,就可以通过Hive、sparksql、Spark datasource api和PrestoDB等流行的查询引擎查询表.</p>
+<h2 id="Spark数据源"><a href="#Spark数据源" class="headerlink" title="Spark数据源"></a>Spark数据源</h2><p>Spark Datasource API是编写Spark ETL管道的流行方法.<br>Hudi表可以通过Spark数据源查询<code>spark.read.parquet</code>.</p>
+<h3 id="Snapshot-query"><a href="#Snapshot-query" class="headerlink" title="Snapshot query"></a>Snapshot query</h3><p>在当前时间点检索数据表.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> hudiIncQueryDF = spark</span><br><span class="line">     .read()</span><br><span class="line">     .format(<span class="string">&quot;hudi&quot;</span>)</span><br><span class="line">     .option(<span class="type">DataSourceReadOptions</span>.<span class="type">QUERY_TYPE_OPT_KEY</span>(), <span class="type">DataSourceReadOptions</span>.<span class="type">QUERY_TYPE_SNAPSHOT_OPT_VAL</span>())</span><br><span class="line">     .load(tablePath) </span><br></pre></td></tr></table></figure>
+
+<h3 id="Incremental-query"><a href="#Incremental-query" class="headerlink" title="Incremental query"></a>Incremental query</h3><p>spark管道特别感兴趣的是Hudi支持增量查询的能力,如下所示.<br>一个示例增量查询,它将获取自beginInstantTime,如下所示.<br>多亏了Hudi对记录级更改流的支持,这些增量管道只处理更改的记录,通常比批处理效率提高10倍.</p>
+<p>下面的代码片段显示了如何获取之后更改的所有记录beginInstantTime然后对它们运行一些SQL.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Dataset</span>&lt;<span class="type">Row</span>&gt; hudiIncQueryDF = spark.read()</span><br><span class="line">   .format(<span class="string">&quot;org.apache.hudi&quot;</span>)</span><br><span class="line">   .option(<span class="type">DataSourceReadOptions</span>.<span class="type">QUERY_TYPE_OPT_KEY</span>(), <span class="type">DataSourceReadOptions</span>.<span class="type">QUERY_TYPE_INCREMENTAL_OPT_VAL</span>())</span><br><span class="line">   .option(<span class="type">DataSourceReadOptions</span>.<span class="type">BEGIN_INSTANTTIME_OPT_KEY</span>(), &lt;beginInstantTime&gt;)</span><br><span class="line">   .option(<span class="type">DataSourceReadOptions</span>.<span class="type">INCR_PATH_GLOB_OPT_KEY</span>(), <span class="string">&quot;/year=2020/month=*/day=*&quot;</span>) <span class="comment">// Optional, use glob pattern if querying certain partitions</span></span><br><span class="line">   .load(tablePath); <span class="comment">// For incremental query, pass in the root/base path of table</span></span><br><span class="line">   </span><br><span class="line">hudiIncQueryDF.createOrReplaceTempView(<span class="string">&quot;hudi_trips_incremental&quot;</span>)</span><br><span class="line">spark.sql(<span class="string">&quot;select `_hoodie_commit_time`, fare, begin_lon, begin_lat, ts from  hudi_trips_incremental where fare &gt; 20.0&quot;</span>).show()</span><br></pre></td></tr></table></figure>
+
+<p>另外,HoodieReadClient使用Hudi的隐式索引提供以下功能.<br>read(keys)<br>使用Hudi自己的索引将键对应的数据作为一个数据帧读出,以便更快地查找.</p>
+<p>filterExists()<br>从提供的RDD[HoodieRecord]过滤已经存在的重复记录,有助于重复数据消除.</p>
+<p>checkExists(keys)<br>检查所提供的键是否存在于Hudi表中.</p>
+<h3 id="Spark-SQL"><a href="#Spark-SQL" class="headerlink" title="Spark SQL"></a>Spark SQL</h3><p>一旦Hudi表注册到Hive metastore中,就可以使用Spark查询它们.<br>默认情况下,从hive metastore parquet表读取时,sparksql将尝试使用自己的parquet读取器而不是hiveserde.<br>以下是查询COPY_ON_WRITE 或MERGE_ON_READ 表时要考虑的重要设置.</p>
+<h4 id="Copy-On-Write-tables"><a href="#Copy-On-Write-tables" class="headerlink" title="Copy On Write tables"></a>Copy On Write tables</h4><p>对于COPY_ON_WRITE表,Spark的默认parquet阅读器可用于保留Sparks的内置优化,以读取parquet文件,比如Hudi hive表上的矢量化读取.<br>如果使用默认的parquet读取器,则需要将路径过滤器推入sparkContext,如下所示.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark.sparkContext.hadoopConfiguration.setClass(&quot;mapreduce.input.pathFilter.class&quot;, classOf[org.apache.hudi.hadoop.HoodieROTablePathFilter], classOf[org.apache.hadoop.fs.PathFilter]);</span><br></pre></td></tr></table></figure>
+
+<h4 id="Merge-On-Read-tables"><a href="#Merge-On-Read-tables" class="headerlink" title="Merge On Read tables"></a>Merge On Read tables</h4><p>使用Hudi版本0.9.0查询MERGE_ON_READ表不需要特殊配置.<br>如果Hudi version &lt;= 0.8.0, 需要关闭SparkSQL default parquet reader.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark.sql.hive.convertMetastoreParquet&#x3D;false</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">spark-shell --driver-class-path &#x2F;etc&#x2F;hive&#x2F;conf --packages org.apache.hudi:hudi-spark-bundle_2.11:0.5.3,org.apache.spark:spark-avro_2.11:2.4.4 --conf spark.sql.hive.convertMetastoreParquet&#x3D;false</span><br><span class="line"></span><br><span class="line">sqlContext.sql(&quot;select count(*) from hudi_trips_mor_rt where datestr &#x3D; &#39;2016-10-02&#39;&quot;).show()</span><br><span class="line">sqlContext.sql(&quot;select count(*) from hudi_trips_mor_rt where datestr &#x3D; &#39;2016-10-02&#39;&quot;).show()</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>如果关闭默认的parquet reader,也可以读取COPY_ON_WRITE表.</p>
+</blockquote>
+<h2 id="Flink-SQL"><a href="#Flink-SQL" class="headerlink" title="Flink SQL"></a>Flink SQL</h2><p>一旦flink hudi表注册到flink catalog中,就可以使用flink sql查询它.<br>它支持跨两个Hudi表类型的所有查询类型,同样依赖于自定义的Hudi输入格式,就像Hive一样.<br>通常,notebook和flink sql cli用户利用flink sql查询Hudi表.</p>
+<p>默认情况下,从hive metastore parquet表读取数据时,flinksql将尝试使用自己的parquet读取器而不是hiveserde.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># HADOOP_HOME is your hadoop root directory after unpack the binary package.</span><br><span class="line">export HADOOP_CLASSPATH&#x3D;&#96;$HADOOP_HOME&#x2F;bin&#x2F;hadoop classpath&#96;</span><br><span class="line"></span><br><span class="line">.&#x2F;bin&#x2F;sql-client.sh embedded -j ...&#x2F;hudi-flink-bundle_2.1?-*.*.*.jar shell</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- this defines a COPY_ON_WRITE table named &#x27;t1&#x27;</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> t1(</span><br><span class="line">  uuid <span class="type">VARCHAR</span>(<span class="number">20</span>), <span class="comment">-- you can use &#x27;PRIMARY KEY NOT ENFORCED&#x27; syntax to specify the field as record key</span></span><br><span class="line">  name <span class="type">VARCHAR</span>(<span class="number">10</span>),</span><br><span class="line">  age <span class="type">INT</span>,</span><br><span class="line">  ts <span class="type">TIMESTAMP</span>(<span class="number">3</span>),</span><br><span class="line">  `<span class="keyword">partition</span>` <span class="type">VARCHAR</span>(<span class="number">20</span>)</span><br><span class="line">)</span><br><span class="line">PARTITIONED <span class="keyword">BY</span> (`<span class="keyword">partition</span>`)</span><br><span class="line"><span class="keyword">WITH</span> (</span><br><span class="line">  <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;path&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;table_base+path&#x27;</span></span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">-- query the data</span></span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> t1 <span class="keyword">where</span> `<span class="keyword">partition</span>` <span class="operator">=</span> <span class="string">&#x27;par1&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>Flink的内置支持parquet用于COPY_ON_WRITE and MERGE_ON_READ tables.<br>另外,如果在过滤器中指定了分区路径,则Flink引擎会在内部应用分区修剪.<br>还不支持过滤器下推.</p>
+<p>对于MERGE_ON_READ表,为了将hudi表作为流查询,需要添加选项<code>&#39;read.streaming.enabled&#39; = &#39;true&#39;</code>,当查询表时,Flink流管道开始,直到用户手动取消作业才结束.<br>您可以指定start commit with选项<code>read.streaming.start-commit</code>和源监控间隔<code>read.streaming.check-interval</code> .</p>
+<h3 id="Streaming-Query"><a href="#Streaming-Query" class="headerlink" title="Streaming Query"></a>Streaming Query</h3><p>默认情况下,hoodie表以批处理方式读取,即读取最新的快照数据集并返回.<br>通过设置选项打开流式阅读模式<code>read.streaming.enabled=true</code>.<br>设置选项<code>read.start-commit</code>要指定读取开始偏移量,请将值指定为<code>earliest</code> 如果你想使用所有的历史数据集.</p>
+<p>read.streaming.enabled<br>非必需|FALSE<br>指定true,read as streaming</p>
+<p>read.start-commit<br>非必需|the latest commit<br>开始提交时间格式为&quot;yyyyMMddHmmss&quot;,使用earliest从一开始就消耗</p>
+<p>read.streaming.skip_compaction<br>非必需|FALSE<br>是否在读取时跳过压缩提交,通常有两个目的:<br>1)避免使用压缩瞬间的重复.<br>2)启用更改日志模式时,仅使用更改日志以获得正确的语义.</p>
+<p>clean.retain_commits<br>非必需|10<br>在启用更改日志模式时,在清理之前要保留的最大提交数将调整此选项以调整更改日志的实时时间.<br>例如,如果检查点间隔设置为5分钟,默认策略将保留50分钟的更改日志.</p>
+<p>当选项<code>read.streaming.skip_compaction</code>打开时,流式阅读器将落后于<code>clean.retain_commits</code>.<br>保留承诺,可能会发生数据丢失.<br>压缩以每记录元数据的形式保留原始即时时间,如果日志已被消耗,流式阅读器将读取并跳过整个基本文件.<br>为了提高效率,选择<code>read.streaming.skip_compaction</code>直到被认为true .</p>
+<h3 id="Incremental-Query"><a href="#Incremental-Query" class="headerlink" title="Incremental Query"></a>Incremental Query</h3><p>增量查询有3个用例:</p>
+<ol>
+<li>Streaming query:指定start commit with选项<code>read.start-commit</code>.</li>
+<li>Batch query:指定start commit with选项<code>read.start-commit</code>以选项结束提交<code>read.end-commit</code>,时间间隔是封闭的:开始提交和结束提交都包含在内.</li>
+<li>TimeTravel:在一个瞬间批量消费,指定<code>read.end-commit</code>足够了,因为start commit在默认情况下是最新的.</li>
+</ol>
+<p>read.start-commit<br>非必需|the latest commit<br>指定earliest从一开始就消耗</p>
+<p>read.end-commit<br>非必需|the latest commit</p>
+<h3 id="Metadata-Table"><a href="#Metadata-Table" class="headerlink" title="Metadata Table"></a>Metadata Table</h3><p>元数据表保存每个hudi表的元数据索引,它保存文件列表和我们称为多模型索引的各种索引.<br>当前支持这些索引:</p>
+<ol>
+<li>partition -&gt; files mapping</li>
+<li>column max/min statistics for each file</li>
+<li>bloom filter for each file</li>
+</ol>
+<p>分区-&gt;文件映射可以用来获取文件列表进行读写路径,对于每次访问收费的对象存储来说,它是一种成本友好的方法,对于HDFS,它可以减轻NameNode的访问负担.</p>
+<p>每个文件的列max/min统计用于查询加速,在写入路径中,当启用此功能时,hudi将实时保存每个列的max/min值,从而降低写入吞吐量.<br>在读取路径中,hudi在扫描之前首先使用这些统计信息过滤掉无用的文件.</p>
+<p>bloom filter索引目前只用于spark bloom filter索引,还不用于查询加速.</p>
+<p>一般来说,启用元数据表会增加提交时间,对于非常短的检查点间隔(比如30秒)的用例来说不是很友好.<br>对于这些用例,您应该首先测试稳定性.</p>
+<p>metadata.enabled<br>非必需|false<br>设置为true使enable</p>
+<p>read.data.skipping.enabled<br>非必需|false<br>是否为批处理快照读取启用数据跳过,默认情况下disabled</p>
+<p>hoodie.metadata.index.column.stats.enable<br>非必需|false<br>是否启用列统计(max/min)</p>
+<p>hoodie.metadata.index.column.stats.column.list<br>非必需|false<br>适用列(用逗号分隔)以收集列统计信息</p>
+<h2 id="Hive"><a href="#Hive" class="headerlink" title="Hive"></a>Hive</h2><h3 id="Incremental-query-1"><a href="#Incremental-query-1" class="headerlink" title="Incremental query"></a>Incremental query</h3><p>HiveIncrementalPuller允许通过HiveQL从大型事实/维度表中增量提取更改,结合Hive(可靠地处理复杂SQL查询)和增量原语(以增量方式而不是完全扫描)的优点提取更改.<br>该工具使用hive JDBC运行hive查询并将其结果保存在临时表中.<br>这一点可以在以后被推翻.</p>
+<p>Upsert实用程序(HoodieDeltaStreamer)具有目录结构中所需的所有状态,以了解目标表上的提交时间.<br>例如:<code>/app/incremental-hql/intermediate/&#123;source_table_name&#125;_temp/&#123;last_commit_included&#125;</code>.<br>注册的增量hive表的格式为<code>&#123;tmpdb&#125;.&#123;source_table&#125;_&#123;last_commit_included&#125;</code>.</p>
+<p>以下是HiveIncrementalPuller的配置选项.</p>
+<img src="/images/fly1175.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>设置fromCommitTime=0和maxCommits=-1将获取整个源表,并可用于启动回填.<br>如果目标表是Hudi表,那么该实用程序可以确定目标表是否没有提交或延迟超过24小时(这是可配置的),它将自动使用回填配置,因为增量应用最后24小时可能比进行回填花费更多的时间.<br>该工具的当前限制是,在混合模式(快照和增量模式)下,不支持自连接同一个表.</p>
+<p>有关使用Fetch task执行的配置单元增量查询的注意事项:<br>因为获取任务调用InputFormat.<br>每个分区的listStatus()都可以在每个这样的listStatus()调用中列出Hoodie 元数据.<br>为了避免这种情况,可以使用hive会话属性禁用获取任务以进行增量查询:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set hive.fetch.task.conversion&#x3D;none;</span><br></pre></td></tr></table></figure>
+<p>这将确保为hive查询选择Map Reduce执行,该查询组合了分区(commaseparated)和调用InputFormat.<br>listStatus()只对所有这些分区执行一次.</p>
+<h2 id="PrestoDB"><a href="#PrestoDB" class="headerlink" title="PrestoDB"></a>PrestoDB</h2><h2 id="Trino"><a href="#Trino" class="headerlink" title="Trino"></a>Trino</h2><h2 id="Impala"><a href="#Impala" class="headerlink" title="Impala"></a>Impala</h2><h3 id="Snapshot-Query"><a href="#Snapshot-Query" class="headerlink" title="Snapshot Query"></a>Snapshot Query</h3><p>query Hudi Copy-on-write table as anEXTERNAL TABLEon HDFS.</p>
+<p>create a Hudi read optimized table on Impala:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">EXTERNAL</span> <span class="keyword">TABLE</span> database.table_name</span><br><span class="line"><span class="keyword">LIKE</span> PARQUET <span class="string">&#x27;/path/to/load/xxx.parquet&#x27;</span></span><br><span class="line">STORED <span class="keyword">AS</span> HUDIPARQUET</span><br><span class="line">LOCATION <span class="string">&#x27;/path/to/load&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>Impala能够利用物理分区结构来提高查询性能.<br>要创建分区表,文件夹应遵循命名约定,如year=2020/month=1.<br>Impala使用=分隔分区名称和分区值.</p>
+<p>要在Impala上创建分区的Hudi读取优化表:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">EXTERNAL</span> <span class="keyword">TABLE</span> database.table_name</span><br><span class="line"><span class="keyword">LIKE</span> PARQUET <span class="string">&#x27;/path/to/load/xxx.parquet&#x27;</span></span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> (<span class="keyword">year</span> <span class="type">int</span>, <span class="keyword">month</span> <span class="type">int</span>, <span class="keyword">day</span> <span class="type">int</span>)</span><br><span class="line">STORED <span class="keyword">AS</span> HUDIPARQUET</span><br><span class="line">LOCATION <span class="string">&#x27;/path/to/load&#x27;</span>;</span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> database.table_name RECOVER PARTITIONS;</span><br></pre></td></tr></table></figure>
+
+<p>Hudi进行新提交后,刷新Impala表以获取最新结果.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">REFRESH database.table_name</span><br></pre></td></tr></table></figure>
+
+<h1 id="流式摄取"><a href="#流式摄取" class="headerlink" title="流式摄取"></a>流式摄取</h1><h2 id="DeltaStreamer"><a href="#DeltaStreamer" class="headerlink" title="DeltaStreamer"></a>DeltaStreamer</h2><p>该HoodieDeltaStreamer实用程序(部分hudi-utilities-bundle)提供了从不同来源(例如 DFS 或 Kafka)摄取的方法,具有以下功能.</p>
+<ol>
+<li>恰好一次从 Kafka 摄取新事件,从 Sqoop增量导入HiveIncrementalPuller或输出DFS 文件夹下的文件</li>
+<li>支持输入数据的 json、avro 或自定义记录类型</li>
+<li>管理检查点、回滚和恢复</li>
+<li>利用 DFS 或 Confluent模式注册表中的 Avro 模式.</li>
+<li>支持插入转换</li>
+</ol>
+<p>工具类:HoodieDeltaStreamer,本质上运行Spark 流式程序,实时从获取数据,存储在Hudi表中,执行如下命令,查看帮助文档:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">spark-submit \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer \</span><br><span class="line">/opt/spark/jars/hudi-utilities-bundle_2.11-0.12.0.jar \</span><br><span class="line">--help</span><br></pre></td></tr></table></figure>
+
+<p>该工具采用分层组合的属性文件,并具有用于提取数据、密钥生成和提供模式的可插拔接口.<br>以下提供了从 kafka 和 dfs 摄取的示例配置<code>hudi-utilities/src/test/resources/delta-streamer-config</code>.</p>
+<p>例如:一旦你有 Confluent Kafka,Schema 注册表启动并运行,使用(由 schema-registry repo 提供的impressions.avro )生成一些测试数据.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[confluent-5.0.0]$ bin&#x2F;ksql-datagen schema&#x3D;..&#x2F;impressions.avro format&#x3D;avro topic&#x3D;impressions key&#x3D;impressionid</span><br></pre></td></tr></table></figure>
+
+<p>然后按如下方式摄取.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">[hoodie]$</span><span class="bash"> spark-submit --class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer `ls packaging/hudi-utilities-bundle/target/hudi-utilities-bundle-*.jar` \</span></span><br><span class="line"><span class="bash">  --props file://<span class="variable">$&#123;PWD&#125;</span>/hudi-utilities/src/<span class="built_in">test</span>/resources/delta-streamer-config/kafka-source.properties \</span></span><br><span class="line"><span class="bash">  --schemaprovider-class org.apache.hudi.utilities.schema.SchemaRegistryProvider \</span></span><br><span class="line"><span class="bash">  --source-class org.apache.hudi.utilities.sources.AvroKafkaSource \</span></span><br><span class="line"><span class="bash">  --source-ordering-field impresssiontime \</span></span><br><span class="line"><span class="bash">  --target-base-path file:\/\/\/tmp/hudi-deltastreamer-op \ </span></span><br><span class="line">  --target-table uber.impressions \</span><br><span class="line">  --op BULK_INSERT</span><br></pre></td></tr></table></figure>
+
+<p>从 0.11.0 版本开始,我们开始提供一个新版本hudi-utilities-slim-bundle,旨在排除可能导致不同版本 Spark 发生冲突和兼容性问题的依赖项.<br>hudi-utilities-slim-bundle应该与用于使实用程序与 Spark 一起使用的 Spark 版本相对应的 Hudi Spark 包一起使用,例如, 如果--packages org.apache.hudi:hudi-utilities-slim-bundle_2.12:0.12.1,org.apache.hudi:hudi-spark3.1-bundle_2.12:0.12.1仅hudi-utilities-bundle用于HoodieDeltaStreamer在 Spark 中运行遇到兼容性问题.</p>
+<h3 id="MultiTableDeltaStreamer"><a href="#MultiTableDeltaStreamer" class="headerlink" title="MultiTableDeltaStreamer"></a>MultiTableDeltaStreamer</h3><p>HoodieMultiTableDeltaStreamer,HoodieDeltaStreamer之上的一个包装器,使一个人能够一次将多个表摄取到 hudi 数据集中.<br>目前它只支持对要摄取的表和 COPY_ON_WRITE 存储类型的顺序处理.<br>HoodieMultiTableDeltaStreamer的命令行选项与HoodieDeltaStreamer非常相似,唯一的例外是您需要在专用配置文件夹的单独文件中提供表格配置.<br>引入以下命令行选项</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">* --config-folder</span><br><span class="line">  the path to the folder which contains all the table wise config files</span><br><span class="line">  --base-path-prefix</span><br><span class="line">  this is added to enable users to create all the hudi datasets for related tables under one path in FS. The datasets are then created under the path - &lt;base_path_prefix&gt;&#x2F;&lt;database&gt;&#x2F;&lt;table_to_be_ingested&gt;. However you can override the paths for every table by setting the property hoodie.deltastreamer.ingestion.targetBasePath</span><br></pre></td></tr></table></figure>
+
+<p>需要正确设置以下属性才能使用HoodieMultiTableDeltaStreamer.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">hoodie.deltastreamer.ingestion.tablesToBeIngested</span><br><span class="line">  comma separated names of tables to be ingested in the format &lt;database&gt;.&lt;table&gt;, for example db1.table1,db1.table2</span><br><span class="line">hoodie.deltastreamer.ingestion.targetBasePath</span><br><span class="line">  if you wish to ingest a particular table in a separate path, you can mention that path here</span><br><span class="line">hoodie.deltastreamer.ingestion.&lt;database&gt;.&lt;table&gt;.configFile</span><br><span class="line">  path to the config file in dedicated config folder which contains table overridden properties for the particular table to be ingested.</span><br></pre></td></tr></table></figure>
+
+<p>表格覆盖属性的示例配置文件可以在<code>hudi-utilities/src/test/resources/delta-streamer-config</code>. HoodieMultiTableDeltaStreamer运行的命令也与你的运行HoodieDeltaStreamer方式相似.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[hoodie]$ spark-submit --class org.apache.hudi.utilities.deltastreamer.HoodieMultiTableDeltaStreamer &#96;ls packaging&#x2F;hudi-utilities-bundle&#x2F;target&#x2F;hudi-utilities-bundle-*.jar&#96; \</span><br><span class="line">  --props file:&#x2F;&#x2F;$&#123;PWD&#125;&#x2F;hudi-utilities&#x2F;src&#x2F;test&#x2F;resources&#x2F;delta-streamer-config&#x2F;kafka-source.properties \</span><br><span class="line">  --config-folder file:&#x2F;&#x2F;tmp&#x2F;hudi-ingestion-config \</span><br><span class="line">  --schemaprovider-class org.apache.hudi.utilities.schema.SchemaRegistryProvider \</span><br><span class="line">  --source-class org.apache.hudi.utilities.sources.AvroKafkaSource \</span><br><span class="line">  --source-ordering-field impresssiontime \</span><br><span class="line">  --base-path-prefix file:\&#x2F;\&#x2F;\&#x2F;tmp&#x2F;hudi-deltastreamer-op \ </span><br><span class="line">  --target-table uber.impressions \</span><br><span class="line">  --op BULK_INSERT</span><br></pre></td></tr></table></figure>
+
+<p>有关如何配置和使用的详细信息HoodieMultiTableDeltaStreamer,请参阅博客部分.<br><a target="_blank" rel="noopener" href="https://hudi.apache.org/cn/blog/2020/08/22/ingest-multiple-tables-using-hudi/">https://hudi.apache.org/cn/blog/2020/08/22/ingest-multiple-tables-using-hudi/</a></p>
+<h3 id="并发控制-1"><a href="#并发控制-1" class="headerlink" title="并发控制"></a>并发控制</h3><p>该HoodieDeltaStreamer实用程序(hudi-utilities-bundle 的一部分)提供了从 DFS 或 Kafka 等不同来源摄取的方法,具有以下功能.</p>
+<p>通过 delta streamer 使用optimistic_concurrency_control 需要将上述配置添加到可以传递给作业的属性文件中.<br>例如下面,将配置添加到 kafka-source.properties 文件并将它们传递给 deltastreamer 将启用乐观并发.<br>然后可以按如下方式触发 deltastreamer 作业:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[hoodie]$ spark-submit --class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer &#96;ls packaging&#x2F;hudi-utilities-bundle&#x2F;target&#x2F;hudi-utilities-bundle-*.jar&#96; \</span><br><span class="line">  --props file:&#x2F;&#x2F;$&#123;PWD&#125;&#x2F;hudi-utilities&#x2F;src&#x2F;test&#x2F;resources&#x2F;delta-streamer-config&#x2F;kafka-source.properties \</span><br><span class="line">  --schemaprovider-class org.apache.hudi.utilities.schema.SchemaRegistryProvider \</span><br><span class="line">  --source-class org.apache.hudi.utilities.sources.AvroKafkaSource \</span><br><span class="line">  --source-ordering-field impresssiontime \</span><br><span class="line">  --target-base-path file:\&#x2F;\&#x2F;\&#x2F;tmp&#x2F;hudi-deltastreamer-op \ </span><br><span class="line">  --target-table uber.impressions \</span><br><span class="line">  --op BULK_INSERT</span><br></pre></td></tr></table></figure>
+
+<h2 id="检查点"><a href="#检查点" class="headerlink" title="检查点"></a>检查点</h2><p>HoodieDeltaStreamer使用检查点来跟踪已读取的数据,以便无需重新处理所有数据即可恢复.<br>使用 Kafka 源时,检查点是Kafka 偏移量.<br>使用 DFS 源时,检查点是最新文件读取的&quot;last modified&quot;时间戳.<br>检查点在 <code>.hoodie</code> 提交文件中保存为<code>deltastreamer.checkpoint.key</code>.</p>
+<p>如果您需要更改检查点以重新处理或重放数据,您可以使用以下选项:</p>
+<ol>
+<li>--checkpoint:将<code>deltastreamer.checkpoint.reset_key</code>在提交文件中设置以覆盖当前检查点.</li>
+<li>--source-limit:将设置从源读取的最大数据量.<br>对于 DFS 源,这是读取的最大字节数.<br>对于 Kafka,这是要读取的最大事件数.</li>
+</ol>
+<h2 id="架构提供者"><a href="#架构提供者" class="headerlink" title="架构提供者"></a>架构提供者</h2><p>默认情况下,Spark 将推断源的模式,并在写入表时使用推断的模式.<br>如果您需要显式定义架构,您可以使用以下架构提供程序之一.</p>
+<h3 id="模式注册表提供者"><a href="#模式注册表提供者" class="headerlink" title="模式注册表提供者"></a>模式注册表提供者</h3><p>您可以从在线注册表中获取最新模式.<br>您将 URL 传递给注册表,如果需要,您还可以在 url 中传递用户信息和凭据,例如:<a target="_blank" rel="noopener" href="https://foo:bar@schemaregistry.org/">https://foo:bar@schemaregistry.org</a><br>然后提取凭据并在请求中将其设置为授权标头.</p>
+<p>从注册表中获取模式时,您可以分别指定源模式和目标模式.<br>hoodie.deltastreamer.schemaprovider.registry.url<br>正在阅读的来源的架构<br><a target="_blank" rel="noopener" href="https://foo:bar@schemaregistry.org/">https://foo:bar@schemaregistry.org</a></p>
+<p>hoodie.deltastreamer.schemaprovider.registry.targetUrl<br>正在写入的目标的架构<br><a target="_blank" rel="noopener" href="https://foo:bar@schemaregistry.org/">https://foo:bar@schemaregistry.org</a></p>
+<p>上述配置传递给 DeltaStreamer spark-submit 命令,如:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--hoodie-conf hoodie.deltastreamer.schemaprovider.registry.url&#x3D;https:&#x2F;&#x2F;foo:bar@schemaregistry.org</span><br></pre></td></tr></table></figure>
+
+<h3 id="JDBC-模式提供程序"><a href="#JDBC-模式提供程序" class="headerlink" title="JDBC 模式提供程序"></a>JDBC 模式提供程序</h3><p>您可以通过 JDBC 连接获取最新的架构.</p>
+<p>hoodie.deltastreamer.schemaprovider.source.schema.jdbc.connection.url<br>要连接的 JDBC URL.您可以在 URL 中指定源特定的连接属性<br>jdbc:postgresql://localhost/test?user=fred&amp;password=secret</p>
+<p>hoodie.deltastreamer.schemaprovider.source.schema.jdbc.driver.type<br>用于连接到此 URL 的 JDBC 驱动程序的类名<br>org.h2.Driver</p>
+<p>hoodie.deltastreamer.schemaprovider.source.schema.jdbc.username<br>连接的用户名<br>fred</p>
+<p>hoodie.deltastreamer.schemaprovider.source.schema.jdbc.password<br>连接密码<br>secret</p>
+<p>hoodie.deltastreamer.schemaprovider.source.schema.jdbc.dbtable<br>具有要引用的架构的表<br>test_database.test1_table or test1_table</p>
+<p>hoodie.deltastreamer.schemaprovider.source.schema.jdbc.timeout<br>驱动程序将等待 Statement 对象执行到给定秒数的秒数.零意味着没有限制.在写入路径中,此选项取决于 JDBC 驱动程序如何实现 API setQueryTimeout,例如,h2 JDBC 驱动程序检查每个查询的超时而不是整个 JDBC 批处理.它默认为 0<br>0</p>
+<p>hoodie.deltastreamer.schemaprovider.source.schema.jdbc.nullable<br>如果为true,所有列都可以为空(nullable)<br>TRUE</p>
+<p>上述配置传递给 DeltaStreamer spark-submit 命令,如:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--hoodie-conf hoodie.deltastreamer.jdbcbasedschemaprovider.connection.url&#x3D;jdbc:postgresql:&#x2F;&#x2F;localhost&#x2F;test?user&#x3D;fred&amp;password&#x3D;secret</span><br></pre></td></tr></table></figure>
+
+<h3 id="基于文件的模式提供程序"><a href="#基于文件的模式提供程序" class="headerlink" title="基于文件的模式提供程序"></a>基于文件的模式提供程序</h3><p>您可以使用 .avsc 文件来定义您的架构.<br>然后,您可以将 DFS 上的此文件作为模式提供程序指向.</p>
+<p>hoodie.deltastreamer.schemaprovider.source.schema.file<br>正在阅读的来源的架构<br>示例模式文件</p>
+<p>hoodie.deltastreamer.schemaprovider.target.schema.file<br>正在写入的目标的架构<br>示例模式文件</p>
+<h3 id="Hive-模式提供程序"><a href="#Hive-模式提供程序" class="headerlink" title="Hive 模式提供程序"></a>Hive 模式提供程序</h3><p>您可以使用配置单元表来获取源和目标模式.</p>
+<p>hoodie.deltastreamer.schemaprovider.source.schema.hive.database<br>可以从中获取源模式的 Hive 数据库</p>
+<p>hoodie.deltastreamer.schemaprovider.source.schema.hive.table<br>可以从中获取源模式的 Hive 表</p>
+<p>hoodie.deltastreamer.schemaprovider.target.schema.hive.database<br>可以从中获取目标架构的 Hive 数据库</p>
+<p>hoodie.deltastreamer.schemaprovider.target.schema.hive.table<br>可以从中获取目标架构的 Hive 表</p>
+<h3 id="带有后处理器"><a href="#带有后处理器" class="headerlink" title="带有后处理器"></a>带有后处理器</h3><p>SchemaProviderWithPostProcessor 将从前面提到的模式提供程序之一中提取模式,然后在使用模式之前应用后处理器来更改模式.<br>您可以通过扩展此类来编写自己的后处理器:<br><a target="_blank" rel="noopener" href="https://github.com/apache/hudi/blob/master/hudi-utilities/src/main/java/org/apache/hudi/utilities/schema/SchemaPostProcessor">https://github.com/apache/hudi/blob/master/hudi-utilities/src/main/java/org/apache/hudi/utilities/schema/SchemaPostProcessor</a>.</p>
+<h2 id="Sources"><a href="#Sources" class="headerlink" title="Sources"></a>Sources</h2><p>Hoodie DeltaStreamer 可以从各种来源读取数据.</p>
+<h3 id="分布式文件系统-DFS"><a href="#分布式文件系统-DFS" class="headerlink" title="分布式文件系统(DFS)"></a>分布式文件系统(DFS)</h3><p>以下是 Hudi 可以在 DFS 源上读取/写入的支持的文件格式.<br>(仍然可以使用 Spark/Flink 阅读器从其他格式读取数据,然后将数据写入 Hudi 格式.)<br>CSV<br>AVRO<br>JSON<br>PARQUET<br>ORC<br>HUDI</p>
+<p>对于 DFS 源,预期会出现以下行为:</p>
+<ol>
+<li>对于 JSON DFS 源,您始终需要设置架构.</li>
+<li>如果目标 Hudi 表遵循与源文件相同的架构,则只需设置源架构.</li>
+<li>如果没有,您需要为源和目标设置模式.</li>
+</ol>
+<p>HoodieDeltaStreamer直接读取源基路径(<code>hoodie.deltastreamer.source.dfs.root</code>)下的文件,不会将该基路径下的分区路径作为数据集的字段.</p>
+<h3 id="Kafka-1"><a href="#Kafka-1" class="headerlink" title="Kafka"></a>Kafka</h3><p>Hudi 可以直接从 Kafka 集群中读取数据.<br>从 Kafka 读取数据时支持以下格式:<br>AVRO<br>JSON</p>
+<h3 id="JDBC-Source"><a href="#JDBC-Source" class="headerlink" title="JDBC Source"></a>JDBC Source</h3><p>Hudi 可以从 JDBC 源读取完整的表,或者 Hudi 甚至可以通过 JDBC 源的检查点来增量读取.</p>
+<p>hoodie.deltastreamer.jdbc.url<br>连接的 URL<br>jdbc:postgresql://localhost/test</p>
+<p>hoodie.deltastreamer.jdbc.user<br>连接的用户<br>fred</p>
+<p>hoodie.deltastreamer.jdbc.password<br>连接的密码<br>secret</p>
+<p>hoodie.deltastreamer.jdbc.password.file<br>使用密码文件进行连接<br>&quot;&quot;</p>
+<p>hoodie.deltastreamer.jdbc.driver.class<br>连接的驱动程序类<br>&quot;&quot;</p>
+<p>hoodie.deltastreamer.jdbc.table.name<br>&quot;&quot;<br>my_table</p>
+<p>hoodie.deltastreamer.jdbc.table.incr.column.name<br>如果以增量模式运行,该字段将用于增量拉取新数据<br>&quot;&quot;</p>
+<p>hoodie.deltastreamer.jdbc.incr.pull<br>连接会执行增量拉取<br>&quot;&quot;</p>
+<p>hoodie.deltastreamer.jdbc.extra.options.<br>传递通常指定为 spark.read.option() 的额外配置<br>hoodie.deltastreamer.jdbc.extra.options.fetchSize=100<br>hoodie.deltastreamer.jdbc.extra.options.upperBound=1<br>hoodie.deltastreamer.jdbc.extra.options.lowerBound=100</p>
+<p>hoodie.deltastreamer.jdbc.storage.level<br>用于控制持久性级别<br>Default = MEMORY_AND_DISK_SER</p>
+<p>hoodie.deltastreamer.jdbc.incr.fallback.to.full.fetch<br>布尔值,如果设置为 true,则如果增量读取中存在任何错误,则增量获取回退到完整获取<br>FALSE</p>
+<h3 id="SQL-Source"><a href="#SQL-Source" class="headerlink" title="SQL Source"></a>SQL Source</h3><p>从任何表读取的 SQL 源,主要用于处理特定分区日期的回填作业.<br>这不会将 deltastreamer.checkpoint.key 更新为已处理的提交,而是会获取最新的成功检查点密钥并将该值设置为此回填提交检查点,这样它就不会中断常规增量处理.<br>要获取和使用最新的增量检查点,您还需要为 deltastremer 作业设置此 hoodie_conf:<code>hoodie.write.meta.key.prefixes = &#39;deltastreamer.checkpoint.key&#39;</code></p>
+<p>Spark SQL 应该使用以下 hoodie 配置进行配置:<code>hoodie.deltastreamer.source.sql.sql.query = &#39;select * from source_table&#39;</code></p>
+<h2 id="Flink摄取"><a href="#Flink摄取" class="headerlink" title="Flink摄取"></a>Flink摄取</h2><h3 id="CDC-Ingestion"><a href="#CDC-Ingestion" class="headerlink" title="CDC Ingestion"></a>CDC Ingestion</h3><p>CDC(变更数据捕获)跟踪源系统中不断演变的数据变化,以便下游流程或系统可以对这些变化采取行动.<br>我们推荐两种将 CDC 数据同步到 Hudi 的方法:</p>
+<ol>
+<li>使用 Ververica flink-cdc-connectors直接连接 DB Server 将 binlog 数据同步到 Hudi.<br>优点是不依赖消息队列,缺点是对db server造成压力.</li>
+<li>使用 flink cdc 格式从消息队列(例如 Kafka)中消费数据,优点是可扩展性强,缺点是依赖于消息队列.</li>
+</ol>
+<blockquote>
+<p>如果上游数据不能保证顺序,需要<code>显式指定option </code>write.precombine.field.</p>
+</blockquote>
+<h3 id="Bulk-Insert"><a href="#Bulk-Insert" class="headerlink" title="Bulk Insert"></a>Bulk Insert</h3><p>针对快照数据导入的需求.<br>如果快照数据来自其他数据源,可以使用该bulk_insert模式将快照数据快速导入Hudi.</p>
+<blockquote>
+<p>bulk_insert消除了序列化和数据合并.<br>跳过了重复数据删除,因此用户需要保证数据的唯一性.</p>
+</blockquote>
+<p>bulk_insert比batch execution mode效率更高.<br>默认情况下,batch execution mode按照分区路径对输入记录进行排序,并将这些记录写入到 Hudi,这样可以避免频繁file handle切换导致的写入性能下降.</p>
+<p>bulk_insert的并行度由<code>write.tasks</code>指定.<br>并行度会影响小文件的数量.<br>理论上,bulk_insert并行度是buckets 的个数.<br>特别是当每个桶写入最大文件大小时,它会翻转到新的文件句柄.<br>最后,<code>the number of files&gt;= write.bucket_assign.tasks</code>.</p>
+<h4 id="选项"><a href="#选项" class="headerlink" title="选项"></a>选项</h4><p>write.operation<br>必需|upsert<br>设置为bulk_insert打开此功能</p>
+<p>write.tasks<br>非必需|4<br>bulk_insert的并行度, the number of files &gt;= <code>write.bucket_assign.tasks</code></p>
+<p>write.bulk_insert.shuffle_input<br>非必需|true<br>写入前是否根据输入字段打乱数据.<br>启用此选项将减少小文件的数量,但可能存在数据倾斜的风险</p>
+<p>write.bulk_insert.sort_input<br>非必需|true<br>写入前是否根据输入字段对数据进行排序.<br>启用此选项将减少写入任务写入多个分区时的小文件数量</p>
+<p>write.sort.memory<br>非必需|128<br>排序运算符的可用托管内存.默认 128MB</p>
+<h3 id="Index-Bootstrap"><a href="#Index-Bootstrap" class="headerlink" title="Index Bootstrap"></a>Index Bootstrap</h3><p>对于snapshot data+incremental data导入的需求.<br>如果已经通过批量插入snapshot data插入到 Hudi 中 .<br>用户可以通过索引引导功能实时插入incremental data,保证数据不重复.</p>
+<blockquote>
+<p>如果你觉得这个过程很耗时,可以边写边以流模式添加资源写snapshot data,然后减少资源写incremental data(或者开启限速功能).</p>
+</blockquote>
+<h4 id="选项-1"><a href="#选项-1" class="headerlink" title="选项"></a>选项</h4><p>index.bootstrap.enabled<br>必需|false<br>开启 index bootstrap 后,Hudi 表中的剩余记录会一次性加载到 Flink 状态</p>
+<p>index.partition.regex<br>非必需|*<br>优化选项.设置正则表达式来过滤分区.默认情况下,所有分区都加载到 flink 状态</p>
+<h4 id="如何使用"><a href="#如何使用" class="headerlink" title="如何使用"></a>如何使用</h4><ol>
+<li><code>CREATE TABLE</code>创建与 Hudi 表对应的语句.<br>请注意,table.type必须是正确的.</li>
+<li>设置<code>index.bootstrap.enabled = true</code>以启用索引引导功能.</li>
+<li>设置 Flink 检查点容错flink-conf.yaml:(<code>execution.checkpointing.tolerable-failed-checkpoints = n</code>取决于 Flink 检查点调度时间).</li>
+<li>等到第一个检查点成功,说明索引引导完成.</li>
+<li>索引引导完成后,用户可以退出并保存保存点(或直接使用外部化的检查点).</li>
+<li>重新启动作业,设置<code>index.bootstrap.enable = false</code>.</li>
+</ol>
+<blockquote>
+<p>索引引导是阻塞的,因此在索引引导期间无法完成检查点.<br>索引引导由输入数据触发.用户需要确保每个分区中至少有一条记录.<br>索引引导程序同时执行.用户可以在日志中搜索<code>finish loading the index under partition</code>和<code>Load record form file</code>观察索引引导的进度.<br>第一个成功的检查点表示索引引导已完成.从检查点恢复时无需再次加载索引.</p>
+</blockquote>
+<h3 id="变更日志模式-Changelog"><a href="#变更日志模式-Changelog" class="headerlink" title="变更日志模式(Changelog)"></a>变更日志模式(Changelog)</h3><p>Hudi 可以保留消息的所有中间变化(I/-U/U/D),然后通过 flink 的有状态计算进行消费,拥有一个近实时的数据仓库 ETL 管道(增量计算).<br>Hudi MOR 表以行的形式存储消息,支持所有更改日志的保留(格式级别的集成).<br>Flink 流式阅读器可以使用所有的变更日志记录.</p>
+<h4 id="选项-2"><a href="#选项-2" class="headerlink" title="选项"></a>选项</h4><p>changelog.enabled<br>非必需|false<br>默认是关闭的,为了有upsert语义,保证只保留合并后的消息,中间的变化可以合并.<br>设置为 true 以支持使用所有更改</p>
+<blockquote>
+<p>批处理(快照)读取仍然合并所有中间更改,无论格式是否存储了中间更改日志消息.</p>
+</blockquote>
+<p>设置changelog.enable为true后,changelog 记录的保留只是尽力而为:异步 compaction 任务会将 changelog 记录合并为一条记录,因此如果流源没有及时消费,则在 compaction 后只能读取每个 key 的合并记录.<br>解决方案是通过调整压缩策略为读取器预留一些缓冲时间,例如压缩选项:compaction.delta_commits和compaction.delta_seconds.</p>
+<h3 id="追加模式-Append"><a href="#追加模式-Append" class="headerlink" title="追加模式(Append)"></a>追加模式(Append)</h3><p>对于INSERT模式写操作,当前的工作流程是:</p>
+<ol>
+<li>对于 Merge_On_Read 表,默认应用小文件策略:首先尝试附加到小 avro 日志文件</li>
+<li>对于 Copy_On_Write 表,直接写入新的 parquet 文件,不应用小文件策略</li>
+</ol>
+<p>Hudi 支持丰富的聚类策略来优化文件布局INSERT模式:</p>
+<h4 id="Inline集群"><a href="#Inline集群" class="headerlink" title="Inline集群"></a>Inline集群</h4><p>仅支持 Copy_On_Write 表.</p>
+<p>write.insert.cluster<br>非必需|false<br>是否在摄取时合并小文件,对于COW表,打开选项启用小文件合并策略(key不去重但会影响吞吐量)</p>
+<h4 id="Async集群"><a href="#Async集群" class="headerlink" title="Async集群"></a>Async集群</h4><p>clustering.schedule.enabled<br>非必需|false<br>是否在写过程中调度集群计划,默认false</p>
+<p>clustering.delta_commits<br>非必需|4 Delta<br>承诺调度集群计划,仅在clustering.schedule.enabled为 true时有效</p>
+<p>clustering.async.enabled<br>非必需|false<br>是否异步执行集群计划,默认false</p>
+<p>clustering.tasks<br>非必需|4<br>集群任务的并行性</p>
+<p>clustering.plan.strategy.target.file.max.bytes<br>非必需|1024*1024*1024<br>集群组的目标文件大小,默认1GB</p>
+<p>clustering.plan.strategy.small.file.limit<br>非必需|600<br>小于阈值(单位 MB)的文件是聚类的候选者</p>
+<p>clustering.plan.strategy.sort.columns<br>非必需|N/A<br>聚类时要排序的列</p>
+<h4 id="集群规划策略"><a href="#集群规划策略" class="headerlink" title="集群规划策略"></a>集群规划策略</h4><p>支持自定义集群策略.</p>
+<p>clustering.plan.partition.filter.mode<br>非必需|NONE<br>有效选项 1) NONE:无限制.2) RECENT_DAYS:选择代表最近几天的分区.3) SELECTED_PARTITIONS: 特定分区</p>
+<p>clustering.plan.strategy.daybased.lookback.partitions<br>非必需|2<br>对RECENT_DAYS模式有效</p>
+<p>clustering.plan.strategy.cluster.begin.partition<br>非必需|N/A<br>对SELECTED_PARTITIONSmode有效,指定分区开始(含)</p>
+<p>clustering.plan.strategy.cluster.end.partition<br>非必需|N/A<br>对SELECTED_PARTITIONSmode有效,指定分区结束(含)</p>
+<p>clustering.plan.strategy.partition.regex.pattern<br>非必需|N/A<br>过滤分区的正则表达式</p>
+<p>clustering.plan.strategy.partition.selected<br>非必需|N/A<br>用逗号分隔的特定分区,</p>
+<h3 id="桶索引-Bucket-Index"><a href="#桶索引-Bucket-Index" class="headerlink" title="桶索引(Bucket Index)"></a>桶索引(Bucket Index)</h3><p>默认情况下,flink 使用 state-backend 来保存文件索引:从主键到 fileId 的映射.<br>当输入数据集较大时,状态成本有可能成为瓶颈,桶索引使用确定性哈希算法将记录打乱到桶中,从而避免索引的存储和查询开销.</p>
+<h4 id="选项-3"><a href="#选项-3" class="headerlink" title="选项"></a>选项</h4><p>index.type<br>非必需|FLINK_STATE<br>设置为BUCKET使用桶索引</p>
+<p>hoodie.bucket.index.hash.field<br>非必需|Primary key<br>可以是主键的子集</p>
+<p>hoodie.bucket.index.num.buckets<br>非必需|4<br>每个分区的桶数,一旦设置就不可变</p>
+<p>与状态指数比较:</p>
+<ol>
+<li>桶索引没有状态后端索引的计算和存储成本,因此具有更好的性能</li>
+<li>桶索引不能动态扩展桶,状态后端索引可以根据当前文件布局动态扩展桶</li>
+<li>Bucket 索引不能处理分区间的变化(如果输入本身是 CDC 流则没有限制),state-backend 索引没有限制</li>
+</ol>
+<h3 id="速率限制"><a href="#速率限制" class="headerlink" title="速率限制"></a>速率限制</h3><p>有很多用例是用户将完整的历史数据集与实时增量数据一起放入消息队列中.<br>然后他们使用 flink 从最早的偏移量将队列中的数据消费到 hudi 中.<br>消费历史数据集具有以下特点:<br>1).即时吞吐量是巨大的<br>2).它有严重的混乱(随机写入分区).<br>这将导致写入性能下降和吞吐量故障.<br>对于这种情况,可以开启限速参数,保证流的流畅写入.</p>
+<h4 id="选项-4"><a href="#选项-4" class="headerlink" title="选项"></a>选项</h4><p>write.rate.limit<br>非必需|0<br>默认禁用速率限制</p>
+<h2 id="Kafka-Connect-Sink"><a href="#Kafka-Connect-Sink" class="headerlink" title="Kafka Connect Sink"></a>Kafka Connect Sink</h2><p>如果您想执行类似于 的 Hudi 格式的流式摄取HoodieDeltaStreamer,但又不想依赖 Spark,请尝试新的 Hudi Kafka Connect Sink 实验版本.<br><a target="_blank" rel="noopener" href="https://github.com/apache/hudi/tree/master/hudi-kafka-connect">https://github.com/apache/hudi/tree/master/hudi-kafka-connect</a></p>
+<h1 id="Flink-设置"><a href="#Flink-设置" class="headerlink" title="Flink 设置"></a>Flink 设置</h1><h2 id="全局配置"><a href="#全局配置" class="headerlink" title="全局配置"></a>全局配置</h2><p>在使用 Flink 的时候,可以在<code>$FLINK_HOME/conf/flink-conf.yaml</code>里面设置一些全局配置.</p>
+<h3 id="并行性"><a href="#并行性" class="headerlink" title="并行性"></a>并行性</h3><p>taskmanager.numberOfTaskSlots<br>1|Integer<br>单个 TaskManager 可以运行的并行算子或用户函数实例的数量.<br>我们建议设置这个值&gt;4,实际值需要根据数据量来设置.</p>
+<p>parallelism.default<br>1|Integer<br>在任何地方都没有指定并行度时使用的默认并行度(默认值:1).<br>例如,如果<code>write.bucket_assign.tasks</code>未设置的值,将使用此值</p>
+<h3 id="内存"><a href="#内存" class="headerlink" title="内存"></a>内存</h3><p>jobmanager.memory.process.size<br>(none)|MemorySize<br>JobManager 的总进程内存大小.<br>这包括一个 JobManager JVM 进程消耗的所有内存,包括 Total Flink Memory、JVM Metaspace 和 JVM Overhead</p>
+<p>taskmanager.memory.task.heap.size<br>(none)|MemorySize<br>任务执行器的任务堆内存大小.<br>这是为写入缓存保留的 JVM 堆内存大小</p>
+<p>taskmanager.memory.managed.size<br>(none)|MemorySize<br>任务执行器的托管内存大小.<br>这是由内存管理器管理的堆外内存的大小,保留用于排序和 RocksDB 状态后端.<br>如果选择 RocksDB 作为状态后端,需要设置这个内存</p>
+<h3 id="Checkpoint"><a href="#Checkpoint" class="headerlink" title="Checkpoint"></a>Checkpoint</h3><p>execution.checkpointing.interval<br>(none)|Duration<br>将此值设置为<code>execution.checkpointing.interval = 150000ms</code>.<br>150000ms = 2.5min.<br>配置此参数相当于启用检查点</p>
+<p>state.backend<br>(none)|String<br>用于存储状态的状态后端.<br>我们建议将商店状态设置为rocksdb:<code>state.backend: rocksdb</code></p>
+<p>state.backend.rocksdb.localdir<br>(none)|String<br>RocksDB 放置文件的本地目录(在 TaskManager 上)</p>
+<p>state.checkpoints.dir<br>(none)|String<br>Flink 支持的文件系统中用于存储检查点的数据文件和元数据的默认目录.<br>存储路径必须可从所有参与的进程/节点(即所有 TaskManager 和 JobManager)访问,如 hdfs 和 oss 路径</p>
+<p>state.backend.incremental<br>false|Boolean<br>如果可能,选择状态后端是否应创建增量检查点.<br>对于增量检查点,仅存储与前一个检查点的差异,而不是完整的检查点状态.<br>如果 store state 设置为rocksdb,建议开启</p>
+<h2 id="Table选项"><a href="#Table选项" class="headerlink" title="Table选项"></a>Table选项</h2><p>Flink SQL 作业可以通过WITH子句中的选项进行配置.<br>下面列出了实际的数据源级别配置.</p>
+<h3 id="内存-1"><a href="#内存-1" class="headerlink" title="内存"></a>内存</h3><p>在优化内存的时候,首先要注意内存配置和taskManager的数量,写任务的并行度(<code>write.tasks : 4</code>).<br>在确认每个写任务都分配了足够的内存后,我们可以尝试设置这些内存选项.</p>
+<p>write.task.max.size<br>|1024D<br>写入任务的最大内存(以 MB 为单位),当达到阈值时,它会刷新最大大小的数据桶以避免 OOM.默认1024MB<br>为写缓冲区保留的内存是<code>write.task.max.size - compaction.max_memory</code>.<br>当写入任务的总缓冲区达到阈值时,将刷新内存中最大的缓冲区</p>
+<p>write.batch.size<br>|64D<br>为了提高写入效率,Flink 写入任务会根据写入桶将数据缓存到缓冲区,直到内存达到阈值.<br>当达到阈值时,数据缓冲区将被刷新.默认64MB<br>建议使用默认设置</p>
+<p>write.log_block.size<br>|128<br>Hudi 的日志写入器在收到数据后不会立即刷新数据.<br>写入器以 <code>.</code> 为单位将数据刷新到磁盘LogBlock.<br>在LogBlock达到阈值之前,记录将以序列化字节的形式缓冲在写入器中.<br>默认128MB,建议使用默认设置</p>
+<p>write.merge.max_memory<br>|100<br>如果写入类型为COPY_ON_WRITE,Hudi 会将增量数据和基础文件数据合并.<br>增量数据将被缓存并溢出到磁盘.<br>此阈值控制可以使用的最大堆大小.<br>默认100MB,建议使用默认设置</p>
+<p>compaction.max_memory<br>|100<br>与write.merge.max_memory相同,但在压缩期间发生.<br>默认100MB,如果是在线compaction,可以在资源充足的时候开启,比如设置为1024MB</p>
+<h3 id="并行性-1"><a href="#并行性-1" class="headerlink" title="并行性"></a>并行性</h3><p>write.tasks<br>|4<br>编写器任务的并行性.<br>每个写入任务N按顺序将 1 写入存储桶.<br>默认4,增加并行度对小文件数量没有影响</p>
+<p>write.bucket_assign.tasks<br>|parallelism.default<br>桶分配器运算符的并行性.<br>无默认值,使用 Flink <code>parallelism.default</code>,增加并行度也增加了桶的数量,从而增加了小文件(小桶)的数量</p>
+<p>write.index_boostrap.tasks<br>|parallelism.default<br>索引引导的并行性.<br>增加并行度可以加快引导阶段的效率.<br>引导阶段将阻止检查点.<br>因此,需要设置更多的检查点容错次数.<br>默认使用 Flink <code>parallelism.default</code>,仅在<code>index.bootsrap.enabled = true</code>时生效</p>
+<p>read.tasks<br>|4<br>读取运算符(批处理和流)的并行性.<br>默认4</p>
+<p>compaction.tasks<br>|4<br>在线压缩的并行性.<br>默认4,Online compaction会占用写任务的资源.<br>建议使用<code>offline compaction</code></p>
+<h3 id="Compaction"><a href="#Compaction" class="headerlink" title="Compaction"></a>Compaction</h3><p>这些只是online compaction.</p>
+<p>通过设置<code>compaction.async.enabled = false</code>在线压缩,但我们仍然建议为写作作业打开compaction.schedule.enable.<br>然后,您可以执行压缩计划<code>offline compaction</code>.</p>
+<p>compaction.schedule.enabled<br>|true<br>是否定期生成compaction计划.<br>建议打开它,即使<code>compaction.async.enabled = false</code></p>
+<p>compaction.async.enabled<br>|true<br>异步压缩,默认为 MOR 启用.通过关闭<code>online compaction</code>此选项关闭</p>
+<p>compaction.trigger.strategy<br>|num_commits触发压缩的策略.<br>选项是:<br>num_commits:当达到 N 个增量提交时触发压缩.<br>time_elapsed:自上次压缩以来经过的时间 &gt; N 秒时触发压缩.<br>num_and_time:当两者都满足时触发压缩.<br>num_or_time:当两者之一满足时触发压缩.</p>
+<p>compaction.delta_commits<br>|5<br>触发压缩所需的最大增量提交,默认5提交</p>
+<p>compaction.delta_seconds<br>|3600<br>触发压缩所需的最大增量秒时间,默认1小时</p>
+<p>compaction.max_memory<br>|100<br>用于压缩可溢出映射的最大内存(MB),默认值100MB.<br>如果你有足够的资源,建议调整到1024MB</p>
+<p>compaction.target_io<br>|512000<br>每次压缩的目标 IO(读取和写入),默认值500GB</p>
+<h2 id="内存优化"><a href="#内存优化" class="headerlink" title="内存优化"></a>内存优化</h2><h3 id="MOR"><a href="#MOR" class="headerlink" title="MOR"></a>MOR</h3><p>将 Flink 状态后端设置为rocksdb(默认in memory状态后端非常占用内存).</p>
+<p>如果有足够的内存,compaction.max_memory可以设置大一些(100MB默认,可以调整到1024MB).</p>
+<p>注意taskManager分配给每个写任务的内存,保证每个写任务都能分配到想要的内存大小<code>write.task.max.size</code>.<br>比如taskManager有4GB内存运行两个streamWriteFunction,所以每个写任务都可以分配2GB内存.<br>请保留一些缓冲区,因为taskManager上的网络缓冲区和其他类型的任务(例如bucketAssignFunction)也会消耗内存.</p>
+<p>注意compaction的内存变化.<br><code>compaction.max_memory</code>控制压缩任务读取日志时每个任务可以使用的最大内存.<br><code>compaction.tasks</code>控制压缩任务的并行性.</p>
+<h3 id="COW"><a href="#COW" class="headerlink" title="COW"></a>COW</h3><p>将 Flink 状态后端设置为<code>rocksdb</code>(默认in memory状态后端非常占用内存).</p>
+<p>增加<code>write.task.max.size</code>和<code>write.merge.max_memory</code>(默认情况下1024MB和100MB,调整为2014MB 1024MB).</p>
+<p>注意taskManager分配给每个写任务的内存,保证每个写任务都能分配到想要的内存大小<code>write.task.max.size</code>.<br>例如,taskManager 有4GB内存运行两个写任务,因此每个写任务都可以分配2GB内存.<br>请保留一些缓冲区,因为 taskManager 上的网络缓冲区和其他类型的任务(例如BucketAssignFunction)也会消耗内存.</p>
+<h2 id="写入速率限制"><a href="#写入速率限制" class="headerlink" title="写入速率限制"></a>写入速率限制</h2><p>在现有的数据同步中,snapshot data/incremental data都是先发送到kafka,再通过Flink流式写入Hudi.<br>因为直接消耗snapshot data会导致吞吐量高、乱序严重(随机写入分区)等问题,从而导致写入性能下降和吞吐量毛刺.<br>这时候<code>write.rate.limit</code>可以开启该选项,保证书写流畅.</p>
+<h3 id="选项-5"><a href="#选项-5" class="headerlink" title="选项"></a>选项</h3><p>write.rate.limit<br>非必需|0<br>默认关闭</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hudi/" rel="tag"># hudi</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/10/24/hudi%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/" rel="prev" title="hudi默认配置参数">
+                  <i class="fa fa-chevron-left"></i> hudi默认配置参数
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/10/28/hudi%E6%9C%8D%E5%8A%A1/" rel="next" title="hudi服务">
+                  hudi服务 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="hive row_number 和 case when 组合一个用户id对于不同的服务对象存在多种岗位模式,现在要取用户的最高岗位模式能力.分岗模式&gt;一条龙模式&gt;其他示例数据如下:id type1265466950677 分岗模式1265466950677 一条龙模式1266150556690 分岗模式1266150556690 一条龙模式1266150556690 其他">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hive try">
+<meta property="og:url" content="https://maoeryu.github.io/2022/09/06/hive%20try/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="hive row_number 和 case when 组合一个用户id对于不同的服务对象存在多种岗位模式,现在要取用户的最高岗位模式能力.分岗模式&gt;一条龙模式&gt;其他示例数据如下:id type1265466950677 分岗模式1265466950677 一条龙模式1266150556690 分岗模式1266150556690 一条龙模式1266150556690 其他">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1384.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1385.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1386.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1387.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1388.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1389.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1390.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1391.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1392.png">
+<meta property="article:published_time" content="2022-09-05T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-12-14T07:03:37.465Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hive">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1384.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/09/06/hive%20try/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hive try | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#hive-row-number-%E5%92%8C-case-when-%E7%BB%84%E5%90%88"><span class="nav-number">1.</span> <span class="nav-text">hive row_number 和 case when 组合</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%A8Hive%E4%B8%AD%E4%BD%BF%E7%94%A8%E5%A4%9A%E5%88%86%E9%9A%94%E7%AC%A6"><span class="nav-number">2.</span> <span class="nav-text">在Hive中使用多分隔符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2json%E6%A0%BC%E5%BC%8F%E8%A1%A8"><span class="nav-number">3.</span> <span class="nav-text">查询json格式表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B-parquet-%E6%96%87%E4%BB%B6-schema"><span class="nav-number">4.</span> <span class="nav-text">查看 parquet 文件 schema</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hive%E4%B8%AD%E5%AE%9E%E7%8E%B0group-concat"><span class="nav-number">5.</span> <span class="nav-text">hive中实现group_concat</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#concat-ws-collect-set-group-by"><span class="nav-number">5.1.</span> <span class="nav-text">concat_ws + collect_set + group by</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#concat-ws-collect-list-group-by"><span class="nav-number">5.2.</span> <span class="nav-text">concat_ws + collect_list + group by</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#concat-ws-collect-list-group-by-row-number"><span class="nav-number">5.3.</span> <span class="nav-text">concat_ws + collect_list + group by + row_number()</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%A0%E6%AF%94-%E5%90%8C%E6%AF%94-%E7%8E%AF%E6%AF%94%E8%AE%A1%E7%AE%97"><span class="nav-number">6.</span> <span class="nav-text">占比&#x2F;同比&#x2F;环比计算</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%87%86%E5%A4%87"><span class="nav-number">6.1.</span> <span class="nav-text">数据准备</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8D%A0%E6%AF%94"><span class="nav-number">6.2.</span> <span class="nav-text">占比</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%86%99%E6%B3%95%E4%B8%80-%E9%9A%90%E5%BC%8F%E5%86%85%E8%BF%9E%E6%8E%A5"><span class="nav-number">6.2.1.</span> <span class="nav-text">写法一:隐式内连接</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%86%99%E6%B3%95%E4%BA%8C-%E6%98%BE%E7%A4%BA%E5%86%85%E8%81%94%E6%8E%A5"><span class="nav-number">6.2.2.</span> <span class="nav-text">写法二:显示内联接</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%86%99%E6%B3%95%E4%B8%89-%E5%BC%80%E7%AA%97%E5%87%BD%E6%95%B0"><span class="nav-number">6.2.3.</span> <span class="nav-text">写法三:开窗函数</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8E%AF%E6%AF%94"><span class="nav-number">6.3.</span> <span class="nav-text">环比</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%90%8C%E6%AF%94"><span class="nav-number">6.4.</span> <span class="nav-text">同比</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%86%99%E6%B3%95%E4%B8%80-%E6%9C%AC%E6%A1%88%E4%BE%8B%E8%BF%9B%E8%A1%8C%E5%8D%95%E7%8B%AC%E5%A4%84%E7%90%86"><span class="nav-number">6.4.1.</span> <span class="nav-text">写法一:本案例进行单独处理</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%86%99%E6%B3%95%E4%BA%8C-%E9%80%9A%E7%94%A8%E6%96%B9%E6%B3%95"><span class="nav-number">6.4.2.</span> <span class="nav-text">写法二:通用方法</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/09/06/hive%20try/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hive try
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-09-06 00:00:00" itemprop="dateCreated datePublished" datetime="2022-09-06T00:00:00+08:00">2022-09-06</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-12-14 15:03:37" itemprop="dateModified" datetime="2022-12-14T15:03:37+08:00">2022-12-14</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h3 id="hive-row-number-和-case-when-组合"><a href="#hive-row-number-和-case-when-组合" class="headerlink" title="hive row_number 和 case when 组合"></a>hive row_number 和 case when 组合</h3><p>一个用户id对于不同的服务对象存在多种岗位模式,现在要取用户的最高岗位模式能力.<br>分岗模式&gt;一条龙模式&gt;其他<br>示例数据如下:<br>id type<br>1265466950677 分岗模式<br>1265466950677 一条龙模式<br>1266150556690 分岗模式<br>1266150556690 一条龙模式<br>1266150556690 其他</p>
+<span id="more"></span>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> if <span class="keyword">not</span> <span class="keyword">exists</span> `test1`</span><br><span class="line">(</span><br><span class="line">  `id` String,</span><br><span class="line">  `type` String</span><br><span class="line">)</span><br><span class="line"><span class="type">row</span> format delimited</span><br><span class="line">fields terminated <span class="keyword">by</span> <span class="string">&#x27;\t&#x27;</span></span><br><span class="line">collection items terminated <span class="keyword">by</span> <span class="string">&#x27;,&#x27;</span></span><br><span class="line">map keys terminated <span class="keyword">by</span> <span class="string">&#x27;:&#x27;</span></span><br><span class="line">lines terminated <span class="keyword">by</span> <span class="string">&#x27;\n&#x27;</span></span><br><span class="line">stored <span class="keyword">as</span> textfile;</span><br><span class="line"></span><br><span class="line">load data <span class="keyword">local</span> inpath <span class="string">&#x27;/data/xxx/test1.log&#x27;</span> overwrite <span class="keyword">into</span> <span class="keyword">table</span> test1;</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> id,type,</span><br><span class="line"><span class="built_in">row_number</span>() <span class="keyword">over</span>(<span class="keyword">partition</span> <span class="keyword">by</span> id <span class="keyword">order</span> <span class="keyword">by</span> (<span class="keyword">case</span> <span class="keyword">when</span> type<span class="operator">=</span><span class="string">&#x27;分岗模式&#x27;</span> <span class="keyword">then</span> <span class="number">1</span> <span class="keyword">when</span> type<span class="operator">=</span><span class="string">&#x27;一条龙模式&#x27;</span> <span class="keyword">then</span> <span class="number">2</span> <span class="keyword">else</span> <span class="number">3</span> <span class="keyword">end</span>) <span class="keyword">desc</span>) rn</span><br><span class="line"><span class="keyword">from</span> test1 a;</span><br></pre></td></tr></table></figure>
+
+<p>1265466950677 一条龙模式 1<br>1265466950677 分岗模式  2<br>1266150556690 其他  1<br>1266150556690 一条龙模式 2<br>1266150556690 分岗模式  3</p>
+<h3 id="在Hive中使用多分隔符"><a href="#在Hive中使用多分隔符" class="headerlink" title="在Hive中使用多分隔符"></a>在Hive中使用多分隔符</h3><p>org.apache.hadoop.hive.contrib.serde2.MultiDelimitSerDe类是hive-contrib.jar包里.<br>将hive-contrib-2.1.1.jar添加到hive lib目录下.</p>
+<p>test1[,]test1name[,]test2value<br>test2[,]test2name[,]test2value<br>test3[,]test3name[,]test4value</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> test (</span><br><span class="line"> id string,</span><br><span class="line"> hivearray <span class="keyword">array</span><span class="operator">&lt;</span><span class="type">binary</span><span class="operator">&gt;</span>,</span><br><span class="line"> hivemap map<span class="operator">&lt;</span>string,<span class="type">int</span><span class="operator">&gt;</span>) </span><br><span class="line"><span class="type">ROW</span> FORMAT SERDE <span class="string">&#x27;org.apache.hadoop.hive.serde2.MultiDelimitSerDe&#x27;</span>                  </span><br><span class="line"><span class="keyword">WITH</span> SERDEPROPERTIES (&quot;field.delim&quot;<span class="operator">=</span>&quot;[,]&quot;,&quot;collection.delim&quot;<span class="operator">=</span>&quot;:&quot;,&quot;mapkey.delim&quot;<span class="operator">=</span>&quot;@&quot;);</span><br></pre></td></tr></table></figure>
+
+<h3 id="查询json格式表"><a href="#查询json格式表" class="headerlink" title="查询json格式表"></a>查询json格式表</h3><p>org.apache.hive.hcatalog.data.JsonSerDe.<br>将hive-hcatalog-core-2.1.1.jar添加到hive lib目录下.</p>
+<p>{&quot;student&quot;:{&quot;name&quot;:&quot;king&quot;,&quot;age&quot;:11,&quot;sex&quot;:&quot;M&quot;},&quot;class&quot;:{&quot;book&quot;:&quot;语文&quot;,&quot;level&quot;:2,&quot;score&quot;:80},&quot;teacher&quot;:{&quot;name&quot;:&quot;t1&quot;,&quot;class&quot;:&quot;语文&quot;}}<br>{&quot;student&quot;:{&quot;name&quot;:&quot;wang&quot;,&quot;age&quot;:12,&quot;sex&quot;:&quot;M&quot;},&quot;class&quot;:{&quot;book&quot;:&quot;语文&quot;,&quot;level&quot;:2,&quot;score&quot;:80},&quot;teacher&quot;:{&quot;name&quot;:&quot;t1&quot;,&quot;class&quot;:&quot;语文&quot;}}<br>{&quot;student&quot;:{&quot;name&quot;:&quot;test&quot;,&quot;age&quot;:13,&quot;sex&quot;:&quot;M&quot;},&quot;class&quot;:{&quot;book&quot;:&quot;语文&quot;,&quot;level&quot;:2,&quot;score&quot;:80},&quot;teacher&quot;:{&quot;name&quot;:&quot;t1&quot;,&quot;class&quot;:&quot;语文&quot;}}<br>{&quot;student&quot;:{&quot;name&quot;:&quot;test2&quot;,&quot;age&quot;:14,&quot;sex&quot;:&quot;M&quot;},&quot;class&quot;:{&quot;book&quot;:&quot;语文&quot;,&quot;level&quot;:2,&quot;score&quot;:80},&quot;teacher&quot;:{&quot;name&quot;:&quot;t1&quot;,&quot;class&quot;:&quot;语文&quot;}}<br>{&quot;student&quot;:{&quot;name&quot;:&quot;test3&quot;,&quot;age&quot;:15,&quot;sex&quot;:&quot;M&quot;},&quot;class&quot;:{&quot;book&quot;:&quot;语文&quot;,&quot;level&quot;:2,&quot;score&quot;:80},&quot;teacher&quot;:{&quot;name&quot;:&quot;t1&quot;,&quot;class&quot;:&quot;语文&quot;}}<br>{&quot;student&quot;:{&quot;name&quot;:&quot;test4&quot;,&quot;age&quot;:16,&quot;sex&quot;:&quot;M&quot;},&quot;class&quot;:{&quot;book&quot;:&quot;语文&quot;,&quot;level&quot;:2,&quot;score&quot;:80},&quot;teacher&quot;:{&quot;name&quot;:&quot;t1&quot;,&quot;class&quot;:&quot;语文&quot;}}</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> if <span class="keyword">not</span> <span class="keyword">exists</span> student(</span><br><span class="line">student map<span class="operator">&lt;</span>string,string<span class="operator">&gt;</span> comment &quot;学生信息&quot;,</span><br><span class="line">class map<span class="operator">&lt;</span>string,string<span class="operator">&gt;</span> comment &quot;课程信息&quot;,</span><br><span class="line">teacher map<span class="operator">&lt;</span>string,string<span class="operator">&gt;</span> comment &quot;授课老师信息&quot;</span><br><span class="line">)</span><br><span class="line">comment &quot;学生课程信息&quot;</span><br><span class="line"><span class="type">row</span> format serde <span class="string">&#x27;org.apache.hive.hcatalog.data.JsonSerDe&#x27;</span></span><br><span class="line">stored <span class="keyword">as</span> textfile;</span><br><span class="line"></span><br><span class="line">load data <span class="keyword">local</span> inpath <span class="string">&#x27;/data/xxx/test1.log&#x27;</span> overwrite <span class="keyword">into</span> <span class="keyword">table</span> student;</span><br></pre></td></tr></table></figure>
+
+<p>验证数据,</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> student;</span><br><span class="line"><span class="keyword">select</span></span><br><span class="line">    student[<span class="string">&#x27;name&#x27;</span>] <span class="keyword">as</span> stuName,</span><br><span class="line">    class[<span class="string">&#x27;book&#x27;</span>] <span class="keyword">as</span> cls_book, </span><br><span class="line">    class[<span class="string">&#x27;score&#x27;</span>] <span class="keyword">as</span> cls_score,</span><br><span class="line">    teacher[<span class="string">&#x27;name&#x27;</span>] <span class="keyword">as</span> tech_name </span><br><span class="line"><span class="keyword">from</span> student;</span><br></pre></td></tr></table></figure>
+
+<h3 id="查看-parquet-文件-schema"><a href="#查看-parquet-文件-schema" class="headerlink" title="查看 parquet 文件 schema"></a>查看 parquet 文件 schema</h3><p>下载 parquet-tools-1.11.2.jar<br>hadoop jar ./parquet-tools-1.11.2.jar schema hdfs_file_path</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">message hoodie.tbl_didi_haikou.tbl_didi_haikou_record &#123;</span><br><span class="line">  optional binary _hoodie_commit_time (STRING);</span><br><span class="line">  optional binary _hoodie_commit_seqno (STRING);</span><br><span class="line">  optional binary _hoodie_record_key (STRING);</span><br><span class="line">  optional binary _hoodie_partition_path (STRING);</span><br><span class="line">  optional binary _hoodie_file_name (STRING);</span><br><span class="line">  optional int64 order_id;</span><br><span class="line">  optional int32 product_id;</span><br><span class="line">  optional int32 city_id;</span><br><span class="line">  optional int32 district;</span><br><span class="line">  optional int32 county;</span><br><span class="line">  optional int32 type;</span><br><span class="line">  optional int32 combo_type;</span><br><span class="line">  optional int32 traffic_type;</span><br><span class="line">  optional int32 passenger_count;</span><br><span class="line">  optional int32 driver_product_id;</span><br><span class="line">  optional int32 start_dest_distance;</span><br><span class="line">  optional binary arrive_time (STRING);</span><br><span class="line">  optional int64 departure_time (TIMESTAMP(MICROS,true));</span><br><span class="line">  optional double pre_total_fee;</span><br><span class="line">  optional binary normal_time (STRING);</span><br><span class="line">  optional binary bubble_trace_id (STRING);</span><br><span class="line">  optional int32 product_1level;</span><br><span class="line">  optional double dest_lng;</span><br><span class="line">  optional double dest_lat;</span><br><span class="line">  optional double starting_lng;</span><br><span class="line">  optional double starting_lat;</span><br><span class="line">  required binary partitionpath (STRING);</span><br><span class="line">  optional int64 ts;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="hive中实现group-concat"><a href="#hive中实现group-concat" class="headerlink" title="hive中实现group_concat"></a>hive中实现group_concat</h3><p>mysql中的group_concat分组连接功能相当强大,可以先分组再连接成字符串,还可以进行排序连接.<br>hive中并没有这个函数,这里要用到:concat_ws/collect_list/collect_set 函数.</p>
+<p>建立测试表(无分区表):</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> if <span class="keyword">not</span> <span class="keyword">exists</span> test_xxx(</span><br><span class="line">  id string,</span><br><span class="line">  content string,</span><br><span class="line">  comment string</span><br><span class="line">) stored <span class="keyword">as</span> parquet;</span><br></pre></td></tr></table></figure>
+
+<p>插入几条数据:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_xxx <span class="keyword">values</span>(<span class="string">&#x27;1&#x27;</span>,<span class="string">&#x27;Tom&#x27;</span>,<span class="string">&#x27;测试1&#x27;</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_xxx <span class="keyword">values</span>(<span class="string">&#x27;1&#x27;</span>,<span class="string">&#x27;Bob&#x27;</span>,<span class="string">&#x27;测试2&#x27;</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_xxx <span class="keyword">values</span>(<span class="string">&#x27;1&#x27;</span>,<span class="string">&#x27;Wendy&#x27;</span>,<span class="string">&#x27;测试3&#x27;</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_xxx <span class="keyword">values</span>(<span class="string">&#x27;2&#x27;</span>,<span class="string">&#x27;Bob&#x27;</span>,<span class="string">&#x27;测试22&#x27;</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_xxx <span class="keyword">values</span>(<span class="string">&#x27;2&#x27;</span>,<span class="string">&#x27;Tom&#x27;</span>,<span class="string">&#x27;测试11&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">id</th>
+<th align="left">content</th>
+<th align="left">comment</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">1</td>
+<td align="left">Wendy</td>
+<td align="left">测试3</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">Bob</td>
+<td align="left">测试22</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">Tom</td>
+<td align="left">测试11</td>
+</tr>
+<tr>
+<td align="left">1</td>
+<td align="left">Bob</td>
+<td align="left">测试2</td>
+</tr>
+<tr>
+<td align="left">1</td>
+<td align="left">Tom</td>
+<td align="left">测试1</td>
+</tr>
+</tbody></table>
+<h4 id="concat-ws-collect-set-group-by"><a href="#concat-ws-collect-set-group-by" class="headerlink" title="concat_ws + collect_set + group by"></a>concat_ws + collect_set + group by</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">    id,</span><br><span class="line">    concat_ws(<span class="string">&#x27;,&#x27;</span>,collect_set(content)) <span class="keyword">as</span> con_con,</span><br><span class="line">    concat_ws(<span class="string">&#x27;,&#x27;</span>,collect_set(comment)) <span class="keyword">as</span> con_com</span><br><span class="line"><span class="keyword">from</span> test_xxx</span><br><span class="line"><span class="keyword">group</span> <span class="keyword">by</span> id;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">id</th>
+<th align="left">con_con</th>
+<th align="left">con_com</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">1</td>
+<td align="left">Tom,Bob,Wendy</td>
+<td align="left">测试3,测试1,测试2</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">Tom,Bob</td>
+<td align="left">测试22,测试11</td>
+</tr>
+</tbody></table>
+<p>结果:无序且不对应(con_con与con_com的位置)<br>collect_set会将重复的数据删除,因为集合的性质.<br>每次运行连接的结果顺序都可能不一样.</p>
+<h4 id="concat-ws-collect-list-group-by"><a href="#concat-ws-collect-list-group-by" class="headerlink" title="concat_ws + collect_list + group by"></a>concat_ws + collect_list + group by</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">    id,</span><br><span class="line">    concat_ws(<span class="string">&#x27;,&#x27;</span>,collect_list(content)) <span class="keyword">as</span> con_con,</span><br><span class="line">    concat_ws(<span class="string">&#x27;,&#x27;</span>,collect_list(comment)) <span class="keyword">as</span> con_com</span><br><span class="line"><span class="keyword">from</span> test_xxx</span><br><span class="line"><span class="keyword">group</span> <span class="keyword">by</span> id;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">id</th>
+<th align="left">con_con</th>
+<th align="left">con_com</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">1</td>
+<td align="left">Wendy,Bob,Tom</td>
+<td align="left">测试3,测试2,测试1</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">Bob,Tom</td>
+<td align="left">测试22,测试11</td>
+</tr>
+</tbody></table>
+<p>结果:对应(con_con与con_com的位置)但无序.</p>
+<h4 id="concat-ws-collect-list-group-by-row-number"><a href="#concat-ws-collect-list-group-by-row-number" class="headerlink" title="concat_ws + collect_list + group by + row_number()"></a>concat_ws + collect_list + group by + row_number()</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">  id,</span><br><span class="line">  concat_ws(<span class="string">&#x27;,&#x27;</span>,collect_list(content)) <span class="keyword">as</span> con_con,</span><br><span class="line">  concat_ws(<span class="string">&#x27;,&#x27;</span>,collect_list(comment)) <span class="keyword">as</span> con_com,</span><br><span class="line">  concat_ws(<span class="string">&#x27;,&#x27;</span>,collect_list(<span class="built_in">cast</span>(rn <span class="keyword">as</span> string))) <span class="keyword">as</span> con_rn</span><br><span class="line"><span class="keyword">from</span> </span><br><span class="line">(</span><br><span class="line"><span class="keyword">select</span></span><br><span class="line">  id,</span><br><span class="line">  content,</span><br><span class="line">  comment,</span><br><span class="line">  <span class="built_in">row_number</span>() <span class="keyword">over</span>(<span class="keyword">partition</span> <span class="keyword">by</span> id <span class="keyword">order</span> <span class="keyword">by</span> content <span class="keyword">asc</span>) <span class="keyword">as</span> rn</span><br><span class="line"><span class="keyword">from</span> test_xxx</span><br><span class="line">)</span><br><span class="line"><span class="keyword">group</span> <span class="keyword">by</span> id;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">id</th>
+<th align="left">content</th>
+<th align="left">comment</th>
+<th align="left">rn</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">1</td>
+<td align="left">Bob</td>
+<td align="left">测试2</td>
+<td align="left">1</td>
+</tr>
+<tr>
+<td align="left">1</td>
+<td align="left">Tom</td>
+<td align="left">测试1</td>
+<td align="left">2</td>
+</tr>
+<tr>
+<td align="left">1</td>
+<td align="left">Wendy</td>
+<td align="left">测试3</td>
+<td align="left">3</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">Bob</td>
+<td align="left">测试22</td>
+<td align="left">1</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">Tom</td>
+<td align="left">测试11</td>
+<td align="left">2</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th align="left">id</th>
+<th align="left">con_con</th>
+<th align="left">con_com</th>
+<th align="left">con_rn</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">1</td>
+<td align="left">Bob,Tom,Wendy</td>
+<td align="left">测试2,测试1,测试3</td>
+<td align="left">1,2,3</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">Bob,Tom</td>
+<td align="left">测试22,测试11</td>
+<td align="left">1,2</td>
+</tr>
+</tbody></table>
+<p>结果:对应(con_con与con_com的位置)且有序.</p>
+<h3 id="占比-同比-环比计算"><a href="#占比-同比-环比计算" class="headerlink" title="占比/同比/环比计算"></a>占比/同比/环比计算</h3><h4 id="数据准备"><a href="#数据准备" class="headerlink" title="数据准备"></a>数据准备</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 创建表并插入数据</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> `test_xxx` (</span><br><span class="line">  `order_id` <span class="type">int</span> ,</span><br><span class="line">  `order_time` <span class="type">date</span> ,</span><br><span class="line">  `order_num` <span class="type">int</span></span><br><span class="line">) stored <span class="keyword">as</span> parquet;</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> `test_xxx` <span class="keyword">VALUES</span> (<span class="number">1</span>, <span class="string">&#x27;2020-04-20&#x27;</span>, <span class="number">420</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> `test_xxx` <span class="keyword">VALUES</span> (<span class="number">2</span>, <span class="string">&#x27;2020-04-04&#x27;</span>, <span class="number">800</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> `test_xxx` <span class="keyword">VALUES</span> (<span class="number">3</span>, <span class="string">&#x27;2020-03-28&#x27;</span>, <span class="number">500</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> `test_xxx` <span class="keyword">VALUES</span> (<span class="number">4</span>, <span class="string">&#x27;2020-03-13&#x27;</span>, <span class="number">100</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> `test_xxx` <span class="keyword">VALUES</span> (<span class="number">5</span>, <span class="string">&#x27;2020-02-27&#x27;</span>, <span class="number">300</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> `test_xxx` <span class="keyword">VALUES</span> (<span class="number">6</span>, <span class="string">&#x27;2020-01-07&#x27;</span>, <span class="number">450</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> `test_xxx` <span class="keyword">VALUES</span> (<span class="number">7</span>, <span class="string">&#x27;2019-04-07&#x27;</span>, <span class="number">800</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> `test_xxx` <span class="keyword">VALUES</span> (<span class="number">8</span>, <span class="string">&#x27;2019-03-15&#x27;</span>, <span class="number">1200</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> `test_xxx` <span class="keyword">VALUES</span> (<span class="number">9</span>, <span class="string">&#x27;2019-02-17&#x27;</span>, <span class="number">200</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> `test_xxx` <span class="keyword">VALUES</span> (<span class="number">10</span>, <span class="string">&#x27;2019-02-07&#x27;</span>, <span class="number">600</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> `test_xxx` <span class="keyword">VALUES</span> (<span class="number">11</span>, <span class="string">&#x27;2019-01-13&#x27;</span>, <span class="number">300</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test_xxx;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1384.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="占比"><a href="#占比" class="headerlink" title="占比"></a>占比</h4><h5 id="写法一-隐式内连接"><a href="#写法一-隐式内连接" class="headerlink" title="写法一:隐式内连接"></a>写法一:隐式内连接</h5><p>基本思路:用隐式内连接,外加嵌套找出分子分母,相除(最后要分组).</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 求每年每个月份销量占全年销量的占比</span></span><br><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> order_month,</span><br><span class="line"> num,</span><br><span class="line"> total, ROUND(num <span class="operator">/</span> total, <span class="number">2</span>) <span class="keyword">AS</span> ratio</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line">(</span><br><span class="line"><span class="keyword">SELECT</span> DATE_FORMAT(order_time,&quot;yyyy-MM&quot;) <span class="keyword">AS</span> order_month, <span class="built_in">SUM</span>(order_num) <span class="keyword">AS</span> num</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> test_xxx</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> DATE_FORMAT(order_time,&quot;yyyy-MM&quot;))t1,</span><br><span class="line"> (</span><br><span class="line"><span class="keyword">SELECT</span> <span class="keyword">YEAR</span>(order_time) <span class="keyword">AS</span> order_year, <span class="built_in">SUM</span>(order_num) <span class="keyword">AS</span> total</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> test_xxx</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> <span class="keyword">YEAR</span>(order_time))t2</span><br><span class="line"><span class="keyword">WHERE</span> substr(t1.order_month,<span class="number">1</span>,<span class="number">4</span>)<span class="operator">=</span>t2.order_year;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1385.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1386.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h5 id="写法二-显示内联接"><a href="#写法二-显示内联接" class="headerlink" title="写法二:显示内联接"></a>写法二:显示内联接</h5><p>基本思路:显示内联接,先分组、汇总–&gt;笛卡尔积连接–&gt;相除<br>时间处理的时候除了用date_formate()也可以用substr()函数来截取年月日格式.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> order_month,</span><br><span class="line"> num,</span><br><span class="line"> total, ROUND(num<span class="operator">/</span>total,<span class="number">2</span>) <span class="keyword">AS</span> ratio</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> (</span><br><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> substr(order_time, <span class="number">1</span>, <span class="number">7</span>) <span class="keyword">AS</span> order_month, <span class="built_in">SUM</span>(order_num) <span class="keyword">AS</span> num</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> test_xxx</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span></span><br><span class="line"> substr(order_time, <span class="number">1</span>, <span class="number">7</span>) </span><br><span class="line">) t1</span><br><span class="line"><span class="keyword">INNER</span> <span class="keyword">JOIN</span> (</span><br><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> substr(order_time, <span class="number">1</span>, <span class="number">4</span>) <span class="keyword">AS</span> order_year, <span class="built_in">SUM</span>(order_num) <span class="keyword">AS</span> total</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> test_xxx</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span></span><br><span class="line"> substr(order_time, <span class="number">1</span>, <span class="number">4</span>) </span><br><span class="line">) t2 <span class="keyword">ON</span> substr(order_month, <span class="number">1</span>, <span class="number">4</span>) <span class="operator">=</span> t2.order_year ;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1387.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1388.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h5 id="写法三-开窗函数"><a href="#写法三-开窗函数" class="headerlink" title="写法三:开窗函数"></a>写法三:开窗函数</h5><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="keyword">DISTINCT</span></span><br><span class="line"> order_month,</span><br><span class="line"> num,</span><br><span class="line"> total, ROUND(num <span class="operator">/</span> total, <span class="number">2</span>) <span class="keyword">AS</span> ratio</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> (</span><br><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> substr(order_time, <span class="number">1</span>, <span class="number">7</span>) <span class="keyword">AS</span> order_month, </span><br><span class="line"> <span class="built_in">SUM</span>(order_num) <span class="keyword">over</span> (<span class="keyword">PARTITION</span> <span class="keyword">BY</span> substr(order_time, <span class="number">1</span>, <span class="number">7</span>)) <span class="keyword">AS</span> num, </span><br><span class="line"> <span class="built_in">SUM</span>(order_num) <span class="keyword">over</span> (<span class="keyword">PARTITION</span> <span class="keyword">BY</span> substr(order_time, <span class="number">1</span>, <span class="number">4</span>)) total</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> test_xxx </span><br><span class="line">) temp;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1389.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1390.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>注意:</p>
+<ol>
+<li>时间处理的时候除了用date_formate()也可以用substr()函数来截取年月日格式.</li>
+<li>当求的占比分子分母没有时间维度只有数量的时候,可以采用<font color="red">on 1=1</font> 来进行关联,构造成笛卡尔积.</li>
+</ol>
+</blockquote>
+<p>例如下列代码:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 平台订单占比</span></span><br><span class="line"><span class="keyword">SELECT</span> NAME 电商平台, number 订单量, </span><br><span class="line">CONCAT(FORMAT(number <span class="operator">/</span> total <span class="operator">*</span> <span class="number">100</span>, <span class="number">2</span>), <span class="string">&#x27;%&#x27;</span>) 平台占比</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line">(</span><br><span class="line">  <span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span></span><br><span class="line">   (</span><br><span class="line">    <span class="keyword">SELECT</span> b.NAME, <span class="built_in">COUNT</span>(a.id) number <span class="keyword">FROM</span> </span><br><span class="line">    B2C_ORDER a <span class="keyword">JOIN</span> PLATFORM b <span class="keyword">ON</span> a.PLATFORM_ID <span class="operator">=</span> b.id </span><br><span class="line">    <span class="keyword">GROUP</span> <span class="keyword">BY</span> b.NAME </span><br><span class="line">   ) t1</span><br><span class="line">  <span class="keyword">INNER</span> <span class="keyword">JOIN</span> </span><br><span class="line">   (</span><br><span class="line">    <span class="keyword">SELECT</span> <span class="built_in">COUNT</span>(a.id) total <span class="keyword">FROM</span> <span class="keyword">ORDER</span> a</span><br><span class="line">   ) t2 <span class="keyword">ON</span> <span class="number">1</span> <span class="operator">=</span> <span class="number">1</span> </span><br><span class="line">) t3</span><br></pre></td></tr></table></figure>
+
+<p>例2:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> </span><br><span class="line"> month_order,</span><br><span class="line"> year_order,</span><br><span class="line"> number, CONCAT(ROUND(number <span class="operator">/</span> total <span class="operator">*</span> <span class="number">100.00</span>, <span class="number">2</span>), <span class="string">&#x27;%&#x27;</span>) <span class="keyword">percent</span></span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line">(</span><br><span class="line">  <span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span></span><br><span class="line">   (</span><br><span class="line">    <span class="keyword">SELECT</span> substr(order_time, <span class="number">1</span>,<span class="number">7</span>) <span class="keyword">AS</span> month_order, <span class="built_in">SUM</span>(order_num) <span class="keyword">AS</span> number</span><br><span class="line">      <span class="keyword">FROM</span> test_xxx</span><br><span class="line">      <span class="keyword">GROUP</span> <span class="keyword">BY</span> substr(order_time, <span class="number">1</span>,<span class="number">7</span>)</span><br><span class="line">   ) t1</span><br><span class="line">   <span class="keyword">JOIN</span> </span><br><span class="line">   (</span><br><span class="line">    <span class="keyword">SELECT</span> DATE_FORMAT(order_time, <span class="string">&#x27;Y&#x27;</span>) <span class="keyword">AS</span> year_order, <span class="built_in">SUM</span>(order_num) <span class="keyword">AS</span> total</span><br><span class="line">      <span class="keyword">FROM</span> test_xxx</span><br><span class="line">      <span class="keyword">GROUP</span> <span class="keyword">BY</span> DATE_FORMAT(order_time, <span class="string">&#x27;Y&#x27;</span>)</span><br><span class="line">   ) t2 </span><br><span class="line">    <span class="keyword">ON</span> <span class="number">1</span> <span class="operator">=</span> <span class="number">1</span> <span class="keyword">AND</span> </span><br><span class="line">    DATE_FORMAT(CONCAT(t1.month_order, <span class="string">&#x27;-01&#x27;</span>), <span class="string">&#x27;Y&#x27;</span>) <span class="operator">=</span> t2.year_order</span><br><span class="line">) t3;</span><br></pre></td></tr></table></figure>
+
+<h4 id="环比"><a href="#环比" class="headerlink" title="环比"></a>环比</h4><p>与上年度数据对比称&quot;同比&quot;,与上月数据对比称&quot;环比&quot;</p>
+<p>相关公式如下:<br>同比增长率计算公式 = (当年值-上年值)/上年值 x 100%<br>环比增长率计算公式 = (当月值-上月值)/上月值 x 100% </p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> now_month,</span><br><span class="line"> now_num,</span><br><span class="line"> last_num, </span><br><span class="line"> <span class="comment">--ROUND((now_num - last_num) / last_num, 2) AS ratio</span></span><br><span class="line"> <span class="comment">-- 对空值进行处理、加%显示</span></span><br><span class="line"> CONCAT(nvl (ROUND((now_num <span class="operator">-</span> last_num) <span class="operator">/</span> last_num <span class="operator">*</span> <span class="number">100</span>, <span class="number">2</span>), <span class="number">0</span>), &quot;%&quot;) <span class="keyword">AS</span> ratio</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> (</span><br><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> now_month,</span><br><span class="line"> now_num,</span><br><span class="line"> <span class="built_in">lag</span> (t1.now_num, <span class="number">1</span>) <span class="keyword">over</span> (<span class="keyword">ORDER</span> <span class="keyword">BY</span> t1.now_month) <span class="keyword">AS</span> last_num</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line">  (</span><br><span class="line">    <span class="keyword">SELECT</span></span><br><span class="line">     substr(order_time, <span class="number">1</span>, <span class="number">7</span>) <span class="keyword">AS</span> now_month, <span class="built_in">SUM</span>(order_num) <span class="keyword">AS</span> now_num</span><br><span class="line">    <span class="keyword">FROM</span> test_xxx</span><br><span class="line">    <span class="keyword">GROUP</span> <span class="keyword">BY</span> substr(order_time, <span class="number">1</span>, <span class="number">7</span>) </span><br><span class="line">  ) t1 </span><br><span class="line">) t2;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1391.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="同比"><a href="#同比" class="headerlink" title="同比"></a>同比</h4><p>同比的话,如果每个月都齐全,都有数据lag(num,12)就ok.<br>例子中只有19年和20年1-4月份的数据.<br>这种特殊情况应该如何处理?</p>
+<h5 id="写法一-本案例进行单独处理"><a href="#写法一-本案例进行单独处理" class="headerlink" title="写法一:本案例进行单独处理"></a>写法一:本案例进行单独处理</h5><p>有4个月数据,我就lag(num,4)<br>对空值可以做一下优化处理,用到nvl()函数和lag()函数的第三个参数.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> now_month,</span><br><span class="line"> now_num,</span><br><span class="line"> last_num, </span><br><span class="line"> <span class="comment">--ROUND((now_num - last_num) / last_num, 2) AS ratio</span></span><br><span class="line">  nvl (ROUND((now_num <span class="operator">-</span> last_num) <span class="operator">/</span> last_num, <span class="number">2</span>), <span class="number">0</span>) <span class="keyword">AS</span> ratio</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> (</span><br><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> now_month,</span><br><span class="line"> now_num,</span><br><span class="line"> <span class="comment">--lag (t1.now_num, 4) over (</span></span><br><span class="line"> <span class="built_in">lag</span> (t1.now_num, <span class="number">4</span>, <span class="number">0</span>) <span class="keyword">over</span> (</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> t1.now_month) <span class="keyword">AS</span> last_num</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> (</span><br><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> substr(order_time, <span class="number">1</span>, <span class="number">7</span>) <span class="keyword">AS</span> now_month, <span class="built_in">SUM</span>(order_num) <span class="keyword">AS</span> now_num</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> test_xxx</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span></span><br><span class="line"> substr(order_time, <span class="number">1</span>, <span class="number">7</span>) </span><br><span class="line">) t1 </span><br><span class="line">) t2;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1392.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h5 id="写法二-通用方法"><a href="#写法二-通用方法" class="headerlink" title="写法二:通用方法"></a>写法二:通用方法</h5><p>基本思路:利用date_add()生成跨年时间</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> t1.now_month,</span><br><span class="line"> nvl (now_num, <span class="number">0</span>) <span class="keyword">AS</span> now_num,</span><br><span class="line"> nvl (last_num, <span class="number">0</span>) <span class="keyword">AS</span> last_num,</span><br><span class="line"> nvl (ROUND((now_num <span class="operator">-</span> last_num) <span class="operator">/</span> last_num, <span class="number">2</span>), <span class="number">0</span>) <span class="keyword">AS</span> ratio</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> (</span><br><span class="line"><span class="keyword">SELECT</span> DATE_FORMAT(order_time, <span class="string">&#x27;yyyy-MM&#x27;</span>) <span class="keyword">AS</span> now_month, <span class="built_in">SUM</span>(order_num) <span class="keyword">AS</span> now_num</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> test_xxx</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> DATE_FORMAT(order_time, <span class="string">&#x27;yyyy-MM&#x27;</span>) </span><br><span class="line">) t1</span><br><span class="line"><span class="keyword">LEFT</span> <span class="keyword">JOIN</span> (</span><br><span class="line"><span class="keyword">SELECT</span> DATE_FORMAT(DATE_ADD(order_time, <span class="number">365</span>), <span class="string">&#x27;yyyy-MM&#x27;</span>) <span class="keyword">AS</span> now_month, <span class="built_in">SUM</span>(order_num) <span class="keyword">AS</span> last_num</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> test_xxx</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> DATE_FORMAT(DATE_ADD(order_time, <span class="number">365</span>), <span class="string">&#x27;yyyy-MM&#x27;</span>) </span><br><span class="line">) <span class="keyword">AS</span> t2 <span class="keyword">ON</span> t1.now_month <span class="operator">=</span> t2.now_month;</span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hive/" rel="tag"># hive</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/09/06/yarn%E6%97%A5%E5%BF%97%E8%81%9A%E5%90%88/" rel="prev" title="yarn日志聚合">
+                  <i class="fa fa-chevron-left"></i> yarn日志聚合
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/09/08/clickhouse%E5%AE%89%E8%A3%85/" rel="next" title="clickhouse安装">
+                  clickhouse安装 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

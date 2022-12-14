@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="IllegalConfigurationException如果遇到从 TaskExecutorProcessUtils 或 JobManagerProcessUtils 抛出的 IllegalConfigurationException 异常,这通常说明您的配置参数中存在无效值(例如内存大小为负数&#x2F;占比大于 1 等)或者配置冲突.请根据异常信息,确认出错的内存部分的相关文档及配置信息.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="flink question">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/23/flink%20question/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="IllegalConfigurationException如果遇到从 TaskExecutorProcessUtils 或 JobManagerProcessUtils 抛出的 IllegalConfigurationException 异常,这通常说明您的配置参数中存在无效值(例如内存大小为负数&#x2F;占比大于 1 等)或者配置冲突.请根据异常信息,确认出错的内存部分的相关文档及配置信息.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-08-22T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-10-21T07:14:11.578Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="flink">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/23/flink%20question/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>flink question | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#IllegalConfigurationException"><span class="nav-number">1.</span> <span class="nav-text">IllegalConfigurationException</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OutOfMemoryError-Java-heap-space"><span class="nav-number">2.</span> <span class="nav-text">OutOfMemoryError: Java heap space</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OutOfMemoryError-Direct-buffer-memory"><span class="nav-number">3.</span> <span class="nav-text">OutOfMemoryError: Direct buffer memory</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OutOfMemoryError-Metaspace"><span class="nav-number">4.</span> <span class="nav-text">OutOfMemoryError: Metaspace</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IOException-Insufficient-number-of-network-buffers"><span class="nav-number">5.</span> <span class="nav-text">IOException: Insufficient number of network buffers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8-Container-%E5%86%85%E5%AD%98%E8%B6%85%E7%94%A8"><span class="nav-number">6.</span> <span class="nav-text">容器(Container)内存超用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zookeeper%E8%BF%9E%E6%8E%A5%E4%B8%8D%E4%B8%8A"><span class="nav-number">7.</span> <span class="nav-text">zookeeper连接不上</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#table-sql-dialect%E9%94%99%E8%AF%AF"><span class="nav-number">8.</span> <span class="nav-text">table.sql-dialect错误</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#flink-table"><span class="nav-number">9.</span> <span class="nav-text">flink table</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#flink-cdc"><span class="nav-number">10.</span> <span class="nav-text">flink cdc</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#yarn-session%E5%90%AF%E5%8A%A8%E5%BC%82%E5%B8%B8"><span class="nav-number">11.</span> <span class="nav-text">yarn-session启动异常</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#JobSubmissionException"><span class="nav-number">12.</span> <span class="nav-text">JobSubmissionException</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/23/flink%20question/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          flink question
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-23 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-23T00:00:00+08:00">2022-08-23</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-10-21 15:14:11" itemprop="dateModified" datetime="2022-10-21T15:14:11+08:00">2022-10-21</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h3 id="IllegalConfigurationException"><a href="#IllegalConfigurationException" class="headerlink" title="IllegalConfigurationException"></a>IllegalConfigurationException</h3><p>如果遇到从 TaskExecutorProcessUtils 或 JobManagerProcessUtils 抛出的 IllegalConfigurationException 异常,这通常说明您的配置参数中存在无效值(例如内存大小为负数/占比大于 1 等)或者配置冲突.<br>请根据异常信息,确认出错的内存部分的相关文档及配置信息.</p>
+<span id="more"></span>
+<h3 id="OutOfMemoryError-Java-heap-space"><a href="#OutOfMemoryError-Java-heap-space" class="headerlink" title="OutOfMemoryError: Java heap space"></a>OutOfMemoryError: Java heap space</h3><p>该异常说明 JVM 的堆空间过小.<br>可以通过增大总内存/TaskManager 的任务堆内存/JobManager 的 JVM 堆内存等方法来增大 JVM 堆空间.</p>
+<p>提示:也可以增大 TaskManager 的框架堆内存.<br>这是一个进阶配置,只有在确认是 Flink 框架自身需要更多内存时才应该去调整.</p>
+<h3 id="OutOfMemoryError-Direct-buffer-memory"><a href="#OutOfMemoryError-Direct-buffer-memory" class="headerlink" title="OutOfMemoryError: Direct buffer memory"></a>OutOfMemoryError: Direct buffer memory</h3><p>该异常通常说明 JVM 的直接内存限制过小,或者存在直接内存泄漏(Direct Memory Leak).<br>请确认用户代码及外部依赖中是否使用了 JVM 直接内存,以及如果使用了直接内存,是否配置了足够的内存空间.<br>可以通过调整堆外内存来增大直接内存限制.<br>有关堆外内存的配置方法,请参考 TaskManager/JobManager 以及 JVM 参数的相关文档.</p>
+<h3 id="OutOfMemoryError-Metaspace"><a href="#OutOfMemoryError-Metaspace" class="headerlink" title="OutOfMemoryError: Metaspace"></a>OutOfMemoryError: Metaspace</h3><p>该异常说明 JVM Metaspace 限制过小.<br>可以尝试调整 TaskManager/JobManager 的 JVM Metaspace.</p>
+<h3 id="IOException-Insufficient-number-of-network-buffers"><a href="#IOException-Insufficient-number-of-network-buffers" class="headerlink" title="IOException: Insufficient number of network buffers"></a>IOException: Insufficient number of network buffers</h3><p>该异常仅与 TaskManager 相关.</p>
+<p>该异常通常说明网络内存过小.<br>可以通过调整以下配置参数增大网络内存:<br>taskmanager.memory.network.min<br>taskmanager.memory.network.max<br>taskmanager.memory.network.fraction</p>
+<h3 id="容器-Container-内存超用"><a href="#容器-Container-内存超用" class="headerlink" title="容器(Container)内存超用"></a>容器(Container)内存超用</h3><p>如果 Flink 容器尝试分配超过其申请大小的内存(Yarn 或 Kubernetes),这通常说明 Flink 没有预留出足够的本地内存.<br>可以通过外部监控系统或者容器被部署环境杀掉时的错误信息判断是否存在容器内存超用.</p>
+<p>对于 JobManager 进程,你还可以尝试启用 JVM 直接内存限制(jobmanager.memory.enable-jvm-direct-memory-limit),以排除 JVM 直接内存泄漏的可能性.</p>
+<p>If RocksDBStateBackend is used:</p>
+<ol>
+<li>and memory controlling is disabled: You can try to increase the TaskManager’s managed memory.</li>
+<li>and memory controlling is enabled and non-heap memory increases during savepoint or full checkpoints: This may happen due to the glibc memory allocator (see glibc bug). You can try to add the environment variable MALLOC_ARENA_MAX=1 for TaskManagers.<br>此外,还可以尝试增大 JVM 开销.</li>
+</ol>
+<h3 id="zookeeper连接不上"><a href="#zookeeper连接不上" class="headerlink" title="zookeeper连接不上"></a>zookeeper连接不上</h3><p>Connection to ZooKeeper suspended, waiting for reconnection</p>
+<p>flink 15.2集群启动后,连接zookeeper问题,升级zookeeper到flink对应版本(查看flink 15.2对应的maven中zookeeper版本为3.5.9).</p>
+<h3 id="table-sql-dialect错误"><a href="#table-sql-dialect错误" class="headerlink" title="table.sql-dialect错误"></a>table.sql-dialect错误</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[ERROR] Could not execute SQL statement. Reason:</span><br><span class="line">org.apache.flink.table.api.ValidationException: Could not find any factory for identifier &#39;hive&#39; that implements &#39;org.apache.flink.table.planner.delegation.ParserFactory&#39; in the classpath.</span><br><span class="line"></span><br><span class="line">Available factory identifiers are:</span><br></pre></td></tr></table></figure>
+
+<p>从 Flink 1.15版本开始,在使用 Hive 方言抛出以下异常时,请尝试用 opt 目录下的 flink-table-planner_2.12 jar 包来替换 lib 目录下的 flink-table-planner-loader jar 包.<br>具体原因请参考 FLINK-25128.</p>
+<h3 id="flink-table"><a href="#flink-table" class="headerlink" title="flink table"></a>flink table</h3><p>Caused by: org.apache.flink.table.api.ValidationException: Could not find any factories that implement &#39;org.apache.flink.table.delegation.ExecutorFactory&#39; in the classpath.</p>
+<p>Caused by: java.lang.IllegalStateException: No ExecutorFactory found to execute the application.</p>
+<p>添加以下依赖,</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.flink<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>flink-clients<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.15.2<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.flink<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>flink-table-planner_2.12<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.15.2<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="flink-cdc"><a href="#flink-cdc" class="headerlink" title="flink cdc"></a>flink cdc</h3><p>java.lang.NoClassDefFoundError: org/apache/flink/shaded/guava18/com/google/common/util/concurrent/ThreadFactoryBuilder<br>问题分析:cdc目前支持到flink1.13.3,具体看github pom, <a target="_blank" rel="noopener" href="https://github.com/ververica/flink-cdc-connectors/blob/master/pom.xml">https://github.com/ververica/flink-cdc-connectors/blob/master/pom.xml</a><br>解决方法:降级或者编译一个cdc.</p>
+<h3 id="yarn-session启动异常"><a href="#yarn-session启动异常" class="headerlink" title="yarn-session启动异常"></a>yarn-session启动异常</h3><p>Caused by: java.lang.NoSuchMethodError: com.google.common.base.Preconditions.checkArgument(ZLjava/lang/String;Ljava/lang/Object;)V</p>
+<p>异常分析:Preconditions是guava下的工具类,hudi的源码依赖了不同的项目,这些项目使用了不同的guava版本,所报错误是由于运行时guava版本过旧,没有相应的方法.</p>
+<p>异常解决:将HADOOM_HOME/lib下的guava版本拷贝到FLINK_HOME/lib下.</p>
+<h3 id="JobSubmissionException"><a href="#JobSubmissionException" class="headerlink" title="JobSubmissionException"></a>JobSubmissionException</h3><p>org.apache.flink.runtime.client.JobSubmissionException: Failed to submit JobGraph<br>flink sql client提交作业报错.</p>
+<p>yarn-session模式,只能在active NameNode上提交成功.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;sql-client.sh -s yarn-session embedded shell</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/flink/" rel="tag"># flink</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/23/flink%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/" rel="prev" title="flink默认配置参数">
+                  <i class="fa fa-chevron-left"></i> flink默认配置参数
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/26/hadoop%E5%B0%8F%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86/" rel="next" title="hadoop小文件处理">
+                  hadoop小文件处理 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

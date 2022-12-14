@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="Master监控指标">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hbase jmx常用监控指标">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/03/hbase%20jmx%E5%B8%B8%E7%94%A8%E7%9B%91%E6%8E%A7%E6%8C%87%E6%A0%87/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="Master监控指标">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbase_master.png">
+<meta property="article:published_time" content="2022-08-02T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-06T06:27:46.976Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hbase">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/hbase_master.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/03/hbase%20jmx%E5%B8%B8%E7%94%A8%E7%9B%91%E6%8E%A7%E6%8C%87%E6%A0%87/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hbase jmx常用监控指标 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Master%E7%9B%91%E6%8E%A7%E6%8C%87%E6%A0%87"><span class="nav-number">1.</span> <span class="nav-text">Master监控指标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RegionServer%E7%9B%91%E6%8E%A7%E6%8C%87%E6%A0%87"><span class="nav-number">2.</span> <span class="nav-text">RegionServer监控指标</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#regionserver%E5%8C%85%E5%90%AB%E5%AF%B9%E8%B1%A1"><span class="nav-number">2.1.</span> <span class="nav-text">regionserver包含对象</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%B4%9F%E8%BD%BD"><span class="nav-number">2.2.</span> <span class="nav-text">负载</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%9E%E6%8E%A5%E4%B8%8E%E9%98%9F%E5%88%97"><span class="nav-number">2.3.</span> <span class="nav-text">连接与队列</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#blockcache%E4%BD%BF%E7%94%A8%E6%83%85%E5%86%B5"><span class="nav-number">2.4.</span> <span class="nav-text">blockcache使用情况</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E6%9C%AC%E5%9C%B0%E5%8C%96%E6%AF%94%E4%BE%8B"><span class="nav-number">2.5.</span> <span class="nav-text">文件本地化比例</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#gc%E6%97%B6%E9%97%B4"><span class="nav-number">2.6.</span> <span class="nav-text">gc时间</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B6%E5%AE%83"><span class="nav-number">2.7.</span> <span class="nav-text">其它</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%A8%E7%9B%91%E6%8E%A7%E6%8C%87%E6%A0%87"><span class="nav-number">3.</span> <span class="nav-text">表监控指标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8A%A5%E8%AD%A6%E8%AE%BE%E7%BD%AE"><span class="nav-number">4.</span> <span class="nav-text">报警设置</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/03/hbase%20jmx%E5%B8%B8%E7%94%A8%E7%9B%91%E6%8E%A7%E6%8C%87%E6%A0%87/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hbase jmx常用监控指标
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-03 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-03T00:00:00+08:00">2022-08-03</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-06 14:27:46" itemprop="dateModified" datetime="2022-09-06T14:27:46+08:00">2022-09-06</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h3 id="Master监控指标"><a href="#Master监控指标" class="headerlink" title="Master监控指标"></a>Master监控指标</h3><span id="more"></span>
+<p><a target="_blank" rel="noopener" href="http://master_host:16010/jmx">http://master_host:16010/jmx</a></p>
+<table>
+<thead>
+<tr>
+<th align="left">指标</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">clusterRequests</td>
+<td align="left">集群请求总数</td>
+</tr>
+</tbody></table>
+<img src="/images/hbase_master.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="RegionServer监控指标"><a href="#RegionServer监控指标" class="headerlink" title="RegionServer监控指标"></a>RegionServer监控指标</h3><p><a target="_blank" rel="noopener" href="http://regionserver_host:16030/jmx">http://regionserver_host:16030/jmx</a></p>
+<h4 id="regionserver包含对象"><a href="#regionserver包含对象" class="headerlink" title="regionserver包含对象"></a>regionserver包含对象</h4><table>
+<thead>
+<tr>
+<th align="left">指标</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">regionCount</td>
+<td align="left">Regionserver管理region数量</td>
+</tr>
+<tr>
+<td align="left">storeFileCount</td>
+<td align="left">Regionserver所管理的storefile个数</td>
+</tr>
+<tr>
+<td align="left">storeCount</td>
+<td align="left">该regionserver所管理的store个数</td>
+</tr>
+<tr>
+<td align="left">storeFileSize</td>
+<td align="left">Regionserver管理的storefile大小</td>
+</tr>
+<tr>
+<td align="left">hlogFileCount</td>
+<td align="left">WAL文件个数</td>
+</tr>
+</tbody></table>
+<h4 id="负载"><a href="#负载" class="headerlink" title="负载"></a>负载</h4><table>
+<thead>
+<tr>
+<th align="left">指标</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">totalRequestCount</td>
+<td align="left">收到的请求总数</td>
+</tr>
+<tr>
+<td align="left">readRequestCount</td>
+<td align="left">收到的读请求数</td>
+</tr>
+<tr>
+<td align="left">writeRequestCount</td>
+<td align="left">收到的写请求数</td>
+</tr>
+</tbody></table>
+<h4 id="连接与队列"><a href="#连接与队列" class="headerlink" title="连接与队列"></a>连接与队列</h4><table>
+<thead>
+<tr>
+<th align="left">指标</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">numOpenConnections</td>
+<td align="left">打开的连接数</td>
+</tr>
+<tr>
+<td align="left">numActiveHandler</td>
+<td align="left">rpc handler数</td>
+</tr>
+<tr>
+<td align="left">numCallsInGeneralQueue</td>
+<td align="left">当前排队的用户请求数</td>
+</tr>
+<tr>
+<td align="left">numCallsInReplicationQueue</td>
+<td align="left">从复制接收到的当前排队操作数</td>
+</tr>
+<tr>
+<td align="left">numCallsInPriorityQueue</td>
+<td align="left">当前排队的优先级(内部管理)请求的数量</td>
+</tr>
+<tr>
+<td align="left">flushQueueLength</td>
+<td align="left">memstore刷新队列的当前深度.如果增加,我们将落后于将memstores清除到HDFS</td>
+</tr>
+<tr>
+<td align="left">compactionQueueLength</td>
+<td align="left">压缩请求队列的当前深度.如果增加,我们将落后于storefile压缩</td>
+</tr>
+</tbody></table>
+<h4 id="blockcache使用情况"><a href="#blockcache使用情况" class="headerlink" title="blockcache使用情况"></a>blockcache使用情况</h4><table>
+<thead>
+<tr>
+<th align="left">指标</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">blockCacheHitCount</td>
+<td align="left">块缓存命中数</td>
+</tr>
+<tr>
+<td align="left">blockCacheMissCount</td>
+<td align="left">块缓存未命中数</td>
+</tr>
+<tr>
+<td align="left">blockCacheExpressHitPercent</td>
+<td align="left">开启缓存的请求命中缓存的时间百分比</td>
+</tr>
+</tbody></table>
+<h4 id="文件本地化比例"><a href="#文件本地化比例" class="headerlink" title="文件本地化比例"></a>文件本地化比例</h4><table>
+<thead>
+<tr>
+<th align="left">指标</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">percentFilesLocal</td>
+<td align="left">可以从本地DataNode读取的存储文件数据的百分比,0-100</td>
+</tr>
+</tbody></table>
+<h4 id="gc时间"><a href="#gc时间" class="headerlink" title="gc时间"></a>gc时间</h4><table>
+<thead>
+<tr>
+<th align="left">指标</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">GcTimeMillis</td>
+<td align="left">垃圾收集所花费的时间,以毫秒为单位</td>
+</tr>
+<tr>
+<td align="left">GcTimeMillisParNew</td>
+<td align="left">年轻代垃圾回收所花费的时间,以毫秒为单位</td>
+</tr>
+<tr>
+<td align="left">GcTimeMillisConcurrentMarkSweep</td>
+<td align="left">老年代垃圾回收所花费的时间,以毫秒为单位</td>
+</tr>
+</tbody></table>
+<h4 id="其它"><a href="#其它" class="headerlink" title="其它"></a>其它</h4><table>
+<thead>
+<tr>
+<th align="left">指标</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">updatesBlockedTime</td>
+<td align="left">已阻止更新的毫秒数,因此可以刷新memstore</td>
+</tr>
+<tr>
+<td align="left">OpenFileDescriptorCount</td>
+<td align="left">当前机器打开文件数</td>
+</tr>
+<tr>
+<td align="left">FreePhysicalMemorySize</td>
+<td align="left">空闲虚物理内存大小</td>
+</tr>
+<tr>
+<td align="left">AvailableProcessors</td>
+<td align="left">可用cpu个数</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">splitRequestCount</td>
+<td align="left">region分裂请求次数</td>
+</tr>
+<tr>
+<td align="left">slowGetCount</td>
+<td align="left">请求完成时间超过1000ms的次数</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">receivedBytes</td>
+<td align="left">收到数据量</td>
+</tr>
+<tr>
+<td align="left">sentBytes</td>
+<td align="left">发出数据量</td>
+</tr>
+<tr>
+<td align="left">HeapMemoryUsage</td>
+<td align="left">堆内存使用量</td>
+</tr>
+<tr>
+<td align="left">SyncTime_mean</td>
+<td align="left">WAL写hdfs的平均时间</td>
+</tr>
+<tr>
+<td align="left">memStoreSize</td>
+<td align="left">Regionserver管理的总memstoresize</td>
+</tr>
+<tr>
+<td align="left">staticIndexSize</td>
+<td align="left">Regionserver所管理的表索引大小</td>
+</tr>
+<tr>
+<td align="left">hlogFileSize</td>
+<td align="left">WAL文件大小</td>
+</tr>
+<tr>
+<td align="left">java.lang:type=MemoryPool,name=Par Eden Space</td>
+<td align="left">Eden区使用空间大小</td>
+</tr>
+<tr>
+<td align="left">java.lang:type=MemoryPool,name=CMS Old Gen</td>
+<td align="left">老年代内存大小</td>
+</tr>
+<tr>
+<td align="left">java.lang:type=MemoryPool,name=Par Survivor Space</td>
+<td align="left">Survivor内存大小</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">GcCount</td>
+<td align="left">GC总次数</td>
+</tr>
+<tr>
+<td align="left">GcCountConcurrentMarkSweep</td>
+<td align="left">ConcurrentMarkSweep总次数</td>
+</tr>
+<tr>
+<td align="left">mutationsWithoutWALCount</td>
+<td align="left">提交的写入计数,带有指示它们应该绕过预写日志的标志</td>
+</tr>
+<tr>
+<td align="left">ThreadsBlocked</td>
+<td align="left">Block线程数</td>
+</tr>
+<tr>
+<td align="left">ThreadsWaiting</td>
+<td align="left">等待线程数</td>
+</tr>
+<tr>
+<td align="left">ThreadsRunnable</td>
+<td align="left">Runnable线程数</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">compactedCellsCount</td>
+<td align="left">合并cell个数</td>
+</tr>
+<tr>
+<td align="left">majorCompactedCellsCount</td>
+<td align="left">大合并cell个数</td>
+</tr>
+<tr>
+<td align="left">flushedCellsSize</td>
+<td align="left">flush到磁盘的大小</td>
+</tr>
+<tr>
+<td align="left">blockedRequestCount</td>
+<td align="left">因memstore大于阈值而引发flush的次数</td>
+</tr>
+<tr>
+<td align="left">splitRequestCount</td>
+<td align="left">region分裂请求次数</td>
+</tr>
+<tr>
+<td align="left">splitSuccessCounnt</td>
+<td align="left">region分裂成功次数</td>
+</tr>
+<tr>
+<td align="left">receivedBytes</td>
+<td align="left">收到数据量,bytes</td>
+</tr>
+<tr>
+<td align="left">sentBytes</td>
+<td align="left">同上</td>
+</tr>
+<tr>
+<td align="left">compactionQueueSize</td>
+<td align="left">compaction Queue的大小</td>
+</tr>
+<tr>
+<td align="left">compactionSize_avg_time</td>
+<td align="left">履行一次Compaction的数据大小,ms</td>
+</tr>
+<tr>
+<td align="left">compactionSize_num_ops</td>
+<td align="left">履行compaction的次数</td>
+</tr>
+<tr>
+<td align="left">compactionTime_avg_time</td>
+<td align="left">均匀履行一次Compaction的时间,ms</td>
+</tr>
+<tr>
+<td align="left">compactionTime_num_ops</td>
+<td align="left">履行compaction的次数</td>
+</tr>
+</tbody></table>
+<h3 id="表监控指标"><a href="#表监控指标" class="headerlink" title="表监控指标"></a>表监控指标</h3><p><code>Namespace_$&#123;namespace&#125;_table_$&#123;table&#125;_region_$&#123;region&#125;_metric</code>做前缀</p>
+<table>
+<thead>
+<tr>
+<th align="left">指标</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>Namespace_$&#123;namespace&#125;_table_$&#123;table&#125;_region_$&#123;region&#125;_metric_storeCount</code></td>
+<td align="left">Store个数</td>
+</tr>
+<tr>
+<td align="left"><code>Namespace_$&#123;namespace&#125;_table_$&#123;table&#125;_region_$&#123;region&#125;_metric_storeFileCount</code></td>
+<td align="left">Storefile个数</td>
+</tr>
+<tr>
+<td align="left"><code>Namespace_$&#123;namespace&#125;_table_$&#123;table&#125;_region_$&#123;region&#125;_metric_memStoreSize</code></td>
+<td align="left">Memstore大小</td>
+</tr>
+<tr>
+<td align="left"><code>Namespace_$&#123;namespace&#125;_table_$&#123;table&#125;_region_$&#123;region&#125;_metric_storeFileSize</code></td>
+<td align="left">Storefile大小</td>
+</tr>
+<tr>
+<td align="left"><code>Namespace_$&#123;namespace&#125;_table_$&#123;table&#125;_region_$&#123;region&#125;_metric_compactionsCompletedCount</code></td>
+<td align="left">合并完成次数</td>
+</tr>
+<tr>
+<td align="left"><code>Namespace_$&#123;namespace&#125;_table_$&#123;table&#125;_region_$&#123;region&#125;_metric_numBytesCompactedCount</code></td>
+<td align="left">合并文件总大小</td>
+</tr>
+<tr>
+<td align="left"><code>Namespace_$&#123;namespace&#125;_table_$&#123;table&#125;_region_$&#123;region&#125;_metric_numFilesCompactedCount</code></td>
+<td align="left">合并完成文件个数</td>
+</tr>
+</tbody></table>
+<h3 id="报警设置"><a href="#报警设置" class="headerlink" title="报警设置"></a>报警设置</h3><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>报警策略</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>totalRequestCount</td>
+<td>all(#3) &gt; 50000</td>
+<td>负载过大</td>
+</tr>
+<tr>
+<td>compactionQueueLength</td>
+<td>all(#3) &gt; 100</td>
+<td>压缩队列过长</td>
+</tr>
+<tr>
+<td>percentFilesLocal</td>
+<td>all(#3) &lt;= 90</td>
+<td>文件本地化低于95%</td>
+</tr>
+<tr>
+<td>blockCacheExpressHitPercent</td>
+<td>all(#3) &lt;= 90</td>
+<td>blockCache命中率低于95%</td>
+</tr>
+<tr>
+<td>GcTimeMillisConcurrentMarkSweep</td>
+<td>all(#3) &gt; 200</td>
+<td>GC时间过长</td>
+</tr>
+<tr>
+<td>storeFileCount</td>
+<td>all(#3) &gt; 1000</td>
+<td>StoreFile过多,需要考虑compact</td>
+</tr>
+</tbody></table>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hbase/" rel="tag"># hbase</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/03/hbase%20scan%E7%94%A8%E6%B3%95/" rel="prev" title="hbase scan用法">
+                  <i class="fa fa-chevron-left"></i> hbase scan用法
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/03/hbase%20compaction/" rel="next" title="hbase compaction">
+                  hbase compaction <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

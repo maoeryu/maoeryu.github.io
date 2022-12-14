@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="hudi版本0.12.0https:&#x2F;&#x2F;hudi.apache.org&#x2F;docs&#x2F;concepts.html Hudi 提供了Hudi 表的概念.这些表支持CRUD操作,可以利用现有的大数据集群比如HDFS做数据文件存储,然后使用SparkSQL或Hive等分析引擎进行数据分析查询.   Hudi表的三个主要组件:  有序的时间轴元数据,类似于数据库事务日志. 分层布局的数据文件:实际写入表中的数">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hudi概念">
+<meta property="og:url" content="https://maoeryu.github.io/2022/10/21/hudi%E6%A6%82%E5%BF%B5/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="hudi版本0.12.0https:&#x2F;&#x2F;hudi.apache.org&#x2F;docs&#x2F;concepts.html Hudi 提供了Hudi 表的概念.这些表支持CRUD操作,可以利用现有的大数据集群比如HDFS做数据文件存储,然后使用SparkSQL或Hive等分析引擎进行数据分析查询.   Hudi表的三个主要组件:  有序的时间轴元数据,类似于数据库事务日志. 分层布局的数据文件:实际写入表中的数">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1034.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1035.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1036.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1037.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1161.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1162.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1163.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1164.gif">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1165.gif">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1166.gif">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1038.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1167.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1168.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1169.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1170.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1171.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1172.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1173.png">
+<meta property="article:published_time" content="2022-10-20T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-10-27T05:32:15.241Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hudi">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1034.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/10/21/hudi%E6%A6%82%E5%BF%B5/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hudi概念 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Timeline-%E6%97%B6%E9%97%B4%E7%BA%BF"><span class="nav-number">1.</span> <span class="nav-text">Timeline(时间线)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A1%A8%E5%92%8C%E6%9F%A5%E8%AF%A2%E7%B1%BB%E5%9E%8B"><span class="nav-number">2.</span> <span class="nav-text">表和查询类型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A1%A8%E7%B1%BB%E5%9E%8B"><span class="nav-number">2.1.</span> <span class="nav-text">表类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Copy-On-Write"><span class="nav-number">2.1.1.</span> <span class="nav-text">Copy-On-Write</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Merge-On-Read"><span class="nav-number">2.1.2.</span> <span class="nav-text">Merge On Read</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2%E7%B1%BB%E5%9E%8B"><span class="nav-number">2.2.</span> <span class="nav-text">查询类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BF%AB%E7%85%A7%E6%9F%A5%E8%AF%A2"><span class="nav-number">2.2.1.</span> <span class="nav-text">快照查询</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A2%9E%E9%87%8F%E6%9F%A5%E8%AF%A2"><span class="nav-number">2.2.2.</span> <span class="nav-text">增量查询</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%BB%E5%8F%96%E4%BC%98%E5%8C%96%E6%9F%A5%E8%AF%A2"><span class="nav-number">2.2.3.</span> <span class="nav-text">读取优化查询</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95"><span class="nav-number">3.</span> <span class="nav-text">索引</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95%E7%B1%BB%E5%9E%8B"><span class="nav-number">3.1.</span> <span class="nav-text">索引类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%A8%E5%B1%80%E7%B4%A2%E5%BC%95"><span class="nav-number">3.1.1.</span> <span class="nav-text">全局索引</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9D%9E%E5%85%A8%E5%B1%80%E7%B4%A2%E5%BC%95"><span class="nav-number">3.1.2.</span> <span class="nav-text">非全局索引</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95%E7%AD%96%E7%95%A5"><span class="nav-number">3.2.</span> <span class="nav-text">索引策略</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9%E4%BA%8B%E5%AE%9E%E8%A1%A8%E7%9A%84%E5%BB%B6%E8%BF%9F%E6%9B%B4%E6%96%B0"><span class="nav-number">3.2.1.</span> <span class="nav-text">对事实表的延迟更新</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E8%A1%A8%E4%B8%AD%E7%9A%84%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%E5%88%A0%E9%99%A4"><span class="nav-number">3.2.2.</span> <span class="nav-text">事件表中的重复数据删除</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9A%8F%E6%9C%BA%E6%9B%B4%E6%96%B0-%E5%88%A0%E9%99%A4%E7%BB%B4%E5%BA%A6%E8%A1%A8"><span class="nav-number">3.2.3.</span> <span class="nav-text">随机更新&#x2F;删除维度表</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E5%B8%83%E5%B1%80"><span class="nav-number">4.</span> <span class="nav-text">文件布局</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Metadata-Table-%E5%85%83%E6%95%B0%E6%8D%AE%E8%A1%A8"><span class="nav-number">5.</span> <span class="nav-text">Metadata Table(元数据表)</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%83%E6%95%B0%E6%8D%AE%E8%A1%A8%E7%9A%84%E5%8A%A8%E6%9C%BA"><span class="nav-number">5.1.</span> <span class="nav-text">元数据表的动机</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%94%AF%E6%8C%81%E5%A4%9A%E6%A8%A1%E6%80%81%E7%B4%A2%E5%BC%95"><span class="nav-number">5.1.1.</span> <span class="nav-text">支持多模态索引</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E7%94%A8-Hudi-%E5%85%83%E6%95%B0%E6%8D%AE%E8%A1%A8%E5%92%8C%E5%A4%9A%E6%A8%A1%E5%BC%8F%E7%B4%A2%E5%BC%95"><span class="nav-number">5.2.</span> <span class="nav-text">启用 Hudi 元数据表和多模式索引</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="nav-number">5.3.</span> <span class="nav-text">部署注意事项</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B7%E6%9C%89%E5%86%85%E8%81%94%E8%A1%A8%E6%9C%8D%E5%8A%A1%E7%9A%84%E5%8D%95%E4%B8%AA%E5%86%99%E5%85%A5%E5%99%A8"><span class="nav-number">5.3.1.</span> <span class="nav-text">具有内联表服务的单个写入器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B7%E6%9C%89%E5%BC%82%E6%AD%A5%E8%A1%A8%E6%9C%8D%E5%8A%A1%E7%9A%84%E5%8D%95%E4%B8%AA%E5%86%99%E5%85%A5%E5%99%A8"><span class="nav-number">5.3.2.</span> <span class="nav-text">具有异步表服务的单个写入器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E7%BC%96%E5%86%99%E5%99%A8"><span class="nav-number">5.3.3.</span> <span class="nav-text">多编写器</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%99%E6%93%8D%E4%BD%9C"><span class="nav-number">6.</span> <span class="nav-text">写操作</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B1%BB%E5%9E%8B"><span class="nav-number">6.1.</span> <span class="nav-text">操作类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#UPSERT"><span class="nav-number">6.1.1.</span> <span class="nav-text">UPSERT</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#INSERT"><span class="nav-number">6.1.2.</span> <span class="nav-text">INSERT</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BULK-INSERT"><span class="nav-number">6.1.3.</span> <span class="nav-text">BULK_INSERT</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DELETE"><span class="nav-number">6.1.4.</span> <span class="nav-text">DELETE</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Soft-Deletes-%E8%BD%AF%E5%88%A0%E9%99%A4"><span class="nav-number">6.1.4.1.</span> <span class="nav-text">Soft Deletes(软删除)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hard-Deletes-%E7%A1%AC%E5%88%A0%E9%99%A4"><span class="nav-number">6.1.4.2.</span> <span class="nav-text">Hard Deletes(硬删除)</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Writing-path-%E5%86%99%E4%BD%9C%E8%B7%AF%E5%BE%84"><span class="nav-number">6.2.</span> <span class="nav-text">Writing path(写作路径)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Schema-Evolution-%E6%A8%A1%E5%BC%8F%E6%BC%94%E5%8F%98"><span class="nav-number">7.</span> <span class="nav-text">Schema Evolution(模式演变)</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%BA%E6%99%AF"><span class="nav-number">7.1.</span> <span class="nav-text">场景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SparkSQL-Schema-%E6%BC%94%E5%8F%98%E5%92%8C%E8%AF%AD%E6%B3%95%E6%8F%8F%E8%BF%B0"><span class="nav-number">7.2.</span> <span class="nav-text">SparkSQL Schema 演变和语法描述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Adding-Columns-%E6%B7%BB%E5%8A%A0%E5%88%97"><span class="nav-number">7.2.1.</span> <span class="nav-text">Adding Columns(添加列)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E"><span class="nav-number">7.2.1.1.</span> <span class="nav-text">参数说明</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#col-spec"><span class="nav-number">7.2.1.1.1.</span> <span class="nav-text">col_spec</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Altering-Columns-%E6%94%B9%E5%8F%98%E5%88%97"><span class="nav-number">7.2.2.</span> <span class="nav-text">Altering Columns(改变列)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E-1"><span class="nav-number">7.2.2.1.</span> <span class="nav-text">参数说明</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#column-type-change"><span class="nav-number">7.2.2.2.</span> <span class="nav-text">column type change</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Deleting-Columns-%E5%88%A0%E9%99%A4%E5%88%97"><span class="nav-number">7.2.3.</span> <span class="nav-text">Deleting Columns(删除列)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Changing-Column-Name-%E6%9B%B4%E6%94%B9%E5%88%97%E5%90%8D"><span class="nav-number">7.2.4.</span> <span class="nav-text">Changing Column Name(更改列名)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Modifying-Table-Properties-%E4%BF%AE%E6%94%B9%E8%A1%A8%E6%A0%BC%E5%B1%9E%E6%80%A7"><span class="nav-number">7.2.5.</span> <span class="nav-text">Modifying Table Properties(修改表格属性)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Changing-a-Table-Name-%E6%9B%B4%E6%94%B9%E8%A1%A8%E5%90%8D"><span class="nav-number">7.2.6.</span> <span class="nav-text">Changing a Table Name(更改表名)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E7%AE%B1%E5%8D%B3%E7%94%A8%E7%9A%84%E6%A8%A1%E5%BC%8F%E6%BC%94%E5%8F%98"><span class="nav-number">7.3.</span> <span class="nav-text">开箱即用的模式演变</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-number">7.3.1.</span> <span class="nav-text">示例</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Key-Generation"><span class="nav-number">8.</span> <span class="nav-text">Key Generation</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E9%85%8D%E7%BD%AE"><span class="nav-number">8.1.</span> <span class="nav-text">常见配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E5%99%A8%E7%B1%BB"><span class="nav-number">8.2.</span> <span class="nav-text">生成器类</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SimpleKeyGenerator"><span class="nav-number">8.2.1.</span> <span class="nav-text">SimpleKeyGenerator</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ComplexKeyGenerator-%E5%A4%8D%E6%9D%82%E5%AF%86%E9%92%A5%E7%94%9F%E6%88%90%E5%99%A8"><span class="nav-number">8.2.2.</span> <span class="nav-text">ComplexKeyGenerator(复杂密钥生成器)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GlobalDeleteKeyGenerator-%E5%85%A8%E5%B1%80%E5%88%A0%E9%99%A4%E5%AF%86%E9%92%A5%E7%94%9F%E6%88%90%E5%99%A8"><span class="nav-number">8.2.3.</span> <span class="nav-text">GlobalDeleteKeyGenerator(全局删除密钥生成器)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NonpartitionedKeyGenerator-%E9%9D%9E%E5%88%86%E5%8C%BA%E5%AF%86%E9%92%A5%E7%94%9F%E6%88%90%E5%99%A8"><span class="nav-number">8.2.4.</span> <span class="nav-text">NonpartitionedKeyGenerator(非分区密钥生成器)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CustomKeyGenerator-%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AF%86%E9%92%A5%E7%94%9F%E6%88%90%E5%99%A8"><span class="nav-number">8.2.5.</span> <span class="nav-text">CustomKeyGenerator(自定义密钥生成器)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TimestampBasedKeyGenerator"><span class="nav-number">8.2.6.</span> <span class="nav-text">TimestampBasedKeyGenerator</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">8.2.6.1.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E5%80%BC"><span class="nav-number">8.2.6.2.</span> <span class="nav-text">示例值</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Timestamp-is-GMT"><span class="nav-number">8.2.6.2.1.</span> <span class="nav-text">Timestamp is GMT</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Timestamp-is-DATE-STRING"><span class="nav-number">8.2.6.2.2.</span> <span class="nav-text">Timestamp is DATE_STRING</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Scalar-examples"><span class="nav-number">8.2.6.2.3.</span> <span class="nav-text">Scalar examples</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#ISO8601WithMsZ-with-Single-Input-format"><span class="nav-number">8.2.6.2.4.</span> <span class="nav-text">ISO8601WithMsZ with Single Input format</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#ISO8601WithMsZ-with-Multiple-Input-formats"><span class="nav-number">8.2.6.2.5.</span> <span class="nav-text">ISO8601WithMsZ with Multiple Input formats</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#ISO8601NoMs-with-offset-using-multiple-input-formats"><span class="nav-number">8.2.6.2.6.</span> <span class="nav-text">ISO8601NoMs with offset using multiple input formats</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Input-as-short-date-string-and-expect-date-in-date-format"><span class="nav-number">8.2.6.2.7.</span> <span class="nav-text">Input as short date string and expect date in date format</span></a></li></ol></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E6%8E%A7%E5%88%B6"><span class="nav-number">9.</span> <span class="nav-text">并发控制</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%AF%E6%8C%81%E7%9A%84%E5%B9%B6%E5%8F%91%E6%8E%A7%E5%88%B6"><span class="nav-number">9.1.</span> <span class="nav-text">支持的并发控制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#MVCC"><span class="nav-number">9.1.1.</span> <span class="nav-text">MVCC</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NEW-OPTIMISTIC-CONCURRENCY"><span class="nav-number">9.1.2.</span> <span class="nav-text">[NEW] OPTIMISTIC CONCURRENCY</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%95%E4%B8%AA%E5%86%99%E5%85%A5%E4%BF%9D%E8%AF%81"><span class="nav-number">9.2.</span> <span class="nav-text">单个写入保证</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E4%B8%AA%E5%86%99%E5%85%A5%E4%BF%9D%E8%AF%81"><span class="nav-number">9.3.</span> <span class="nav-text">多个写入保证</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E7%94%A8%E5%A4%9A%E5%86%99"><span class="nav-number">9.4.</span> <span class="nav-text">启用多写</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Datasource%E5%86%99%E5%85%A5"><span class="nav-number">9.5.</span> <span class="nav-text">Datasource写入</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DeltaStreamer"><span class="nav-number">9.6.</span> <span class="nav-text">DeltaStreamer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E4%B9%90%E8%A7%82%E5%B9%B6%E5%8F%91%E6%8E%A7%E5%88%B6"><span class="nav-number">9.7.</span> <span class="nav-text">使用乐观并发控制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A6%81%E7%94%A8%E5%A4%9A%E5%86%99"><span class="nav-number">9.8.</span> <span class="nav-text">禁用多写</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="nav-number">9.8.1.</span> <span class="nav-text">注意事项</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/10/21/hudi%E6%A6%82%E5%BF%B5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hudi概念
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-10-21 00:00:00" itemprop="dateCreated datePublished" datetime="2022-10-21T00:00:00+08:00">2022-10-21</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-10-27 13:32:15" itemprop="dateModified" datetime="2022-10-27T13:32:15+08:00">2022-10-27</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>hudi版本0.12.0<br><a target="_blank" rel="noopener" href="https://hudi.apache.org/docs/concepts.html">https://hudi.apache.org/docs/concepts.html</a></p>
+<p>Hudi 提供了Hudi 表的概念.<br>这些表支持CRUD操作,可以利用现有的大数据集群比如HDFS做数据文件存储,然后使用SparkSQL或Hive等分析引擎进行数据分析查询.</p>
+<img src="/images/fly1034.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>Hudi表的三个主要组件:</p>
+<ol>
+<li>有序的时间轴元数据,类似于数据库事务日志.</li>
+<li>分层布局的数据文件:实际写入表中的数据.</li>
+<li>索引(多种实现方式):映射包含指定记录的数据集.</li>
+</ol>
+<span id="more"></span>
+<h1 id="Timeline-时间线"><a href="#Timeline-时间线" class="headerlink" title="Timeline(时间线)"></a>Timeline(时间线)</h1><p>Hudi 核心是在所有的表中维护了一个包含在不同的即时(Instant)时间对数据集操作(比如新增/修改或删除)的时间轴(Timeline),在每一次对Hudi表的数据集操作时都会在该表的Timeline上生成一个Instant,从而可以实现在仅查询某个时间点之后成功提交的数据,或是仅查询某个时间点之前的数据,有效避免了扫描更大时间范围的数据.<br>同时,可以高效地只查询更改前的文件(如在某个Instant提交了更改操作后,仅query某个时间点之前的数据,则仍可以query修改前的数据).</p>
+<img src="/images/fly1035.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>Timeline 是 Hudi 用来管理提交(commit)的抽象,每个 commit 都绑定一个固定时间戳,分散到时间线上.<br>在 Timeline 上,每个 commit 被抽象为一个 HoodieInstant,一个 instant 记录了一次提交 (commit) 的行为/时间戳/和状态.<br>HUDI 的读写 API 通过 Timeline 的接口可以方便的在 commits 上进行条件筛选,对 history 和 on-going 的 commits 应用各种策略,快速筛选出需要操作的目标 commit.</p>
+<p>Hudi Instant 由以下组件组成:</p>
+<ol>
+<li>Instant action: 在table上执行的操作类型</li>
+<li>Instant time:即时时间通常是一个时间戳(例如:20190117010349),它按照动作开始时间的顺序单调递增.</li>
+<li>state: 瞬间的当前状态</li>
+</ol>
+<p>Hudi 保证在时间轴上执行的动作是原子的并且基于即时时间的时间轴是一致的.<br>执行的主要actions包括:</p>
+<ol>
+<li>COMMITS: 提交表示将一批记录原子写入表中.</li>
+<li>CLEANS: 删除表格中不再需要的旧版本文件的后台活动.</li>
+<li>DELTA_COMMIT: 增量提交是指将一批记录原子写入MergeOnRead 类型的表,其中部分/全部数据可以仅写入增量日志.</li>
+<li>COMPACTION: 在 Hudi 中协调差异数据结构的后台活动,例如:将更新从基于行的日志文件移动到列格式.<br>在内部,压缩表现为时间线上的特殊提交</li>
+<li>ROLLBACK: 表示提交/增量提交不成功并回滚,删除此类写入期间产生的任何部分文件</li>
+<li>SAVEPOINT: 将某些文件组标记为&quot;已保存&quot;,这样清洁器就不会删除它们.<br>它有助于将表还原到时间线上的某个点,以防发生灾难/数据恢复情况.</li>
+</ol>
+<p>任何给定的瞬间都可以处于以下状态之一:</p>
+<ol>
+<li>REQUESTED: 表示一个动作已被安排,但尚未启动</li>
+<li>INFLIGHT: 表示当前正在执行该操作</li>
+<li>COMPLETED: 表示时间线上的动作完成</li>
+</ol>
+<img src="/images/fly1036.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>上图中采用时间(小时)作为分区字段,从 10:00 开始陆续产生各种 commits,10:20 来了一条 9:00 的数据,该数据仍然可以落到 9:00 对应的分区,通过 timeline 直接消费 10:00 之后的增量更新(只消费有新 commits 的 group),那么这条延迟的数据仍然可以被消费到.<br>时间轴(Timeline)的实现类(位于hudi-common-xx.jar中),时间轴相关的实现类位于org.apache.hudi.common.table.timeline包下.</p>
+<img src="/images/fly1037.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h1 id="表和查询类型"><a href="#表和查询类型" class="headerlink" title="表和查询类型"></a>表和查询类型</h1><p>Hudi 表类型定义了如何在 DFS 上对数据进行索引和布局,以及如何在这种组织之上实现上述原语和时间线活动(即如何写入数据).<br>反过来,query types定义底层数据如何暴露给查询(即如何读取数据).</p>
+<table>
+<thead>
+<tr>
+<th align="left">表类型</th>
+<th align="left">支持的查询类型</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Copy On Write(写入时复制)</td>
+<td align="left">Snapshot Queries(快照查询)+Incremental Queries(增量查询)</td>
+</tr>
+<tr>
+<td align="left">Merge On Read(读取时合并)</td>
+<td align="left">快照查询+增量查询+Read Optimized Queries(读优化查询)</td>
+</tr>
+</tbody></table>
+<h2 id="表类型"><a href="#表类型" class="headerlink" title="表类型"></a>表类型</h2><p>Hudi 支持以下表格类型:</p>
+<ol>
+<li>Copy-On-Write<br>仅使用列式文件格式(例如parquet)存储数据.<br>通过在写入期间执行同步合并来简单地更新文件并重写文件.</li>
+<li>Merge On Read<br>使用列(例如parquet)+基于行(例如 avro)文件格式的组合存储数据.<br>更新被记录到增量文件中,然后被压缩以同步或异步生成新版本的列文件.</li>
+</ol>
+<p>下表总结了这两种表类型之间的权衡.</p>
+<table>
+<thead>
+<tr>
+<th align="left">权衡</th>
+<th align="left">Copy-On-Write</th>
+<th align="left">Merge On Read</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">数据延迟</td>
+<td align="left">更高</td>
+<td align="left">降低</td>
+</tr>
+<tr>
+<td align="left">查询延迟</td>
+<td align="left">降低</td>
+<td align="left">更高</td>
+</tr>
+<tr>
+<td align="left">更新成本(I/O)</td>
+<td align="left">更高(重写整个parquet)</td>
+<td align="left">较低(附加到增量日志)</td>
+</tr>
+<tr>
+<td align="left">parquet文件大小</td>
+<td align="left">更小(高更新(I/0)成本)</td>
+<td align="left">更大(更新成本低)</td>
+</tr>
+<tr>
+<td align="left">写放大</td>
+<td align="left">更高</td>
+<td align="left">较低(取决于压缩策略)</td>
+</tr>
+</tbody></table>
+<h3 id="Copy-On-Write"><a href="#Copy-On-Write" class="headerlink" title="Copy-On-Write"></a>Copy-On-Write</h3><p>在数据写入的时候,复制一份原来的拷贝,在其基础上添加新数据.<br>正在读数据的请求,读取的是最近的完整副本.</p>
+<p>对于这种 Table,提供了两种查询:</p>
+<ol>
+<li>Snapshot Query: 查询最近一次 snapshot 的数据,也就是最新的数据.</li>
+<li>Incrementabl Query:用户需要指定一个 commit time,然后 Hudi 会扫描文件中的记录,过滤出 commit_time &gt; 用户指定的 commit time 的记录.</li>
+</ol>
+<p>COW表主要使用列式文件格式(Parquet)存储数据,在写入数据过程中,执行同步合并,更新数据版本并重写数据文件,类似RDBMS中的B-Tree更新.</p>
+<ol>
+<li>更新: 在更新记录时,Hudi会先找到包含更新数据的文件,然后再使用更新值(最新的数据)重写该文件,包含其他记录的文件保持不变.<br>当突然有大量写操作时会导致重写大量文件,从而导致极大的I/O开销.</li>
+<li>读取: 在读取数据集时,通过读取最新的数据文件来获取最新的更新,此存储类型适用于少量写入和大量读取的场景.<br>Copy On Write 类型表每次写入都会生成一个新的持有 base file(对应写入的 instant time) 的 FileSlice.用户在 snapshot 读取的时候会扫描所有最新的 FileSlice 下的 base file.</li>
+</ol>
+<p>当数据写入写时复制表并在其上运行两个查询时.</p>
+<img src="/images/fly1161.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>随着数据的写入,对现有文件组的更新会为该文件组生成一个新的切片,该文件组标记有提交即时时间,而插入分配一个新文件组并为该文件组写入其第一个切片.<br>这些文件切片及其提交即时时间在上面用颜色编码.<br>针对此类表运行的 SQL 查询(例如:select count(*)计算该分区中的总记录),首先检查最新提交的时间线并过滤除每个文件组的最新文件切片之外的所有文件.<br>如您所见,旧查询不会看到当前inflight提交的文件以粉红色进行颜色编码,而是在提交获取新数据后开始的新查询.<br>因此查询不受任何写入失败/部分写入的影响,并且只在提交的数据上运行.</p>
+<ol>
+<li>一流的支持在文件级别自动更新数据,而不是重写整个表/分区</li>
+<li>能够增量使用更改,而不是浪费扫描或摸索启发式</li>
+<li>严格控制文件大小以保持出色的查询性能(小文件严重损害查询性能).</li>
+</ol>
+<h3 id="Merge-On-Read"><a href="#Merge-On-Read" class="headerlink" title="Merge On Read"></a>Merge On Read</h3><p>新插入的数据存储在delta log 中,定期再将delta log合并进行parquet数据文件.<br>读取数据时,会将delta log跟老的数据文件做merge,得到完整的数据返回.<br>MOR表也可以像COW表一样,忽略delta log,只读取最近的完整数据文件.</p>
+<p>下面说明了该表的工作原理,并显示了两种类型的查询 - 快照查询和读取优化查询.</p>
+<img src="/images/fly1162.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>对于这类 Table,提供了三种查询:</p>
+<ol>
+<li>Snapshot Query<br>查询最近一次 snapshot 的数据,也就是最新的数据.这里是一个行列数据混合的查询.</li>
+<li>Incrementabl Query<br>用户需要指定一个 commit time,然后 Hudi 会扫描文件中的记录,过滤出 commit_time &gt; 用户指定的 commit time 的记录.这里是一个行列数据混合的查询.</li>
+<li>Read Optimized Query<br>只查存量数据,不查增量数据,因为使用的都是列式文件格式,所以效率较高.</li>
+</ol>
+<p>MOR表是COW表的升级版,它使用列式(parquet)与行式(avro)文件混合的方式存储数据.<br>在更新记录时,类似NoSQL中的LSM-Tree更新.</p>
+<ol>
+<li>更新: 在更新记录时,仅更新到增量文件(Avro)中,然后进行异步(或同步)的compaction,最后创建列式文件(parquet)的新版本.<br>此存储类型适合频繁写的工作负载,因为新记录是以追加的模式写入增量文件中.</li>
+<li>读取: 在读取数据集时,需要先将增量文件与旧文件进行合并,然后生成列式文件成功后,再进行查询.</li>
+</ol>
+<h2 id="查询类型"><a href="#查询类型" class="headerlink" title="查询类型"></a>查询类型</h2><h3 id="快照查询"><a href="#快照查询" class="headerlink" title="快照查询"></a>快照查询</h3><ol>
+<li>查询某个增量提交操作中数据集的最新快照,会先进行动态合并最新的基本文件(Parquet)和增量文件(Avro)来提供近实时数据集(通常会存在几分钟的延迟).</li>
+<li>读取所有 partiiton 下每个 FileGroup 最新的 FileSlice 中的文件,Copy On Write 表读 parquet 文件,Merge On Read 表读 parquet + log 文件.</li>
+</ol>
+<h3 id="增量查询"><a href="#增量查询" class="headerlink" title="增量查询"></a>增量查询</h3><ol>
+<li>仅查询新写入数据集的文件,需要指定一个Commit/Compaction的即时时间(位于Timeline上的某个Instant)作为条件,来查询此条件之后的新数据.</li>
+<li>可查看自给定commit/delta commit即时操作以来新写入的数据.有效的提供变更流来启用增量数据管道.</li>
+</ol>
+<h3 id="读取优化查询"><a href="#读取优化查询" class="headerlink" title="读取优化查询"></a>读取优化查询</h3><ol>
+<li>直接查询基本文件(数据集的最新快照),其实就是列式文件(Parquet).并保证与非Hudi列式数据集相比,具有相同的列式查询性能.</li>
+<li>可查看给定的commit/compact即时操作的表的最新快照.</li>
+<li>读优化查询和快照查询相同仅访问基本文件,提供给定文件片自上次执行压缩操作以来的数据.通常查询数据的最新程度的保证取决于压缩策略.</li>
+</ol>
+<blockquote>
+<p>下表总结了不同查询类型之间的权衡.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th align="left">权衡</th>
+<th align="left">快照查询</th>
+<th align="left">读取优化查询</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">数据延迟</td>
+<td align="left">降低</td>
+<td align="left">更高</td>
+</tr>
+<tr>
+<td align="left">查询延迟</td>
+<td align="left">更高(合并基础/列文件+基于行的增量/日志文件)</td>
+<td align="left">较低(原始基础/列文件性能)</td>
+</tr>
+</tbody></table>
+<h1 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h1><p>Hudi 通过索引机制将给定的 hoodie key(record key + partition path)一致地映射到文件 id,从而提供高效的 upsert.<br>record key and file group/file id 之间的这种映射,一旦记录的第一个版本被写入文件,就永远不会改变.<br>简而言之,映射文件组包含一组记录的所有版本.</p>
+<p>对于Copy-On-Write 表,这可以实现快速 upsert/delete 操作,避免需要连接整个数据集以确定要重写哪些文件.<br>对于Merge-On-Read 表,这种设计允许 Hudi 绑定任何给定基本文件需要合并的记录数量.<br>具体来说,给定的基本文件只需要针对作为该基本文件一部分的记录的更新进行合并.<br>相反,没有索引组件的设计(例如:Apache Hive ACID)最终可能不得不将所有基本文件与所有传入的更新/删除记录合并:</p>
+<p>更新(黄色块)与基础文件(白色块)的合并成本比较<br><img src="/images/fly1163.png" style="margin-left: 0px; padding-bottom: 10px;"></p>
+<h2 id="索引类型"><a href="#索引类型" class="headerlink" title="索引类型"></a>索引类型</h2><p>目前,Hudi 支持以下索引选项.</p>
+<ol>
+<li>Bloom Index(默认)<br>使用由记录键构建的Bloom过滤器,还可以选择使用记录键范围修剪候选文件.</li>
+<li>简单索引<br>针对从存储表中提取的键执行传入更新/删除记录的精益连接.</li>
+<li>HBase 索引:管理外部 Apache HBase 表中的索引映射.</li>
+<li>自带实现:可以扩展此公共 API 以实现自定义索引.</li>
+</ol>
+<p>可以使用<code>hoodie.index.type</code>配置选项选择这些选项之一.<br>此外,还可以使用自定义索引实现<code>hoodie.index.class</code>并提供一个子类SparkHoodieIndex(对于 Apache Spark 编写器)</p>
+<p>另一个值得理解的关键方面是全局索引和非全局索引之间的区别.<br>Bloom 和 simple index 都有全局选项.<br>hoodie.index.type=GLOBAL_BLOOM<br>hoodie.index.type=GLOBAL_SIMPLE<br>HBase 索引本质上是一个全局索引.</p>
+<h3 id="全局索引"><a href="#全局索引" class="headerlink" title="全局索引"></a>全局索引</h3><p>全局索引在表的所有分区中强制执行键的唯一性,即保证表中对于给定的记录键只存在一条记录.<br>全局索引提供了更强的保证,但更新/删除成本随着表的大小而增长O(size of table),更适用于是小表.</p>
+<h3 id="非全局索引"><a href="#非全局索引" class="headerlink" title="非全局索引"></a>非全局索引</h3><p>另一方面,默认索引实现仅在表的某一个分区内强制执行此约束.<br>可以想象,非全局索引依赖于写入器在更新/删除期间为给定的记录键提供相同的一致分区路径,但可以提供更好的性能,因为索引查找操作可以O(number of records updated/deleted)很好地随写入量扩展.</p>
+<p>由于数据以不同的数量/速度和不同的访问模式进入,因此不同的索引可用于不同的工作负载类型.</p>
+<h2 id="索引策略"><a href="#索引策略" class="headerlink" title="索引策略"></a>索引策略</h2><h3 id="对事实表的延迟更新"><a href="#对事实表的延迟更新" class="headerlink" title="对事实表的延迟更新"></a>对事实表的延迟更新</h3><p>许多公司将大量事务数据存储在 NoSQL 数据存储中.<br>例如,拼车情况下的行程表/股票买卖/电子商务网站中的订单.<br>这些表通常会随着对最新数据的随机更新而不断增长,而长尾更新会针对较旧的数据,这可能是由于交易在以后结算/数据更正所致.<br>换句话说,大多数更新进入最新的分区,很少有更新进入较旧的分区.</p>
+<p>事实表的典型更新模式<br><img src="/images/fly1164.gif" style="margin-left: 0px; padding-bottom: 10px;"></p>
+<p>对于这样的工作负载,BLOOM索引表现良好,因为索引查找将基于大小合适的布隆过滤器修剪大量数据文件.<br>此外,如果可以构造键以使其具有一定的顺序,则要比较的文件数会通过范围修剪进一步减少.<br>Hudi 使用所有文件键范围构建一个区间树,并有效地过滤掉更新/删除记录中与任何键范围不匹配的文件.</p>
+<p>为了有效地将传入的记录键与布隆过滤器进行比较,即最小数量的布隆过滤器读取和跨执行程序的统一工作分配,Hudi 利用输入记录的缓存并采用可以使用统计信息消除数据偏差的自定义分区器.<br>有时,如果布隆过滤器误报率很高,它可能会增加混洗的数据量以执行查找.<br>Hudi 支持动态布隆过滤器(使用启用<code>hoodie.bloom.index.filter.type=DYNAMIC_V0</code>),它根据存储在给定文件中的记录数调整其大小,以提供配置的误报率.</p>
+<h3 id="事件表中的重复数据删除"><a href="#事件表中的重复数据删除" class="headerlink" title="事件表中的重复数据删除"></a>事件表中的重复数据删除</h3><p>事件流无处不在.<br>来自 Apache Kafka 或类似消息总线的事件通常是事实表大小的 10-100 倍,并且通常将&quot;时间&quot;(事件的到达时间/处理时间)视为一等公民.<br>例如,物联网事件流/点击流数据/广告印象等.<br>插入和更新仅跨越最后几个分区,因为这些大多是仅附加数据.<br>鉴于可以在端到端管道中的任何位置引入重复事件,因此在存储到数据湖之前进行重复数据删除是一项常见要求.</p>
+<p>显示事件表更新分布的图.<br><img src="/images/fly1165.gif" style="margin-left: 0px; padding-bottom: 10px;"></p>
+<p>一般来说,这是一个非常具有挑战性的问题,需要以较低的成本解决.<br>虽然,我们甚至可以使用键值存储来使用 HBASE 索引执行重复数据删除,但索引存储成本会随着事件的数量线性增长,因此可能会非常昂贵.<br>实际上,BLOOM带有范围修剪的索引是这里的最佳解决方案.<br>人们可以利用时间通常是一等公民这一事实并构造一个键,<code>event_ts + event_id</code>例如插入的记录具有单调递增的键.<br>即使在最新的表分区中,也可以通过修剪大量文件来产生巨大的回报.</p>
+<h3 id="随机更新-删除维度表"><a href="#随机更新-删除维度表" class="headerlink" title="随机更新/删除维度表"></a>随机更新/删除维度表</h3><p>这些类型的表格通常包含高维数据并保存参考数据,例如用户资料/商家信息.<br>这些是高保真表,其中更新通常很小,但也分布在许多分区和数据文件中,数据集从旧到新.<br>通常,这些表也是未分区的,因为也没有对这些表进行分区的好方法.</p>
+<p>显示维度表更新分布的图.<br><img src="/images/fly1166.gif" style="margin-left: 0px; padding-bottom: 10px;"></p>
+<p>如前所述,BLOOM如果无法通过比较范围/过滤器来删除大量文件,则索引可能不会产生好处.<br>在这样的随机写入工作负载中,更新最终会触及表中的大多数文件,因此布隆过滤器通常会根据一些传入的更新指示所有文件的真阳性.<br>因此,我们最终会比较范围/过滤器,只是为了最终检查所有文件的传入更新.<br>SIMPLE索引将更适合,因为它不进行任何基于预先修剪的操作,而是直接与每个数据文件中感兴趣的字段连接.<br>HBASE如果操作开销是可接受的,并且可以为这些表提供更好的查找时间,则可以使用索引.</p>
+<p>在使用全局索引时,用户还应该考虑设置<code>hoodie.bloom.index.update.partition.path=true</code>或<code>hoodie.simple.index.update.partition.path=true</code>处理分区路径值可能因更新而改变的情况,<br>例如用户表按家乡分区/用户搬迁到不同的城市.<br>这些表也是 Merge-On-Read 表类型的绝佳候选者.</p>
+<h1 id="文件布局"><a href="#文件布局" class="headerlink" title="文件布局"></a>文件布局</h1><p>Hudi将DFS上的数据集组织到基本路径(HoodieWriteConfig.BASEPATHPROP)下的目录结构中.<br>数据集分为多个分区(DataSourceOptions.PARTITIONPATHFIELDOPT_KEY),这些分区与Hive表非常相似,是包含该分区的数据文件的文件夹.</p>
+<img src="/images/fly1038.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>在每个分区内,文件被组织为文件组,由文件id充当唯一标识.<br>每个文件组包含多个文件切片,其中每个切片包含在某个即时时间的提交/压缩生成的基本列文件(.parquet)以及一组日志文件(.log),该文件包含自生成基本文件以来对基本文件的插入/更新.</p>
+<ol>
+<li>一个新的 base commit time 对应一个新的 FileSlice,实际就是一个新的数据版本.</li>
+<li>Hudi 的每个 FileSlice 中包含一个 base file (merge on read 模式可能没有)和多个 log file (copy on write 模式没有).</li>
+<li>每个文件的文件名都带有其归属的 FileID(即 FileGroup Identifier)和 base commit time(即 InstanceTime).通过文件名的 group id 组织 FileGroup 的 logical 关系.通过文件名的 base commit time 组织 FileSlice 的逻辑关系.</li>
+<li>Hudi 的 base file (parquet 文件) 在 footer 的 meta 去记录了 record key 组成的 BloomFilter,用于在 file based index 的实现中实现高效率的 key contains 检测.只有不在 BloomFilter 的 key 才需要扫描整个文件消灭假阳.</li>
+<li>Hudi 的 log (avro 文件)是自己编码的,通过积攒数据 buffer 以 LogBlock 为单位写出,每个 LogBlock 包含 magic number/size/content/footer 等信息,用于数据读/校验和过滤.</li>
+</ol>
+<p>Hudi 采用多版本并发控制 (MVCC),其中压缩操作合并日志和基础文件以生成新文件切片,清理操作删除未使用/旧文件切片以回收dfs上的空间.</p>
+<img src="/images/fly1167.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h1 id="Metadata-Table-元数据表"><a href="#Metadata-Table-元数据表" class="headerlink" title="Metadata Table(元数据表)"></a>Metadata Table(元数据表)</h1><h2 id="元数据表的动机"><a href="#元数据表的动机" class="headerlink" title="元数据表的动机"></a>元数据表的动机</h2><p>Apache Hudi 元数据表可以显着提高查询的读/写性能.<br>元数据表的主要目的是消除对&quot;列表文件&quot;操作的需求.</p>
+<p>读写数据时,会进行文件列表操作,获取文件系统的当前视图.<br>当数据集很大时,列出所有文件可能会成为性能瓶颈,但更重要的是在 AWS S3 等云存储系统的情况下,大量的文件列出请求有时会由于某些请求限制而导致节流.<br>元数据表将改为主动维护文件列表并消除对递归文件列表操作的需要.</p>
+<p>而元数据表中的列表不会随文件/对象计数线性扩展,即使对于非常大的表,每次读取也需要大约 100-500 毫秒.<br>更好的是,时间线服务器缓存了部分元数据,并为列表提供约 10 毫秒的性能.</p>
+<h3 id="支持多模态索引"><a href="#支持多模态索引" class="headerlink" title="支持多模态索引"></a>支持多模态索引</h3><p>多模式索引可以显着提高文件索引中的查找性能和数据跳过的查询延迟.<br>包含文件级布隆过滤器的布隆过滤器索引有助于密钥查找和文件修剪.<br>包含所有列的统计信息的列统计索引改进了基于写入器和读取器中的键和列值范围的文件修剪,例如在 Spark 中的查询计划中.<br>多模式索引被实现为包含元数据表中索引的独立分区.</p>
+<h2 id="启用-Hudi-元数据表和多模式索引"><a href="#启用-Hudi-元数据表和多模式索引" class="headerlink" title="启用 Hudi 元数据表和多模式索引"></a>启用 Hudi 元数据表和多模式索引</h2><p>从 0.11.0 开始,默认启用具有同步更新和基于元数据表的文件列表的元数据表.<br>部署注意事项中有一些先决条件配置和步骤,可以安全地使用此功能.<br>元数据表和相关的文件列表功能仍然可以通过设置<code>hoodie.metadata.enable=false</code>来关闭.<br>对于 0.10.1 及之前的版本,默认禁用元数据表,您可以通过将相同的配置设置为true.</p>
+<p>如果您在启用后关闭元数据表,请务必等待几次提交,以便完全清理元数据表,然后再重新启用元数据表.</p>
+<p>多模式索引在 0.11.0 版本中引入.<br>默认情况下它们被禁用.<br>当启用元数据表时,您可以选择通过设置<code>hoodie.metadata.index.bloom.filter.enable=true</code>为启用布隆过滤器索引,并通过设置为<code>hoodie.metadata.index.column.stats.enable=true</code>启用列统计索引 .<br>在 0.11.0 版本中,Spark 中改进查询的数据跳过现在依赖于元数据表中的列统计索引.<br>启用元数据表和列统计索引是启用数据跳过<code>hoodie.enable.data.skipping</code>的先决条件.</p>
+<h2 id="部署注意事项"><a href="#部署注意事项" class="headerlink" title="部署注意事项"></a>部署注意事项</h2><p>为保证 Metadata Table 保持最新,在不同的部署模型中,同一张 Hudi 表上的所有写操作除了上述配置外,还需要额外的配置.<br>在启用元数据表之前,必须停止同一个表上的所有写入器.</p>
+<h3 id="具有内联表服务的单个写入器"><a href="#具有内联表服务的单个写入器" class="headerlink" title="具有内联表服务的单个写入器"></a>具有内联表服务的单个写入器</h3><p>如果您当前的部署模型是单写入器,并且所有表服务(清理/集群/压缩)都配置为内联,例如 Deltastreamer 同步一次模式和具有默认配置的 Spark 数据源,则无需额外配置.<br>设置<code>hoodie.metadata.enable</code>为后true,重新启动单个写入器足以安全地启用元数据表.</p>
+<h3 id="具有异步表服务的单个写入器"><a href="#具有异步表服务的单个写入器" class="headerlink" title="具有异步表服务的单个写入器"></a>具有异步表服务的单个写入器</h3><p>如果您当前的部署模型是单写入器以及在同一进程中运行的异步表服务(例如清理/集群/压缩),例如 Deltastreamer 连续模式写入 MOR 表/Spark 流(其中压缩默认为异步),以及您的在同一个 writer 中启用异步表服务的自己的作业设置,必须在启用元数据表之前配置乐观并发控制/锁提供程序和惰性失败写入清理策略,如下所示.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hoodie.write.concurrency.mode&#x3D;optimistic_concurrency_control</span><br><span class="line">hoodie.cleaner.policy.failed.writes&#x3D;LAZY</span><br><span class="line">hoodie.write.lock.provider&#x3D;org.apache.hudi.client.transaction.lock.InProcessLockProvider</span><br></pre></td></tr></table></figure>
+
+<p>这是为了在启用元数据表时保证乐观并发控制的正确行为.<br>不遵循配置指南会导致数据丢失.<br>请注意,仅当在此部署模型中启用了元数据表时,才需要这些配置.</p>
+<p>如果存在多个不同进程的写入器,包括一个带有异步表服务的写入器,请参阅<code>多编写器</code>,与使用分布式锁提供程序的区别.<br>请注意,在摄取写入器之外运行单独的压缩 ( HoodieCompactor) 或集群 ( HoodieClusteringJob) 作业被视为多写入器部署,因为它们不是在不能依赖进程内锁提供程序的同一进程中运行.</p>
+<h3 id="多编写器"><a href="#多编写器" class="headerlink" title="多编写器"></a>多编写器</h3><p>如果您当前的部署模型是多写入器以及锁提供程序以及为每个写入器设置的其他必需配置,如下所示,则不需要额外的配置.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hoodie.write.concurrency.mode&#x3D;optimistic_concurrency_control</span><br><span class="line">hoodie.cleaner.policy.failed.writes&#x3D;LAZY</span><br><span class="line">hoodie.write.lock.provider&#x3D;&lt;distributed-lock-provider-classname&gt;</span><br></pre></td></tr></table></figure>
+
+<p>您可以在停止编写器以启用元数据表后按顺序启动编写器.<br>仅对部分写入器应用正确的配置会导致来自不一致写入器的数据丢失.<br>因此,请确保您在所有作者中启用元数据表.</p>
+<p>请注意,有 3 种不同的分布式锁提供程序可供选择:<br>ZookeeperBasedLockProvider<br>HiveMetastoreBasedLockProvider<br>DynamoDBBasedLockProvider.</p>
+<h1 id="写操作"><a href="#写操作" class="headerlink" title="写操作"></a>写操作</h1><h2 id="操作类型"><a href="#操作类型" class="headerlink" title="操作类型"></a>操作类型</h2><h3 id="UPSERT"><a href="#UPSERT" class="headerlink" title="UPSERT"></a>UPSERT</h3><p>这是默认操作,首先通过查找索引将输入记录标记为插入或更新.<br>这些记录最终在启发式运行后写入,以确定如何最好地将它们打包到存储中以优化文件大小等内容.<br>建议将此操作用于数据库更改捕获等输入几乎肯定包含更新的用例.<br>目标表永远不会显示重复项.</p>
+<h3 id="INSERT"><a href="#INSERT" class="headerlink" title="INSERT"></a>INSERT</h3><p>此操作在启发式/文件大小方面与 upsert 非常相似,但完全跳过了索引查找步骤.<br>因此,对于日志重复数据删除等用例(结合下面提到的过滤重复项的选项),它可能比 upserts 快得多.<br>这也适用于表可以容忍重复但只需要 Hudi 的事务性写入/增量拉取/存储管理功能的用例.</p>
+<h3 id="BULK-INSERT"><a href="#BULK-INSERT" class="headerlink" title="BULK_INSERT"></a>BULK_INSERT</h3><p>upsert 和 insert 操作都将输入记录保存在内存中以更快地加速存储启发式计算(除其他外),因此最初加载/引导 Hudi 表可能很麻烦.<br>批量插入提供与插入相同的语义,同时实现基于排序的数据写入算法,可以很好地扩展数百 TB 的初始负载.<br>但是,这只是在调整文件大小而不是像插入/更新插入那样保证文件大小方面尽了最大努力.</p>
+<h3 id="DELETE"><a href="#DELETE" class="headerlink" title="DELETE"></a>DELETE</h3><p>Hudi 支持对存储在 Hudi 表中的数据实现两种类型的删除,方法是允许用户指定不同的记录负载实现.</p>
+<h4 id="Soft-Deletes-软删除"><a href="#Soft-Deletes-软删除" class="headerlink" title="Soft Deletes(软删除)"></a>Soft Deletes(软删除)</h4><p>保留记录键,并将所有其他字段的值清空.<br>这可以通过确保适当的字段在表模式中可以为空并在将这些字段设置为空后简单地更新表来实现.</p>
+<h4 id="Hard-Deletes-硬删除"><a href="#Hard-Deletes-硬删除" class="headerlink" title="Hard Deletes(硬删除)"></a>Hard Deletes(硬删除)</h4><p>一种更强的删除形式是从表中物理删除记录的任何痕迹.<br>这可以通过 3 种不同的方式实现.</p>
+<ol>
+<li>使用数据源,设置<code>OPERATION_OPT_KEY</code>为<code>DELETE_OPERATION_OPT_VAL</code>.<br>这将删除正在提交的 DataSet 中的所有记录.</li>
+<li>使用数据源,设置<code>PAYLOAD_CLASS_OPT_KEY</code>为&quot;<code>org.apache.hudi.EmptyHoodieRecordPayload</code>&quot;.<br>这将删除正在提交的 DataSet 中的所有记录.</li>
+<li>使用 DataSource 或 DeltaStreamer,添加一个名为<code>_hoodie_is_deleted</code> 的列DataSet.<br>对于要删除的所有记录,必须将此列的值设置为true,对于要更新插入的任何记录,必须将其设置为 false 或保留为 null.</li>
+</ol>
+<h2 id="Writing-path-写作路径"><a href="#Writing-path-写作路径" class="headerlink" title="Writing path(写作路径)"></a>Writing path(写作路径)</h2><p>以下是 Hudi 写入路径的内部视图以及写入期间发生的事件序列.</p>
+<ol>
+<li>Deduping(重复数据删除)<br>首先,您的输入记录可能在同一批次中有重复的键,并且需要通过键组合或减少重复项.</li>
+<li>Index Lookup(索引查找)<br>接下来,执行索引查找以尝试匹配输入记录以识别它们属于哪些文件组.</li>
+<li>File Sizing(文件大小)<br>然后,根据之前提交的平均大小,Hudi 将制定计划,将足够的记录添加到一个小文件中,以使其接近配置的最大限制.</li>
+<li>Partitioning(分区)<br>我们现在到达分区,我们决定将某些更新和插入放置在哪些文件组中,或者是否将创建新文件组</li>
+<li>Write I/O(写 I/O)<br>现在我们实际上执行了写操作,即创建一个新的基本文件/附加到日志文件或对现有的基本文件进行版本控制.</li>
+<li>Update Index(更新索引)<br>现在执行了写入,我们将返回并更新索引.</li>
+<li>Commit<br>最后,我们以原子方式提交所有这些更改.<br>(一个回调通知被暴露)</li>
+<li>Clean (if needed)<br>在提交之后,如果需要,将调用清理.</li>
+<li>Compaction<br>如果您使用 MOR 表,压缩将内联运行或异步调度.</li>
+<li>Archive<br>最后,我们执行存档步骤,将旧时间线项目移动到存档文件夹.</li>
+</ol>
+<h1 id="Schema-Evolution-模式演变"><a href="#Schema-Evolution-模式演变" class="headerlink" title="Schema Evolution(模式演变)"></a>Schema Evolution(模式演变)</h1><p>模式演化允许用户轻松更改 Hudi 表的当前模式,以适应随时间变化的数据.<br>从 0.11.0 版本开始,已添加 Spark SQL(Spark 3.1.x/3.2.1 及更高版本)对 Schema 演化的 DDL 支持并处于试验阶段.</p>
+<h2 id="场景"><a href="#场景" class="headerlink" title="场景"></a>场景</h2><ol>
+<li>可以添加/删除/修改和移动列(包括嵌套列).</li>
+<li>分区列不能进化.</li>
+<li>不能对 Array 类型的嵌套列进行添加/删除或操作.</li>
+</ol>
+<h2 id="SparkSQL-Schema-演变和语法描述"><a href="#SparkSQL-Schema-演变和语法描述" class="headerlink" title="SparkSQL Schema 演变和语法描述"></a>SparkSQL Schema 演变和语法描述</h2><p>在使用模式演化之前,请设置spark.sql.extensions. 对于 Spark 3.2.1 及以上版本, spark.sql.catalog.spark_catalog也需要设置.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"># Spark SQL for spark 3.1.x</span><br><span class="line">spark-sql --packages org.apache.hudi:hudi-spark3.1.2-bundle_2.12:0.11.1 \</span><br><span class="line">--conf &#39;spark.serializer&#x3D;org.apache.spark.serializer.KryoSerializer&#39; \</span><br><span class="line">--conf &#39;spark.sql.extensions&#x3D;org.apache.spark.sql.hudi.HoodieSparkSessionExtension&#39;</span><br><span class="line"></span><br><span class="line"># Spark SQL for spark 3.2.1 and above</span><br><span class="line">spark-sql --packages org.apache.hudi:hudi-spark3-bundle_2.12:0.11.1 \</span><br><span class="line">--conf &#39;spark.serializer&#x3D;org.apache.spark.serializer.KryoSerializer&#39; \</span><br><span class="line">--conf &#39;spark.sql.extensions&#x3D;org.apache.spark.sql.hudi.HoodieSparkSessionExtension&#39; \</span><br><span class="line">--conf &#39;spark.sql.catalog.spark_catalog&#x3D;org.apache.spark.sql.hudi.catalog.HoodieCatalog&#39;</span><br></pre></td></tr></table></figure>
+
+<p>启动 spark-app 后,请执行<code>set hoodie.schema.on.read.enable=true</code>以启用模式演变.</p>
+<blockquote>
+<p>目前,Schema 演化一旦启用就无法禁用.</p>
+<p>在使用 hive metastore 的时候,可能会遇到一个问题<code>org.apache.hadoop.hive.ql.metadata.HiveException::Unable to alter table.</code><br>以下列的类型与各自位置的现有列不兼容.<br>确保在hive中禁用<code>hive.metastore.disallow.incompatible.col.type.changes</code>.</p>
+</blockquote>
+<h3 id="Adding-Columns-添加列"><a href="#Adding-Columns-添加列" class="headerlink" title="Adding Columns(添加列)"></a>Adding Columns(添加列)</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- add columns</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tableName <span class="keyword">ADD</span> COLUMNS(col_spec[, col_spec ...])</span><br></pre></td></tr></table></figure>
+
+<h4 id="参数说明"><a href="#参数说明" class="headerlink" title="参数说明"></a>参数说明</h4><table>
+<thead>
+<tr>
+<th align="left">Parameter</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">tableName</td>
+<td align="left">Table name</td>
+</tr>
+<tr>
+<td align="left">col_spec</td>
+<td align="left">列规范,由五个字段col_name/col_type/nullable/comment和col_position 组成.</td>
+</tr>
+</tbody></table>
+<h5 id="col-spec"><a href="#col-spec" class="headerlink" title="col_spec"></a>col_spec</h5><p>col_name:新列的名称.它是强制性的.要向嵌套列添加子列,请在此字段中指定子列的全名.例如:<br>1)要将子列 col1 添加到嵌套的 struct 类型列 column users <code>struct&lt;name: string, age: int&gt;</code>,请将此字段设置为 users.col1.<br>2)要将子列 col1 添加到嵌套映射类型列 memeber <code>map&lt;string, struct&lt;n: string, a: int&gt;&gt;</code>,请将此字段设置为 member.value.col1.</p>
+<p>col_type:新列的类型.<br>nullable:新列是否可以为空.该值可以留空.现在这个字段在 Hudi 中没有使用.<br>comment:新列的评论.该值可以留空.<br>col_position:添加新列的位置.该值可以是FIRST或AFTER origin_col.</p>
+<ol>
+<li>如果设置为FIRST,则新列将添加到表的第一列.</li>
+<li>如果设置为AFTER origin_col,则新列将添加到原始列 origin_col 之后.</li>
+<li>该值可以留空.只有当新的子列被添加到嵌套列时,才能使用FIRST .<br>不要在顶级列中使用FIRST .<br>AFTER的使用没有限制.</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> h0 <span class="keyword">ADD</span> COLUMNS(ext0 string);</span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> h0 <span class="keyword">ADD</span> COLUMNS(new_col <span class="type">int</span> <span class="keyword">not</span> <span class="keyword">null</span> comment <span class="string">&#x27;add new column&#x27;</span> AFTER col1);</span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> complex_table <span class="keyword">ADD</span> COLUMNS(col_struct.col_name string comment <span class="string">&#x27;add new column to a struct col&#x27;</span> AFTER col_from_col_struct);</span><br></pre></td></tr></table></figure>
+
+<h3 id="Altering-Columns-改变列"><a href="#Altering-Columns-改变列" class="headerlink" title="Altering Columns(改变列)"></a>Altering Columns(改变列)</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- alter table ... alter column</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tableName <span class="keyword">ALTER</span> [<span class="keyword">COLUMN</span>] col_old_name TYPE column_type [COMMENT] col_comment[<span class="keyword">FIRST</span><span class="operator">|</span>AFTER] column_name</span><br></pre></td></tr></table></figure>
+
+<h4 id="参数说明-1"><a href="#参数说明-1" class="headerlink" title="参数说明"></a>参数说明</h4><table>
+<thead>
+<tr>
+<th align="left">Parameter</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">tableName</td>
+<td align="left">Table name.</td>
+</tr>
+<tr>
+<td align="left">col_old_name</td>
+<td align="left">要更改的列的名称</td>
+</tr>
+<tr>
+<td align="left">column_type</td>
+<td align="left">Type of the target column.</td>
+</tr>
+<tr>
+<td align="left">col_comment</td>
+<td align="left">col_comment.</td>
+</tr>
+<tr>
+<td align="left">column_name</td>
+<td align="left">放置目标列的新位置.例如,AFTER column_name表示目标列放在column_name之后</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--- Changing the column type</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> table1 <span class="keyword">ALTER</span> <span class="keyword">COLUMN</span> a.b.c TYPE <span class="type">bigint</span></span><br><span class="line"></span><br><span class="line"><span class="comment">--- Altering other attributes</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> table1 <span class="keyword">ALTER</span> <span class="keyword">COLUMN</span> a.b.c COMMENT <span class="string">&#x27;new comment&#x27;</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> table1 <span class="keyword">ALTER</span> <span class="keyword">COLUMN</span> a.b.c <span class="keyword">FIRST</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> table1 <span class="keyword">ALTER</span> <span class="keyword">COLUMN</span> a.b.c AFTER x</span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> table1 <span class="keyword">ALTER</span> <span class="keyword">COLUMN</span> a.b.c <span class="keyword">DROP</span> <span class="keyword">NOT</span> <span class="keyword">NULL</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="column-type-change"><a href="#column-type-change" class="headerlink" title="column type change"></a>column type change</h4><img src="/images/fly1168.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="Deleting-Columns-删除列"><a href="#Deleting-Columns-删除列" class="headerlink" title="Deleting Columns(删除列)"></a>Deleting Columns(删除列)</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- alter table ... drop columns</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tableName <span class="keyword">DROP</span> <span class="keyword">COLUMN</span><span class="operator">|</span>COLUMNS cols</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> table1 <span class="keyword">DROP</span> <span class="keyword">COLUMN</span> a.b.c</span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> table1 <span class="keyword">DROP</span> COLUMNS a.b.c, x, y</span><br></pre></td></tr></table></figure>
+
+<h3 id="Changing-Column-Name-更改列名"><a href="#Changing-Column-Name-更改列名" class="headerlink" title="Changing Column Name(更改列名)"></a>Changing Column Name(更改列名)</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- alter table ... rename column</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tableName RENAME <span class="keyword">COLUMN</span> old_columnName <span class="keyword">TO</span> new_columnName</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> table1 RENAME <span class="keyword">COLUMN</span> a.b.c <span class="keyword">TO</span> x</span><br></pre></td></tr></table></figure>
+
+<h3 id="Modifying-Table-Properties-修改表格属性"><a href="#Modifying-Table-Properties-修改表格属性" class="headerlink" title="Modifying Table Properties(修改表格属性)"></a>Modifying Table Properties(修改表格属性)</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- alter table ... set|unset</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tableName <span class="keyword">SET</span><span class="operator">|</span>UNSET tblproperties</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> <span class="keyword">table</span> <span class="keyword">SET</span> TBLPROPERTIES (<span class="string">&#x27;table_property&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;property_value&#x27;</span>)</span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> <span class="keyword">table</span> UNSET TBLPROPERTIES [IF <span class="keyword">EXISTS</span>] (<span class="string">&#x27;comment&#x27;</span>, <span class="string">&#x27;key&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="Changing-a-Table-Name-更改表名"><a href="#Changing-a-Table-Name-更改表名" class="headerlink" title="Changing a Table Name(更改表名)"></a>Changing a Table Name(更改表名)</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- alter table ... rename</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tableName RENAME <span class="keyword">TO</span> newTableName</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> table1 RENAME <span class="keyword">TO</span> table2</span><br></pre></td></tr></table></figure>
+
+<h2 id="开箱即用的模式演变"><a href="#开箱即用的模式演变" class="headerlink" title="开箱即用的模式演变"></a>开箱即用的模式演变</h2><p>模式演化是数据管理的一个非常重要的方面.<br>Hudi 支持开箱即用的常见模式演变场景,例如添加可为空的字段或提升字段的数据类型.<br>此外,进化后的模式可以跨引擎查询,例如 Presto/Hive 和 Spark SQL.<br>下表总结了与不同 Hudi 表类型兼容的架构更改类型.</p>
+<img src="/images/fly1169.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1170.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><p>演示 Hudi 中的模式演化支持.<br>在下面的示例中,我们将添加一个新的字符串字段并将字段的数据类型从 int 更改为 long.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">#spark 2.4.8 scala 2.11.12</span></span></span><br><span class="line">spark-shell --conf &quot;spark.serializer=org.apache.spark.serializer.KryoSerializer&quot;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">##scala</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.<span class="type">QuickstartUtils</span>._</span><br><span class="line"><span class="keyword">import</span> scala.collection.<span class="type">JavaConversions</span>._</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">SaveMode</span>._</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.<span class="type">DataSourceReadOptions</span>._</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.<span class="type">DataSourceWriteOptions</span>._</span><br><span class="line"><span class="keyword">import</span> org.apache.hudi.config.<span class="type">HoodieWriteConfig</span>._</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.types._</span><br><span class="line"><span class="keyword">import</span> org.apache.spark.sql.<span class="type">Row</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> tableName = <span class="string">&quot;hudi_trips_cow&quot;</span></span><br><span class="line"><span class="keyword">val</span> basePath = <span class="string">&quot;/hudi_trips_cow&quot;</span></span><br><span class="line"></span><br><span class="line">## :paste ctrl+d</span><br><span class="line"><span class="keyword">val</span> schema = <span class="type">StructType</span>( <span class="type">Array</span>(</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;rowId&quot;</span>, <span class="type">StringType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;partitionId&quot;</span>, <span class="type">StringType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;preComb&quot;</span>, <span class="type">LongType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;name&quot;</span>, <span class="type">StringType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;versionId&quot;</span>, <span class="type">StringType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;intToLong&quot;</span>, <span class="type">IntegerType</span>,<span class="literal">true</span>)</span><br><span class="line">))</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> data1 = <span class="type">Seq</span>(<span class="type">Row</span>(<span class="string">&quot;row_1&quot;</span>, <span class="string">&quot;part_0&quot;</span>, <span class="number">0</span>L, <span class="string">&quot;bob&quot;</span>, <span class="string">&quot;v_0&quot;</span>, <span class="number">0</span>),</span><br><span class="line"><span class="type">Row</span>(<span class="string">&quot;row_2&quot;</span>, <span class="string">&quot;part_0&quot;</span>, <span class="number">0</span>L, <span class="string">&quot;john&quot;</span>, <span class="string">&quot;v_0&quot;</span>, <span class="number">0</span>),</span><br><span class="line"><span class="type">Row</span>(<span class="string">&quot;row_3&quot;</span>, <span class="string">&quot;part_0&quot;</span>, <span class="number">0</span>L, <span class="string">&quot;tom&quot;</span>, <span class="string">&quot;v_0&quot;</span>, <span class="number">0</span>))</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> dfFromData1 = spark.createDataFrame(data1, schema)</span><br><span class="line"></span><br><span class="line">dfFromData1.write.</span><br><span class="line">format(<span class="string">&quot;hudi&quot;</span>).</span><br><span class="line">options(getQuickstartWriteConfigs).</span><br><span class="line">option(<span class="type">PRECOMBINE_FIELD_OPT_KEY</span>, <span class="string">&quot;preComb&quot;</span>).</span><br><span class="line">option(<span class="type">RECORDKEY_FIELD_OPT_KEY</span>, <span class="string">&quot;rowId&quot;</span>).</span><br><span class="line">option(<span class="type">PARTITIONPATH_FIELD_OPT_KEY</span>, <span class="string">&quot;partitionId&quot;</span>).</span><br><span class="line">option(<span class="string">&quot;hoodie.index.type&quot;</span>,<span class="string">&quot;SIMPLE&quot;</span>).</span><br><span class="line">option(<span class="type">TABLE_NAME</span>, tableName).</span><br><span class="line">mode(<span class="type">Overwrite</span>).</span><br><span class="line">save(basePath)</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1171.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1172.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> tripsSnapshotDF1 = spark.read.format(<span class="string">&quot;hudi&quot;</span>).load(basePath + <span class="string">&quot;/*/*&quot;</span>)</span><br><span class="line">tripsSnapshotDF1.createOrReplaceTempView(<span class="string">&quot;hudi_trips_snapshot&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">spark.sql(<span class="string">&quot;desc hudi_trips_snapshot&quot;</span>).show()</span><br><span class="line"></span><br><span class="line">+--------------------+---------+-------+</span><br><span class="line">|            col_name|data_type|comment|</span><br><span class="line">+--------------------+---------+-------+</span><br><span class="line">| _hoodie_commit_time|   string|   <span class="literal">null</span>|</span><br><span class="line">|_hoodie_commit_seqno|   string|   <span class="literal">null</span>|</span><br><span class="line">|  _hoodie_record_key|   string|   <span class="literal">null</span>|</span><br><span class="line">|_hoodie_partition...|   string|   <span class="literal">null</span>|</span><br><span class="line">|   _hoodie_file_name|   string|   <span class="literal">null</span>|</span><br><span class="line">|               rowId|   string|   <span class="literal">null</span>|</span><br><span class="line">|         partitionId|   string|   <span class="literal">null</span>|</span><br><span class="line">|             preComb|   bigint|   <span class="literal">null</span>|</span><br><span class="line">|                name|   string|   <span class="literal">null</span>|</span><br><span class="line">|           versionId|   string|   <span class="literal">null</span>|</span><br><span class="line">|           intToLong|      int|   <span class="literal">null</span>|</span><br><span class="line">+--------------------+---------+-------+</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">spark.sql(<span class="string">&quot;select rowId, partitionId, preComb, name, versionId, intToLong from hudi_trips_snapshot&quot;</span>).show()</span><br><span class="line"></span><br><span class="line">+-----+-----------+-------+----+---------+---------+                            </span><br><span class="line">|rowId|partitionId|preComb|name|versionId|intToLong|</span><br><span class="line">+-----+-----------+-------+----+---------+---------+</span><br><span class="line">|row_1|     part_0|      <span class="number">0</span>| bob|      v_0|        <span class="number">0</span>|</span><br><span class="line">|row_3|     part_0|      <span class="number">0</span>| tom|      v_0|        <span class="number">0</span>|</span><br><span class="line">|row_2|     part_0|      <span class="number">0</span>|john|      v_0|        <span class="number">0</span>|</span><br><span class="line">+-----+-----------+-------+----+---------+---------+</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> newSchema = <span class="type">StructType</span>( <span class="type">Array</span>(</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;rowId&quot;</span>, <span class="type">StringType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;partitionId&quot;</span>, <span class="type">StringType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;preComb&quot;</span>, <span class="type">LongType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;name&quot;</span>, <span class="type">StringType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;versionId&quot;</span>, <span class="type">StringType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;intToLong&quot;</span>, <span class="type">LongType</span>,<span class="literal">true</span>),</span><br><span class="line"><span class="type">StructField</span>(<span class="string">&quot;newField&quot;</span>, <span class="type">StringType</span>,<span class="literal">true</span>)</span><br><span class="line">))</span><br><span class="line"></span><br><span class="line"><span class="keyword">val</span> data2 = <span class="type">Seq</span>(<span class="type">Row</span>(<span class="string">&quot;row_2&quot;</span>, <span class="string">&quot;part_0&quot;</span>, <span class="number">5</span>L, <span class="string">&quot;john&quot;</span>, <span class="string">&quot;v_3&quot;</span>, <span class="number">3</span>L, <span class="string">&quot;newField_1&quot;</span>),</span><br><span class="line"><span class="type">Row</span>(<span class="string">&quot;row_5&quot;</span>, <span class="string">&quot;part_0&quot;</span>, <span class="number">5</span>L, <span class="string">&quot;maroon&quot;</span>, <span class="string">&quot;v_2&quot;</span>, <span class="number">2</span>L, <span class="string">&quot;newField_1&quot;</span>),</span><br><span class="line"><span class="type">Row</span>(<span class="string">&quot;row_9&quot;</span>, <span class="string">&quot;part_0&quot;</span>, <span class="number">5</span>L, <span class="string">&quot;michael&quot;</span>, <span class="string">&quot;v_2&quot;</span>, <span class="number">2</span>L, <span class="string">&quot;newField_1&quot;</span>))</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> dfFromData2 = spark.createDataFrame(data2, newSchema)</span><br><span class="line"></span><br><span class="line">dfFromData2.write.</span><br><span class="line">format(<span class="string">&quot;hudi&quot;</span>).</span><br><span class="line">options(getQuickstartWriteConfigs).</span><br><span class="line">option(<span class="type">PRECOMBINE_FIELD_OPT_KEY</span>, <span class="string">&quot;preComb&quot;</span>).</span><br><span class="line">option(<span class="type">RECORDKEY_FIELD_OPT_KEY</span>, <span class="string">&quot;rowId&quot;</span>).</span><br><span class="line">option(<span class="type">PARTITIONPATH_FIELD_OPT_KEY</span>, <span class="string">&quot;partitionId&quot;</span>).</span><br><span class="line">option(<span class="string">&quot;hoodie.index.type&quot;</span>,<span class="string">&quot;SIMPLE&quot;</span>).</span><br><span class="line">option(<span class="type">TABLE_NAME</span>, tableName).</span><br><span class="line">mode(<span class="type">Append</span>).</span><br><span class="line">save(basePath)</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1173.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> tripsSnapshotDF2 = spark.read.format(<span class="string">&quot;hudi&quot;</span>).load(basePath + <span class="string">&quot;/*/*&quot;</span>)</span><br><span class="line">tripsSnapshotDF2.createOrReplaceTempView(<span class="string">&quot;hudi_trips_snapshot&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">spark.sql(<span class="string">&quot;desc hudi_trips_snapshot&quot;</span>).show()</span><br><span class="line"></span><br><span class="line">+--------------------+---------+-------+</span><br><span class="line">|            col_name|data_type|comment|</span><br><span class="line">+--------------------+---------+-------+</span><br><span class="line">| _hoodie_commit_time|   string|   <span class="literal">null</span>|</span><br><span class="line">|_hoodie_commit_seqno|   string|   <span class="literal">null</span>|</span><br><span class="line">|  _hoodie_record_key|   string|   <span class="literal">null</span>|</span><br><span class="line">|_hoodie_partition...|   string|   <span class="literal">null</span>|</span><br><span class="line">|   _hoodie_file_name|   string|   <span class="literal">null</span>|</span><br><span class="line">|               rowId|   string|   <span class="literal">null</span>|</span><br><span class="line">|         partitionId|   string|   <span class="literal">null</span>|</span><br><span class="line">|             preComb|   bigint|   <span class="literal">null</span>|</span><br><span class="line">|                name|   string|   <span class="literal">null</span>|</span><br><span class="line">|           versionId|   string|   <span class="literal">null</span>|</span><br><span class="line">|           intToLong|   bigint|   <span class="literal">null</span>|</span><br><span class="line">|            newField|   string|   <span class="literal">null</span>|</span><br><span class="line">+--------------------+---------+-------+</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">spark.sql(<span class="string">&quot;select rowId, partitionId, preComb, name, versionId, intToLong, newField from hudi_trips_snapshot&quot;</span>).show()</span><br><span class="line"></span><br><span class="line">+-----+-----------+-------+-------+---------+---------+----------+</span><br><span class="line">|rowId|partitionId|preComb|   name|versionId|intToLong|  newField|</span><br><span class="line">+-----+-----------+-------+-------+---------+---------+----------+</span><br><span class="line">|row_1|     part_0|      <span class="number">0</span>|    bob|      v_0|        <span class="number">0</span>|      <span class="literal">null</span>|</span><br><span class="line">|row_3|     part_0|      <span class="number">0</span>|    tom|      v_0|        <span class="number">0</span>|      <span class="literal">null</span>|</span><br><span class="line">|row_2|     part_0|      <span class="number">5</span>|   john|      v_3|        <span class="number">3</span>|newField_1|</span><br><span class="line">|row_5|     part_0|      <span class="number">5</span>| maroon|      v_2|        <span class="number">2</span>|newField_1|</span><br><span class="line">|row_9|     part_0|      <span class="number">5</span>|michael|      v_2|        <span class="number">2</span>|newField_1|</span><br><span class="line">+-----+-----------+-------+-------+---------+---------+----------+</span><br></pre></td></tr></table></figure>
+
+<h1 id="Key-Generation"><a href="#Key-Generation" class="headerlink" title="Key Generation"></a>Key Generation</h1><p>Hudi 中的每条记录都由一个主键唯一标识,主键是一对记录键和记录所属的分区路径.<br>使用主键,Hudi 可以强加<br>a) 分区级唯一性完整性约束<br>b) 对记录启用快速更新和删除.<br>应该明智地选择分区方案,因为它可能是您的摄取和查询延迟的决定因素.</p>
+<p>一般来说,Hudi 支持分区索引和全局索引.<br>对于具有分区索引(最常用)的数据集,每条记录由一对记录键和分区路径唯一标识.<br>但是对于具有全局索引的数据集,每条记录仅由记录键唯一标识.<br>跨分区不会有任何重复的记录键.</p>
+<p>Hudi 提供了几个开箱即用的密钥生成器,用户可以根据自己的需要使用,同时提供可插拔的实现供用户实现和使用自己的 KeyGenerator.</p>
+<h2 id="常见配置"><a href="#常见配置" class="headerlink" title="常见配置"></a>常见配置</h2><p><code>hoodie.datasource.write.recordkey.field</code><br>record key field,这是必填字段.</p>
+<p><code>hoodie.datasource.write.partitionpath.field</code><br>指分区路径字段.这是必填字段.</p>
+<p><code>hoodie.datasource.write.keygenerator.class</code><br>Key generator class(包括完整路径).可以引用任何可用的或用户定义的.这是必填字段.</p>
+<p><code>hoodie.datasource.write.partitionpath.urlencode</code><br>当设置为 true 时,分区路径将被 url 编码.默认值为假.</p>
+<p><code>hoodie.datasource.write.hive_style_partitioning</code><br>设置为 true 时,使用 hive 样式分区.<br>分区字段名称将作为该值的前缀.<br>格式:<code>&quot;&lt;partition_path_field_name&gt;=&lt;partition_path_value&gt;&quot;</code>.<br>默认值为假.</p>
+<h2 id="生成器类"><a href="#生成器类" class="headerlink" title="生成器类"></a>生成器类</h2><h3 id="SimpleKeyGenerator"><a href="#SimpleKeyGenerator" class="headerlink" title="SimpleKeyGenerator"></a>SimpleKeyGenerator</h3><p>记录键按名称引用一个字段(dataframe中的列),分区路径按名称引用一个字段(dataframe中的单个列).<br>这是最常用的一种.<br>值被解释为来自dataframe并转换为字符串.</p>
+<h3 id="ComplexKeyGenerator-复杂密钥生成器"><a href="#ComplexKeyGenerator-复杂密钥生成器" class="headerlink" title="ComplexKeyGenerator(复杂密钥生成器)"></a>ComplexKeyGenerator(复杂密钥生成器)</h3><p>记录键和分区路径都按名称包含一个或多个字段(多个字段的组合).<br>字段应在配置值中以逗号分隔.<br>例如<code>&quot;Hoodie.datasource.write.recordkey.field&quot; : &quot;col1,col4&quot;</code></p>
+<h3 id="GlobalDeleteKeyGenerator-全局删除密钥生成器"><a href="#GlobalDeleteKeyGenerator-全局删除密钥生成器" class="headerlink" title="GlobalDeleteKeyGenerator(全局删除密钥生成器)"></a>GlobalDeleteKeyGenerator(全局删除密钥生成器)</h3><p>全局索引删除不需要分区值.<br>所以这个密钥生成器避免使用分区值来生成 HoodieKey.</p>
+<blockquote>
+<p>&quot;GlobalDeleteKeyGenerator&quot;必须与全局索引一起使用,才能仅根据记录键删除记录.<br>它适用于仅包含删除的批次.<br>密钥生成器可用于分区表和非分区表.<br>使用此密钥生成器时,<code>hoodie.[bloom|simple|hbase].index.update.partition.path</code>应将配置设置为 false,以避免将冗余数据写入存储.</p>
+</blockquote>
+<h3 id="NonpartitionedKeyGenerator-非分区密钥生成器"><a href="#NonpartitionedKeyGenerator-非分区密钥生成器" class="headerlink" title="NonpartitionedKeyGenerator(非分区密钥生成器)"></a>NonpartitionedKeyGenerator(非分区密钥生成器)</h3><p>如果您的 hudi 数据集未分区,您可以使用此&quot;NonpartitionedKeyGenerator&quot;,它将为所有记录返回一个空分区.<br>换句话说,所有记录都进入同一个分区(为空&quot;&quot;).</p>
+<h3 id="CustomKeyGenerator-自定义密钥生成器"><a href="#CustomKeyGenerator-自定义密钥生成器" class="headerlink" title="CustomKeyGenerator(自定义密钥生成器)"></a>CustomKeyGenerator(自定义密钥生成器)</h3><p>这是 KeyGenerator 的通用实现,用户可以同时利用 SimpleKeyGenerator/ComplexKeyGenerator 和 TimestampBasedKeyGenerator 的优势.<br>可以将记录键和分区路径配置为单个字段或字段组合.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hoodie.datasource.write.recordkey.field</span><br><span class="line">hoodie.datasource.write.partitionpath.field</span><br><span class="line">hoodie.datasource.write.keygenerator.class&#x3D;org.apache.hudi.keygen.CustomKeyGenerator</span><br></pre></td></tr></table></figure>
+
+<p>如果要定义涉及常规字段和基于时间戳的字段的复杂分区路径,此 keyGenerator 特别有用.<br>&quot;hoodie.datasource.write.partitionpath.field&quot; 它期望特定格式的 prop 值.<br>格式应为&quot;field1:PartitionKeyType1,field2:PartitionKeyType2...&quot;</p>
+<p>创建完整的分区路径 <code>&lt;value for field1 basis PartitionKeyType1&gt;/&lt;value for field2 basis PartitionKeyType2&gt;</code> ,依此类推.<br>每个分区键类型可以是 SIMPLE 或 TIMESTAMP.</p>
+<p>示例配置值:&quot;field_3:simple,field_5:timestamp&quot;</p>
+<p>RecordKey 配置值是 SimpleKeyGenerator 的单个字段或逗号分隔的字段名称,如果引用 ComplexKeyGenerator.<br>例子:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hoodie.datasource.write.recordkey.field&#x3D;field1,field2</span><br></pre></td></tr></table></figure>
+
+<p>这将以格式<code>field1:value1,field2:value2</code>等创建您的记录键,否则在简单记录键的情况下您只能指定一个字段.<br>CustomKeyGenerator类定义了一个用于配置分区路径的枚举PartitionKeyType.<br>它可以采用两个可能的值 - SIMPLE 和 TIMESTAMP.<br><code>hoodie.datasource.write.partitionpath.field</code>需要以格式<code>field1:PartitionKeyType1,field2:PartitionKeyType2</code>等提供分区表的属性值.<br>例如,如果要使用 2 个字段创建分区路径,country/date,后者具有基于时间戳的值并且需要以给定格式自定义,则可以指定以下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hoodie.datasource.write.partitionpath.field&#x3D;country:SIMPLE,date:TIMESTAMP</span><br></pre></td></tr></table></figure>
+<p>这将以格式创建分区路径,<code>&lt;country_name&gt;/&lt;date&gt;</code>或者<code>country=&lt;country_name&gt;/date=&lt;date&gt;</code>取决于您是否需要配置单元样式分区.</p>
+<p>可以通过在此处扩展公共 API 类来实现自己的自定义密钥生成器:<br><a target="_blank" rel="noopener" href="https://github.com/apache/hudi/blob/master/hudi-common/src/main/java/org/apache/hudi/keygen/KeyGenerator.java">https://github.com/apache/hudi/blob/master/hudi-common/src/main/java/org/apache/hudi/keygen/KeyGenerator.java</a></p>
+<h3 id="TimestampBasedKeyGenerator"><a href="#TimestampBasedKeyGenerator" class="headerlink" title="TimestampBasedKeyGenerator"></a>TimestampBasedKeyGenerator</h3><p>此密钥生成器依赖于分区字段的时间戳.<br>字段值被解释为时间戳,而不仅仅是在为记录生成分区路径值时转换为字符串.<br>记录键与以前一样,由字段名称选择.<br>用户应该设置更多的配置来使用这个 KeyGenerator.</p>
+<h4 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h4><p>hoodie.deltastreamer.keygen.timebased.timestamp.type<br>支持的时间戳类型之一(UNIX_TIMESTAMP/DATE_STRING/MIXED/EPOCHMILLISECONDS/SCALAR)</p>
+<p>hoodie.deltastreamer.keygen.timebased.output.dateformat<br>输出日期格式</p>
+<p>hoodie.deltastreamer.keygen.timebased.timezone<br>数据格式的时区</p>
+<p>oodie.deltastreamer.keygen.timebased.input.dateformat<br>输入日期格式</p>
+<p>让我们看一下 TimestampBasedKeyGenerator 的一些示例值.</p>
+<h4 id="示例值"><a href="#示例值" class="headerlink" title="示例值"></a>示例值</h4><h5 id="Timestamp-is-GMT"><a href="#Timestamp-is-GMT" class="headerlink" title="Timestamp is GMT"></a>Timestamp is GMT</h5><p>时间戳为格林威治标准时间.</p>
+<p>hoodie.deltastreamer.keygen.timebased.timestamp.type<br>&quot;EPOCHMILLISECONDS&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.output.dateformat<br>&quot;yyyy-MM-dd hh&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.timezone<br>&quot;GMT+8:00&quot;</p>
+<p>输入字段值:&quot;1578283932000L&quot;,从密钥生成器生成的分区路径:&quot;2020-01-06 12&quot;<br>如果某些行的输入字段值为空,从密钥生成器生成的分区路径:&quot;1970-01-01 08&quot;</p>
+<h5 id="Timestamp-is-DATE-STRING"><a href="#Timestamp-is-DATE-STRING" class="headerlink" title="Timestamp is DATE_STRING"></a>Timestamp is DATE_STRING</h5><p>hoodie.deltastreamer.keygen.timebased.timestamp.type<br>&quot;DATE_STRING&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.output.dateformat<br>&quot;yyyy-MM-dd hh&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.timezone<br>&quot;GMT+8:00&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.input.dateformat<br>&quot;yyyy-MM-dd hh:mm:ss&quot;</p>
+<p>输入字段值:&quot;2020-01-06 12:12:12&quot;,从密钥生成器生成的分区路径:&quot;2020-01-06 12&quot;<br>如果某些行的输入字段值为空,密钥生成器生成的分区路径:&quot;1970-01-01 12:00:00&quot;</p>
+<h5 id="Scalar-examples"><a href="#Scalar-examples" class="headerlink" title="Scalar examples"></a>Scalar examples</h5><p>hoodie.deltastreamer.keygen.timebased.timestamp.type<br>&quot;SCALAR&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.output.dateformat<br>&quot;yyyy-MM-dd hh&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.timezone<br>&quot;GMT&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.timestamp.scalar.time.unit<br>&quot;days&quot;</p>
+<p>输入字段值:&quot;20000L&quot;,密钥生成器生成的分区路径:&quot;2024-10-04 12&quot;<br>如果输入字段值为空,密钥生成器生成的分区路径:&quot;1970-01-02 12&quot;</p>
+<h5 id="ISO8601WithMsZ-with-Single-Input-format"><a href="#ISO8601WithMsZ-with-Single-Input-format" class="headerlink" title="ISO8601WithMsZ with Single Input format"></a>ISO8601WithMsZ with Single Input format</h5><p>hoodie.deltastreamer.keygen.timebased.timestamp.type<br>&quot;DATE_STRING&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.input.dateformat<br>&quot;yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSZ&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.input.dateformat.list.delimiter.regex<br>&quot;&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.input.timezone<br>&quot;&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.output.dateformat<br>&quot;yyyyMMddHH&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.output.timezone<br>&quot;GMT&quot;</p>
+<p>输入字段值:&quot;2020-04-01T13:01:33.428Z&quot;,密钥生成器生成的分区路径:&quot;2020040113&quot;</p>
+<h5 id="ISO8601WithMsZ-with-Multiple-Input-formats"><a href="#ISO8601WithMsZ-with-Multiple-Input-formats" class="headerlink" title="ISO8601WithMsZ with Multiple Input formats"></a>ISO8601WithMsZ with Multiple Input formats</h5><p>hoodie.deltastreamer.keygen.timebased.timestamp.type<br>&quot;DATE_STRING&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.input.dateformat<br>&quot;yyyy-MM-dd&#39;T&#39;HH:mm:ssZ,yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSZ&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.input.dateformat.list.delimiter.regex<br>&quot;&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.input.timezone<br>&quot;&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.output.dateformat<br>&quot;yyyyMMddHH&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.output.timezone<br>&quot;UTC&quot;</p>
+<p>输入字段值:&quot;2020-04-01T13:01:33.428Z&quot;,密钥生成器生成的分区路径:&quot;2020040113&quot;</p>
+<h5 id="ISO8601NoMs-with-offset-using-multiple-input-formats"><a href="#ISO8601NoMs-with-offset-using-multiple-input-formats" class="headerlink" title="ISO8601NoMs with offset using multiple input formats"></a>ISO8601NoMs with offset using multiple input formats</h5><p>hoodie.deltastreamer.keygen.timebased.timestamp.type<br>&quot;DATE_STRING&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.input.dateformat<br>&quot;yyyy-MM-dd&#39;T&#39;HH:mm:ssZ,yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSZ&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.input.dateformat.list.delimiter.regex<br>&quot;&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.input.timezone<br>&quot;&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.output.dateformat<br>&quot;yyyyMMddHH&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.output.timezone<br>&quot;UTC&quot;</p>
+<p>输入字段值:&quot;2020-04-01T13:01:33- 05:00 &quot;,从密钥生成器生成的分区路径:&quot;2020040118&quot;</p>
+<h5 id="Input-as-short-date-string-and-expect-date-in-date-format"><a href="#Input-as-short-date-string-and-expect-date-in-date-format" class="headerlink" title="Input as short date string and expect date in date format"></a>Input as short date string and expect date in date format</h5><p>hoodie.deltastreamer.keygen.timebased.timestamp.type<br>&quot;DATE_STRING&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.input.dateformat<br>&quot;yyyy-MM-dd&#39;T&#39;HH:mm:ssZ,yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSZ,yyyyMMdd&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.input.dateformat.list.delimiter.regex<br>&quot;&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.input.timezone<br>&quot;UTC&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.output.dateformat<br>&quot;MM/dd/yyyy&quot;</p>
+<p>hoodie.deltastreamer.keygen.timebased.output.timezone<br>&quot;UTC&quot;</p>
+<p>输入字段值:&quot;20200401&quot;,从密钥生成器生成的分区路径:&quot;04/01/2020&quot;</p>
+<h1 id="并发控制"><a href="#并发控制" class="headerlink" title="并发控制"></a>并发控制</h1><h2 id="支持的并发控制"><a href="#支持的并发控制" class="headerlink" title="支持的并发控制"></a>支持的并发控制</h2><h3 id="MVCC"><a href="#MVCC" class="headerlink" title="MVCC"></a>MVCC</h3><p>压缩/清理/集群等 Hudi 表服务利用多版本并发控制来提供多个表服务写入者和读取者之间的快照隔离.<br>此外,使用 MVCC,Hudi 在摄取写入器和多个并发读取器之间提供快照隔离.<br>有了这个模型,Hudi 支持并发运行任意数量的表服务作业,没有任何并发冲突.<br>这可以通过确保此类表服务的调度计划始终以单一写入器模式发生,以确保没有冲突并避免竞争条件来实现.</p>
+<h3 id="NEW-OPTIMISTIC-CONCURRENCY"><a href="#NEW-OPTIMISTIC-CONCURRENCY" class="headerlink" title="[NEW] OPTIMISTIC CONCURRENCY"></a><code>[NEW] OPTIMISTIC CONCURRENCY</code></h3><p>上述写入操作( UPSERT/INSERT)等,利用乐观并发控制启用多个摄取写入器到同一个 Hudi 表.<br>Hudi 支持file level OCC,即对于发生在同一个表上的任何 2 个提交(或写入器),如果它们没有写入正在更改的重叠文件,则允许两个写入器成功.<br>此功能目前是实验性的,需要 Zookeeper 或 HiveMetastore 来获取锁.</p>
+<h2 id="单个写入保证"><a href="#单个写入保证" class="headerlink" title="单个写入保证"></a>单个写入保证</h2><ol>
+<li>UPSERT:目标表永远不会显示重复项.</li>
+<li>INSERT:如果启用了 dedup,目标表将永远不会有重复项.</li>
+<li>BULK_INSERT:如果启用了 dedup,目标表将永远不会有重复项.</li>
+<li>INCREMENTAL:数据消耗和检查点永远不会出错.</li>
+</ol>
+<h2 id="多个写入保证"><a href="#多个写入保证" class="headerlink" title="多个写入保证"></a>多个写入保证</h2><p>对于使用 OCC 的多个编写器,上述一些保证更改如下:</p>
+<ol>
+<li>UPSERT:目标表永远不会显示重复项.</li>
+<li>INSERT:即使启用了 dedup ,目标表也可能有重复项.</li>
+<li>BULK_INSERT:即使启用了 dedup ,目标表也可能有重复项.</li>
+<li>INCREMENTAL:由于多个写入作业在不同时间完成,数据消耗和检查点可能出现故障.</li>
+</ol>
+<h2 id="启用多写"><a href="#启用多写" class="headerlink" title="启用多写"></a>启用多写</h2><p>需要正确设置以下属性才能开启乐观并发控制.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hoodie.write.concurrency.mode&#x3D;optimistic_concurrency_control</span><br><span class="line">hoodie.cleaner.policy.failed.writes&#x3D;LAZY</span><br><span class="line">hoodie.write.lock.provider&#x3D;&lt;lock-provider-classname&gt;</span><br></pre></td></tr></table></figure>
+
+<p>有 3 个不同的基于服务器的锁提供程序需要设置不同的配置.<br>1)Zookeeper基于锁提供者</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">hoodie.write.lock.provider&#x3D;org.apache.hudi.client.transaction.lock.ZookeeperBasedLockProvider</span><br><span class="line">hoodie.write.lock.zookeeper.url</span><br><span class="line">hoodie.write.lock.zookeeper.port</span><br><span class="line">hoodie.write.lock.zookeeper.lock_key</span><br><span class="line">hoodie.write.lock.zookeeper.base_path</span><br></pre></td></tr></table></figure>
+
+<p>2)HiveMetastore基于锁提供者</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hoodie.write.lock.provider&#x3D;org.apache.hudi.hive.HiveMetastoreBasedLockProvider</span><br><span class="line">hoodie.write.lock.hivemetastore.database</span><br><span class="line">hoodie.write.lock.hivemetastore.table</span><br></pre></td></tr></table></figure>
+
+<p>The HiveMetastore URI&#39;s are picked up from the hadoop configuration file loaded during runtime.</p>
+<p>3)Amazon DynamoDB基于锁提供者<br>基于 Amazon DynamoDB 的锁提供了一种简单的方法来支持跨不同集群的多写入.</p>
+<h2 id="Datasource写入"><a href="#Datasource写入" class="headerlink" title="Datasource写入"></a>Datasource写入</h2><p>hudi-spark模块提供 DataSource API 以将 Spark DataFrame 写入(和读取)到 Hudi 表中.<br>以下是如何通过 spark 数据源使用optimistic_concurrency_control 的示例.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">inputDF.write.format(<span class="string">&quot;hudi&quot;</span>)</span><br><span class="line">       .options(getQuickstartWriteConfigs)</span><br><span class="line">       .option(<span class="type">PRECOMBINE_FIELD_OPT_KEY</span>, <span class="string">&quot;ts&quot;</span>)</span><br><span class="line">       .option(<span class="string">&quot;hoodie.cleaner.policy.failed.writes&quot;</span>, <span class="string">&quot;LAZY&quot;</span>)</span><br><span class="line">       .option(<span class="string">&quot;hoodie.write.concurrency.mode&quot;</span>, <span class="string">&quot;optimistic_concurrency_control&quot;</span>)</span><br><span class="line">       .option(<span class="string">&quot;hoodie.write.lock.zookeeper.url&quot;</span>, <span class="string">&quot;zookeeper&quot;</span>)</span><br><span class="line">       .option(<span class="string">&quot;hoodie.write.lock.zookeeper.port&quot;</span>, <span class="string">&quot;2181&quot;</span>)</span><br><span class="line">       .option(<span class="string">&quot;hoodie.write.lock.zookeeper.lock_key&quot;</span>, <span class="string">&quot;test_table&quot;</span>)</span><br><span class="line">       .option(<span class="string">&quot;hoodie.write.lock.zookeeper.base_path&quot;</span>, <span class="string">&quot;/test&quot;</span>)</span><br><span class="line">       .option(<span class="type">RECORDKEY_FIELD_OPT_KEY</span>, <span class="string">&quot;uuid&quot;</span>)</span><br><span class="line">       .option(<span class="type">PARTITIONPATH_FIELD_OPT_KEY</span>, <span class="string">&quot;partitionpath&quot;</span>)</span><br><span class="line">       .option(<span class="type">TABLE_NAME</span>, tableName)</span><br><span class="line">       .mode(<span class="type">Overwrite</span>)</span><br><span class="line">       .save(basePath)</span><br></pre></td></tr></table></figure>
+
+<h2 id="DeltaStreamer"><a href="#DeltaStreamer" class="headerlink" title="DeltaStreamer"></a>DeltaStreamer</h2><p>该HoodieDeltaStreamer实用程序(hudi-utilities-bundle 的一部分)提供了从 DFS 或 Kafka 等不同来源摄取的方法,具有以下功能.</p>
+<p>通过 delta streamer 使用optimistic_concurrency_control 需要将上述配置添加到可以传递给作业的属性文件中.<br>例如下面,将配置添加到 kafka-source.properties 文件并将它们传递给 deltastreamer 将启用乐观并发.<br>然后可以按如下方式触发 deltastreamer 作业:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">spark-submit --class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer `ls packaging/hudi-utilities-bundle/target/hudi-utilities-bundle-*.jar` \</span><br><span class="line">  --props file://$&#123;PWD&#125;/hudi-utilities/src/test/resources/delta-streamer-config/kafka-source.properties \</span><br><span class="line">  --schemaprovider-class org.apache.hudi.utilities.schema.SchemaRegistryProvider \</span><br><span class="line">  --source-class org.apache.hudi.utilities.sources.AvroKafkaSource \</span><br><span class="line">  --source-ordering-field impresssiontime \</span><br><span class="line">  --target-base-path file:\/\/\/tmp/hudi-deltastreamer-op \ </span><br><span class="line">  --target-table uber.impressions \</span><br><span class="line">  --op BULK_INSERT</span><br></pre></td></tr></table></figure>
+
+<h2 id="使用乐观并发控制"><a href="#使用乐观并发控制" class="headerlink" title="使用乐观并发控制"></a>使用乐观并发控制</h2><p>并发写入 Hudi 表需要使用 Zookeeper 或 HiveMetastore 获取锁.<br>由于多种原因,您可能希望配置重试以允许您的应用程序获取锁.</p>
+<ol>
+<li>网络连接或服务器上的负载过大增加了获取锁的时间,从而导致超时</li>
+<li>运行大量并发作业写入同一个 hudi 表可能会导致获取锁期间的争用可能导致超时</li>
+<li>在某些冲突解决方案中,Hudi 提交操作在持有锁时可能需要长达 10 秒的时间.<br>这可能导致等待获取锁的其他作业超时.</li>
+</ol>
+<p>设置正确的本机锁提供程序客户端重试次数.<br>请注意,有时这些设置在服务器上设置一次,所有客户端都继承相同的配置.<br>请在启用乐观并发之前检查您的设置.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hoodie.write.lock.wait_time_ms</span><br><span class="line">hoodie.write.lock.num_retries</span><br></pre></td></tr></table></figure>
+
+<p>为 Zookeeper 和 HiveMetastore 设置正确的 hudi 客户端重试次数.<br>这在无法更改本机客户端重试设置的情况下很有用.<br>请注意,除了您可能已设置的任何本机客户端重试之外,还会发生这些重试.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hoodie.write.lock.client.wait_time_ms</span><br><span class="line">hoodie.write.lock.client.num_retries</span><br></pre></td></tr></table></figure>
+
+<h2 id="禁用多写"><a href="#禁用多写" class="headerlink" title="禁用多写"></a>禁用多写</h2><p>删除以下用于启用多写入器或使用默认值覆盖的设置.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hoodie.write.concurrency.mode&#x3D;single_writer</span><br><span class="line">hoodie.cleaner.policy.failed.writes&#x3D;EAGER</span><br></pre></td></tr></table></figure>
+
+<h3 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h3><p>如果您使用WriteClientAPI,请注意对表的多次写入需要从写入客户端的 2 个不同实例启动.<br>不建议使用同一个写客户端实例来执行多写.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hudi/" rel="tag"># hudi</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/10/21/maven%20question/" rel="prev" title="maven question">
+                  <i class="fa fa-chevron-left"></i> maven question
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/10/24/hudi%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/" rel="next" title="hudi默认配置参数">
+                  hudi默认配置参数 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

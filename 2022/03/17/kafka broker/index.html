@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="一个broker通常是以服务器的形式出现的,负责持久化producer端发送的消息,同时还为consumer端提供消息.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kafka broker">
+<meta property="og:url" content="https://maoeryu.github.io/2022/03/17/kafka%20broker/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="一个broker通常是以服务器的形式出现的,负责持久化producer端发送的消息,同时还为consumer端提供消息.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_broker1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_broker2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_broker3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_broker4.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_broker5.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_broker6.png">
+<meta property="article:published_time" content="2022-03-16T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-08-25T03:20:56.801Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="kafka">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/kafka1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/03/17/kafka%20broker/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>kafka broker | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#broker%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">broker介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E8%AE%BE%E8%AE%A1"><span class="nav-number">2.</span> <span class="nav-text">消息设计</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E6%A0%BC%E5%BC%8F"><span class="nav-number">2.1.</span> <span class="nav-text">消息格式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E7%89%88%E6%9C%AC"><span class="nav-number">2.2.</span> <span class="nav-text">消息版本</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">集群管理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%88%90%E5%91%98%E7%AE%A1%E7%90%86"><span class="nav-number">3.1.</span> <span class="nav-text">成员管理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#zk%E8%B7%AF%E5%BE%84"><span class="nav-number">3.2.</span> <span class="nav-text">zk路径</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%AF%E6%9C%AC%E4%B8%8Eisr%E8%AE%BE%E8%AE%A1"><span class="nav-number">4.</span> <span class="nav-text">副本与isr设计</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#follower%E5%89%AF%E6%9C%AC%E5%90%8C%E6%AD%A5"><span class="nav-number">4.1.</span> <span class="nav-text">follower副本同步</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ISR%E8%AE%BE%E8%AE%A1"><span class="nav-number">4.2.</span> <span class="nav-text">ISR设计</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B0%B4%E5%8D%B0"><span class="nav-number">5.</span> <span class="nav-text">水印</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#LEO%E6%9B%B4%E6%96%B0%E6%9C%BA%E5%88%B6"><span class="nav-number">5.1.</span> <span class="nav-text">LEO更新机制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HW%E6%9B%B4%E6%96%B0%E6%9C%BA%E5%88%B6"><span class="nav-number">5.2.</span> <span class="nav-text">HW更新机制</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E5%AD%98%E5%82%A8"><span class="nav-number">6.</span> <span class="nav-text">日志存储</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E7%95%99%E5%AD%98"><span class="nav-number">6.1.</span> <span class="nav-text">日志留存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%97%A5%E5%BF%97compaction"><span class="nav-number">6.2.</span> <span class="nav-text">日志compaction</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%9A%E4%BF%A1%E5%8D%8F%E8%AE%AE"><span class="nav-number">7.</span> <span class="nav-text">通信协议</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#controller"><span class="nav-number">8.</span> <span class="nav-text">controller</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AE%A1%E7%90%86%E7%8A%B6%E6%80%81"><span class="nav-number">8.1.</span> <span class="nav-text">管理状态</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#controller%E8%81%8C%E8%B4%A3"><span class="nav-number">8.2.</span> <span class="nav-text">controller职责</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#broker%E8%AF%B7%E6%B1%82"><span class="nav-number">9.</span> <span class="nav-text">broker请求</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/03/17/kafka%20broker/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          kafka broker
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-03-17 00:00:00" itemprop="dateCreated datePublished" datetime="2022-03-17T00:00:00+08:00">2022-03-17</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-08-25 11:20:56" itemprop="dateModified" datetime="2022-08-25T11:20:56+08:00">2022-08-25</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>一个broker通常是以服务器的形式出现的,负责持久化producer端发送的消息,同时还为consumer端提供消息.</p>
+<span id="more"></span>
+
+<h3 id="broker介绍"><a href="#broker介绍" class="headerlink" title="broker介绍"></a>broker介绍</h3><p>数据(消息)的发送者(发布者)不会直接把消息发送给接收者,这是发布与订阅消息系统的一个特点.<br>发布者以某种方式对消息进行分类,接收者(订阅者)订阅它们,以便接收特定类型的消息.<br>发布与订阅系统一般会有一个broker,也就是发布消息的中心点.</p>
+<p>一个独立的Kafka服务器被称为broker.<br>broker接收来自生产者的消息,为消息设置偏移量,并提交消息到磁盘保存.<br>broker为消费者提供服务,对读取分区的请求作出响应,返回已经提交到磁盘上的消息.<br>根据特定的硬件及其性能特征,单个broker可以轻松处理数千个分区以及每秒百万级的消息量.</p>
+<p>broker是集群的组成部分.<br>每个集群都有一个broker同时充当了集群控制器的角色(自动从集群的活跃成员中选举出来).<br>控制器负责管理工作,包括将分区分配给broker和监控broker.<br>在集群中,一个分区从属于一个broker,该broker被称为分区的首领.<br>一个分区可以分配给多个broker,这个时候会发生分区复制.<br>这种复制机制为分区提供了消息冗余,如果有一个broker失效,其他broker可以接管领导权.<br>不过,相关的消费者和生产者都要重新连接到新的首领.</p>
+<img src="/images/kafka1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>保留消息(在一定期限内)是Kafka的一个重要特性.<br>Kafka broker默认的消息保留策略是这样的:要么保留一段时间(比如7天),要么保留到消息达到一定大小的字节数(比如1GB).<br>当消息数量达到这些上限时,旧消息就会过期并被删除,所以在任何时刻,可用消息的总量都不会超过配置参数所指定的大小.<br>主题可以配置自己的保留策略,可以将消息保留到不再使用它们为止.</p>
+<h3 id="消息设计"><a href="#消息设计" class="headerlink" title="消息设计"></a>消息设计</h3><h4 id="消息格式"><a href="#消息格式" class="headerlink" title="消息格式"></a>消息格式</h4><p>使用Java NIO的ByteBuffer来保存消息,同时依赖文件系统提供的页缓存机制,而非依靠Java的堆缓存.<br>ByteBuffer是紧凑的二进制字节结构,而不需要padding操作,因此省去了很多不必要的对象开销.</p>
+<h4 id="消息版本"><a href="#消息版本" class="headerlink" title="消息版本"></a>消息版本</h4><p>目前Kafka消息格式有3个版本,V0版本/V1版本/V2版本.</p>
+<p>V0版本主要指Kafka 0.10.0.0之前的版本,</p>
+<img src="/images/kafka_broker1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>V1比V0版本多出来的8字节正是时间戳字段,同时在于attribute字段的使用.</p>
+<img src="/images/kafka_broker2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>V2版本依然分为消息和消息集合两个维度,只不过消息集合的提法被消息批次所取代.</p>
+<img src="/images/kafka_broker3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="集群管理"><a href="#集群管理" class="headerlink" title="集群管理"></a>集群管理</h3><p>Kafka正是利用ZooKeeper临时节点来管理broker生命周期的.<br>broker启动时在ZooKeeper中创建对应的临时节点,同时还会创建一个监听器(listener)监听该临时节点的状态.<br>一旦broker启动后,监听器会自动同步整个集群信息到该broker上.<br>而一旦该broker崩溃,它与ZooKeeper的会话就会失效,导致临时节点被删除,监听器被触发,然后处理broker崩溃的后续事宜.</p>
+<h4 id="成员管理"><a href="#成员管理" class="headerlink" title="成员管理"></a>成员管理</h4><p>Kafka是依赖Apache ZooKeeper实现的,每当一个broker启动时,它会将自己注册到ZooKeeper下的一个节点.</p>
+<p>首先,每个broker在ZooKeeper下注册节点的路径是<code>chroot/brokers/ids/&lt;broker.id&gt;</code>.<br>如果没有配置chroot,则路径是<code>/brokers/ids/&lt;broker.id&gt;</code>.<br>是否配置了chroot取决于server.properties中的zookeeper.connect参数是否设置了chroot.</p>
+<p>其次,broker向ZooKeeper中注册的信息以JSON格式保存,包括的信息如下,</p>
+<p><code>listener_security_protocol_map</code><br>此值指定了该broker与外界通信所用的安全协议类型.<br>Kafka当前支持broker使用不同的安全协议类型与clients和其他broker通信.<br>比如,可以配置成与公网clients通信使用SSL传输数据,而与内网其他broker通信使用PLAINTEXT.</p>
+<p><code>endpoints</code><br>指定broker的服务endpoint列表,每个endpoint指明了传输协议类型/broker主机名和端口信息.<br>既然是列表,说明endpiont可以配置多个,每种协议类型都可以配置一个对应的endpoint,只是端口号不能冲突.</p>
+<p><code>rack</code><br>指定broker机架信息.<br>和Hadoop机架感知原理类似,若设置了机架信息,Kafka在分配副本时会考虑把某个分区的多个副本分配在多个机架上.<br>这样即使某个机架上的broker全部崩溃,也能保证其他机架上的副本可以正常工作.</p>
+<p><code>jmx_port</code><br>broker的JMX监控端口,需要在启动broker前设置JMX_PORT环境变量.<br>设置JMX端口后各种支持JMX的监控框架(如Zabbix等)才可以实时获取Kafka提供的各种broker端监控指标.</p>
+<p><code>host</code><br>broker主机名或IP地址.</p>
+<p><code>port</code><br>broker服务端口号.</p>
+<p><code>timestamp</code><br>broker启动时间.</p>
+<p><code>version</code><br>broker当前版本号.</p>
+<p>字段version表征了broker的当前版本,注意,这不是Kafka的版本,而是broker注册信息的版本.<br>Kafka自开源以来总共提供了4个版本的broker信息,当前最新版本号是4.<br>对于想要自己写程序获取broker信息的而言,一定要注意所使用Kafka的版本并获取对应版本的broker注册信息.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;listener_security_protocol_map&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;PLAINTEXT&quot;</span>: <span class="string">&quot;PLAINTEXT&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;endpoints&quot;</span>: [</span><br><span class="line">        <span class="string">&quot;PLAINTEXT://oceanbase004:9092&quot;</span></span><br><span class="line">    ],</span><br><span class="line">    <span class="attr">&quot;jmx_port&quot;</span>: <span class="number">-1</span>,</span><br><span class="line">    <span class="attr">&quot;host&quot;</span>: <span class="string">&quot;oceanbase004&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;timestamp&quot;</span>: <span class="string">&quot;1625562337153&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;port&quot;</span>: <span class="number">9092</span>,</span><br><span class="line">    <span class="attr">&quot;version&quot;</span>: <span class="number">4</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="zk路径"><a href="#zk路径" class="headerlink" title="zk路径"></a>zk路径</h4><img src="/images/kafka_broker4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p><code>/brokers</code><br>里面保存了Kafka集群的所有信息,包括每台broker的注册信息,集群上所有topic的信息等.</p>
+<p><code>/controller</code><br>保存了Kafkacontroller组件(controller负责集群的领导者选举)的注册信息,同时也负责controller的动态选举.</p>
+<p><code>/admin</code><br>保存管理脚本的输出结果,比如删除topic,对分区进行重分配等操作.</p>
+<p><code>/isr_change_notification</code><br>保存ISR列表发生变化的分区列表,controller会注册一个监听器实时监控该节点下子节点的变更.</p>
+<p><code>/config</code><br>保存了Kafka集群下各种资源的定制化配置信息,比如每个topic可能有自己专属的一组配置,那么就保存在<code>/config/topics/&lt;topic&gt;</code>下.</p>
+<p><code>/cluster</code><br>保存了Kafka集群的简要信息,包括集群的ID信息和集群版本号.</p>
+<p><code>/controller_epoch</code><br>保存了controller组件的版本号,Kafka使用该版本号来隔离无效的controller请求.</p>
+<h3 id="副本与isr设计"><a href="#副本与isr设计" class="headerlink" title="副本与isr设计"></a>副本与isr设计</h3><p>一个Kafka分区本质上就是一个备份日志,即利用多份相同的备份共同提供冗余机制来保持系统高可用性.<br>这些备份在Kafka中被称为副本(replica).<br>Kafka把分区的所有副本均匀地分配到所有broker上,并从这些副本中挑选一个作为leader副本对外提供服务,而其他副本被称为follower副本,只能被动地向leader副本请求数据,从而保持与leader副本的同步.</p>
+<p>假如leader副本永远工作正常,那么其实不需要follower副本.<br>但现实总是残酷的,Kafkaleader副本所在的broker可能因为各种各样的原因而随时宕机.<br>一旦发生这种情况,follower副本会竞相争夺成为新leader的权力.<br>显然不是所有的follower都有资格去竞选leader.<br>follower被动地向leader请求数据.<br>对于那些落后leader进度太多的follower而言,它们是没有资格竞选leader的,毕竟它们手中握有的数据太旧了,如果允许它们成为leader,会造成数据丢失,而这对clients而言是灾难性的.<br>鉴于这个原因,Kafka引入了ISR的概念.</p>
+<blockquote>
+<p>isr</p>
+<p>Kafka集群动态维护的一组同步副本集合(in-sync replicas).<br>每个topic分区都有自己的ISR列表,ISR中的所有副本都与leader保持同步状态.<br>值得注意的是,leader副本总是包含在ISR中的,只有ISR中的副本才有资格被选举为leader.<br>而producer写入的一条Kafka消息只有被ISR中的所有副本都接收到,才被视为已提交状态.<br>由此可见,若ISR中有N个副本,那么该分区最多可以忍受N-1个副本崩溃而不丢失已提交消息.</p>
+</blockquote>
+<h4 id="follower副本同步"><a href="#follower副本同步" class="headerlink" title="follower副本同步"></a>follower副本同步</h4><p>向leader副本请求数据.</p>
+<img src="/images/kafka_broker5.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p><code>起始位移(base offset)</code><br>表示该副本当前所含第一条消息的offset.</p>
+<p><code>高水印值(high watermark,HW)</code><br>副本高水印值.它保存了该副本最新一条已提交消息的位移.leader分区的HW值决定了副本中已提交消息的范围,也确定了consumer能够获取的消息上限,超过HW值的所有消息都被视为未提交成功的,因而consumer是看不到的.<br>另外,不是只有leader副本才有HW值.实际上每个follower副本都有HW值,只不过只有leader副本的HW值才能决定clients能看到的消息数量罢了.</p>
+<p><code>日志末端位移(log end offset,LEO)</code><br>副本日志中下一条待写入消息的offset.<br>所有副本都需要维护自己的LEO信息.每当leader副本接收到producer端推送的消息,它会更新自己的LEO(通常是加1).<br>同样,follower副本向leader副本请求到数据后也会增加自己的LEO.<br>事实上只有ISR中的所有副本都更新了对应的LEO之后,leader副本才会向右移动HW值表明消息写入成功.</p>
+<img src="/images/kafka_broker6.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>假设上图中的Kafka集群当前只有一个topic,该topic只有一个分区,分区共有3个副本,因此ISR中也是这3个副本.<br>该topic当前没有任何数据.由于没有任何数据,因此3个副本的LEO都是0,HW值是0.<br>现有一个producer向broker1所在的leader副本发送了一条消息,接下来会发生什么呢?</p>
+<p>1.broker1上的leader副本接收到消息,把自己的LEO值更新为1.<br>2.broker2和broker3上的follower副本各自发送请求给broker1.<br>3.broker1分别把该消息推送给follower副本.<br>4.follower副本接收到消息后各自更新自己的LEO为1.<br>5.leader副本接收到其他follower副本的数据请求响应(response)之后,更新HW值为1.此时位移为0的这条消息可以被consumer消费.</p>
+<p>对于设置了acks=-1的producer而言,只有完整地做完上面所有的5步操作,producer才能正常返回,这也标志着这条消息发送成功.</p>
+<h4 id="ISR设计"><a href="#ISR设计" class="headerlink" title="ISR设计"></a>ISR设计</h4><p>follower副本落后leader副本的时间间隔,这个唯一的参数就是<code>replica.lag.time.max.ms</code>,默认值是10秒.<br>对于请求速度追不上的情况,检测机制也发生了变化,<br>如果一个follower副本落后leader的时间持续性地超过了这个参数值,那么该follower副本就是不同步的.<br>这样即使出现producer瞬时峰值流量,只要follower不是持续性落后,它就不会反复地在ISR中移进/移出.</p>
+<h3 id="水印"><a href="#水印" class="headerlink" title="水印"></a>水印</h3><p>水印也被称为高水印或高水位,通常被用在流式处理领域,以表征元素或事件在基于时间层面上的进度.<br>一个比较经典的表述为:<code>流式系统保证在水印t时刻,创建时间(event time) = t＇且 t＇ ≤ t的所有事件都已经到达或被观测到</code>.<br>在Kafka中,水印的概念反而与时间无关,而与位置信息相关.<br>严格来说,它表示的就是位置信息,即位移(offset).<br>由于Kafka源码中使用的名字就是highwatermark,故称之为高水印.</p>
+<p>Kafka分区下通常存在多个副本(replica)用于实现数据冗余,进一步实现高可用性,副本角色如下,</p>
+<p><code>leader副本</code><br>响应clients端读/写请求的副本.</p>
+<p><code>follower副本</code><br>被动地备份leader副本上的数据,不能响应clients端的读/写请求.</p>
+<p><code>ISR副本集合</code><br>包含leader副本和所有与leader副本保持同步的follower副本.</p>
+<p>每个Kafka副本对象都持有两个重要的属性,日志末端位移(log end offset,下称LEO)和高水印(HW).<br>注意是所有的副本,而不止是leader副本.</p>
+<p><code>LEO</code><br>日志末端位移,记录了该副本对象底层日志文件中下一条消息的位移值.<br>举一个例子,若LEO=10,那么表示在该副本日志上已经保存了10条消息,位移范围是<code>[0,9]</code>.<br>另外,Kafka对leader副本和follower副本的LEO更新机制是不同的.</p>
+<p><code>HW</code><br>高水印值,任何一个副本对象的HW值一定不大于其LEO值,而小于或等于HW值的所有消息被认为是已提交的或已备份的(replicated).<br>Kafka对leader副本和follower副本的HW值更新机制也是不同的.<br>如果把LEO和HW看作两个指针,那么它们定位的机制是不同的,任意时刻,HW指向的是实实在在的消息,而LEO总是指向下一条待写入消息,也就是说LEO指向的位置上是没有消息的.<br>HW值是7,这表示前8条消息(位移从0计数)都已经处于已备份状态.<br>而LEO值是12,则表示当前日志中写入了11条消息,而消息8/9/10/11尚未完全备份,即它们属于未提交消息.<br>之前提到过消费者无法消费未提交消息.如果换作以上名词来解读的话,那么这句话应该表述为:消费者无法消费分区leader副本上那些位移大于分区HW的消息.<br>分区HW就是leader副本的HW值.</p>
+<h4 id="LEO更新机制"><a href="#LEO更新机制" class="headerlink" title="LEO更新机制"></a>LEO更新机制</h4><p>follower副本只是被动地向leader副本请求数据,具体表现为follower副本不停地向leader副本所在的broker发送FETCH请求,一旦获取消息,便写入自己的日志中进行备份.<br>Kafka设计了两套follower副本LEO属性:一套LEO值保存在follower副本所在broker的缓存上.<br>另一套LEO值保存在leader副本所在 broker的缓存上,后者为remote LEO,换句话说,leader副本所在机器的缓存上保存了该分区下所有follower副本的LEO属性值(当然也包括它自己的LEO).</p>
+<p>为什么要保存两套值呢?<br>这是因为Kafka需要利用前者帮助follower副本自身更新HW值,而同时还需要使用后者来确定leader副本的HW值,即分区HW.</p>
+<p>(1)follower副本端的follower副本LEO何时更新?<br>虽然有些拗口,但follower副本端的follower副本LEO值就是指该副本对象底层日志的LEO值,也就是说,每当新写入一条消息,其LEO值就会加1.<br>在follower发送FETCH请求后,leader将数据返回给follower,此时follower开始向底层log写数据,从而自动更新其LEO值.</p>
+<p>(2)leader副本端的follower副本LEO何时更新?<br>leader副本端的follower副本LEO的更新发生在leader处理followerFETCH请求时.<br>一旦leader接收到follower发送的FETCH请求,它首先会从自己的log中读取相应的数据,但是在给follower返回数据之前它先去更新follower的LEO(即上面所说的第二套LEO值).<br>接下来给出leader副本更新LEO的机制和时机.和follower更新LEO道理相同,leader写log时就会自动更新它自己的LEO值.</p>
+<h4 id="HW更新机制"><a href="#HW更新机制" class="headerlink" title="HW更新机制"></a>HW更新机制</h4><p>follower更新HW发生在其更新LEO之后,一旦follower向log写完数据,它就会尝试更新HW值.<br>具体算法就是比较当前LEO值与FETCH响应中leader的HW值,取两者的小者作为新的HW值.<br>如果follower的LEO值超过了leader的HW值,那么follower HW值是不会越过leader HW值的.<br>比起follower副本的HW属性,更关心leader副本HW值的更新,因为它直接影响了分区数据对consumer的可见性.</p>
+<p>在以下4种情况下,leader会尝试更新分区HW值——切记是尝试,有可能因为不满足条件而不做任何更新.<br><code>副本成为leader副本时</code><br>当某个副本成为分区的leader副本,Kafka会尝试更新分区HW.<br>这是显而易见的道理,毕竟分区leader发生了变更,这个副本的状态是一定要检查的.</p>
+<p><code>broker出现崩溃导致副本被踢出ISR时</code><br>若有broker崩溃,则必须查看是否会波及此分区,因此检查分区HW值是否需要更新是有必要的.</p>
+<p><code>producer向leader副本写入消息时</code><br>因为写入消息会更新leader的LEO,故有必要再查看HW值是否也需要更新.</p>
+<p><code>leader处理follower FETCH请求时</code><br>当leader处理follower的FETCH请求时,首先会从底层的log读取数据,之后再尝试更新分区HW值.<br>特别注意上面4个条件中的最后2个,当Kafka broker都正常工作时,分区HW值的更新时机有两个:leader处理PRODUCE请求时和leader处理FETCH请求时.<br>另外,leader是如何更新它的HW值的呢?<br>leaderbroker上保存了一套follower副本的LEO以及它自己的LEO.<br>当尝试确定分区HW时,它会选出所有满足条件的副本,比较它们的LEO(当然也包括leader自己的LEO),并选择最小的LEO值作为HW值.<br>这里的满足条件主要是指副本要满足以下两个条件之一,<br>处于ISR中.<br>副本LEO落后于leaderLEO的时长不大于<code>replica.lag.time.max.ms</code>参数值(默认值是10秒).</p>
+<p>乍看上去好像这两个条件说的是一回事,毕竟刚才定义ISR时也是用的这个参数.<br>但某些情况下Kafka的确可能出现副本已经追上了leader的进度,但却不在ISR中的情况.<br>比如,某个从failure中恢复的副本.<br>如果Kafka只判断第一个条件,确定分区HW值时就不会考虑这些未在ISR中的副本,但这些副本已经具备了立刻进入ISR的资格,因此就可能出现分区HW值越过ISR中副本LEO的情况—.<br>这肯定是不允许的,因为分区HW实际上就是ISR中所有副本LEO的最小值.</p>
+<h3 id="日志存储"><a href="#日志存储" class="headerlink" title="日志存储"></a>日志存储</h3><h4 id="日志留存"><a href="#日志留存" class="headerlink" title="日志留存"></a>日志留存</h4><p><code>基于时间的留存策略</code><br>Kafka默认会清除7天前的日志段数据(包括索引文件).<br>Kafka提供了3个broker端参数,其中<code>log.retention.&#123;hours|minutes|ms&#125;</code>用于配置清除日志的时间间隔,其中的ms优先级最高,minutes次之,hours优先级最低.</p>
+<p><code>基于大小的留存策略</code><br>Kafka默认只会为每个log保存<code>log.retention.bytes</code>参数值大小的字节数.<br>默认值是-1,表示Kafka不会对log进行大小方面的限制.</p>
+<p>日志清除是一个异步过程,Kafka broker启动后会创建单独的线程处理日志清除事宜.<br>另外,日志清除对于当前日志段是不生效的,Kafka永远不会清除当前日志段.<br>因此,若把日志段文件最大文件的大小设置得过大而导致没有出现日志切分,那么日志清除也就永远无法执行.</p>
+<h4 id="日志compaction"><a href="#日志compaction" class="headerlink" title="日志compaction"></a>日志compaction</h4><p>如果要使用log compaction,Kafka消息必须要设置key.</p>
+<p><code>log.cleanup.policy</code><br>是否启用log compaction,取值delete,compact.</p>
+<p><code>log.cleaner.enable</code><br>是否启用log Cleaner,默认true.</p>
+<p><code>log.cleaner.min.compaction.lag.ms</code><br>默认值是0,表示除了当前日志段,理论上所有的日志段都属于可清理部分.</p>
+<h3 id="通信协议"><a href="#通信协议" class="headerlink" title="通信协议"></a>通信协议</h3><h3 id="controller"><a href="#controller" class="headerlink" title="controller"></a>controller</h3><p>在一个Kafka集群中,某个broker会被选举出来承担特殊的角色,即控制器(controller),用来管理和协调Kafka集群,每个Kafka集群任意时刻都只能有一个controller.</p>
+<h4 id="管理状态"><a href="#管理状态" class="headerlink" title="管理状态"></a>管理状态</h4><p>controller维护的状态分为两类,每台broker上的分区副本和每个分区的leader副本信息.<br>从维度上看,这些状态又可分为副本状态和分区状态.<br>controller为了维护这两个状态专门引入了两个状态机,分别管理副本状态和分区状态.</p>
+<blockquote>
+<p>副本状态机(Replica State Machine)</p>
+</blockquote>
+<p>当前,Kafka为副本定义了7种状态以及每个状态之间的流转规则,这些状态分别如下,<br><code>NewReplica</code><br>controller创建副本时的最初状态.当处在这个状态时,副本只能成为follower副本.</p>
+<p><code>OnlineReplica</code><br>启动副本后变更为该状态.在该状态下,副本既可以成为follower副本也可以成为leader副本.</p>
+<p><code>OfflineReplica</code><br>一旦副本所在broker崩溃,该副本将变更为该状态.</p>
+<p><code>ReplicaDeletionStarted</code><br>若开启了topic删除操作,topic下所有分区的所有副本都会被删除.此时副本进入该状态.</p>
+<p><code>ReplicaDeletionSuccessful</code><br>若副本成功响应了删除副本请求,则进入该状态.</p>
+<p><code>ReplicaDeletionIneligible</code><br>若副本删除失败,则进入该状态.</p>
+<p><code>NonExistentReplica</code><br>若副本被成功删除,则进入该状态.</p>
+<p>当创建某个topic后,该topic下所有分区的所有副本都是NonExistent状态的,此时controller加载ZooKeeper中该topic每个分区的所有副本信息到内存中,同时将副本状态变更为New,之后controller选择该分区副本列表中的第一个副本作为分区的leader副本并设置所有副本进入ISR,然后在ZooKeeper中持久化该决定.<br>一旦确定了分区的leader和ISR之后,controller会将这些信息以请求的方式发送给所有副本,同时将这些副本状态同步到集群的所有broker上以便让它们知晓.当这些都做完后,controller会将分区的所有副本状态置为Online,这也是副本正常工作的状态.<br>当开启了topic删除操作时,controller会尝试停止所有副本,此时副本将停止向leader获取数据,但若停止的副本就是leader副本本身,则controller会设置该分区的leader为NO_LEADER,之后副本进入Offline状态.<br>一旦所有副本进入Offline状态,controller需要将副本进一步变更到ReplicaDeletionStarted状态表明删除topic任务的开启.<br>在这一步的状态流转中,controller会给这些副本所在的broker发送请求,让它们删除本机上的副本数据.<br>一旦删除成功,这些副本就变更到ReplicaDeletionSuccessful状态.</p>
+<p>如果有失败的副本,那么该副本进入ReplicaDeletionIneligible状态表明暂时还无法删除该副本,等待controller的重试.<br>那些处于ReplicaDeletionSuccessful状态的副本稍后会被自动地变更到NonExistent终止状态,同时controller的上下文缓存会清除这些副本信息.</p>
+<blockquote>
+<p>分区状态机(Partition State Machine)</p>
+</blockquote>
+<p><code>NonExistent</code><br>表明不存在的分区或已删除的分区.</p>
+<p><code>NewPartition</code><br>一旦被创建,分区便处于该状态.此时,Kafka已经为分区确定了副本列表,但尚未选举出leader和ISR.</p>
+<p><code>OnlinePartition</code><br>一旦该分区的leader被选出,则进入此状态.这也是分区正常工作时的状态.</p>
+<p><code>OfflinePartition</code><br>在成功选举出leader后,若leader所在的broker宕机,则分区将进入该状态,表明无法正常工作了.</p>
+<p>当创建topic时,controller负责创建分区对象,它首先会短暂地将所有分区状态设置为NonExistent,之后马上读取ZooKeeper中的副本分配方案,然后令分区状态进入NewPartition.<br>处于NewPartition状态的分区尚未有leader和ISR,因此controller会初始化leader和ISR信息并设置分区状态为OnlinePartition.<br>此时分区开始正常工作.</p>
+<p>若用户发起了删除topic操作或关闭broker操作,那么controller会令受影响的分区进入到Offline状态.<br>如果是删除操作,则controller还会开启分区下面副本的删除操作并最终将分区状态设置为NonExistent.<br>而如果是关闭broker操作,则controller会判断该broker是否是分区的leader.<br>如果是则需要开启新一轮的leader选举并调整分区状态回OnlinePartition.</p>
+<h4 id="controller职责"><a href="#controller职责" class="headerlink" title="controller职责"></a>controller职责</h4><p><code>更新集群元数据信息</code><br>当有分区信息发生变更时,controller将变更后的信息封装进UpdateMetadataRequests请求中,然后发送给集群中的每个broker,这样clients在请求数据时总是能够获取最新/最及时的分区信息.</p>
+<p><code>创建topic</code><br>controller启动时会创建一个ZooKeeper的监听器,监控ZooKeeper节点<code>/brokers/topics</code>下子节点的变更情况.<br>一旦监控到该目录下有新增znode,就立即触发topic创建逻辑,即controller会为新建topic的每个分区确定leader和ISR,然后更新集群的元数据信息.<br>做完这些之后controller还会创建一个新的监听器用于监听ZooKeeper的<code>/brokers/topics/&lt;新增 topic&gt;</code>节点内容的变更.<br>这样当topic分区发生变化的时候controller也能在第一时间得到通知.</p>
+<p><code>删除topic</code><br>向ZooKeeper的<code>/admin/delete_topics</code>下新建一个znode.<br>controller启动时会创建一个监听器专门监听该路径下的子节点变更情况,一旦发现有新增节点,则controller立即开启删除topic的逻辑.<br>该逻辑主要分为两个阶段:停止所有副本运行,删除所有副本的日志数据.<br>一旦完成这些操作,controller会移除<code>/admin/delete_topics/&lt;待删除topic&gt;</code>节点,这代表topic删除操作正式完成.</p>
+<p><code>分区重分配</code><br>由Kafka集群的管理员发起的,旨在对topic的所有分区重新分配副本所在broker的位置,以期望实现更均匀的分配效果.<br>在该操作中管理员需要手动制定分配方案并按照指定的格式写入ZooKeeper的<code>/admin/reassign_partitions</code>节点下.<br>分区副本重分配的过程实际上是先扩展再收缩的过程.<br>controller首先将分区副本集合进行扩展(旧副本集合与新副本集合的合集),等待它们全部与leader保持同步之后将leader设置为新分配方案中的副本,<br>最后执行收缩阶段,将分区副本集合缩减成分配方案中的副本集合.</p>
+<p><code>preferred leader副本选举</code><br>为了避免分区副本分配不均匀,Kafka引入了preferred副本的概念.<br>比如一个分区的副本列表是<code>[1,2,3]</code>,那么broker 1就被称为该分区的preferred leader,因为它位于副本列表的第一位.<br>在集群运行的过程中,分区的leader因为各种各样的原因会发生变更,从而使得leader不再是preferred leader,此时用户可以发起命令将这些分区的leader重新调整为preferred leader.<br>具体的方法有如下两种,</p>
+<p>1.设置broker端参数<code>auto.leader.rebalance.enable</code>为true,这样controller会定时地自动调整preferred leader.<br>2.通过kafka-preferred-replica-election脚本手动触发.</p>
+<p>在内部,这两种方法都向ZooKeeper的<code>/admin/preferred_replica_election</code>节点写入数据.<br>同样地,controller也会注册监听该目录的监听器.<br>一旦被触发,controller会将对应分区的leader调整回副本列表中的第一个副本,之后将此变更广播出去.</p>
+<p><code>topic分区扩展</code><br>当前增加分区主要使用kafka-topics脚本的<code>--alter</code>选项来完成.<br>和创建topic一样它会向ZooKeeper的<code>/brokers/topics/&lt;topic&gt;</code>节点下写入新的分区目录.<br>controller在创建topic之后会注册一个新的监听器用于监听分区目录数据的变化.<br>因此一旦增加了topic分区,该监听器会被触发,执行对应的分区创建任务(比如选举leader和ISR等),之后更新集群元数据信息.</p>
+<p><code>broker加入集群</code><br>每当有新broker加入集群时,监听器会感知到变化,执行对应的broker启动任务,之后更新集群元数据信息并广而告之.</p>
+<p><code>broker崩溃</code><br>由于当前broker在ZooKeeper中注册的znode是临时节点,因此一旦broker崩溃,broker与ZooKeeper的会话会失效并导致临时节点被删除,故监控broker加入的监听器同样被用来监控那些因为崩溃而退出集群的broker列表.<br>若发现有broker子目录消失,controller便立即可知该broker退出集群,从而开启broker退出逻辑,最后更新集群元数据并同步到其他broker上.</p>
+<p><code>受控关闭</code><br><code>controller leader选举</code><br>若当前controller发生故障或显式关闭,Kafka必须要能够保证及时选出新的controller.<br>当前,一个Kafka集群中发生controller leader选举的场景共有如下4种,</p>
+<p>关闭controller所在broker.<br>当前controller所在broker宕机或崩溃.<br>手动删除ZooKeeper的/controller节点.<br>手动向ZooKeeper的/controller节点写入新的broker id.</p>
+<p>这4种操作变更实际上都是/controller节点的内容,因此controller只需要做一件事情:创建一个监听该目录的监听器.<br>/controller本质上是一个临时节点,节点保存了当前controller所在的broker id.<br>集群首次启动时所有broke 都会抢着创建该节点,但ZooKeeper保证了最终只能有一个broker胜出,胜出的那个broker即成为controller.</p>
+<p>一旦成为controller,它会增加controller的版本号,即更新/controller_epoch节点的值,然后履行上面所有的这些职责.</p>
+<p>对于那些没有成为controller的broker们而言,它们不会甘心失败,而是继续监听/controller节点的存活情况并随时准备竞选新的controller.</p>
+<h3 id="broker请求"><a href="#broker请求" class="headerlink" title="broker请求"></a>broker请求</h3>
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/kafka/" rel="tag"># kafka</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/03/14/kafka%20producer/" rel="prev" title="kafka producer">
+                  <i class="fa fa-chevron-left"></i> kafka producer
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/06/14/hive%20question/" rel="next" title="hive question">
+                  hive question <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

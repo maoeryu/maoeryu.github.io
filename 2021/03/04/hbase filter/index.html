@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="hbase版本1.2.6 概述hbase中两种主要的数据读取函数是get和scan,它们都支持直接或指定起止key访问数据,或者添加更多的限制条件,如列族&#x2F;列&#x2F;时间戳&#x2F;版本号等. 但它们缺少一些细粒度的筛选功能,比如基于正则或key或value来进行筛选. 通过filter可以实现这些功能,所有的filter都在服务端生效,叫做谓词下推,这样可以保证被过滤的数据不会被传送到客户端,提高系统性能.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hbase filter">
+<meta property="og:url" content="https://maoeryu.github.io/2021/03/04/hbase%20filter/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="hbase版本1.2.6 概述hbase中两种主要的数据读取函数是get和scan,它们都支持直接或指定起止key访问数据,或者添加更多的限制条件,如列族&#x2F;列&#x2F;时间戳&#x2F;版本号等. 但它们缺少一些细粒度的筛选功能,比如基于正则或key或value来进行筛选. 通过filter可以实现这些功能,所有的filter都在服务端生效,叫做谓词下推,这样可以保证被过滤的数据不会被传送到客户端,提高系统性能.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbase_filter.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbase_compare.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbase_comparator.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbase_filterlist.png">
+<meta property="article:published_time" content="2021-03-03T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-07-26T02:53:00.109Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hbase">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/hbase_filter.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/03/04/hbase%20filter/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hbase filter | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%87%E6%BB%A4%E5%99%A8%E5%B1%82%E6%AC%A1%E7%BB%93%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">过滤器层次结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AF%94%E8%BE%83%E8%BF%90%E7%AE%97%E7%AC%A6"><span class="nav-number">2.1.</span> <span class="nav-text">比较运算符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AF%94%E8%BE%83%E5%99%A8"><span class="nav-number">2.2.</span> <span class="nav-text">比较器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%87%E6%BB%A4%E5%99%A8%E7%A7%8D%E7%B1%BB"><span class="nav-number">2.3.</span> <span class="nav-text">过滤器种类</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%AF%94%E8%BE%83%E8%BF%87%E6%BB%A4%E5%99%A8"><span class="nav-number">2.3.1.</span> <span class="nav-text">比较过滤器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%93%E7%94%A8%E8%BF%87%E6%BB%A4%E5%99%A8"><span class="nav-number">2.3.2.</span> <span class="nav-text">专用过滤器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B6%E5%AE%83"><span class="nav-number">2.3.3.</span> <span class="nav-text">其它</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95"><span class="nav-number">3.</span> <span class="nav-text">测试</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%8C%E8%BF%87%E6%BB%A4%E5%99%A8-RowFilter"><span class="nav-number">3.1.</span> <span class="nav-text">行过滤器-RowFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%97%E6%97%8F%E8%BF%87%E6%BB%A4%E5%99%A8-FamilyFilter"><span class="nav-number">3.2.</span> <span class="nav-text">列族过滤器-FamilyFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%97%E5%90%8D%E8%BF%87%E6%BB%A4%E5%99%A8-QualifierFilter"><span class="nav-number">3.3.</span> <span class="nav-text">列名过滤器-QualifierFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%80%BC%E8%BF%87%E6%BB%A4%E5%99%A8-ValueFilter"><span class="nav-number">3.4.</span> <span class="nav-text">值过滤器-ValueFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%95%E5%88%97%E5%80%BC%E8%BF%87%E6%BB%A4%E5%99%A8-SingleColumnValueFilter"><span class="nav-number">3.5.</span> <span class="nav-text">单列值过滤器-SingleColumnValueFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%95%E5%88%97%E6%8E%92%E9%99%A4%E8%BF%87%E6%BB%A4%E5%99%A8-SingleColumnValueExcludeFilter"><span class="nav-number">3.6.</span> <span class="nav-text">单列排除过滤器-SingleColumnValueExcludeFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E7%BC%80%E8%BF%87%E6%BB%A4%E5%99%A8-PrefixFilter"><span class="nav-number">3.7.</span> <span class="nav-text">前缀过滤器-PrefixFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E9%A1%B5%E8%BF%87%E6%BB%A4%E5%99%A8-PageFilter"><span class="nav-number">3.8.</span> <span class="nav-text">分页过滤器-PageFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%8C%E9%94%AE%E8%BF%87%E6%BB%A4%E5%99%A8-KeyOnlyFilter"><span class="nav-number">3.9.</span> <span class="nav-text">行键过滤器-KeyOnlyFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A6%96%E6%AC%A1%E8%A1%8C%E9%94%AE%E8%BF%87%E6%BB%A4%E5%99%A8-FirstKeyOnlyFilter"><span class="nav-number">3.10.</span> <span class="nav-text">首次行键过滤器-FirstKeyOnlyFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8C%85%E5%90%AB%E7%BB%93%E6%9D%9F%E8%BF%87%E6%BB%A4%E5%99%A8-InclusiveStopFilter"><span class="nav-number">3.11.</span> <span class="nav-text">包含结束过滤器-InclusiveStopFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E6%88%B3%E8%BF%87%E6%BB%A4%E5%99%A8-TimestampsFilter"><span class="nav-number">3.12.</span> <span class="nav-text">时间戳过滤器-TimestampsFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%97%E8%AE%A1%E6%95%B0%E8%BF%87%E6%BB%A4%E5%99%A8-ColumnCountGetFilter"><span class="nav-number">3.13.</span> <span class="nav-text">列计数过滤器-ColumnCountGetFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%97%E5%88%86%E9%A1%B5%E8%BF%87%E6%BB%A4%E5%99%A8-ColumnPaginationFilter"><span class="nav-number">3.14.</span> <span class="nav-text">列分页过滤器-ColumnPaginationFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%97%E5%89%8D%E7%BC%80%E8%BF%87%E6%BB%A4%E5%99%A8-ColumnPrefixFilter"><span class="nav-number">3.15.</span> <span class="nav-text">列前缀过滤器-ColumnPrefixFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#FilterList"><span class="nav-number">3.16.</span> <span class="nav-text">FilterList</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E5%88%97%E5%90%8D%E5%89%8D%E7%BC%80%E8%BF%87%E6%BB%A4%E5%99%A8-MultipleColumnPrefixFilter"><span class="nav-number">3.17.</span> <span class="nav-text">多列名前缀过滤器-MultipleColumnPrefixFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%97%E8%8C%83%E5%9B%B4%E8%BF%87%E6%BB%A4%E5%99%A8-ColumnRangeFilter"><span class="nav-number">3.18.</span> <span class="nav-text">列范围过滤器-ColumnRangeFilter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B7%B3%E8%BF%87%E8%BF%87%E6%BB%A4%E5%99%A8-SkipFilter"><span class="nav-number">3.19.</span> <span class="nav-text">跳过过滤器-SkipFilter</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/03/04/hbase%20filter/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hbase filter
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-03-04 00:00:00" itemprop="dateCreated datePublished" datetime="2021-03-04T00:00:00+08:00">2021-03-04</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-07-26 10:53:00" itemprop="dateModified" datetime="2022-07-26T10:53:00+08:00">2022-07-26</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>hbase版本1.2.6</p>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>hbase中两种主要的数据读取函数是get和scan,它们都支持直接或指定起止key访问数据,或者添加更多的限制条件,如列族/列/时间戳/版本号等.</p>
+<p>但它们缺少一些细粒度的筛选功能,比如基于正则或key或value来进行筛选.</p>
+<p>通过filter可以实现这些功能,所有的filter都在服务端生效,叫做谓词下推,这样可以保证被过滤的数据不会被传送到客户端,提高系统性能.</p>
+<img src="/images/hbase_filter.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<span id="more"></span>
+<h2 id="过滤器层次结构"><a href="#过滤器层次结构" class="headerlink" title="过滤器层次结构"></a>过滤器层次结构</h2><p>过滤器最底层是filter接口和filterBase抽象类,用户定义一个所需要的过滤器实例,并把它传给get或scan实例.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">setFilter(filter)</span><br></pre></td></tr></table></figure>
+
+<p>过滤器可以作用于插入的整行数据,所以可以基于key/列名/value/时间戳来过滤.</p>
+<h3 id="比较运算符"><a href="#比较运算符" class="headerlink" title="比较运算符"></a>比较运算符</h3><p>CompareFilter中的比较运算符,它可以决定什么被包含/被排除.</p>
+<img src="/images/hbase_compare.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="比较器"><a href="#比较器" class="headerlink" title="比较器"></a>比较器</h3><p>CompareFilter所需要的第2个参数是比较器comparator,比较器都继承自WritableByteArrayComparable,其实现了Writable和Comparable接口.</p>
+<img src="/images/hbase_comparator.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>后面3种比较器,只能与EQUAL和NOT_EQUAL搭配使用.<br>因为这些比较器的compareTo方法返回0或1,和其它比较器使用时会报错.</p>
+</blockquote>
+<h3 id="过滤器种类"><a href="#过滤器种类" class="headerlink" title="过滤器种类"></a>过滤器种类</h3><h4 id="比较过滤器"><a href="#比较过滤器" class="headerlink" title="比较过滤器"></a>比较过滤器</h4><table>
+<thead>
+<tr>
+<th align="left">name</th>
+<th align="left">name</th>
+<th align="left">name</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">RowFilter</td>
+<td align="left">FamilyFilter</td>
+<td align="left">QualifierFilter</td>
+</tr>
+<tr>
+<td align="left">MultipleColumnPrefixFilter</td>
+<td align="left">ColumnRangeFilter</td>
+<td align="left">ValueFilter</td>
+</tr>
+</tbody></table>
+<h4 id="专用过滤器"><a href="#专用过滤器" class="headerlink" title="专用过滤器"></a>专用过滤器</h4><table>
+<thead>
+<tr>
+<th align="left">name</th>
+<th align="left">name</th>
+<th align="left">name</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">SingleColumnValueFilter</td>
+<td align="left">SingleColumnValueExcludeFilter</td>
+<td align="left">PrefixFilter</td>
+</tr>
+<tr>
+<td align="left">KeyOnlyFilter</td>
+<td align="left">FirstKeyOnlyFilter</td>
+<td align="left">InclusiveStopFilter</td>
+</tr>
+<tr>
+<td align="left">TimestampsFilter</td>
+<td align="left">ColumnCountGetFilter</td>
+<td align="left">ColumnPaginationFilter</td>
+</tr>
+<tr>
+<td align="left">ColumnPrefixFilter</td>
+<td align="left">SkipFilter</td>
+<td align="left">PageFilter</td>
+</tr>
+</tbody></table>
+<h4 id="其它"><a href="#其它" class="headerlink" title="其它"></a>其它</h4><p>FilterList</p>
+<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><blockquote>
+<p>创建hbase表</p>
+</blockquote>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="string">&#x27;filtertest&#x27;</span>,<span class="string">&#x27;a&#x27;</span>,<span class="string">&#x27;b&#x27;</span>,<span class="string">&#x27;c&#x27;</span>,<span class="string">&#x27;d&#x27;</span>,<span class="string">&#x27;e&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="行过滤器-RowFilter"><a href="#行过滤器-RowFilter" class="headerlink" title="行过滤器-RowFilter"></a>行过滤器-RowFilter</h3><p>向hbase中插入测试数据<br>for i in &#39;1&#39;..&#39;3&#39; do for j in &#39;1&#39;..&#39;3&#39; do put &#39;filtertest&#39;,&quot;row-#{i}#{j}&quot;,&quot;d:a&quot;,&quot;ab&quot; end end</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">Scan scan = <span class="keyword">new</span> Scan();</span><br><span class="line">scan.addColumn(Bytes.toBytes(<span class="string">&quot;d&quot;</span>), Bytes.toBytes(<span class="string">&quot;a&quot;</span>));</span><br><span class="line"></span><br><span class="line"><span class="comment">//指定比较运算符和比较器,精确匹配</span></span><br><span class="line">Filter filter1 = <span class="keyword">new</span> RowFilter(CompareFilter.CompareOp.LESS_OR_EQUAL, <span class="keyword">new</span> BinaryComparator(Bytes.toBytes(<span class="string">&quot;row-22&quot;</span>)));</span><br><span class="line">scan.setFilter(filter1);</span><br><span class="line">print(scan, table);</span><br><span class="line"></span><br><span class="line"><span class="comment">//使用正则表达式</span></span><br><span class="line">Filter filter2 = <span class="keyword">new</span> RowFilter(CompareFilter.CompareOp.EQUAL, <span class="keyword">new</span> RegexStringComparator(<span class="string">&quot;.*-.2&quot;</span>));</span><br><span class="line">scan.setFilter(filter2);</span><br><span class="line">print(scan, table);</span><br><span class="line"></span><br><span class="line"><span class="comment">//使用子串匹配</span></span><br><span class="line">Filter filter3 = <span class="keyword">new</span> RowFilter(CompareFilter.CompareOp.EQUAL, <span class="keyword">new</span> SubstringComparator(<span class="string">&quot;-2&quot;</span>));</span><br><span class="line">scan.setFilter(filter3);</span><br><span class="line">print(scan, table);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>打印结果 </p>
+</blockquote>
+<p>keyvalues={row-11/d:a/1606381357672/Put/vlen=2/seqid=0}<br>keyvalues={row-12/d:a/1606381357676/Put/vlen=2/seqid=0}<br>keyvalues={row-13/d:a/1606381357679/Put/vlen=2/seqid=0}<br>keyvalues={row-21/d:a/1606381357681/Put/vlen=2/seqid=0}<br>keyvalues={row-22/d:a/1606381357683/Put/vlen=2/seqid=0}</p>
+<p>keyvalues={row-12/d:a/1606381357676/Put/vlen=2/seqid=0}<br>keyvalues={row-22/d:a/1606381357683/Put/vlen=2/seqid=0}<br>keyvalues={row-32/d:a/1606381357690/Put/vlen=2/seqid=0}</p>
+<p>keyvalues={row-21/d:a/1606381357681/Put/vlen=2/seqid=0}<br>keyvalues={row-22/d:a/1606381357683/Put/vlen=2/seqid=0}<br>keyvalues={row-23/d:a/1606381357685/Put/vlen=2/seqid=0}</p>
+<h3 id="列族过滤器-FamilyFilter"><a href="#列族过滤器-FamilyFilter" class="headerlink" title="列族过滤器-FamilyFilter"></a>列族过滤器-FamilyFilter</h3><p>向hbase中插入测试数据<br>for i in &#39;1&#39;..&#39;3&#39; do for j in &#39;1&#39;..&#39;3&#39; do put &#39;filtertest&#39;,&quot;row-#{i}#{j}&quot;,&quot;a:a&quot;,&quot;ab&quot; end end<br>for i in &#39;1&#39;..&#39;3&#39; do for j in &#39;1&#39;..&#39;3&#39; do put &#39;filtertest&#39;,&quot;row-#{i}#{j}&quot;,&quot;b:a&quot;,&quot;ab&quot; end end<br>for i in &#39;1&#39;..&#39;3&#39; do for j in &#39;1&#39;..&#39;3&#39; do put &#39;filtertest&#39;,&quot;row-#{i}#{j}&quot;,&quot;d:a&quot;,&quot;ab&quot; end end<br>for i in &#39;1&#39;..&#39;3&#39; do for j in &#39;1&#39;..&#39;3&#39; do put &#39;filtertest&#39;,&quot;row-#{i}#{j}&quot;,&quot;e:a&quot;,&quot;ab&quot; end end</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">Filter filter1 = <span class="keyword">new</span> FamilyFilter(CompareFilter.CompareOp.LESS, <span class="keyword">new</span> BinaryComparator(Bytes.toBytes(<span class="string">&quot;c&quot;</span>)));</span><br><span class="line">Scan scan = <span class="keyword">new</span> Scan();</span><br><span class="line">scan.setFilter(filter1);</span><br><span class="line">print(scan, table);</span><br><span class="line"></span><br><span class="line">Get get1 = <span class="keyword">new</span> Get(Bytes.toBytes(<span class="string">&quot;row-12&quot;</span>));</span><br><span class="line">get1.setFilter(filter1);</span><br><span class="line">System.out.println(table.get(get1) + <span class="string">&quot;\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">Filter filter2 = <span class="keyword">new</span> FamilyFilter(CompareFilter.CompareOp.EQUAL, <span class="keyword">new</span> BinaryComparator(Bytes.toBytes(<span class="string">&quot;c&quot;</span>)));</span><br><span class="line">Get get2 = <span class="keyword">new</span> Get(Bytes.toBytes(<span class="string">&quot;row-11&quot;</span>));</span><br><span class="line">get2.addFamily(Bytes.toBytes(<span class="string">&quot;d&quot;</span>));</span><br><span class="line">get2.setFilter(filter2);</span><br><span class="line">System.out.println(table.get(get2) + <span class="string">&quot;\n&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>打印结果</p>
+</blockquote>
+<p>keyvalues={row-11/a:a/1606383057882/Put/vlen=2/seqid=0, row-11/b:a/1606383082035/Put/vlen=2/seqid=0}<br>keyvalues={row-12/a:a/1606383057893/Put/vlen=2/seqid=0, row-12/b:a/1606383082046/Put/vlen=2/seqid=0}<br>keyvalues={row-13/a:a/1606383057895/Put/vlen=2/seqid=0, row-13/b:a/1606383082048/Put/vlen=2/seqid=0}<br>keyvalues={row-21/a:a/1606383057897/Put/vlen=2/seqid=0, row-21/b:a/1606383082050/Put/vlen=2/seqid=0}<br>keyvalues={row-22/a:a/1606383057899/Put/vlen=2/seqid=0, row-22/b:a/1606383082052/Put/vlen=2/seqid=0}<br>keyvalues={row-23/a:a/1606383057900/Put/vlen=2/seqid=0, row-23/b:a/1606383082054/Put/vlen=2/seqid=0}<br>keyvalues={row-31/a:a/1606383057902/Put/vlen=2/seqid=0, row-31/b:a/1606383082056/Put/vlen=2/seqid=0}<br>keyvalues={row-32/a:a/1606383057904/Put/vlen=2/seqid=0, row-32/b:a/1606383082058/Put/vlen=2/seqid=0}<br>keyvalues={row-33/a:a/1606383057906/Put/vlen=2/seqid=0, row-33/b:a/1606383082060/Put/vlen=2/seqid=0}</p>
+<p>keyvalues={row-12/a:a/1606383057893/Put/vlen=2/seqid=0, row-12/b:a/1606383082046/Put/vlen=2/seqid=0}</p>
+<p>keyvalues=NONE</p>
+<h3 id="列名过滤器-QualifierFilter"><a href="#列名过滤器-QualifierFilter" class="headerlink" title="列名过滤器-QualifierFilter"></a>列名过滤器-QualifierFilter</h3><p>向hbase中插入测试数据<br>for i in &#39;1&#39;..&#39;3&#39; do for j in &#39;1&#39;..&#39;3&#39; do put &#39;filtertest&#39;,&quot;row-#{i}#{j}&quot;,&quot;d:a#{i}&quot;,&quot;ab&quot; end end</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Filter filter = <span class="keyword">new</span> QualifierFilter(CompareFilter.CompareOp.LESS_OR_EQUAL, <span class="keyword">new</span> BinaryComparator(Bytes.toBytes(<span class="string">&quot;a12&quot;</span>)));</span><br><span class="line">Scan scan = <span class="keyword">new</span> Scan();</span><br><span class="line">scan.setFilter(filter);</span><br><span class="line">print(scan, table);</span><br><span class="line"></span><br><span class="line">Get get = <span class="keyword">new</span> Get(Bytes.toBytes(<span class="string">&quot;row-12&quot;</span>));</span><br><span class="line">get.setFilter(filter);</span><br><span class="line">System.out.println(table.get(get) + <span class="string">&quot;\n&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>打印结果</p>
+</blockquote>
+<p>keyvalues={row-11/d:a1/1606383404675/Put/vlen=2/seqid=0}<br>keyvalues={row-12/d:a1/1606383404686/Put/vlen=2/seqid=0}<br>keyvalues={row-13/d:a1/1606383404688/Put/vlen=2/seqid=0}</p>
+<p>keyvalues={row-12/d:a1/1606383404686/Put/vlen=2/seqid=0}</p>
+<h3 id="值过滤器-ValueFilter"><a href="#值过滤器-ValueFilter" class="headerlink" title="值过滤器-ValueFilter"></a>值过滤器-ValueFilter</h3><p>向hbase中插入测试数据<br>for i in &#39;1&#39;..&#39;3&#39; do for j in &#39;1&#39;..&#39;3&#39; do put &#39;filtertest&#39;,&quot;row-#{i}#{j}&quot;,&quot;d:a&quot;,&quot;#{i}#{j}&quot; end end</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Filter filter = <span class="keyword">new</span> ValueFilter(CompareFilter.CompareOp.EQUAL, <span class="keyword">new</span> SubstringComparator(<span class="string">&quot;2&quot;</span>));</span><br><span class="line">Scan scan = <span class="keyword">new</span> Scan().setFilter(filter);</span><br><span class="line">print(scan, table);</span><br><span class="line"></span><br><span class="line">Get get = <span class="keyword">new</span> Get(Bytes.toBytes(<span class="string">&quot;row-22&quot;</span>)).setFilter(filter);</span><br><span class="line">System.out.println(table.get(get));</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>打印结果</p>
+</blockquote>
+<p>keyvalues={row-12/d:a/1606383880872/Put/vlen=2/seqid=0}<br>keyvalues={row-21/d:a/1606383880876/Put/vlen=2/seqid=0}<br>keyvalues={row-22/d:a/1606383880878/Put/vlen=2/seqid=0}<br>keyvalues={row-23/d:a/1606383880879/Put/vlen=2/seqid=0}<br>keyvalues={row-32/d:a/1606383880883/Put/vlen=2/seqid=0}</p>
+<p>keyvalues={row-22/d:a/1606383880878/Put/vlen=2/seqid=0}</p>
+<h3 id="单列值过滤器-SingleColumnValueFilter"><a href="#单列值过滤器-SingleColumnValueFilter" class="headerlink" title="单列值过滤器-SingleColumnValueFilter"></a>单列值过滤器-SingleColumnValueFilter</h3><p>用一列的值决定是否一行数据被过滤.</p>
+<p>向hbase中插入测试数据<br>for i in &#39;1&#39;..&#39;3&#39; do for j in &#39;1&#39;..&#39;3&#39; do put &#39;filtertest&#39;,&quot;row-#{i}#{j}&quot;,&quot;d:a&quot;,&quot;#{i}#{j}&quot; end end<br>for i in &#39;1&#39;..&#39;3&#39; do for j in &#39;1&#39;..&#39;3&#39; do put &#39;filtertest&#39;,&quot;row-#{i}#{j}&quot;,&quot;d:b&quot;,&quot;#{i}#{j}&quot; end end</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">SingleColumnValueFilter filter = <span class="keyword">new</span> SingleColumnValueFilter(</span><br><span class="line">    Bytes.toBytes(<span class="string">&quot;d&quot;</span>), Bytes.toBytes(<span class="string">&quot;a&quot;</span>),</span><br><span class="line">    CompareFilter.CompareOp.NOT_EQUAL, <span class="keyword">new</span> SubstringComparator(<span class="string">&quot;22&quot;</span>)</span><br><span class="line">);</span><br><span class="line"><span class="comment">//当参考列不存在时,不包含参考列的行都被过滤</span></span><br><span class="line">filter.setFilterIfMissing(<span class="keyword">true</span>);</span><br><span class="line">Scan scan = <span class="keyword">new</span> Scan().setFilter(filter);</span><br><span class="line">print(scan, table);</span><br><span class="line"></span><br><span class="line">Get get = <span class="keyword">new</span> Get(Bytes.toBytes(<span class="string">&quot;row-21&quot;</span>)).setFilter(filter);</span><br><span class="line">System.out.println(table.get(get));</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>打印结果</p>
+</blockquote>
+<p>keyvalues={row-11/d:a/1606383880860/Put/vlen=2/seqid=0, row-11/d:b/1606387994704/Put/vlen=2/seqid=0}<br>keyvalues={row-12/d:a/1606383880872/Put/vlen=2/seqid=0, row-12/d:b/1606387994713/Put/vlen=2/seqid=0}<br>keyvalues={row-13/d:a/1606383880874/Put/vlen=2/seqid=0, row-13/d:b/1606387994716/Put/vlen=2/seqid=0}<br>keyvalues={row-21/d:a/1606383880876/Put/vlen=2/seqid=0, row-21/d:b/1606387994718/Put/vlen=2/seqid=0}<br>keyvalues={row-23/d:a/1606383880879/Put/vlen=2/seqid=0, row-23/d:b/1606387994723/Put/vlen=2/seqid=0}<br>keyvalues={row-31/d:a/1606383880882/Put/vlen=2/seqid=0, row-31/d:b/1606387994724/Put/vlen=2/seqid=0}<br>keyvalues={row-32/d:a/1606383880883/Put/vlen=2/seqid=0, row-32/d:b/1606387994726/Put/vlen=2/seqid=0}<br>keyvalues={row-33/d:a/1606383880885/Put/vlen=2/seqid=0, row-33/d:b/1606387994728/Put/vlen=2/seqid=0}</p>
+<p>keyvalues={row-21/d:a/1606383880876/Put/vlen=2/seqid=0, row-21/d:b/1606387994718/Put/vlen=2/seqid=0}</p>
+<h3 id="单列排除过滤器-SingleColumnValueExcludeFilter"><a href="#单列排除过滤器-SingleColumnValueExcludeFilter" class="headerlink" title="单列排除过滤器-SingleColumnValueExcludeFilter"></a>单列排除过滤器-SingleColumnValueExcludeFilter</h3><p>参考列不被包括在结果中.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SingleColumnValueExcludeFilter filter = <span class="keyword">new</span> SingleColumnValueExcludeFilter(</span><br><span class="line">    Bytes.toBytes(<span class="string">&quot;d&quot;</span>), Bytes.toBytes(<span class="string">&quot;a&quot;</span>),</span><br><span class="line">    CompareFilter.CompareOp.NOT_EQUAL, <span class="keyword">new</span> SubstringComparator(<span class="string">&quot;22&quot;</span>)</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>其它同单列过滤器.</p>
+<blockquote>
+<p>打印结果</p>
+</blockquote>
+<p>keyvalues={row-11/d:b/1606387994704/Put/vlen=2/seqid=0}<br>keyvalues={row-12/d:b/1606387994713/Put/vlen=2/seqid=0}<br>keyvalues={row-13/d:b/1606387994716/Put/vlen=2/seqid=0}<br>keyvalues={row-21/d:b/1606387994718/Put/vlen=2/seqid=0}<br>keyvalues={row-23/d:b/1606387994723/Put/vlen=2/seqid=0}<br>keyvalues={row-31/d:b/1606387994724/Put/vlen=2/seqid=0}<br>keyvalues={row-32/d:b/1606387994726/Put/vlen=2/seqid=0}<br>keyvalues={row-33/d:b/1606387994728/Put/vlen=2/seqid=0}</p>
+<p>keyvalues={row-21/d:b/1606387994718/Put/vlen=2/seqid=0}</p>
+<h3 id="前缀过滤器-PrefixFilter"><a href="#前缀过滤器-PrefixFilter" class="headerlink" title="前缀过滤器-PrefixFilter"></a>前缀过滤器-PrefixFilter</h3><p>所有与前缀匹配的行都会被返回客户端.</p>
+<p>向hbase中插入测试数据<br>for i in &#39;1&#39;..&#39;3&#39; do for j in &#39;1&#39;..&#39;3&#39; do put &#39;filtertest&#39;,&quot;row-#{i}#{j}&quot;,&quot;d:a&quot;,&quot;#{i}#{j}&quot; end end</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Filter filter = <span class="keyword">new</span> PrefixFilter(Bytes.toBytes(<span class="string">&quot;row-2&quot;</span>));</span><br><span class="line">Scan scan = <span class="keyword">new</span> Scan().setFilter(filter);</span><br><span class="line">print(scan, table);</span><br><span class="line"></span><br><span class="line">Get get = <span class="keyword">new</span> Get(Bytes.toBytes(<span class="string">&quot;row-22&quot;</span>)).setFilter(filter);</span><br><span class="line">System.out.println(table.get(get));</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>打印结果</p>
+</blockquote>
+<p>keyvalues={row-21/d:a/1606388501498/Put/vlen=2/seqid=0}<br>keyvalues={row-22/d:a/1606388501500/Put/vlen=2/seqid=0}<br>keyvalues={row-23/d:a/1606388501502/Put/vlen=2/seqid=0}</p>
+<p>keyvalues={row-22/d:a/1606388501500/Put/vlen=2/seqid=0}</p>
+<h3 id="分页过滤器-PageFilter"><a href="#分页过滤器-PageFilter" class="headerlink" title="分页过滤器-PageFilter"></a>分页过滤器-PageFilter</h3><p>对结果按行分页,需要指定pageSize参数,来控制每页返回的行数.</p>
+<p>不同的region服务器上并行执行的过滤器不能共享它们的状态和边界,因此每个过滤器都会获取pageCount行的结果,可能导致过滤器失效.</p>
+<h3 id="行键过滤器-KeyOnlyFilter"><a href="#行键过滤器-KeyOnlyFilter" class="headerlink" title="行键过滤器-KeyOnlyFilter"></a>行键过滤器-KeyOnlyFilter</h3><p>只返回key,不返回value.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">KeyValue.convertToKeyOnly(<span class="keyword">boolean</span>)</span><br></pre></td></tr></table></figure>
+
+<p>默认为false,表示值被设为长度0的字节数组.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Filter filter = <span class="keyword">new</span> KeyOnlyFilter();</span><br><span class="line">Scan scan = <span class="keyword">new</span> Scan().setFilter(filter);</span><br><span class="line">ResultScanner scanner = table.getScanner(scan);</span><br><span class="line"><span class="keyword">for</span> (Result result : scanner) &#123;</span><br><span class="line">  <span class="keyword">for</span> (Cell kv : result.rawCells()) &#123;</span><br><span class="line">    System.out.println(<span class="string">&quot;kv:&quot;</span> + Bytes.toString(kv.getRow()) + <span class="string">&quot;,value:&quot;</span> + Bytes.toString(kv.getValue()));</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">Get get = <span class="keyword">new</span> Get(Bytes.toBytes(<span class="string">&quot;row-22&quot;</span>)).setFilter(filter);</span><br><span class="line">System.out.println(table.get(get));</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>打印结果</p>
+</blockquote>
+<p>kv:row-11,value:<br>kv:row-12,value:<br>kv:row-13,value:<br>kv:row-21,value:<br>kv:row-22,value:<br>kv:row-23,value:<br>kv:row-31,value:<br>kv:row-32,value:<br>kv:row-33,value:<br>keyvalues={row-22/d:a/1606388501500/Put/vlen=0/seqid=0}</p>
+<h3 id="首次行键过滤器-FirstKeyOnlyFilter"><a href="#首次行键过滤器-FirstKeyOnlyFilter" class="headerlink" title="首次行键过滤器-FirstKeyOnlyFilter"></a>首次行键过滤器-FirstKeyOnlyFilter</h3><p>只访问一行中的第一列,用来统计行数,检查行是否存在.</p>
+<h3 id="包含结束过滤器-InclusiveStopFilter"><a href="#包含结束过滤器-InclusiveStopFilter" class="headerlink" title="包含结束过滤器-InclusiveStopFilter"></a>包含结束过滤器-InclusiveStopFilter</h3><p>扫描操作中的开始行被包含在结果中,但终止行被排除在外,使用此过滤器可以包含结束行.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Filter filter = <span class="keyword">new</span> InclusiveStopFilter(Bytes.toBytes(<span class="string">&quot;row-12&quot;</span>));</span><br><span class="line">Scan scan = <span class="keyword">new</span> Scan();</span><br><span class="line">scan.setStartRow(Bytes.toBytes(<span class="string">&quot;row-1&quot;</span>));</span><br><span class="line">scan.setFilter(filter);</span><br><span class="line">print(scan, table);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>打印结果</p>
+</blockquote>
+<p>keyvalues={row-11/d:a/1606388501486/Put/vlen=2/seqid=0}<br>keyvalues={row-12/d:a/1606388501494/Put/vlen=2/seqid=0}</p>
+<h3 id="时间戳过滤器-TimestampsFilter"><a href="#时间戳过滤器-TimestampsFilter" class="headerlink" title="时间戳过滤器-TimestampsFilter"></a>时间戳过滤器-TimestampsFilter</h3><p>在扫描结果中对版本进行细粒度控制.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Filter filter = <span class="keyword">new</span> TimestampsFilter(Lists.newArrayList(<span class="number">1606388501486L</span>, <span class="number">1606388501496L</span>, <span class="number">1606388501505L</span>));</span><br><span class="line">Scan scan1 = <span class="keyword">new</span> Scan().setFilter(filter);</span><br><span class="line">print(scan1, table);</span><br><span class="line"></span><br><span class="line">Scan scan2 = <span class="keyword">new</span> Scan().setFilter(filter);</span><br><span class="line">scan2.setTimeRange(<span class="number">1606388501500L</span>, <span class="number">1606388501507L</span>);</span><br><span class="line">print(scan2, table);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>打印结果</p>
+</blockquote>
+<p>keyvalues={row-11/d:a/1606388501486/Put/vlen=2/seqid=0}<br>keyvalues={row-13/d:a/1606388501496/Put/vlen=2/seqid=0}<br>keyvalues={row-32/d:a/1606388501505/Put/vlen=2/seqid=0}</p>
+<p>keyvalues={row-32/d:a/1606388501505/Put/vlen=2/seqid=0}</p>
+<h3 id="列计数过滤器-ColumnCountGetFilter"><a href="#列计数过滤器-ColumnCountGetFilter" class="headerlink" title="列计数过滤器-ColumnCountGetFilter"></a>列计数过滤器-ColumnCountGetFilter</h3><p>限制每行最多取回多少列,当一行的列数达到设定的最大值时,过滤器会停止整个扫描操作.<br>ColumnCountGetFilter(int n)</p>
+<h3 id="列分页过滤器-ColumnPaginationFilter"><a href="#列分页过滤器-ColumnPaginationFilter" class="headerlink" title="列分页过滤器-ColumnPaginationFilter"></a>列分页过滤器-ColumnPaginationFilter</h3><p>与PageFilter相似,可以对一行的所有列进行分页.</p>
+<h3 id="列前缀过滤器-ColumnPrefixFilter"><a href="#列前缀过滤器-ColumnPrefixFilter" class="headerlink" title="列前缀过滤器-ColumnPrefixFilter"></a>列前缀过滤器-ColumnPrefixFilter</h3><p>与PrefixFilter相似,通过对列名称进行前缀匹配过滤.<br>ColumnPrefixFilter(byte[] prefix)</p>
+<p>向hbase中插入测试数据<br>for i in &#39;1&#39;..&#39;3&#39; do for j in &#39;1&#39;..&#39;3&#39; do put &#39;filtertest&#39;,&quot;row-#{i}#{j}&quot;,&quot;d:a&quot;,&quot;#{i}#{j}&quot; end end<br>for i in &#39;1&#39;..&#39;3&#39; do for j in &#39;1&#39;..&#39;3&#39; do put &#39;filtertest&#39;,&quot;row-#{i}#{j}&quot;,&quot;d:b&quot;,&quot;#{i}#{j}&quot; end end</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Filter filter = <span class="keyword">new</span> ColumnPrefixFilter(Bytes.toBytes(<span class="string">&quot;a&quot;</span>));</span><br><span class="line">Scan scan = <span class="keyword">new</span> Scan().setFilter(filter);</span><br><span class="line">print(scan, table);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>打印结果</p>
+</blockquote>
+<p>keyvalues={row-11/d:a/1606388501486/Put/vlen=2/seqid=0}<br>keyvalues={row-12/d:a/1606388501494/Put/vlen=2/seqid=0}<br>keyvalues={row-13/d:a/1606388501496/Put/vlen=2/seqid=0}<br>keyvalues={row-21/d:a/1606388501498/Put/vlen=2/seqid=0}<br>keyvalues={row-22/d:a/1606388501500/Put/vlen=2/seqid=0}<br>keyvalues={row-23/d:a/1606388501502/Put/vlen=2/seqid=0}<br>keyvalues={row-31/d:a/1606388501504/Put/vlen=2/seqid=0}<br>keyvalues={row-32/d:a/1606388501505/Put/vlen=2/seqid=0}<br>keyvalues={row-33/d:a/1606388501507/Put/vlen=2/seqid=0}</p>
+<h3 id="FilterList"><a href="#FilterList" class="headerlink" title="FilterList"></a>FilterList</h3><p>提供多个过滤器共同限制.</p>
+<img src="/images/hbase_filterlist.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Filter&gt; filters = Lists.newArrayList();</span><br><span class="line">Filter filter1 = <span class="keyword">new</span> RowFilter(CompareFilter.CompareOp.GREATER_OR_EQUAL, <span class="keyword">new</span> BinaryComparator(Bytes.toBytes(<span class="string">&quot;row-22&quot;</span>)));</span><br><span class="line">filters.add(filter1);</span><br><span class="line"></span><br><span class="line">Filter filter2 = <span class="keyword">new</span> RowFilter(CompareFilter.CompareOp.LESS_OR_EQUAL, <span class="keyword">new</span> BinaryComparator(Bytes.toBytes(<span class="string">&quot;row-32&quot;</span>)));</span><br><span class="line">filters.add(filter2);</span><br><span class="line"></span><br><span class="line">Filter filter3 = <span class="keyword">new</span> QualifierFilter(CompareFilter.CompareOp.EQUAL, <span class="keyword">new</span> RegexStringComparator(<span class="string">&quot;\\w&quot;</span>));</span><br><span class="line">filters.add(filter3);</span><br><span class="line"></span><br><span class="line">FilterList filterList1 = <span class="keyword">new</span> FilterList(filters);</span><br><span class="line">Scan scan = <span class="keyword">new</span> Scan().setFilter(filterList1);</span><br><span class="line">print(scan, table);</span><br><span class="line"></span><br><span class="line">FilterList filterList2 = <span class="keyword">new</span> FilterList(FilterList.Operator.MUST_PASS_ONE, filters);</span><br><span class="line">scan.setFilter(filterList2);</span><br><span class="line">print(scan, table);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>打印结果</p>
+</blockquote>
+<p>keyvalues={row-22/d:a/1606388501500/Put/vlen=2/seqid=0, row-22/d:b/1606391824493/Put/vlen=2/seqid=0}<br>keyvalues={row-23/d:a/1606388501502/Put/vlen=2/seqid=0, row-23/d:b/1606391824500/Put/vlen=2/seqid=0}<br>keyvalues={row-31/d:a/1606388501504/Put/vlen=2/seqid=0, row-31/d:b/1606391824505/Put/vlen=2/seqid=0}<br>keyvalues={row-32/d:a/1606388501505/Put/vlen=2/seqid=0, row-32/d:b/1606391824510/Put/vlen=2/seqid=0}</p>
+<p>keyvalues={row-11/d:a/1606388501486/Put/vlen=2/seqid=0, row-11/d:b/1606391824453/Put/vlen=2/seqid=0}<br>keyvalues={row-12/d:a/1606388501494/Put/vlen=2/seqid=0, row-12/d:b/1606391824478/Put/vlen=2/seqid=0}<br>keyvalues={row-13/d:a/1606388501496/Put/vlen=2/seqid=0, row-13/d:b/1606391824483/Put/vlen=2/seqid=0}<br>keyvalues={row-21/d:a/1606388501498/Put/vlen=2/seqid=0, row-21/d:b/1606391824488/Put/vlen=2/seqid=0}<br>keyvalues={row-22/d:a/1606388501500/Put/vlen=2/seqid=0, row-22/d:b/1606391824493/Put/vlen=2/seqid=0}<br>keyvalues={row-23/d:a/1606388501502/Put/vlen=2/seqid=0, row-23/d:b/1606391824500/Put/vlen=2/seqid=0}<br>keyvalues={row-31/d:a/1606388501504/Put/vlen=2/seqid=0, row-31/d:b/1606391824505/Put/vlen=2/seqid=0}<br>keyvalues={row-32/d:a/1606388501505/Put/vlen=2/seqid=0, row-32/d:b/1606391824510/Put/vlen=2/seqid=0}<br>keyvalues={row-33/d:a/1606388501507/Put/vlen=2/seqid=0, row-33/d:b/1606391824514/Put/vlen=2/seqid=0}</p>
+<h3 id="多列名前缀过滤器-MultipleColumnPrefixFilter"><a href="#多列名前缀过滤器-MultipleColumnPrefixFilter" class="headerlink" title="多列名前缀过滤器-MultipleColumnPrefixFilter"></a>多列名前缀过滤器-MultipleColumnPrefixFilter</h3><p>可以指定多个前缀.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">byte</span>[][] prefixs = <span class="keyword">new</span> <span class="keyword">byte</span>[][]&#123;Bytes.toBytes(<span class="string">&quot;a&quot;</span>), Bytes.toBytes(<span class="string">&quot;b&quot;</span>)&#125;;</span><br><span class="line"><span class="comment">//返回所有行中以a或者b开头的列的数据</span></span><br><span class="line">MultipleColumnPrefixFilter filter = <span class="keyword">new</span> MultipleColumnPrefixFilter(prefixs);</span><br><span class="line">Scan scan = <span class="keyword">new</span> Scan();</span><br><span class="line">scan.setFilter(filter);</span><br><span class="line">print(scan, table);</span><br></pre></td></tr></table></figure>
+
+<h3 id="列范围过滤器-ColumnRangeFilter"><a href="#列范围过滤器-ColumnRangeFilter" class="headerlink" title="列范围过滤器-ColumnRangeFilter"></a>列范围过滤器-ColumnRangeFilter</h3><p>构造函数包含4个参数,解释如下,<br>minColumn:列范围的最小值,如果为空,则没有下限<br>minColumnInclusive:列范围是否包含minColumn<br>maxColumn:列范围最大值,如果为空,则没有上限<br>maxColumnInclusive:列范围是否包含maxColumn</p>
+<p>向hbase中插入测试数据<br>for i in &#39;1&#39;..&#39;3&#39; do for j in &#39;2&#39;..&#39;4&#39; do put &#39;filtertest&#39;,&quot;row-#{i}#{j}&quot;,&quot;d:#{i}#{j}&quot;,&quot;#{i}#{j}&quot; end end</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">byte</span>[] startCol = Bytes.toBytes(<span class="string">&quot;23&quot;</span>);</span><br><span class="line"><span class="keyword">byte</span>[] endCol = Bytes.toBytes(<span class="string">&quot;b&quot;</span>);</span><br><span class="line">ColumnRangeFilter filter = <span class="keyword">new</span> ColumnRangeFilter(startCol, <span class="keyword">true</span>, endCol, <span class="keyword">true</span>);</span><br><span class="line">Scan scan = <span class="keyword">new</span> Scan().setFilter(filter);</span><br><span class="line">print(scan, table);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>打印结果</p>
+</blockquote>
+<p>keyvalues={row-23/d:23/1606458358454/Put/vlen=2/seqid=0}<br>keyvalues={row-24/d:24/1606458358456/Put/vlen=2/seqid=0}<br>keyvalues={row-32/d:32/1606458358459/Put/vlen=2/seqid=0}<br>keyvalues={row-33/d:33/1606458358462/Put/vlen=2/seqid=0}<br>keyvalues={row-34/d:34/1606458358464/Put/vlen=2/seqid=0}</p>
+<h3 id="跳过过滤器-SkipFilter"><a href="#跳过过滤器-SkipFilter" class="headerlink" title="跳过过滤器-SkipFilter"></a>跳过过滤器-SkipFilter</h3><p>根据整行中的每个列来过滤,只要存在一列不满足条件,整行都被过滤.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hbase/" rel="tag"># hbase</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/03/04/hbase%E7%9A%84rowkey%E8%AE%BE%E8%AE%A1/" rel="prev" title="hbase的rowkey设计">
+                  <i class="fa fa-chevron-left"></i> hbase的rowkey设计
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/03/04/hbase%20columnRangeFilter%E6%B5%8B%E8%AF%95/" rel="next" title="hbase columnRangeFilter测试">
+                  hbase columnRangeFilter测试 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

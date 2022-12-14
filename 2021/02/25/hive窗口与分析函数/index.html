@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="窗口函数概述窗口函数的分类按照功能划分:  序号函数: row_number() &#x2F; rank() &#x2F; dense_rank() 分布函数: percent_rank() &#x2F; cume_dist() 前后函数: lag() &#x2F; lead() 头尾函数: first_val() &#x2F; last_val() 聚合函数+窗口函数联合:    求和 sum() over() 求最大&#x2F;小 max()&#x2F;min(">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hive窗口与分析函数">
+<meta property="og:url" content="https://maoeryu.github.io/2021/02/25/hive%E7%AA%97%E5%8F%A3%E4%B8%8E%E5%88%86%E6%9E%90%E5%87%BD%E6%95%B0/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="窗口函数概述窗口函数的分类按照功能划分:  序号函数: row_number() &#x2F; rank() &#x2F; dense_rank() 分布函数: percent_rank() &#x2F; cume_dist() 前后函数: lag() &#x2F; lead() 头尾函数: first_val() &#x2F; last_val() 聚合函数+窗口函数联合:    求和 sum() over() 求最大&#x2F;小 max()&#x2F;min(">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1278.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1279.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1280.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1380.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1281.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1283.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1281.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1285.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1286.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1284.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1282.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1287.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1381.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1288.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1289.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1303.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1382.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1290.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1383.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1293.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1295.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1296.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1297.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1298.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1299.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1300.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1292.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1294.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1301.png">
+<meta property="article:published_time" content="2021-02-24T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-12-13T11:45:41.153Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hive">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1278.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/02/25/hive%E7%AA%97%E5%8F%A3%E4%B8%8E%E5%88%86%E6%9E%90%E5%87%BD%E6%95%B0/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hive窗口与分析函数 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AA%97%E5%8F%A3%E5%87%BD%E6%95%B0%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">窗口函数概述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AA%97%E5%8F%A3%E5%87%BD%E6%95%B0%E7%9A%84%E5%88%86%E7%B1%BB"><span class="nav-number">1.1.</span> <span class="nav-text">窗口函数的分类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AA%97%E5%8F%A3%E5%87%BD%E6%95%B0%E4%B8%8E%E6%99%AE%E9%80%9A%E8%81%9A%E5%90%88%E5%87%BD%E6%95%B0%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">1.2.</span> <span class="nav-text">窗口函数与普通聚合函数的区别</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AA%97%E5%8F%A3%E5%87%BD%E6%95%B0%E7%9A%84%E5%9F%BA%E6%9C%AC%E7%94%A8%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">窗口函数的基本用法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E8%AF%AD%E6%B3%95"><span class="nav-number">2.1.</span> <span class="nav-text">基本语法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E7%AA%97%E5%8F%A3%E7%9A%84%E6%96%B9%E6%B3%95"><span class="nav-number">2.2.</span> <span class="nav-text">设置窗口的方法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#window-name"><span class="nav-number">2.2.1.</span> <span class="nav-text">window_name</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#partition-by-%E5%AD%90%E5%8F%A5"><span class="nav-number">2.2.2.</span> <span class="nav-text">partition by 子句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#order-by%E5%AD%90%E5%8F%A5"><span class="nav-number">2.2.3.</span> <span class="nav-text">order by子句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rows-%E6%8C%87%E5%AE%9A%E7%AA%97%E5%8F%A3%E5%A4%A7%E5%B0%8F"><span class="nav-number">2.2.4.</span> <span class="nav-text">rows 指定窗口大小</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8C%89%E7%85%A7%E9%A1%BA%E5%BA%8F-%E6%B1%82score%E7%9A%84%E5%B9%B3%E5%9D%87%E5%80%BC"><span class="nav-number">2.2.4.1.</span> <span class="nav-text">按照顺序,求score的平均值</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%95%E5%85%A5%E7%AA%97%E5%8F%A3%E6%A1%86%E6%9E%B6"><span class="nav-number">2.2.4.2.</span> <span class="nav-text">引入窗口框架</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AA%97%E5%8F%A3%E5%87%BD%E6%95%B0%E7%94%A8%E6%B3%95%E4%B8%BE%E4%BE%8B"><span class="nav-number">3.</span> <span class="nav-text">窗口函数用法举例</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%8F%E5%8F%B7%E5%87%BD%E6%95%B0-row-number-rank-dense-rank"><span class="nav-number">3.1.</span> <span class="nav-text">序号函数 - row_number() &#x2F; rank() &#x2F; dense_rank()</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%87%BD%E6%95%B0-percent-rank-cume-dist"><span class="nav-number">3.2.</span> <span class="nav-text">分布函数 - percent_rank() &#x2F; cume_dist()</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#percent-rank"><span class="nav-number">3.2.1.</span> <span class="nav-text">percent_rank()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cume-dist"><span class="nav-number">3.2.2.</span> <span class="nav-text">cume_dist()</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E5%90%8E%E5%87%BD%E6%95%B0-lag-col-n-default-lead-col-n-default"><span class="nav-number">3.3.</span> <span class="nav-text">前后函数 - lag(col,n,default)&#x2F;lead(col,n,default)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%B4%E5%B0%BE%E5%87%BD%E6%95%B0-first-value-expr-last-value-expr"><span class="nav-number">3.4.</span> <span class="nav-text">头尾函数 - first_value(expr),last_value(expr)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%81%9A%E5%90%88%E5%87%BD%E6%95%B0-%E7%AA%97%E5%8F%A3%E5%87%BD%E6%95%B0%E8%81%94%E5%90%88%E4%BD%BF%E7%94%A8"><span class="nav-number">3.5.</span> <span class="nav-text">聚合函数+窗口函数联合使用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-number">4.</span> <span class="nav-text">示例</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E8%A1%8C%E4%B8%BA%E5%88%86%E6%9E%90"><span class="nav-number">4.1.</span> <span class="nav-text">用户行为分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%9F%E8%AE%A1%E6%AF%8F%E5%A4%A9%E7%AC%A6%E5%90%88%E4%BB%A5%E4%B8%8B%E6%9D%A1%E4%BB%B6%E7%9A%84%E7%94%A8%E6%88%B7%E6%95%B0"><span class="nav-number">4.1.1.</span> <span class="nav-text">统计每天符合以下条件的用户数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%9F%E8%AE%A1%E7%94%A8%E6%88%B7%E8%A1%8C%E4%B8%BA%E5%BA%8F%E5%88%97%E4%B8%BAA-B-D%E7%9A%84%E7%94%A8%E6%88%B7%E6%95%B0"><span class="nav-number">4.1.2.</span> <span class="nav-text">统计用户行为序列为A-B-D的用户数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%A6%E7%94%9F%E6%88%90%E7%BB%A9%E5%88%86%E6%9E%90"><span class="nav-number">4.2.</span> <span class="nav-text">学生成绩分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2%E6%AF%8F%E4%BD%8D%E5%AD%A6%E7%94%9F%E8%8E%B7%E5%BE%97%E7%9A%84%E6%9C%80%E9%AB%98%E6%88%90%E7%BB%A9%E5%92%8C%E5%AE%83%E6%89%80%E5%AF%B9%E5%BA%94%E7%9A%84%E7%A7%91%E7%9B%AE"><span class="nav-number">4.2.1.</span> <span class="nav-text">查询每位学生获得的最高成绩和它所对应的科目</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2%E6%AF%8F%E4%B8%80%E7%A7%91%E7%9B%AE%E6%88%90%E7%BB%A9%E6%9C%80%E9%AB%98%E5%92%8C%E6%9C%80%E4%BD%8E%E5%88%86%E6%95%B0%E7%9A%84%E5%AD%A6%E7%94%9F"><span class="nav-number">4.2.2.</span> <span class="nav-text">查询每一科目成绩最高和最低分数的学生</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/02/25/hive%E7%AA%97%E5%8F%A3%E4%B8%8E%E5%88%86%E6%9E%90%E5%87%BD%E6%95%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hive窗口与分析函数
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-02-25 00:00:00" itemprop="dateCreated datePublished" datetime="2021-02-25T00:00:00+08:00">2021-02-25</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-12-13 19:45:41" itemprop="dateModified" datetime="2022-12-13T19:45:41+08:00">2022-12-13</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="窗口函数概述"><a href="#窗口函数概述" class="headerlink" title="窗口函数概述"></a>窗口函数概述</h1><h2 id="窗口函数的分类"><a href="#窗口函数的分类" class="headerlink" title="窗口函数的分类"></a>窗口函数的分类</h2><p>按照功能划分:</p>
+<ol>
+<li>序号函数: row_number() / rank() / dense_rank()</li>
+<li>分布函数: percent_rank() / cume_dist()</li>
+<li>前后函数: lag() / lead()</li>
+<li>头尾函数: first_val() / last_val()</li>
+<li>聚合函数+窗口函数联合: </li>
+</ol>
+<ul>
+<li>求和 sum() over()</li>
+<li>求最大/小 max()/min() over()</li>
+<li>求平均 avg() over()</li>
+</ul>
+<ol start="6">
+<li>其他函数: nth_value() / nfile()</li>
+</ol>
+<p>如上,窗口函数的用法多种多样,不仅有专门的的窗口函数,还可以与聚合函数配合使用.</p>
+<span id="more"></span>
+<h2 id="窗口函数与普通聚合函数的区别"><a href="#窗口函数与普通聚合函数的区别" class="headerlink" title="窗口函数与普通聚合函数的区别"></a>窗口函数与普通聚合函数的区别</h2><p>聚合函数是将多条记录聚合为一条.<br>窗口函数是每条记录都会执行,有几条记录执行完还是几条.</p>
+<p>窗口函数兼具GROUP BY 子句的分组功能以及ORDER BY 子句的排序功能.<br>但是,PARTITION BY 子句并不具备 GROUP BY 子句的汇总功能.</p>
+<p>举例:<br>若原表中有id一样的10行数据,使用GROUP BY,返回的结果是将多条记录聚合成一条.<br>而使用 rank() 等窗口函数并不会减少原表中记录的行数,结果中仍然包含 10 行数据.</p>
+<p>窗口函数兼具分组和排序两种功能.</p>
+<h1 id="窗口函数的基本用法"><a href="#窗口函数的基本用法" class="headerlink" title="窗口函数的基本用法"></a>窗口函数的基本用法</h1><p>如有基础数据:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> test_xxx2 (</span><br><span class="line">    id <span class="type">int</span> COMMENT <span class="string">&#x27;自增ID&#x27;</span>,</span><br><span class="line">    uid <span class="type">int</span> COMMENT <span class="string">&#x27;用户ID&#x27;</span>,</span><br><span class="line">    exam_id <span class="type">int</span> COMMENT <span class="string">&#x27;试卷ID&#x27;</span>,</span><br><span class="line">    start_time <span class="type">timestamp</span> COMMENT <span class="string">&#x27;开始时间&#x27;</span>,</span><br><span class="line">    submit_time <span class="type">timestamp</span> COMMENT <span class="string">&#x27;提交时间&#x27;</span>,</span><br><span class="line">    score tinyint COMMENT <span class="string">&#x27;得分&#x27;</span></span><br><span class="line">) stored <span class="keyword">as</span> parquet;</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx2 <span class="keyword">select</span> <span class="number">1</span>,<span class="number">1006</span>, <span class="number">9003</span>, <span class="string">&#x27;2021-09-07 10:01:01&#x27;</span>, <span class="string">&#x27;2021-09-07 10:21:02&#x27;</span>, <span class="number">84</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx2 <span class="keyword">select</span> <span class="number">2</span>,<span class="number">1006</span>, <span class="number">9001</span>, <span class="string">&#x27;2021-09-01 12:11:01&#x27;</span>, <span class="string">&#x27;2021-09-01 12:31:01&#x27;</span>, <span class="number">89</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx2 <span class="keyword">select</span> <span class="number">3</span>,<span class="number">1006</span>, <span class="number">9002</span>, <span class="string">&#x27;2021-09-06 10:01:01&#x27;</span>, <span class="string">&#x27;2021-09-06 10:21:01&#x27;</span>, <span class="number">81</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx2 <span class="keyword">select</span> <span class="number">4</span>,<span class="number">1005</span>, <span class="number">9002</span>, <span class="string">&#x27;2021-09-05 10:01:01&#x27;</span>, <span class="string">&#x27;2021-09-05 10:21:01&#x27;</span>, <span class="number">81</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx2 <span class="keyword">select</span> <span class="number">5</span>,<span class="number">1005</span>, <span class="number">9001</span>, <span class="string">&#x27;2021-09-05 10:31:01&#x27;</span>, <span class="string">&#x27;2021-09-05 10:51:01&#x27;</span>, <span class="number">81</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx2 <span class="keyword">select</span> <span class="number">6</span>,<span class="number">1004</span>, <span class="number">9002</span>, <span class="string">&#x27;2021-09-05 10:01:01&#x27;</span>, <span class="string">&#x27;2021-09-05 10:21:01&#x27;</span>, <span class="number">71</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx2 <span class="keyword">select</span> <span class="number">7</span>,<span class="number">1004</span>, <span class="number">9001</span>, <span class="string">&#x27;2021-09-05 10:31:01&#x27;</span>, <span class="string">&#x27;2021-09-05 10:51:01&#x27;</span>, <span class="number">91</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx2 <span class="keyword">select</span> <span class="number">8</span>,<span class="number">1004</span>, <span class="number">9002</span>, <span class="string">&#x27;2021-09-05 10:01:01&#x27;</span>, <span class="string">&#x27;2021-09-05 10:21:01&#x27;</span>, <span class="number">80</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx2 <span class="keyword">select</span> <span class="number">9</span>,<span class="number">1004</span>, <span class="number">9001</span>, <span class="string">&#x27;2021-09-05 10:31:01&#x27;</span>, <span class="string">&#x27;2021-09-05 10:51:01&#x27;</span>, <span class="number">80</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test_xxx2;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1278.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="基本语法"><a href="#基本语法" class="headerlink" title="基本语法"></a>基本语法</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">&lt;</span>窗口函数<span class="operator">&gt;</span> <span class="keyword">over</span> ([<span class="keyword">PARTITION</span> <span class="keyword">BY</span> <span class="operator">&lt;</span>列名清单<span class="operator">&gt;</span>] <span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="operator">&lt;</span>排序列名清单<span class="operator">&gt;</span> [<span class="keyword">rows</span> <span class="keyword">between</span> 开始位置 <span class="keyword">and</span> 结束位置])</span><br></pre></td></tr></table></figure>
+
+<p>其中:<br><code>&lt;窗口函数&gt;</code> : 指需要使用的分析函数,如<code>row_number()/sum()</code>等.<br><code>over()</code> : 用来指定函数执行的窗口范围,这个数据窗口大小可能会随着行的变化而变化.</p>
+<p>如果括号中什么都不写,则意味着窗口包含满足WHERE条件的所有行,窗口函数基于所有行进行计算.<br>如:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span>,<span class="built_in">sum</span>(score) <span class="keyword">over</span>() <span class="keyword">as</span> sum_score <span class="keyword">from</span> test_xxx2;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1279.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p><code>sum(score) over() as sum_score</code> 会聚合所有的数据,将结果接到每一行的后面(窗口函数不会改变结果原表行数).</p>
+</blockquote>
+<h2 id="设置窗口的方法"><a href="#设置窗口的方法" class="headerlink" title="设置窗口的方法"></a>设置窗口的方法</h2><p>如果不为空,则支持以下4中语法来设置窗口.</p>
+<h3 id="window-name"><a href="#window-name" class="headerlink" title="window_name"></a>window_name</h3><p>给窗口指定一个别名.<br>如果SQL中涉及的窗口较多,采用别名可以看起来更清晰易读,如:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--给窗口指定别名:WINDOW my_window_name AS (PARTITION BY uid ORDER BY score)</span></span><br><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,</span><br><span class="line">    <span class="built_in">rank</span>() <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> rk_num,</span><br><span class="line">    <span class="built_in">row_number</span>() <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> row_num</span><br><span class="line"><span class="keyword">FROM</span> test_xxx2</span><br><span class="line"><span class="keyword">WINDOW</span> my_window_name <span class="keyword">AS</span> (<span class="keyword">PARTITION</span> <span class="keyword">BY</span> uid <span class="keyword">ORDER</span> <span class="keyword">BY</span> score);</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1280.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1380.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="partition-by-子句"><a href="#partition-by-子句" class="headerlink" title="partition by 子句"></a>partition by 子句</h3><p>窗口按照哪些字段进行分组,窗口函数在不同的分组上分别执行,如:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,<span class="built_in">sum</span>(score) <span class="keyword">over</span>(<span class="keyword">PARTITION</span> <span class="keyword">BY</span> uid) <span class="keyword">AS</span> sum_score <span class="keyword">FROM</span> test_xxx2;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1281.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p><code>sum(score) over(PARTITION BY uid) AS sum_score</code> 会按照 uid 分组,分别求和,展示在每个分组的末尾.</p>
+</blockquote>
+<blockquote>
+<p>如果我想看某个uid有多少行记录,并标明序号该如何实现?<br>使用序号函数row_number():</p>
+</blockquote>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,<span class="built_in">row_number</span>() <span class="keyword">over</span>(<span class="keyword">PARTITION</span> <span class="keyword">BY</span> uid) <span class="keyword">AS</span> row_num <span class="keyword">FROM</span> test_xxx2;</span><br></pre></td></tr></table></figure>
+
+<p>row_number()函数还需要order by子句.</p>
+<h3 id="order-by子句"><a href="#order-by子句" class="headerlink" title="order by子句"></a>order by子句</h3><p>按照哪些字段进行排序,窗口函数将按照排序后的记录顺序进行编号,如:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,<span class="built_in">row_number</span>() <span class="keyword">over</span>(<span class="keyword">PARTITION</span> <span class="keyword">BY</span> uid <span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span>) <span class="keyword">AS</span> row_num <span class="keyword">FROM</span> test_xxx2;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1283.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>这样就实现了每个uid内的分数降序排名,order by 后面可以跟多个列名.</p>
+<p>当order by 与聚合类函数连用时,特别需要注意理解,如下面几个例子:</p>
+<blockquote>
+<p>单独使用 partition by uid</p>
+</blockquote>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,<span class="built_in">sum</span>(score) <span class="keyword">over</span>(<span class="keyword">PARTITION</span> <span class="keyword">BY</span> uid) <span class="keyword">AS</span> sum_score <span class="keyword">FROM</span> test_xxx2;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1281.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>单独使用order by uid</p>
+</blockquote>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,<span class="built_in">sum</span>(score) <span class="keyword">over</span>(<span class="keyword">ORDER</span> <span class="keyword">BY</span> uid) <span class="keyword">AS</span> sum_score <span class="keyword">FROM</span> test_xxx2;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1285.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>注意观察uid 从1004-&gt;1005的变化,两条SQL的结果有什么不同:</p>
+<ol>
+<li>partition by 按照uid分组,分别对score求和,&quot;接到每一行的末尾&quot;.<br>分组内求和,分组间相互独立.</li>
+<li>order by 按照uid排序,对&quot;序号&quot;相同的元素进行求和,不同&quot;序号&quot;的数累加求和<br>如果将&quot;序号&quot;认为是分组的话,个人理解这是一个分组求和并累加的过程.<br>即分组内求和,分组间累加.</li>
+</ol>
+<blockquote>
+<p>order by score</p>
+</blockquote>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,<span class="built_in">sum</span>(score) <span class="keyword">over</span>(<span class="keyword">ORDER</span> <span class="keyword">BY</span> score) <span class="keyword">AS</span> sum_score <span class="keyword">FROM</span> test_xxx2;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1286.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>总结:</p>
+</blockquote>
+<p>如果使⽤环境为hive,over()开窗函数前分排序函数和聚合函数两种.</p>
+<ol>
+<li>当为排序函数,如row_number(),rank()等时,over中的order by只起到窗⼝内排序作⽤.</li>
+<li>当为聚合函数,如max,min,count等时,over中的order by不仅起到窗⼝内排序,还起到窗⼝内从当前⾏到之前所有⾏的聚合(多了⼀个范围).</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,<span class="built_in">sum</span>(score) <span class="keyword">over</span>(<span class="keyword">partition</span> <span class="keyword">by</span> uid <span class="keyword">ORDER</span> <span class="keyword">BY</span> score) <span class="keyword">AS</span> sum_score <span class="keyword">FROM</span> test_xxx2;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1284.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>使⽤order by后,等同于 sum(score) over(partition by uid order by score range between unbounded preceding and current row ),当然可以在order by后使⽤框架⼦句,即rows,range等,如果没有写框架⼦句,就默认在窗⼝范围中当前⾏到之前所有⾏的数据进⾏统计.</p>
+<h3 id="rows-指定窗口大小"><a href="#rows-指定窗口大小" class="headerlink" title="rows 指定窗口大小"></a>rows 指定窗口大小</h3><h4 id="按照顺序-求score的平均值"><a href="#按照顺序-求score的平均值" class="headerlink" title="按照顺序,求score的平均值"></a>按照顺序,求score的平均值</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,<span class="built_in">avg</span>(score) <span class="keyword">over</span>(<span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span>) <span class="keyword">AS</span> avg_score <span class="keyword">FROM</span> test_xxx2;</span><br></pre></td></tr></table></figure>
+
+<p>注意score相同的部分:</p>
+<img src="/images/fly1282.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1287.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>如果想要sql先按照score降序排列,每一行计算从第一行到当前行的score平均值,该怎么计算呢?<br>做一个不重复的key.</p>
+<p>实现:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,<span class="built_in">avg</span>(score) <span class="keyword">over</span>(<span class="keyword">ORDER</span> <span class="keyword">BY</span> row_score) <span class="keyword">AS</span> avg_score</span><br><span class="line"><span class="keyword">FROM</span> (</span><br><span class="line">  <span class="keyword">SELECT</span> <span class="operator">*</span>,<span class="built_in">row_number</span>() <span class="keyword">over</span>(<span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span>) <span class="keyword">AS</span> row_score <span class="keyword">FROM</span> test_xxx2</span><br><span class="line">) res</span><br><span class="line">;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1381.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1288.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>现在改下需求,希望求&quot;我与前两名的平均值&quot;应该怎么实现呢?</p>
+</blockquote>
+<p>分析一下,&quot;我与前两名&quot;指的是当前行以及前两行总共三行数据求平均,也就是说,我们需要限定窗口的范围或者窗口大小.</p>
+<h4 id="引入窗口框架"><a href="#引入窗口框架" class="headerlink" title="引入窗口框架"></a>引入窗口框架</h4><p>指定窗口大小,又称为窗口框架.<br>框架是对窗口进行进一步分区,框架有两种范围限定方式:</p>
+<ol>
+<li>一种是使用 ROWS 子句,通过指定当前行之前或之后的固定数目的行来限制分区中的行数.</li>
+<li>另一种是使用 RANGE 子句,按照排列序列的当前值,根据相同值来确定分区中的行数.</li>
+</ol>
+<p>语法:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> 字段名 <span class="keyword">RANGE</span><span class="operator">|</span><span class="keyword">ROWS</span> 边界规则<span class="number">0</span> <span class="operator">|</span> [<span class="keyword">BETWEEN</span> 边界规则<span class="number">1</span> <span class="keyword">AND</span> 边界规则<span class="number">2</span>]</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>RANGE | ROWS</code>的区别是什么?<br>RANGE表示按照值的范围进行范围的定义,而ROWS表示按照行的范围进行范围的定义.<br>边界规则的可取值见下表.</p>
+</blockquote>
+<img src="/images/fly1289.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1303.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>需要注意:</p>
+<ol>
+<li>当指定order by缺少window子句时,window默认为<code>range between unbounded preceding and current row</code>(表示当前行以及一直到第一行的数据).</li>
+<li>当缺少order by和window子句时,window默认为<code>row between unbounded preceding and unbounded following</code>.</li>
+<li>RANGE 只支持使用 UNBOUNDED 和 CURRENT ROW 窗口框架分隔符.</li>
+</ol>
+<p>因为要&quot;我与前两名&quot;,所以我们会用到规则 2 PRECEDING</p>
+<p>之前2行的记录<br>之前1行的记录<br>自身(当前记录)</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,<span class="built_in">avg</span>(score) <span class="keyword">over</span>(<span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span> <span class="keyword">rows</span> <span class="number">2</span> PRECEDING) <span class="keyword">AS</span> avg_score <span class="keyword">FROM</span> test_xxx2;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1382.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1290.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>如果要求当前行及前后一行呢?</p>
+<p>之前1行的记录<br>自身(当前记录)<br>之后1行的记录</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,<span class="built_in">avg</span>(score) <span class="keyword">over</span>(<span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span> <span class="keyword">rows</span> <span class="keyword">between</span> <span class="number">1</span> PRECEDING <span class="keyword">and</span> <span class="number">1</span> FOLLOWING) <span class="keyword">AS</span> avg_score <span class="keyword">FROM</span> test_xxx2;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1383.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>其他组合举例:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--第一行到当前行</span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span> <span class="keyword">rows</span> UNBOUNDED PRECEDING</span><br><span class="line"></span><br><span class="line"><span class="comment">--第一行到前一行(不含当前行)</span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span> <span class="keyword">rows</span> <span class="keyword">between</span> UNBOUNDED PRECEDING <span class="keyword">and</span> <span class="number">1</span> PRECEDING </span><br><span class="line"></span><br><span class="line"><span class="comment">--第一行到后一行(包含当前行)</span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span> <span class="keyword">rows</span> <span class="keyword">between</span> UNBOUNDED PRECEDING <span class="keyword">and</span> <span class="number">1</span> FOLLOWING</span><br><span class="line"></span><br><span class="line"><span class="comment">--当前行到最后一行</span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span> <span class="keyword">rows</span> <span class="keyword">between</span> <span class="keyword">CURRENT</span> <span class="type">ROW</span> <span class="keyword">and</span> UNBOUNDED FOLLOWING </span><br><span class="line"><span class="comment">--注意,这种写法是错误的 -- 错误示范</span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span> <span class="keyword">rows</span> UNBOUNDED FOLLOWING</span><br><span class="line"></span><br><span class="line"><span class="comment">--前一行到最后一行(包含当前行)</span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span> <span class="keyword">rows</span> <span class="keyword">between</span> <span class="number">1</span> PRECEDING <span class="keyword">and</span> UNBOUNDED FOLLOWING</span><br><span class="line"></span><br><span class="line"><span class="comment">--后一行到最后一行(不含当前行)</span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span> <span class="keyword">rows</span> <span class="keyword">between</span> <span class="number">1</span> FOLLOWING <span class="keyword">and</span> UNBOUNDED FOLLOWING</span><br><span class="line"></span><br><span class="line"><span class="comment">--前一行到后一行(包含当前行) </span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span> <span class="keyword">rows</span> <span class="keyword">between</span> <span class="number">1</span> PRECEDING <span class="keyword">and</span> <span class="number">1</span> FOLLOWING </span><br></pre></td></tr></table></figure>
+
+<h1 id="窗口函数用法举例"><a href="#窗口函数用法举例" class="headerlink" title="窗口函数用法举例"></a>窗口函数用法举例</h1><h2 id="序号函数-row-number-rank-dense-rank"><a href="#序号函数-row-number-rank-dense-rank" class="headerlink" title="序号函数 - row_number() / rank() / dense_rank()"></a>序号函数 - row_number() / rank() / dense_rank()</h2><p>三者区别:</p>
+<ol>
+<li>RANK(): 并列排序,跳过重复序号-1/1/3</li>
+<li>ROW_NUMBER(): 顺序排序-1/2/3</li>
+<li>DENSE_RANK(): 并列排序,不跳过重复序号-1/1/2</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--给窗口指定别名:WINDOW my_window_name AS (PARTITION BY uid ORDER BY score)</span></span><br><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,</span><br><span class="line">    <span class="built_in">rank</span>() <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> rank_num,</span><br><span class="line">    <span class="built_in">row_number</span>() <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> row_number_num,</span><br><span class="line">    <span class="built_in">dense_rank</span>() <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> dense_rank_num</span><br><span class="line"><span class="keyword">FROM</span> test_xxx2</span><br><span class="line"><span class="keyword">WINDOW</span> my_window_name <span class="keyword">AS</span> (<span class="keyword">PARTITION</span> <span class="keyword">BY</span> uid <span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span>)</span><br><span class="line">;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1293.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="分布函数-percent-rank-cume-dist"><a href="#分布函数-percent-rank-cume-dist" class="headerlink" title="分布函数 - percent_rank() / cume_dist()"></a>分布函数 - percent_rank() / cume_dist()</h2><h3 id="percent-rank"><a href="#percent-rank" class="headerlink" title="percent_rank()"></a>percent_rank()</h3><p>percent_rank()函数将某个数值在数据集中的排位作为数据集的百分比值返回,此处的百分比值的范围为 0 到 1.<br>此函数可用于计算值在数据集内的相对位置.<br>如班级成绩为例,返回的百分数30%表示某个分数排在班级总分排名的前30%.</p>
+<p>每行按照公式(rank-1) / (rows-1)进行计算.<br>其中,rank为RANK()函数产生的序号,rows为当前窗口的记录总行数.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,</span><br><span class="line">    <span class="built_in">rank</span>() <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> rank_num,</span><br><span class="line">    <span class="built_in">PERCENT_RANK</span>() <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> prk</span><br><span class="line"><span class="keyword">FROM</span> test_xxx2</span><br><span class="line"><span class="keyword">WINDOW</span> my_window_name <span class="keyword">AS</span> (<span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span>);</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1295.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="cume-dist"><a href="#cume-dist" class="headerlink" title="cume_dist()"></a>cume_dist()</h3><p>如果按升序排列,则统计:小于等于当前值的行数/总行数.<br>如果是降序排列,则统计:大于等于当前值的行数/总行数.</p>
+<p>如:查询小于等于当前成绩(score)的比例.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,</span><br><span class="line">    <span class="built_in">rank</span>() <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> rank_num,</span><br><span class="line">    <span class="built_in">cume_dist</span>() <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> cume_dist_num</span><br><span class="line"><span class="keyword">FROM</span> test_xxx2</span><br><span class="line"><span class="keyword">WINDOW</span> my_window_name <span class="keyword">AS</span> (<span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">asc</span>)</span><br><span class="line">;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1296.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="前后函数-lag-col-n-default-lead-col-n-default"><a href="#前后函数-lag-col-n-default-lead-col-n-default" class="headerlink" title="前后函数 - lag(col,n,default)/lead(col,n,default)"></a>前后函数 - lag(col,n,default)/lead(col,n,default)</h2><p>lag()和lead()分析函数可以在同一次查询中取出同一字段的前N行的数据(lag)和后N行的数据(lead)作为独立的列.</p>
+<p>在实际应用当中,若要用到取今天和昨天的某字段差值时,lag()和lead()函数的应用就显得尤为重要.<br>当然,这种操作可以用表的自连接实现,但是lag()和lead()与left join/right join等自连接相比,效率更高,SQL更简洁.</p>
+<p>函数语法如下:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">lag</span>( exp_str,<span class="keyword">offset</span>,defval) <span class="keyword">over</span>(<span class="keyword">partition</span> <span class="keyword">by</span> .. <span class="keyword">order</span> <span class="keyword">by</span> …)</span><br><span class="line"><span class="built_in">lead</span>(exp_str,<span class="keyword">offset</span>,defval) <span class="keyword">over</span>(<span class="keyword">partition</span> <span class="keyword">by</span> .. <span class="keyword">order</span> <span class="keyword">by</span> …)</span><br></pre></td></tr></table></figure>
+
+<p>其中:<br><code>col</code> 是字段名.<br><code>n</code> 是偏移量,即是上1个或上N个的值,假设当前行在表中排在第5行,offset 为3,则表示我们所要找的数据行就是表中的第2行(即5-3=2).</p>
+<p>default 默认值,当两个函数取 上N 或者 下N 个值,当在表中从当前行位置向前数N行已经超出了表的范围时,lag() 函数将defval这个参数值作为函数的返回值,若没有指定默认值,则返回NULL,那么在数学运算中,总要给一个默认值才不会出错.</p>
+<p>用途:</p>
+<ol>
+<li>返回位于当前行的前n行的expr的值:lag(expr,n)</li>
+<li>返回位于当前行的后n行的expr的值:lead(expr,n)</li>
+</ol>
+<p>举例:<br>查询前1名同学及后一名同学的成绩和当前同学成绩的差值(只排分数,不按uid分组)</p>
+<p>先将前一名和后一名的分数与当前行的分数放在一起:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,</span><br><span class="line">    <span class="built_in">lag</span>(score,<span class="number">1</span>,<span class="number">0</span>) <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> `前一名分数`,</span><br><span class="line">    <span class="built_in">lead</span>(score,<span class="number">1</span>,<span class="number">0</span>) <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> `后一名分数`</span><br><span class="line"><span class="keyword">FROM</span> test_xxx2</span><br><span class="line"><span class="keyword">WINDOW</span> my_window_name <span class="keyword">AS</span> (<span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span>)</span><br><span class="line">;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1297.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>再做diff:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,</span><br><span class="line">    score <span class="operator">-</span> `前一名分数` <span class="keyword">AS</span> `与前一名分差`,</span><br><span class="line">    score <span class="operator">-</span> `后一名分数` <span class="keyword">AS</span> `与后一名分差`</span><br><span class="line"><span class="keyword">FROM</span> (</span><br><span class="line">    <span class="keyword">SELECT</span> <span class="operator">*</span>,</span><br><span class="line">        <span class="built_in">lag</span>(score,<span class="number">1</span>,<span class="number">0</span>) <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> `前一名分数`,</span><br><span class="line">        <span class="built_in">lead</span>(score,<span class="number">1</span>,<span class="number">0</span>) <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> `后一名分数`</span><br><span class="line">    <span class="keyword">FROM</span> test_xxx2</span><br><span class="line">    <span class="keyword">WINDOW</span> my_window_name <span class="keyword">AS</span> (<span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span>)</span><br><span class="line">) res;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1298.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="头尾函数-first-value-expr-last-value-expr"><a href="#头尾函数-first-value-expr-last-value-expr" class="headerlink" title="头尾函数 - first_value(expr),last_value(expr)"></a>头尾函数 - first_value(expr),last_value(expr)</h2><p>用途:</p>
+<ol>
+<li>返回第一个expr的值:first_value(expr)</li>
+<li>返回最后一个expr的值:last_value(expr)</li>
+</ol>
+<p>应用场景:<br>截止到当前成绩,按照分数排序查询第1个和最后1个的分数</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,</span><br><span class="line">    <span class="built_in">first_value</span>(score) <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> `第一行分数`,</span><br><span class="line">    <span class="built_in">last_value</span>(score) <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> `最后一行分数`</span><br><span class="line"><span class="keyword">FROM</span> test_xxx2</span><br><span class="line"><span class="keyword">WINDOW</span> my_window_name <span class="keyword">AS</span> (<span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span>);</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1299.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="聚合函数-窗口函数联合使用"><a href="#聚合函数-窗口函数联合使用" class="headerlink" title="聚合函数+窗口函数联合使用"></a>聚合函数+窗口函数联合使用</h2><p>聚合函数也可以用于窗口函数.<br>原因就在于窗口函数的执行顺序(逻辑上的)是在<code>FROM/JOIN/WHERE/GROUP BY/HAVING</code>之后,在<code>ORDER BY/LIMIT/SELECT DISTINCT</code>之前.<br>它执行时GROUP BY的聚合过程已经完成了,所以不会再产生数据聚合.</p>
+<blockquote>
+<p>窗口函数是在where之后执行的,所以如果where子句需要用窗口函数作为条件,需要多一层查询,在子查询外面进行</p>
+</blockquote>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>,</span><br><span class="line">    <span class="built_in">sum</span>(score) <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> sum_score,</span><br><span class="line">    <span class="built_in">max</span>(score) <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> max_score,</span><br><span class="line">    <span class="built_in">min</span>(score) <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> min_score,</span><br><span class="line">    <span class="built_in">avg</span>(score) <span class="keyword">over</span> my_window_name <span class="keyword">AS</span> avg_score</span><br><span class="line"><span class="keyword">FROM</span> test_xxx2</span><br><span class="line"><span class="keyword">WINDOW</span> my_window_name <span class="keyword">AS</span> (<span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">desc</span>)</span><br><span class="line">;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1300.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>默认从起点到当前行,不带order by时表示窗口内所有行都参与聚合.</p>
+<blockquote>
+<p>over语句<br>与over一起使用聚合函数.<br>带partition by一个或多个列的over语句.<br>带partition by和order by一个或多个列的over语句,可排序.</p>
+</blockquote>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> id, date_, age,</span><br><span class="line"><span class="comment">--默认情况</span></span><br><span class="line"><span class="built_in">sum</span>(age) <span class="keyword">over</span>(<span class="keyword">partition</span> <span class="keyword">by</span> id <span class="keyword">order</span> <span class="keyword">by</span> date_) <span class="keyword">as</span> sum_age_1,</span><br><span class="line"><span class="comment">--表示从起点到当前行</span></span><br><span class="line"><span class="built_in">sum</span>(age) <span class="keyword">over</span>(<span class="keyword">partition</span> <span class="keyword">by</span> id <span class="keyword">order</span> <span class="keyword">by</span> date_ <span class="keyword">rows</span> <span class="keyword">between</span> unbounded preceding <span class="keyword">and</span> <span class="keyword">current</span> <span class="type">row</span>) <span class="keyword">as</span> sum_age_2,</span><br><span class="line"><span class="comment">--表示窗口内所有行</span></span><br><span class="line"><span class="built_in">sum</span>(age) <span class="keyword">over</span>(<span class="keyword">partition</span> <span class="keyword">by</span> id) <span class="keyword">as</span> sum_age_3,</span><br><span class="line"><span class="comment">--表示起点到终点</span></span><br><span class="line"><span class="built_in">sum</span>(age) <span class="keyword">over</span>(<span class="keyword">partition</span> <span class="keyword">by</span> id <span class="keyword">order</span> <span class="keyword">by</span> date_ <span class="keyword">rows</span> <span class="keyword">between</span> unbounded preceding <span class="keyword">and</span> unbounded following) <span class="keyword">as</span> sum_age_4,</span><br><span class="line"><span class="comment">--表示前2行到后面1行</span></span><br><span class="line"><span class="built_in">sum</span>(age) <span class="keyword">over</span>(<span class="keyword">partition</span> <span class="keyword">by</span> id <span class="keyword">order</span> <span class="keyword">by</span> date_ <span class="keyword">rows</span> <span class="keyword">between</span> <span class="number">2</span> preceding <span class="keyword">and</span> <span class="number">1</span> following) <span class="keyword">as</span> sum_age_5</span><br><span class="line"><span class="keyword">from</span> sample;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--带有一个分区列的partition by,没有order by或窗口指定</span></span><br><span class="line"><span class="keyword">select</span> id, <span class="built_in">count</span>(age) <span class="keyword">over</span> (<span class="keyword">partition</span> <span class="keyword">by</span> name) <span class="keyword">from</span> raw_sequence;</span><br><span class="line"></span><br><span class="line"><span class="comment">--带有两个分区列的partition by,没有order by或窗口指定</span></span><br><span class="line"><span class="keyword">select</span> id, <span class="built_in">count</span>(age) <span class="keyword">over</span> (<span class="keyword">partition</span> <span class="keyword">by</span> name, sex) <span class="keyword">from</span> raw_sequence;</span><br><span class="line"></span><br><span class="line"><span class="comment">--带有一个分区列,一个order by列且没有窗口规范的partition by</span></span><br><span class="line"><span class="keyword">select</span> id, <span class="built_in">sum</span>(age) <span class="keyword">over</span> (<span class="keyword">partition</span> <span class="keyword">by</span> name <span class="keyword">order</span> <span class="keyword">by</span> sex) <span class="keyword">from</span> raw_sequence;</span><br><span class="line"></span><br><span class="line"><span class="comment">--还有两个分区列,两个order by列且没有窗口指定的partition by</span></span><br><span class="line"><span class="keyword">select</span> id, <span class="built_in">sum</span>(age) <span class="keyword">over</span> (<span class="keyword">partition</span> <span class="keyword">by</span> name, sex <span class="keyword">order</span> <span class="keyword">by</span> city, sex) <span class="keyword">from</span> raw_sequence;</span><br><span class="line"></span><br><span class="line"><span class="comment">--带有分区,order by和窗口指定的partition by</span></span><br><span class="line"><span class="keyword">select</span> id, <span class="built_in">sum</span>(age) <span class="keyword">over</span> (<span class="keyword">partition</span> <span class="keyword">by</span> name <span class="keyword">order</span> <span class="keyword">by</span> sex <span class="keyword">rows</span> <span class="keyword">between</span> unbounded preceding <span class="keyword">and</span> <span class="keyword">current</span> <span class="type">row</span>) <span class="keyword">from</span> raw_sequence;</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> id, <span class="built_in">avg</span>(age) <span class="keyword">over</span> (<span class="keyword">partition</span> <span class="keyword">by</span> name <span class="keyword">order</span> <span class="keyword">by</span> sex <span class="keyword">rows</span> <span class="keyword">between</span> <span class="number">3</span> preceding <span class="keyword">and</span> <span class="keyword">current</span> <span class="type">row</span>)</span><br><span class="line"><span class="keyword">from</span> raw_sequence;</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> id, <span class="built_in">avg</span>(age) <span class="keyword">over</span> (<span class="keyword">partition</span> <span class="keyword">by</span> name <span class="keyword">order</span> <span class="keyword">by</span> sex <span class="keyword">rows</span> <span class="keyword">between</span> <span class="number">3</span> preceding <span class="keyword">and</span> <span class="number">3</span> following)</span><br><span class="line"><span class="keyword">from</span> raw_sequence;</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> id, <span class="built_in">avg</span>(age) <span class="keyword">over</span> (<span class="keyword">partition</span> <span class="keyword">by</span> name <span class="keyword">order</span> <span class="keyword">by</span> sex <span class="keyword">rows</span> <span class="keyword">between</span> <span class="keyword">current</span> <span class="type">row</span> <span class="keyword">and</span> unbounded following) <span class="keyword">from</span> raw_sequence;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--over单个查询中可以有多个子句,单个over子句仅适用于前一个函数调用</span></span><br><span class="line"><span class="keyword">select</span> </span><br><span class="line"> id,</span><br><span class="line"> <span class="built_in">count</span>(age) <span class="keyword">over</span> (<span class="keyword">partition</span> <span class="keyword">by</span> name),</span><br><span class="line"> <span class="built_in">sum</span>(age) <span class="keyword">over</span> (<span class="keyword">partition</span> <span class="keyword">by</span> name)</span><br><span class="line"><span class="keyword">from</span> raw_sequence;</span><br><span class="line"></span><br><span class="line"><span class="comment">--无论是否使用关键字as,都可以使用别名</span></span><br><span class="line"><span class="keyword">select</span> </span><br><span class="line"> id,</span><br><span class="line"> <span class="built_in">count</span>(age) <span class="keyword">over</span> (<span class="keyword">partition</span> <span class="keyword">by</span> name) <span class="keyword">as</span> b_count,</span><br><span class="line"> <span class="built_in">sum</span>(age) <span class="keyword">over</span> (<span class="keyword">partition</span> <span class="keyword">by</span> name) b_sum</span><br><span class="line"><span class="keyword">from</span> raw_sequence;</span><br><span class="line"></span><br><span class="line"><span class="comment">--window子句</span></span><br><span class="line"><span class="keyword">select</span> id, <span class="built_in">sum</span>(age) <span class="keyword">over</span> w</span><br><span class="line"><span class="keyword">from</span> raw_sequence</span><br><span class="line"><span class="keyword">window</span> w <span class="keyword">as</span> (<span class="keyword">partition</span> <span class="keyword">by</span> name <span class="keyword">order</span> <span class="keyword">by</span> sex <span class="keyword">rows</span> unbounded preceding);</span><br><span class="line"></span><br><span class="line"><span class="comment">--使用默认的1行导联且未指定默认值的lead</span></span><br><span class="line"><span class="keyword">select</span> id, <span class="built_in">lead</span>(id) <span class="keyword">over</span> (<span class="keyword">partition</span> <span class="keyword">by</span> age <span class="keyword">order</span> <span class="keyword">by</span> name) <span class="keyword">from</span> raw_sequence;</span><br><span class="line"></span><br><span class="line"><span class="comment">--lag指定3行的滞后和默认值0</span></span><br><span class="line"><span class="keyword">select</span> id, <span class="built_in">lag</span>(id, <span class="number">3</span>, <span class="number">0</span>) <span class="keyword">over</span> (<span class="keyword">partition</span> <span class="keyword">by</span> age <span class="keyword">order</span> <span class="keyword">by</span> name) <span class="keyword">from</span> raw_sequence;</span><br><span class="line"></span><br><span class="line"><span class="comment">--每个分区的不同计数</span></span><br><span class="line"><span class="keyword">select</span> id, <span class="built_in">count</span>(<span class="keyword">distinct</span> id) <span class="keyword">over</span> (<span class="keyword">partition</span> <span class="keyword">by</span> age) <span class="keyword">from</span> raw_sequence;</span><br><span class="line"></span><br><span class="line"><span class="comment">--over子句中引用聚合函数</span></span><br><span class="line"><span class="keyword">select</span> <span class="built_in">rank</span>() <span class="keyword">over</span> (<span class="keyword">order</span> <span class="keyword">by</span> <span class="built_in">sum</span>(age)) <span class="keyword">from</span> raw_sequence <span class="keyword">group</span> <span class="keyword">by</span> id;</span><br></pre></td></tr></table></figure>
+
+<h1 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h1><h2 id="用户行为分析"><a href="#用户行为分析" class="headerlink" title="用户行为分析"></a>用户行为分析</h2><p>用户行为表,大概字段有(user_id &#39;用户编号&#39;,opr_id &#39;操作编号&#39;,log_time &#39;操作时间&#39;)如下所示:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> test_xxx3 (</span><br><span class="line">user_id string,</span><br><span class="line">opr_id string,</span><br><span class="line">log_time <span class="type">timestamp</span></span><br><span class="line">) stored <span class="keyword">as</span> parquet;</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx3 <span class="keyword">select</span> <span class="string">&#x27;001&#x27;</span>,<span class="string">&#x27;A&#x27;</span>,<span class="string">&#x27;2020-01-01 12:01:44&#x27;</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx3 <span class="keyword">select</span> <span class="string">&#x27;001&#x27;</span>,<span class="string">&#x27;B&#x27;</span>,<span class="string">&#x27;2020-01-01 12:02:44&#x27;</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx3 <span class="keyword">select</span> <span class="string">&#x27;002&#x27;</span>,<span class="string">&#x27;C&#x27;</span>,<span class="string">&#x27;2020-02-01 11:01:44&#x27;</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx3 <span class="keyword">select</span> <span class="string">&#x27;002&#x27;</span>,<span class="string">&#x27;A&#x27;</span>,<span class="string">&#x27;2020-02-03 12:02:44&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test_xxx3;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">user_id opr_id  log_time                                                        </span><br><span class="line">002 A   2020-02-03 12:02:44</span><br><span class="line">001 A   2020-01-01 12:01:44</span><br><span class="line">001 B   2020-01-01 12:02:44</span><br><span class="line">002 C   2020-02-01 11:01:44</span><br></pre></td></tr></table></figure>
+
+<h3 id="统计每天符合以下条件的用户数"><a href="#统计每天符合以下条件的用户数" class="headerlink" title="统计每天符合以下条件的用户数"></a>统计每天符合以下条件的用户数</h3><p>A操作之后是B操作,AB操作必须相邻</p>
+<p>分析:<br>(1)统计每天,所以需要按天分组统计求和<br>(2)A操作之后是B,且AB操作必须相邻,那就涉及一个前后问题,所以想到用窗口函数中的lag()或lead().</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 使用 lead() 实现 </span></span><br><span class="line"><span class="keyword">select</span> </span><br><span class="line">    dt,</span><br><span class="line">    <span class="built_in">count</span>(<span class="number">1</span>) <span class="keyword">as</span> res_cnt</span><br><span class="line"><span class="keyword">from</span> (</span><br><span class="line">    <span class="keyword">select</span></span><br><span class="line">        <span class="operator">*</span>,</span><br><span class="line">        date_format(log_time,&quot;yyyyMMdd&quot;) <span class="keyword">as</span> dt,</span><br><span class="line">        opr_id <span class="keyword">as</span> curr_opr, <span class="comment">-- 当前操作</span></span><br><span class="line">        <span class="built_in">lead</span>(opr_id,<span class="number">1</span>) <span class="keyword">over</span>(<span class="keyword">partition</span> <span class="keyword">by</span> user_id,date_format(log_time,&quot;yyyyMMdd&quot;) <span class="keyword">order</span> <span class="keyword">by</span> log_time) <span class="keyword">as</span> next_opr <span class="comment">-- 获取下一个操作</span></span><br><span class="line">    <span class="keyword">from</span> test_xxx3</span><br><span class="line">) res </span><br><span class="line"><span class="keyword">where</span> curr_opr <span class="operator">=</span> &quot;A&quot; <span class="keyword">and</span> next_opr<span class="operator">=</span>&quot;B&quot; </span><br><span class="line"><span class="keyword">group</span> <span class="keyword">by</span> dt</span><br><span class="line">;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1292.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 使用 lag() 实现 </span></span><br><span class="line"><span class="keyword">select</span> </span><br><span class="line">    dt,</span><br><span class="line">    <span class="built_in">count</span>(<span class="number">1</span>) <span class="keyword">as</span> res_cnt</span><br><span class="line"><span class="keyword">from</span> (</span><br><span class="line">    <span class="keyword">select</span></span><br><span class="line">        <span class="operator">*</span>,</span><br><span class="line">        date_format(log_time,&quot;yyyyMMdd&quot;) <span class="keyword">as</span> dt,</span><br><span class="line">        opr_id <span class="keyword">as</span> curr_opr, <span class="comment">-- 当前操作</span></span><br><span class="line">        <span class="built_in">lag</span>(opr_id,<span class="number">1</span>) <span class="keyword">over</span>(<span class="keyword">partition</span> <span class="keyword">by</span> user_id,date_format(log_time,&quot;yyyyMMdd&quot;) <span class="keyword">order</span> <span class="keyword">by</span> log_time) <span class="keyword">as</span> before_opr <span class="comment">-- 获取前一个操作</span></span><br><span class="line">    <span class="keyword">from</span> test_xxx3</span><br><span class="line">) res </span><br><span class="line"><span class="keyword">where</span> before_opr <span class="operator">=</span> &quot;A&quot; <span class="keyword">and</span> curr_opr<span class="operator">=</span>&quot;B&quot; </span><br><span class="line"><span class="keyword">group</span> <span class="keyword">by</span> dt</span><br><span class="line">;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1294.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="统计用户行为序列为A-B-D的用户数"><a href="#统计用户行为序列为A-B-D的用户数" class="headerlink" title="统计用户行为序列为A-B-D的用户数"></a>统计用户行为序列为A-B-D的用户数</h3><p>A-B之间可以有任何其他浏览记录(如C,E等),B-D之间除了C记录可以有任何其他浏览记录(如A,E等).</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="built_in">COUNT</span>(<span class="operator">*</span>)</span><br><span class="line"><span class="keyword">FROM</span>(</span><br><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> user_id, CONCAT_WS(<span class="string">&#x27;,&#x27;</span>,collect_list(opr_id)) <span class="keyword">AS</span> con_con</span><br><span class="line"><span class="keyword">FROM</span> </span><br><span class="line"> (</span><br><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> <span class="operator">*</span>, <span class="built_in">ROW_NUMBER</span>() <span class="keyword">over</span>(<span class="keyword">PARTITION</span> <span class="keyword">BY</span> user_id</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> opr_id <span class="keyword">ASC</span>) <span class="keyword">AS</span> rn</span><br><span class="line"><span class="keyword">FROM</span> test_xxx3</span><br><span class="line">)</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> user_id</span><br><span class="line">) a</span><br><span class="line"><span class="keyword">WHERE</span> con_con <span class="keyword">LIKE</span> <span class="string">&#x27;%A%B%D%&#x27;</span> <span class="keyword">AND</span> con_con <span class="keyword">NOT</span> <span class="keyword">LIKE</span> <span class="string">&#x27;%A%B%C%D%&#x27;</span></span><br><span class="line">;</span><br></pre></td></tr></table></figure>
+
+<h2 id="学生成绩分析"><a href="#学生成绩分析" class="headerlink" title="学生成绩分析"></a>学生成绩分析</h2><p>表: (student_id, course_id) 是该表的主键.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> test_xxx4 (</span><br><span class="line">student_id string,</span><br><span class="line">course_id <span class="type">int</span>,</span><br><span class="line">grade <span class="type">int</span></span><br><span class="line">) stored <span class="keyword">as</span> parquet;</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx4 <span class="keyword">select</span> <span class="string">&#x27;001&#x27;</span>,<span class="number">1</span>,<span class="number">60</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx4 <span class="keyword">select</span> <span class="string">&#x27;001&#x27;</span>,<span class="number">2</span>,<span class="number">75</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx4 <span class="keyword">select</span> <span class="string">&#x27;002&#x27;</span>,<span class="number">2</span>,<span class="number">33</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> test_xxx4 <span class="keyword">select</span> <span class="string">&#x27;002&#x27;</span>,<span class="number">3</span>,<span class="number">97</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test_xxx4;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">student_id  course_id   grade</span><br><span class="line">001 1   60</span><br><span class="line">002 3   97</span><br><span class="line">001 2   75</span><br><span class="line">002 2   33</span><br></pre></td></tr></table></figure>
+
+<h3 id="查询每位学生获得的最高成绩和它所对应的科目"><a href="#查询每位学生获得的最高成绩和它所对应的科目" class="headerlink" title="查询每位学生获得的最高成绩和它所对应的科目"></a>查询每位学生获得的最高成绩和它所对应的科目</h3><p>若科目成绩并列,取 course_id 最小的一门.<br>查询结果需按 student_id 增序进行排序.</p>
+<p>分析:因为需要最高成绩和所对应的科目,所以可采用窗口函数排序分组取第一个</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> </span><br><span class="line"> student_id,</span><br><span class="line"> course_id,</span><br><span class="line"> grade</span><br><span class="line"><span class="keyword">from</span> (</span><br><span class="line"> <span class="keyword">select</span></span><br><span class="line">  student_id,</span><br><span class="line">  course_id,</span><br><span class="line">  grade,</span><br><span class="line">  <span class="built_in">row_number</span>() <span class="keyword">over</span>(<span class="keyword">partition</span> <span class="keyword">by</span> student_id <span class="keyword">order</span> <span class="keyword">by</span> grade <span class="keyword">desc</span>,course_id <span class="keyword">asc</span>) <span class="keyword">as</span> rank_num </span><br><span class="line"> <span class="keyword">from</span> test_xxx4 </span><br><span class="line">) res </span><br><span class="line"><span class="keyword">where</span> rank_num <span class="operator">=</span> <span class="number">1</span> </span><br><span class="line"><span class="keyword">order</span> <span class="keyword">by</span> student_id</span><br><span class="line">;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1301.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="查询每一科目成绩最高和最低分数的学生"><a href="#查询每一科目成绩最高和最低分数的学生" class="headerlink" title="查询每一科目成绩最高和最低分数的学生"></a>查询每一科目成绩最高和最低分数的学生</h3><p>输出course_id,student_id,grade<br>我们可以按科目查找成绩最高的同学和最低分的同学,然后利用union连接起来</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">from</span>(</span><br><span class="line"> <span class="keyword">select</span> </span><br><span class="line">  <span class="operator">*</span>,</span><br><span class="line">  <span class="built_in">row_number</span>() <span class="keyword">over</span>(<span class="keyword">partition</span> <span class="keyword">by</span> course_id <span class="keyword">order</span> <span class="keyword">by</span> grade <span class="keyword">desc</span>) r</span><br><span class="line"> <span class="keyword">from</span> test_xxx4</span><br><span class="line">) a</span><br><span class="line"><span class="keyword">where</span> r <span class="operator">=</span> <span class="number">1</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">union</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">from</span>(</span><br><span class="line"> <span class="keyword">select</span> </span><br><span class="line">  <span class="operator">*</span>,</span><br><span class="line">  <span class="built_in">row_number</span>() <span class="keyword">over</span>(<span class="keyword">partition</span> <span class="keyword">by</span> course_id <span class="keyword">order</span> <span class="keyword">by</span> grade) r</span><br><span class="line"> <span class="keyword">from</span> test_xxx4</span><br><span class="line">) a</span><br><span class="line"><span class="keyword">where</span> r <span class="operator">=</span> <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hive/" rel="tag"># hive</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/02/25/hive%E8%BF%9E%E6%8E%A5%E6%9F%A5%E8%AF%A2/" rel="prev" title="hive连接查询">
+                  <i class="fa fa-chevron-left"></i> hive连接查询
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/02/25/hive%E5%87%BD%E6%95%B0/" rel="next" title="hive函数">
+                  hive函数 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

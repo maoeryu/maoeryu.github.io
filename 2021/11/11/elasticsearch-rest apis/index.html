@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="elasticsearch rest apis.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="elasticsearch-rest apis">
+<meta property="og:url" content="https://maoeryu.github.io/2021/11/11/elasticsearch-rest%20apis/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="elasticsearch rest apis.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2021-11-10T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-07-26T02:50:42.685Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="elasticsearch">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/11/11/elasticsearch-rest%20apis/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>elasticsearch-rest apis | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#document-apis"><span class="nav-number">1.</span> <span class="nav-text">document apis</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#single-document-apis"><span class="nav-number">1.1.</span> <span class="nav-text">single document apis</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#index-api"><span class="nav-number">1.1.1.</span> <span class="nav-text">index api</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%87%AA%E5%8A%A8%E5%88%9B%E5%BB%BA%E7%B4%A2%E5%BC%95"><span class="nav-number">1.1.1.1.</span> <span class="nav-text">自动创建索引</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.1.1.2.</span> <span class="nav-text">操作类型</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%87%AA%E5%8A%A8%E7%94%9F%E6%88%90id"><span class="nav-number">1.1.1.3.</span> <span class="nav-text">自动生成id</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%B7%AF%E7%94%B1"><span class="nav-number">1.1.1.4.</span> <span class="nav-text">路由</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%AD%89%E5%BE%85%E6%B4%BB%E5%8A%A8%E7%A2%8E%E7%89%87"><span class="nav-number">1.1.1.5.</span> <span class="nav-text">等待活动碎片</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%B7%E6%96%B0"><span class="nav-number">1.1.1.6.</span> <span class="nav-text">刷新</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#noop%E6%9B%B4%E6%96%B0"><span class="nav-number">1.1.1.7.</span> <span class="nav-text">noop更新</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%B6%85%E6%97%B6"><span class="nav-number">1.1.1.8.</span> <span class="nav-text">超时</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%89%88%E6%9C%AC%E6%8E%A7%E5%88%B6"><span class="nav-number">1.1.1.9.</span> <span class="nav-text">版本控制</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#get-api"><span class="nav-number">1.1.2.</span> <span class="nav-text">get api</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%AE%9E%E6%97%B6"><span class="nav-number">1.1.2.1.</span> <span class="nav-text">实时</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%BA%90%E8%BF%87%E6%BB%A4"><span class="nav-number">1.1.2.2.</span> <span class="nav-text">源过滤</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E5%AD%97%E6%AE%B5"><span class="nav-number">1.1.2.3.</span> <span class="nav-text">存储字段</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96source"><span class="nav-number">1.1.2.4.</span> <span class="nav-text">获取source</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%B7%AF%E7%94%B1-1"><span class="nav-number">1.1.2.5.</span> <span class="nav-text">路由</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#delete-api"><span class="nav-number">1.1.3.</span> <span class="nav-text">delete api</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#update-api"><span class="nav-number">1.1.4.</span> <span class="nav-text">update api</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%84%9A%E6%9C%AC%E6%9B%B4%E6%96%B0"><span class="nav-number">1.1.4.1.</span> <span class="nav-text">脚本更新</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#noop"><span class="nav-number">1.1.4.2.</span> <span class="nav-text">noop</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#upsert"><span class="nav-number">1.1.4.3.</span> <span class="nav-text">upsert</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#doc-as-upsert"><span class="nav-number">1.1.4.3.1.</span> <span class="nav-text">doc_as_upsert</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#scripted-upsert"><span class="nav-number">1.1.4.3.2.</span> <span class="nav-text">scripted_upsert</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#multi-document-apis"><span class="nav-number">1.2.</span> <span class="nav-text">multi-document apis</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#multi-get-api"><span class="nav-number">1.2.1.</span> <span class="nav-text">multi get api</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#source%E8%BF%87%E6%BB%A4"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">source过滤</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#stored-fields"><span class="nav-number">1.2.1.2.</span> <span class="nav-text">stored_fields</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%B7%AF%E7%94%B1-2"><span class="nav-number">1.2.1.3.</span> <span class="nav-text">路由</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#bulk-api"><span class="nav-number">1.2.2.</span> <span class="nav-text">bulk api</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#delete-by-query-api"><span class="nav-number">1.2.3.</span> <span class="nav-text">delete by query api</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%89%88%E6%9C%AC"><span class="nav-number">1.2.3.1.</span> <span class="nav-text">版本</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%A4%9A%E7%B4%A2%E5%BC%95-%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.2.3.2.</span> <span class="nav-text">多索引&#x2F;类型</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%B7%AF%E7%94%B1-3"><span class="nav-number">1.2.3.3.</span> <span class="nav-text">路由</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AEscroll"><span class="nav-number">1.2.3.4.</span> <span class="nav-text">设置scroll</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#url%E5%8F%82%E6%95%B0"><span class="nav-number">1.2.3.5.</span> <span class="nav-text">url参数</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#update-by-query-api"><span class="nav-number">1.2.4.</span> <span class="nav-text">update by query api</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E8%84%9A%E6%9C%AC%E6%9B%B4%E6%96%B0"><span class="nav-number">1.2.4.1.</span> <span class="nav-text">使用脚本更新</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%A4%9A%E7%B4%A2%E5%BC%95-%E7%B1%BB%E5%9E%8B-1"><span class="nav-number">1.2.4.2.</span> <span class="nav-text">多索引&#x2F;类型</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%B7%AF%E7%94%B1-4"><span class="nav-number">1.2.4.3.</span> <span class="nav-text">路由</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#scroll"><span class="nav-number">1.2.4.4.</span> <span class="nav-text">scroll</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#mapping%E6%9B%B4%E6%96%B0"><span class="nav-number">1.2.4.5.</span> <span class="nav-text">mapping更新</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#reindex-api"><span class="nav-number">1.2.5.</span> <span class="nav-text">reindex api</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%89%88%E6%9C%AC%E5%86%B2%E7%AA%81"><span class="nav-number">1.2.5.1.</span> <span class="nav-text">版本冲突</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2"><span class="nav-number">1.2.5.2.</span> <span class="nav-text">查询</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#search-apis"><span class="nav-number">2.</span> <span class="nav-text">search apis</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#search"><span class="nav-number">2.1.</span> <span class="nav-text">search</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#uri-search"><span class="nav-number">2.2.</span> <span class="nav-text">uri search</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#request-body-search"><span class="nav-number">2.3.</span> <span class="nav-text">request body search</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#query"><span class="nav-number">2.3.1.</span> <span class="nav-text">query</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#from-size"><span class="nav-number">2.3.2.</span> <span class="nav-text">from&#x2F;size</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#sort"><span class="nav-number">2.3.3.</span> <span class="nav-text">sort</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%A1%BA%E5%BA%8F"><span class="nav-number">2.3.3.1.</span> <span class="nav-text">顺序</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%8E%92%E5%BA%8F%E6%A8%A1%E5%BC%8F%E9%80%89%E9%A1%B9"><span class="nav-number">2.3.3.2.</span> <span class="nav-text">排序模式选项</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%B5%8C%E5%A5%97%E6%8E%92%E5%BA%8F"><span class="nav-number">2.3.3.3.</span> <span class="nav-text">嵌套排序</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#source%E8%BF%87%E6%BB%A4-1"><span class="nav-number">2.3.4.</span> <span class="nav-text">source过滤</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#fields"><span class="nav-number">2.3.5.</span> <span class="nav-text">fields</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Script-Fields"><span class="nav-number">2.3.6.</span> <span class="nav-text">Script Fields</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Doc-value-Fields"><span class="nav-number">2.3.7.</span> <span class="nav-text">Doc value Fields</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Post-filter"><span class="nav-number">2.3.8.</span> <span class="nav-text">Post filter</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Highlighting"><span class="nav-number">2.3.9.</span> <span class="nav-text">Highlighting</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Rescoring"><span class="nav-number">2.3.10.</span> <span class="nav-text">Rescoring</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Search-Type"><span class="nav-number">2.3.11.</span> <span class="nav-text">Search Type</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Scroll"><span class="nav-number">2.3.12.</span> <span class="nav-text">Scroll</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%BB%9F%E8%AE%A1"><span class="nav-number">2.3.12.1.</span> <span class="nav-text">统计</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%B8%85%E9%99%A4scroll"><span class="nav-number">2.3.12.2.</span> <span class="nav-text">清除scroll</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Preference"><span class="nav-number">2.3.13.</span> <span class="nav-text">Preference</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Explain"><span class="nav-number">2.3.14.</span> <span class="nav-text">Explain</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Sequence-Numbers-and-Primary-Term"><span class="nav-number">2.3.15.</span> <span class="nav-text">Sequence Numbers and Primary Term</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Version"><span class="nav-number">2.3.16.</span> <span class="nav-text">Version</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Index-Boost"><span class="nav-number">2.3.17.</span> <span class="nav-text">Index Boost</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#min-score"><span class="nav-number">2.3.18.</span> <span class="nav-text">min_score</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Named-Queries"><span class="nav-number">2.3.19.</span> <span class="nav-text">Named Queries</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Inner-hits"><span class="nav-number">2.3.20.</span> <span class="nav-text">Inner hits</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Field-Collapsing"><span class="nav-number">2.3.21.</span> <span class="nav-text">Field Collapsing</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Search-After"><span class="nav-number">2.3.22.</span> <span class="nav-text">Search After</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#multi-search-api"><span class="nav-number">2.4.</span> <span class="nav-text">multi search api</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#search-template"><span class="nav-number">2.5.</span> <span class="nav-text">search template</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E6%90%9C%E7%B4%A2%E6%A8%A1%E6%9D%BF"><span class="nav-number">2.5.1.</span> <span class="nav-text">存储搜索模板</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96-%E5%88%A0%E9%99%A4%E6%90%9C%E7%B4%A2%E6%A8%A1%E6%9D%BF"><span class="nav-number">2.5.2.</span> <span class="nav-text">获取&#x2F;删除搜索模板</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E6%90%9C%E7%B4%A2%E6%A8%A1%E6%9D%BF"><span class="nav-number">2.5.3.</span> <span class="nav-text">使用搜索模板</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81%E6%90%9C%E7%B4%A2%E6%A8%A1%E6%9D%BF"><span class="nav-number">2.5.4.</span> <span class="nav-text">验证搜索模板</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A1%AB%E5%85%85%E6%9F%A5%E8%AF%A2%E5%AD%97%E7%AC%A6%E4%B8%B2"><span class="nav-number">2.5.5.</span> <span class="nav-text">填充查询字符串</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#multi-search-template"><span class="nav-number">2.6.</span> <span class="nav-text">multi search template</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#search-shards-api"><span class="nav-number">2.7.</span> <span class="nav-text">search shards api</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#suggesters"><span class="nav-number">2.8.</span> <span class="nav-text">suggesters</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#count-api"><span class="nav-number">2.9.</span> <span class="nav-text">count api</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#validate-api"><span class="nav-number">2.10.</span> <span class="nav-text">validate api</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#explain-api"><span class="nav-number">2.11.</span> <span class="nav-text">explain api</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#profile-api"><span class="nav-number">2.12.</span> <span class="nav-text">profile api</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#field-capabilities-api"><span class="nav-number">2.13.</span> <span class="nav-text">field capabilities api</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ranking-evaluation-api"><span class="nav-number">2.14.</span> <span class="nav-text">ranking evaluation api</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/11/11/elasticsearch-rest%20apis/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          elasticsearch-rest apis
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-11-11 00:00:00" itemprop="dateCreated datePublished" datetime="2021-11-11T00:00:00+08:00">2021-11-11</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-07-26 10:50:42" itemprop="dateModified" datetime="2022-07-26T10:50:42+08:00">2022-07-26</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>elasticsearch rest apis.</p>
+<span id="more"></span>
+
+<h2 id="document-apis"><a href="#document-apis" class="headerlink" title="document apis"></a>document apis</h2><h3 id="single-document-apis"><a href="#single-document-apis" class="headerlink" title="single document apis"></a>single document apis</h3><h4 id="index-api"><a href="#index-api" class="headerlink" title="index api"></a>index api</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">PUT &#x2F;&lt;target&gt;&#x2F;_doc&#x2F;&lt;_id&gt;</span><br><span class="line">POST &#x2F;&lt;target&gt;&#x2F;_doc&#x2F;</span><br><span class="line">PUT &#x2F;&lt;target&gt;&#x2F;_create&#x2F;&lt;_id&gt;</span><br><span class="line">POST &#x2F;&lt;target&gt;&#x2F;_create&#x2F;&lt;_id&gt;</span><br></pre></td></tr></table></figure>
+
+<p>插入一条文档,索引为twitter,类型为_doc,id为1.</p>
+<p><code>put twitter/_doc/1</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;post_date&quot;</span>: <span class="string">&quot;2009-11-15T14:12:12&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;message&quot;</span>: <span class="string">&quot;trying out Elasticsearch&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>响应,</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;twitter&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;_version&quot;</span>: <span class="number">1</span>,</span><br><span class="line">    <span class="attr">&quot;result&quot;</span>: <span class="string">&quot;created&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;_shards&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;total&quot;</span>: <span class="number">2</span>,</span><br><span class="line">        <span class="attr">&quot;successful&quot;</span>: <span class="number">2</span>,</span><br><span class="line">        <span class="attr">&quot;failed&quot;</span>: <span class="number">0</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;_seq_no&quot;</span>: <span class="number">0</span>,</span><br><span class="line">    <span class="attr">&quot;_primary_term&quot;</span>: <span class="number">1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="自动创建索引"><a href="#自动创建索引" class="headerlink" title="自动创建索引"></a>自动创建索引</h5><p>如果索引不存在,默认会自动创建索引并应用索引模板.</p>
+<p>允许部分索引自动创建.</p>
+<p><code>put _cluster/settings</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;persistent&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;action.auto_create_index&quot;</span>: <span class="string">&quot;twitter,index10,-index1*,+ind*&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>关闭自动创建索引,默认为true.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;persistent&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;action.auto_create_index&quot;</span>: <span class="string">&quot;false&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="操作类型"><a href="#操作类型" class="headerlink" title="操作类型"></a>操作类型</h5><p>索引操作还接受op_type,可以用来强制create操作,如果索引中存在该id时,则索引操作失败.</p>
+<p><code>put twitter/_doc/2?op_type=create</code><br>或使用以下方式,<br><code>put twitter/_doc/3/_create</code></p>
+<h5 id="自动生成id"><a href="#自动生成id" class="headerlink" title="自动生成id"></a>自动生成id</h5><p>不指定id时,将自动生成一个id,此时,op_type将自动设置为create.<br>此时,需要使用post.</p>
+<p><code>post twitter/_doc/</code></p>
+<p>响应,</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;twitter&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;WZ36DH0B3dpbnib3iv9n&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;_version&quot;</span>: <span class="number">1</span>,</span><br><span class="line">    <span class="attr">&quot;result&quot;</span>: <span class="string">&quot;created&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;_shards&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;total&quot;</span>: <span class="number">2</span>,</span><br><span class="line">        <span class="attr">&quot;successful&quot;</span>: <span class="number">2</span>,</span><br><span class="line">        <span class="attr">&quot;failed&quot;</span>: <span class="number">0</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;_seq_no&quot;</span>: <span class="number">3</span>,</span><br><span class="line">    <span class="attr">&quot;_primary_term&quot;</span>: <span class="number">1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="路由"><a href="#路由" class="headerlink" title="路由"></a>路由</h5><p>默认对文档id进行hash作为路由,可使用路由参数进行控制.<br><code>post twitter/_doc?routing=kimchy</code></p>
+<p>设置mapping时,<code>_routing</code>可用于指导索引操作,如果设置为required时,未提供提取路由值则索引操作失败.</p>
+<h5 id="等待活动碎片"><a href="#等待活动碎片" class="headerlink" title="等待活动碎片"></a>等待活动碎片</h5><p>为了提高对系统的写入的弹性,可以将索引操作配置为在继续操作之前等待一定数量的活动碎片副本.<br>如果所需数量的活动碎片副本不可用,则写入操作必须等待并重试,直到所需的碎片副本已启动或发生超时.<br>默认情况下,写操作只等待主shards激活后再继续.<br>wait_for_active_shards=1</p>
+<h5 id="刷新"><a href="#刷新" class="headerlink" title="刷新"></a>刷新</h5><p>控制此请求所做的更改何时对搜索可见.<br><code>refresh</code></p>
+<h5 id="noop更新"><a href="#noop更新" class="headerlink" title="noop更新"></a>noop更新</h5><p>使用索引API更新文档时,即使文档没有更改,也始终会创建文档的新版本.<br><code>detect_noop=true</code></p>
+<h5 id="超时"><a href="#超时" class="headerlink" title="超时"></a>超时</h5><p>默认1分钟.<br><code>put twitter/_doc/1?timeout=5m</code></p>
+<h5 id="版本控制"><a href="#版本控制" class="headerlink" title="版本控制"></a>版本控制</h5><p>每个索引文档都有一个版本号.<br>默认情况下,使用内部版本控制,从1开始,每次更新(包括删除)递增.<br>可使用外部值,需要启用配置<code>version_type=true</code>.</p>
+<p><code>put twitter/_doc/1?version=2&amp;version_type=external</code></p>
+<p>使用外部版本类型时,系统会检查传递给索引请求的版本号是否大于当前存储文档的版本号.<br>如果为true,则文档将被索引并使用新版本号.<br>如果提供的值小于或等于存储文档的版本号,则会发生版本冲突,索引操作将失败.</p>
+<h4 id="get-api"><a href="#get-api" class="headerlink" title="get api"></a>get api</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">GET &lt;index&gt;&#x2F;_doc&#x2F;&lt;_id&gt;</span><br><span class="line">GET &lt;index&gt;&#x2F;_source&#x2F;&lt;_id&gt;</span><br></pre></td></tr></table></figure>
+
+<p><code>get twitter/_doc/0</code><br>当id不存在时,found为false.</p>
+<p>响应,</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;twitter&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;_version&quot;</span>: <span class="number">2</span>,</span><br><span class="line">    <span class="attr">&quot;_seq_no&quot;</span>: <span class="number">5</span>,</span><br><span class="line">    <span class="attr">&quot;_primary_term&quot;</span>: <span class="number">1</span>,</span><br><span class="line">    <span class="attr">&quot;found&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">    <span class="attr">&quot;_source&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;post_date&quot;</span>: <span class="string">&quot;2009-11-15T14:12:12&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;message&quot;</span>: <span class="string">&quot;trying out Elasticsearch&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="实时"><a href="#实时" class="headerlink" title="实时"></a>实时</h5><p>默认情况下,getapi是实时的,不受索引刷新率的影响(当数据在搜索中可见时).<br>如果文档已更新但尚未刷新,则getapi将就地发出refreshcall以使文档可见,这也将使自上次刷新以来的其他文档更改可见.<br>为了禁用实时获取,可以设置realtime参数为false.</p>
+<h5 id="源过滤"><a href="#源过滤" class="headerlink" title="源过滤"></a>源过滤</h5><p>默认情况下,get操作返回<code>_source</code>字段,可关闭.<br><code>get twitter/_doc/1?_source=false</code></p>
+<p>返回部分字段,<br><code>get twitter/_doc/1?_source_includes=*.id,user&amp;_source_excludes=message</code></p>
+<p>如果只想指定include,可使用较短表示法,<br><code>get twitter/_doc/1?_source=*.id,user</code></p>
+<h5 id="存储字段"><a href="#存储字段" class="headerlink" title="存储字段"></a>存储字段</h5><p>get操作允许指定一组存储字段,这些字段将通过传递stored_fields参数,如果未存储请求的字段,则将忽略它们.</p>
+<p><code>put twitter2</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;mappings&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;counter&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;integer&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;store&quot;</span>: <span class="literal">false</span></span><br><span class="line">            &#125;,</span><br><span class="line">            <span class="attr">&quot;tags&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;keyword&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;store&quot;</span>: <span class="literal">true</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>put twitter2/_doc/1</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;counter&quot;</span>: <span class="number">1</span>,</span><br><span class="line">    <span class="attr">&quot;tags&quot;</span>: [</span><br><span class="line">        <span class="string">&quot;red&quot;</span></span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>get twitter2/_doc/1?stored_fields=tags,counter</code><br>响应,</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;twitter2&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;_version&quot;</span>: <span class="number">2</span>,</span><br><span class="line">    <span class="attr">&quot;_seq_no&quot;</span>: <span class="number">1</span>,</span><br><span class="line">    <span class="attr">&quot;_primary_term&quot;</span>: <span class="number">1</span>,</span><br><span class="line">    <span class="attr">&quot;found&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">    <span class="attr">&quot;fields&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;tags&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;red&quot;</span></span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用路由检索时,响应同上.</p>
+<p><code>put twitter2/_doc/2?routing=user1</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;counter&quot;</span>: <span class="number">1</span>,</span><br><span class="line">    <span class="attr">&quot;tags&quot;</span>: [</span><br><span class="line">        <span class="string">&quot;white&quot;</span></span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>get twitter2/_doc/2?routing=user1&amp;stored_fields=tags,counter</code></p>
+<h5 id="获取source"><a href="#获取source" class="headerlink" title="获取source"></a>获取source</h5><p><code>get twitter/_doc/1/_source</code><br><code>get twitter/_doc/1/_source?_source_includes=*.id,user&amp;_source_excludes=message</code></p>
+<h5 id="路由-1"><a href="#路由-1" class="headerlink" title="路由"></a>路由</h5><p><code>get twitter2/_doc/2?routing=user1</code></p>
+<h4 id="delete-api"><a href="#delete-api" class="headerlink" title="delete api"></a>delete api</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DELETE &#x2F;&lt;index&gt;&#x2F;_doc&#x2F;&lt;_id&gt;</span><br></pre></td></tr></table></figure>
+
+<p><code>delete twitter2/_doc/1</code></p>
+<h4 id="update-api"><a href="#update-api" class="headerlink" title="update api"></a>update api</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">POST &#x2F;&lt;index&gt;&#x2F;_update&#x2F;&lt;_id&gt;</span><br></pre></td></tr></table></figure>
+
+<p><code>put test/_doc/1</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;counter&quot;</span>: <span class="number">1</span>,</span><br><span class="line">    <span class="attr">&quot;tags&quot;</span>: [</span><br><span class="line">        <span class="string">&quot;red&quot;</span></span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="脚本更新"><a href="#脚本更新" class="headerlink" title="脚本更新"></a>脚本更新</h5><p><code>post test/_doc/1/_update</code></p>
+<p>使用脚本更新后,count值变为5.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;script&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;source&quot;</span>: <span class="string">&quot;ctx._source.counter += params.count&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;lang&quot;</span>: <span class="string">&quot;painless&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;params&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;count&quot;</span>: <span class="number">4</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用脚本更新后,tag变为list,包含两个值red/blue.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;script&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;source&quot;</span>: <span class="string">&quot;ctx._source.tags.add(params.tag)&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;lang&quot;</span>: <span class="string">&quot;painless&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;params&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;tag&quot;</span>: <span class="string">&quot;blue&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用脚本更新后,tag中blue值将变删除.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;script&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;source&quot;</span>: <span class="string">&quot;if (ctx._source.tags.contains(params.tag)) &#123; ctx._source.tags.remove(ctx._source.tags.indexOf(params.tag)) &#125;&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;lang&quot;</span>: <span class="string">&quot;painless&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;params&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;tag&quot;</span>: <span class="string">&quot;blue&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用脚本,增加新字段.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;script&quot;</span>: <span class="string">&quot;ctx._source.new_field = &#x27;value_of_new_field&#x27;&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用脚本,移除字段.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;script&quot;</span>: <span class="string">&quot;ctx._source.remove(&#x27;new_field&#x27;)&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用脚本,如果tag中包含green,则删除文档,否则无操作.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;script&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;source&quot;</span>: <span class="string">&quot;if (ctx._source.tags.contains(params.tag)) &#123; ctx.op = &#x27;delete&#x27; &#125; else &#123; ctx.op = &#x27;none&#x27; &#125;&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;lang&quot;</span>: <span class="string">&quot;painless&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;params&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;tag&quot;</span>: <span class="string">&quot;green&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="noop"><a href="#noop" class="headerlink" title="noop"></a>noop</h5><p>如果值无变化,则返回noop,忽略整个请求.<br>可增加detect_noop=false,禁用此行为.</p>
+<p><code>post test/_doc/1/_update</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;doc&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;new_name&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;detect_noop&quot;</span>: <span class="literal">false</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="upsert"><a href="#upsert" class="headerlink" title="upsert"></a>upsert</h5><p>如果文档存在则更新,不存在则插入.</p>
+<p><code>post test/_doc/1/_update</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;script&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;source&quot;</span>: <span class="string">&quot;ctx._source.counter += params.count&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;lang&quot;</span>: <span class="string">&quot;painless&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;params&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;count&quot;</span>: <span class="number">4</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;upsert&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;counter&quot;</span>: <span class="number">1</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h6 id="doc-as-upsert"><a href="#doc-as-upsert" class="headerlink" title="doc_as_upsert"></a>doc_as_upsert</h6><p><code>post test/_doc/4/_update</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;doc&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;new_name&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;doc_as_upsert&quot;</span>: <span class="literal">true</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h6 id="scripted-upsert"><a href="#scripted-upsert" class="headerlink" title="scripted_upsert"></a>scripted_upsert</h6><p>不管文档是否存在都希望脚本运行.<br><code>post sessions/session/dh3sgudg8gsrgl/_update</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;scripted_upsert&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">    <span class="attr">&quot;script&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;id&quot;</span>: <span class="string">&quot;my_web_session_summariser&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;params&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;pageViewEvent&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;url&quot;</span>: <span class="string">&quot;foo.com/bar&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;response&quot;</span>: <span class="number">404</span>,</span><br><span class="line">                <span class="attr">&quot;time&quot;</span>: <span class="string">&quot;2014-01-01 12:32&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;upsert&quot;</span>: &#123;</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="multi-document-apis"><a href="#multi-document-apis" class="headerlink" title="multi-document apis"></a>multi-document apis</h3><h4 id="multi-get-api"><a href="#multi-get-api" class="headerlink" title="multi get api"></a>multi get api</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">GET &#x2F;_mget</span><br><span class="line">GET &#x2F;&lt;index&gt;&#x2F;_mget</span><br></pre></td></tr></table></figure>
+
+<p><code>get _mget</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;docs&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;test&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;1&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;test&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;2&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>get test/_mget</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;docs&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;1&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;2&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>get test/_doc/_mget</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;docs&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;1&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;2&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>get test/_doc/_mget</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;ids&quot;</span>: [</span><br><span class="line">        <span class="string">&quot;1&quot;</span>,</span><br><span class="line">        <span class="string">&quot;2&quot;</span></span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="source过滤"><a href="#source过滤" class="headerlink" title="source过滤"></a>source过滤</h5><p><code>get test/_mget</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;docs&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;test&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;3&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_source&quot;</span>: <span class="literal">false</span></span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;test&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;2&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_source&quot;</span>: [</span><br><span class="line">                <span class="string">&quot;age&quot;</span></span><br><span class="line">            ]</span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;test&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_source&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;include&quot;</span>: [</span><br><span class="line">                    <span class="string">&quot;count&quot;</span></span><br><span class="line">                ],</span><br><span class="line">                <span class="attr">&quot;exclude&quot;</span>: [</span><br><span class="line">                    <span class="string">&quot;count.source&quot;</span></span><br><span class="line">                ]</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>响应,</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;docs&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;test&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;3&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_version&quot;</span>: <span class="number">3</span>,</span><br><span class="line">            <span class="attr">&quot;_seq_no&quot;</span>: <span class="number">13</span>,</span><br><span class="line">            <span class="attr">&quot;_primary_term&quot;</span>: <span class="number">1</span>,</span><br><span class="line">            <span class="attr">&quot;found&quot;</span>: <span class="literal">true</span></span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;test&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;2&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_version&quot;</span>: <span class="number">3</span>,</span><br><span class="line">            <span class="attr">&quot;_seq_no&quot;</span>: <span class="number">10</span>,</span><br><span class="line">            <span class="attr">&quot;_primary_term&quot;</span>: <span class="number">1</span>,</span><br><span class="line">            <span class="attr">&quot;found&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">            <span class="attr">&quot;_source&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;age&quot;</span>: <span class="number">1</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;test&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;_version&quot;</span>: <span class="number">1</span>,</span><br><span class="line">            <span class="attr">&quot;_seq_no&quot;</span>: <span class="number">7</span>,</span><br><span class="line">            <span class="attr">&quot;_primary_term&quot;</span>: <span class="number">1</span>,</span><br><span class="line">            <span class="attr">&quot;found&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">            <span class="attr">&quot;_source&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;count&quot;</span>: &#123;</span><br><span class="line">                    </span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="stored-fields"><a href="#stored-fields" class="headerlink" title="stored_fields"></a>stored_fields</h5><h5 id="路由-2"><a href="#路由-2" class="headerlink" title="路由"></a>路由</h5><h4 id="bulk-api"><a href="#bulk-api" class="headerlink" title="bulk api"></a>bulk api</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">POST &#x2F;_bulk</span><br><span class="line">POST &#x2F;&lt;target&gt;&#x2F;_bulk</span><br></pre></td></tr></table></figure>
+
+<p><code>post _bulk</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123; <span class="attr">&quot;index&quot;</span> : &#123; <span class="attr">&quot;_index&quot;</span> : <span class="string">&quot;test&quot;</span>, <span class="attr">&quot;_id&quot;</span> : <span class="string">&quot;1&quot;</span> &#125; &#125;</span><br><span class="line">&#123; <span class="attr">&quot;field1&quot;</span> : <span class="string">&quot;value1&quot;</span> &#125;</span><br><span class="line">&#123; <span class="attr">&quot;delete&quot;</span> : &#123; <span class="attr">&quot;_index&quot;</span> : <span class="string">&quot;test&quot;</span>, <span class="attr">&quot;_id&quot;</span> : <span class="string">&quot;2&quot;</span> &#125; &#125;</span><br><span class="line">&#123; <span class="attr">&quot;create&quot;</span> : &#123; <span class="attr">&quot;_index&quot;</span> : <span class="string">&quot;test&quot;</span>, <span class="attr">&quot;_id&quot;</span> : <span class="string">&quot;3&quot;</span> &#125; &#125;</span><br><span class="line">&#123; <span class="attr">&quot;field1&quot;</span> : <span class="string">&quot;value3&quot;</span> &#125;</span><br><span class="line">&#123; <span class="attr">&quot;update&quot;</span> : &#123;<span class="attr">&quot;_id&quot;</span> : <span class="string">&quot;1&quot;</span>, <span class="attr">&quot;_index&quot;</span> : <span class="string">&quot;test&quot;</span>&#125; &#125;</span><br><span class="line">&#123; <span class="attr">&quot;doc&quot;</span> : &#123;<span class="attr">&quot;field2&quot;</span> : <span class="string">&quot;value2&quot;</span>&#125; &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&#123; <span class="attr">&quot;update&quot;</span> : &#123;<span class="attr">&quot;_id&quot;</span> : <span class="string">&quot;1&quot;</span>, <span class="attr">&quot;_index&quot;</span> : <span class="string">&quot;index1&quot;</span>, <span class="attr">&quot;retry_on_conflict&quot;</span> : <span class="number">3</span>&#125; &#125;</span><br><span class="line">&#123; <span class="attr">&quot;doc&quot;</span> : &#123;<span class="attr">&quot;field&quot;</span> : <span class="string">&quot;value&quot;</span>&#125; &#125;</span><br><span class="line">&#123; <span class="attr">&quot;update&quot;</span> : &#123; <span class="attr">&quot;_id&quot;</span> : <span class="string">&quot;0&quot;</span>, <span class="attr">&quot;_index&quot;</span> : <span class="string">&quot;index1&quot;</span>, <span class="attr">&quot;retry_on_conflict&quot;</span> : <span class="number">3</span>&#125; &#125;</span><br><span class="line">&#123; <span class="attr">&quot;script&quot;</span> : &#123; <span class="attr">&quot;source&quot;</span>: <span class="string">&quot;ctx._source.counter += params.param1&quot;</span>, <span class="attr">&quot;lang&quot;</span> : <span class="string">&quot;painless&quot;</span>, <span class="attr">&quot;params&quot;</span> : &#123;<span class="attr">&quot;param1&quot;</span> : <span class="number">1</span>&#125;&#125;, <span class="attr">&quot;upsert&quot;</span> : &#123;<span class="attr">&quot;counter&quot;</span> : <span class="number">1</span>&#125;&#125;</span><br><span class="line">&#123; <span class="attr">&quot;update&quot;</span> : &#123;<span class="attr">&quot;_id&quot;</span> : <span class="string">&quot;2&quot;</span>, <span class="attr">&quot;_index&quot;</span> : <span class="string">&quot;index1&quot;</span>, <span class="attr">&quot;retry_on_conflict&quot;</span> : <span class="number">3</span>&#125; &#125;</span><br><span class="line">&#123; <span class="attr">&quot;doc&quot;</span> : &#123;<span class="attr">&quot;field&quot;</span> : <span class="string">&quot;value&quot;</span>&#125;, <span class="attr">&quot;doc_as_upsert&quot;</span> : <span class="literal">true</span> &#125;</span><br><span class="line">&#123; <span class="attr">&quot;update&quot;</span> : &#123;<span class="attr">&quot;_id&quot;</span> : <span class="string">&quot;3&quot;</span>, <span class="attr">&quot;_index&quot;</span> : <span class="string">&quot;index1&quot;</span>, <span class="attr">&quot;_source&quot;</span> : <span class="literal">true</span>&#125; &#125;</span><br><span class="line">&#123; <span class="attr">&quot;doc&quot;</span> : &#123;<span class="attr">&quot;field&quot;</span> : <span class="string">&quot;value&quot;</span>&#125; &#125;</span><br><span class="line">&#123; <span class="attr">&quot;update&quot;</span> : &#123;<span class="attr">&quot;_id&quot;</span> : <span class="string">&quot;4&quot;</span>, <span class="attr">&quot;_index&quot;</span> : <span class="string">&quot;index1&quot;</span>&#125; &#125;</span><br><span class="line">&#123; <span class="attr">&quot;doc&quot;</span> : &#123;<span class="attr">&quot;field&quot;</span> : <span class="string">&quot;value&quot;</span>&#125;, <span class="attr">&quot;_source&quot;</span>: <span class="literal">true</span>&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="delete-by-query-api"><a href="#delete-by-query-api" class="headerlink" title="delete by query api"></a>delete by query api</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">POST &#x2F;&lt;target&gt;&#x2F;_delete_by_query</span><br></pre></td></tr></table></figure>
+
+<p><code>post twitter/_delete_by_query</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;match&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;message&quot;</span>: <span class="string">&quot;try out&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="版本"><a href="#版本" class="headerlink" title="版本"></a>版本</h5><p><code>post twitter/_doc/_delete_by_query?conflicts=proceed</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;match_all&quot;</span>: &#123;&#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="多索引-类型"><a href="#多索引-类型" class="headerlink" title="多索引/类型"></a>多索引/类型</h5><p><code>post twitter,twitter2/_docs,post/_delete_by_query</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;match_all&quot;</span>: &#123;&#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="路由-3"><a href="#路由-3" class="headerlink" title="路由"></a>路由</h5><p><code>post twitter/_delete_by_query?routing=1</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;range&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;age&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;gte&quot;</span>: <span class="number">10</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="设置scroll"><a href="#设置scroll" class="headerlink" title="设置scroll"></a>设置scroll</h5><p><code>post twitter/_delete_by_query?scroll_size=5000</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="url参数"><a href="#url参数" class="headerlink" title="url参数"></a>url参数</h5><p>pretty<br>refresh<br>wait_for_completion<br>wait_for_active_shards<br>timeout<br>scroll</p>
+<h4 id="update-by-query-api"><a href="#update-by-query-api" class="headerlink" title="update by query api"></a>update by query api</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">POST &#x2F;&lt;target&gt;&#x2F;_update_by_query</span><br></pre></td></tr></table></figure>
+
+<p><code>post twitter/_update_by_query?conflicts=proceed</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>将更新索引.<br><code>post twitter/_doc/_update_by_query?conflicts=proceed</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用dsl查询语句.<br><code>post twitter/_update_by_query?conflicts=proceed</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="使用脚本更新"><a href="#使用脚本更新" class="headerlink" title="使用脚本更新"></a>使用脚本更新</h5><p>将user=xx1的文档的age字段,全部自增1.<br><code>post twitter/_update_by_query</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;script&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;source&quot;</span>: <span class="string">&quot;ctx._source.age++&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;lang&quot;</span>: <span class="string">&quot;painless&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;xx1&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="多索引-类型-1"><a href="#多索引-类型-1" class="headerlink" title="多索引/类型"></a>多索引/类型</h5><p><code>post twitter,blog/_doc,post/_update_by_query</code></p>
+<h5 id="路由-4"><a href="#路由-4" class="headerlink" title="路由"></a>路由</h5><p><code>post twitter/_update_by_query?routing=1</code></p>
+<h5 id="scroll"><a href="#scroll" class="headerlink" title="scroll"></a>scroll</h5><p>scroll默认值1000.<br><code>post twitter/_update_by_query?scroll_size=100</code></p>
+<h5 id="mapping更新"><a href="#mapping更新" class="headerlink" title="mapping更新"></a>mapping更新</h5><p><code>put xx1</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;mappings&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;dynamic&quot;</span>: <span class="literal">false</span>,</span><br><span class="line">        <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;text&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>put时,增加新字段.<br><code>put xx1/_doc/1</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;text&quot;</span>: <span class="string">&quot;words words&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;flag&quot;</span>: <span class="string">&quot;bar&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>put xx1/_doc/2</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;text&quot;</span>: <span class="string">&quot;words words&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;flag&quot;</span>: <span class="string">&quot;foo&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>此时,更新mapping<br><code>put xx1/_mapping</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;text&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;flag&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;analyzer&quot;</span>: <span class="string">&quot;keyword&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>搜索数据,按新字段检索时,无结果.<br>新字段不会被索引,只会存储在_source.<br><code>post xx1/_search?filter_path=hits.total</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;match&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;flag&quot;</span>: <span class="string">&quot;foo&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用update_by_query获取新映射.<br><code>post xx1/_update_by_query?refresh&amp;conflicts=proceed</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>此时,再重新search,则会检索到新字段.</p>
+<h4 id="reindex-api"><a href="#reindex-api" class="headerlink" title="reindex api"></a>reindex api</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">POST &#x2F;_reindex</span><br></pre></td></tr></table></figure>
+
+<p><code>post _reindex</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;source&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;index&quot;</span>: <span class="string">&quot;twitter&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;dest&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;index&quot;</span>: <span class="string">&quot;new_twitter&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="版本冲突"><a href="#版本冲突" class="headerlink" title="版本冲突"></a>版本冲突</h5><p><code>post _reindex</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;conflicts&quot;</span>: <span class="string">&quot;proceed&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;source&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;index&quot;</span>: <span class="string">&quot;twitter&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;dest&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;index&quot;</span>: <span class="string">&quot;new_twitter&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;op_type&quot;</span>: <span class="string">&quot;create&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="查询"><a href="#查询" class="headerlink" title="查询"></a>查询</h5><h2 id="search-apis"><a href="#search-apis" class="headerlink" title="search apis"></a>search apis</h2><h3 id="search"><a href="#search" class="headerlink" title="search"></a>search</h3><p>支持多索引语法.<br><code>get twitter/_search?q=user:kimchy</code><br><code>get kimchy,elasticsearch/_search?q=tag:wow</code><br><code>get _all/_search?q=tag:wow</code></p>
+<h3 id="uri-search"><a href="#uri-search" class="headerlink" title="uri search"></a>uri search</h3><p>uri中允许的参数.</p>
+<table>
+<thead>
+<tr>
+<th align="left">名称</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">q</td>
+<td align="left">查询字符串,映射到query_string</td>
+</tr>
+<tr>
+<td align="left">df</td>
+<td align="left">未定义字段前缀时使用的默认字段</td>
+</tr>
+<tr>
+<td align="left">analyzer</td>
+<td align="left">分析器名称</td>
+</tr>
+<tr>
+<td align="left">analyze_wildcard</td>
+<td align="left">是否应该分析通配符和前缀查询,默认false</td>
+</tr>
+<tr>
+<td align="left">batched_reduce_size</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">default_operator</td>
+<td align="left">默认运算符and/or,默认为or</td>
+</tr>
+<tr>
+<td align="left">lenient</td>
+<td align="left">设置为true时忽略文本格式,默认false</td>
+</tr>
+<tr>
+<td align="left">explain</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><code>_source</code></td>
+<td align="left">设置为false时禁用source字段,可使用<code>_source_includes/_source_excludes</code></td>
+</tr>
+<tr>
+<td align="left">stored_fields</td>
+<td align="left">存储字段,逗号分隔</td>
+</tr>
+<tr>
+<td align="left">sort</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">track_scores</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">track_total_hits</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">timeout</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">terminate_after</td>
+<td align="left">为每个碎片收集的最大文档数,达到该数目时,查询执行将提前终止</td>
+</tr>
+<tr>
+<td align="left">from</td>
+<td align="left">要返回的命中起始索引,默认为0</td>
+</tr>
+<tr>
+<td align="left">size</td>
+<td align="left">要返回的命中数,默认为10</td>
+</tr>
+<tr>
+<td align="left">search_type</td>
+<td align="left">默认为query_then_fetch</td>
+</tr>
+<tr>
+<td align="left">allow_partial_search_results</td>
+<td align="left">默认为true,表示超时/失败时允许部分结果</td>
+</tr>
+</tbody></table>
+<p><code>get get-together/_search?q=elasticsearch&amp;_source_includes=group.name,group.location&amp;size=10&amp;pretty</code><br>q后如果未指定字段,则从所有字段中搜索,elastic默认使用<code>_all</code>字段索引所有字段内容.</p>
+<h3 id="request-body-search"><a href="#request-body-search" class="headerlink" title="request body search"></a>request body search</h3><p>使用query dsl执行搜索请求,参数同上.<br><code>get twitter/_search</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>快速检查任何匹配的文档</p>
+</blockquote>
+<p><code>get _search?q=user:kimchy&amp;size=0&amp;terminate_after=1</code></p>
+<h4 id="query"><a href="#query" class="headerlink" title="query"></a>query</h4><p><code>get _search</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="from-size"><a href="#from-size" class="headerlink" title="from/size"></a>from/size</h4><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;from&quot;</span>: <span class="number">0</span>,</span><br><span class="line">    <span class="attr">&quot;size&quot;</span>: <span class="number">10</span>,</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="sort"><a href="#sort" class="headerlink" title="sort"></a>sort</h4><p><code>put my_index</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;mappings&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;post_date&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;date&quot;</span></span><br><span class="line">            &#125;,</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;keyword&quot;</span></span><br><span class="line">            &#125;,</span><br><span class="line">            <span class="attr">&quot;name&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;keyword&quot;</span></span><br><span class="line">            &#125;,</span><br><span class="line">            <span class="attr">&quot;age&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;integer&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>get my_index/_search</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;sort&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;post_date&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;order&quot;</span>: <span class="string">&quot;asc&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;desc&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;age&quot;</span>: <span class="string">&quot;desc&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;_score&quot;</span></span><br><span class="line">    ],</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="顺序"><a href="#顺序" class="headerlink" title="顺序"></a>顺序</h5><p>asc/升序,desc/降序.</p>
+<h5 id="排序模式选项"><a href="#排序模式选项" class="headerlink" title="排序模式选项"></a>排序模式选项</h5><p>min/max/sum/avg/median</p>
+<p><code>put my_index/_doc/1?refresh</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;product&quot;</span>: <span class="string">&quot;chocolate&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;price&quot;</span>: [</span><br><span class="line">        <span class="number">20</span>,</span><br><span class="line">        <span class="number">4</span></span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>post _search</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;product&quot;</span>: <span class="string">&quot;chocolate&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;sort&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;price&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;order&quot;</span>: <span class="string">&quot;asc&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;mode&quot;</span>: <span class="string">&quot;avg&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="嵌套排序"><a href="#嵌套排序" class="headerlink" title="嵌套排序"></a>嵌套排序</h5><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;product&quot;</span>: <span class="string">&quot;chocolate&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;sort&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;offer.price&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;mode&quot;</span>: <span class="string">&quot;avg&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;order&quot;</span>: <span class="string">&quot;asc&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;nested&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;path&quot;</span>: <span class="string">&quot;offer&quot;</span>,</span><br><span class="line">                    <span class="attr">&quot;filter&quot;</span>: &#123;</span><br><span class="line">                        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">                            <span class="attr">&quot;offer.color&quot;</span>: <span class="string">&quot;blue&quot;</span></span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="source过滤-1"><a href="#source过滤-1" class="headerlink" title="source过滤"></a>source过滤</h4><p>禁用source.<br><code>get _search</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;_source&quot;</span>: <span class="literal">false</span>,</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>source模式匹配.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;_source&quot;</span>: <span class="string">&quot;obj.*&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;_source&quot;</span>: [</span><br><span class="line">        <span class="string">&quot;obj1.*&quot;</span>,</span><br><span class="line">        <span class="string">&quot;obj2.*&quot;</span></span><br><span class="line">    ],</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;_source&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;includes&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;obj1.*&quot;</span>,</span><br><span class="line">            <span class="string">&quot;obj2.*&quot;</span></span><br><span class="line">        ],</span><br><span class="line">        <span class="attr">&quot;excludes&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;*.description&quot;</span></span><br><span class="line">        ]</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="fields"><a href="#fields" class="headerlink" title="fields"></a>fields</h4><p><code>get _search</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;stored_fields&quot;</span>: [</span><br><span class="line">        <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;postDate&quot;</span></span><br><span class="line">    ],</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>禁用存储字段,使用none.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;stored_fields&quot;</span>: <span class="string">&quot;_none_&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="Script-Fields"><a href="#Script-Fields" class="headerlink" title="Script Fields"></a>Script Fields</h4><p><code>get _search</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;match_all&quot;</span>: &#123;&#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;script_fields&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;test1&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;script&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;lang&quot;</span>: <span class="string">&quot;painless&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;source&quot;</span>: <span class="string">&quot;doc[&#x27;price&#x27;].value * 2&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;test2&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;script&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;lang&quot;</span>: <span class="string">&quot;painless&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;source&quot;</span>: <span class="string">&quot;doc[&#x27;price&#x27;].value * params.factor&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;params&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;factor&quot;</span>: <span class="number">2.0</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>访问source使用参数,</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;match_all&quot;</span>: &#123;&#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;script_fields&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;test1&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;script&quot;</span>: <span class="string">&quot;params[&#x27;_source&#x27;][&#x27;message&#x27;]&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="Doc-value-Fields"><a href="#Doc-value-Fields" class="headerlink" title="Doc value Fields"></a>Doc value Fields</h4><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;match_all&quot;</span>: &#123;&#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;docvalue_fields&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;field&quot;</span>: <span class="string">&quot;my_ip_field&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;format&quot;</span>: <span class="string">&quot;use_field_mapping&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;field&quot;</span>: <span class="string">&quot;my_date_field&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;format&quot;</span>: <span class="string">&quot;epoch_millis&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="Post-filter"><a href="#Post-filter" class="headerlink" title="Post filter"></a>Post filter</h4><h4 id="Highlighting"><a href="#Highlighting" class="headerlink" title="Highlighting"></a>Highlighting</h4><h4 id="Rescoring"><a href="#Rescoring" class="headerlink" title="Rescoring"></a>Rescoring</h4><h4 id="Search-Type"><a href="#Search-Type" class="headerlink" title="Search Type"></a>Search Type</h4><h4 id="Scroll"><a href="#Scroll" class="headerlink" title="Scroll"></a>Scroll</h4><p><code>post library/_search?scroll=1m</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;size&quot;</span>: <span class="number">1</span>,</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;match&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;Hyperion&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>响应,请求的结果包含_scroll_id,应传递给scroll以检索下一批结果.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;_scroll_id&quot;</span>: <span class="string">&quot;FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFjZYWTRSaWlnVGhpd3c5Nlc2aVYwY1EAAAAAAAACThZxSDY4RTVkQ1M4cUdfRV9UemVTemFR&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;took&quot;</span>: <span class="number">6</span>,</span><br><span class="line">    <span class="attr">&quot;timed_out&quot;</span>: <span class="literal">false</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>继续查询,get或post都可以使用,url中不应包含索引名称.<br><code>post _search/scroll</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;scroll&quot;</span>: <span class="string">&quot;1m&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;scroll_id&quot;</span>: <span class="string">&quot;FGluY2x1ZGVfY29udGV4dF91dWlkDXF1ZXJ5QW5kRmV0Y2gBFjZYWTRSaWlnVGhpd3c5Nlc2aVYwY1EAAAAAAAACThZxSDY4RTVkQ1M4cUdfRV9UemVTemFR&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="统计"><a href="#统计" class="headerlink" title="统计"></a>统计</h5><p>为了防止由于打开的滚动条太多而导致的问题,可以使用<code>search.max_open_scroll_context</code>群集设置.</p>
+<blockquote>
+<p>节点统计api</p>
+</blockquote>
+<p><code>get _nodes/stats/indices/search</code></p>
+<h5 id="清除scroll"><a href="#清除scroll" class="headerlink" title="清除scroll"></a>清除scroll</h5><p><code>delete _search/scroll</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;scroll_id&quot;</span>: <span class="string">&quot;xxx&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>多个scroll id,作为数组传递,</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;scroll_id&quot;</span>: [</span><br><span class="line">        <span class="string">&quot;xx&quot;</span>,</span><br><span class="line">        <span class="string">&quot;xxx&quot;</span></span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>清除所有,<br><code>delete _search/scroll/_all</code></p>
+<p>也可以作为查询字符串参数或在请求正文中传递,多个id用逗号分隔.<br><code>delete _search/scroll/xx,xxx</code></p>
+<h4 id="Preference"><a href="#Preference" class="headerlink" title="Preference"></a>Preference</h4><p>将某些搜索路由到特定的碎片副本集.</p>
+<p><code>get _search?preference=xyzabc123</code></p>
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>_primary</code></td>
+<td align="left">仅在主碎片上执行</td>
+</tr>
+<tr>
+<td align="left"><code>_primary_first</code></td>
+<td align="left">如果可能,该操作将在主碎片上执行,但如果不执行,则将回退到其他碎片</td>
+</tr>
+<tr>
+<td align="left"><code>_replica</code></td>
+<td align="left">仅在副本碎片上执行.如果存在多个副本,则未指定它们之间的优先顺序</td>
+</tr>
+<tr>
+<td align="left"><code>_replica_first</code></td>
+<td align="left">如果可能,该操作将在副本碎片上执行,但如果没有,则将回退到其他碎片.如果存在多个副本,则未指定它们之间的优先顺序</td>
+</tr>
+<tr>
+<td align="left"><code>_only_local</code></td>
+<td align="left">在分配给localnode的碎片上执行</td>
+</tr>
+<tr>
+<td align="left"><code>_local</code></td>
+<td align="left">如果不可能的话,操作将返回到本地碎片</td>
+</tr>
+<tr>
+<td align="left"><code>_prefer_nodes:abc,xyz</code></td>
+<td align="left">将在其中一个节点上执行操作</td>
+</tr>
+<tr>
+<td align="left"><code>_shards:2,3</code></td>
+<td align="left">将操作限制为指定的碎片</td>
+</tr>
+<tr>
+<td align="left"><code>_only_nodes:abc*,x*yz,...</code></td>
+<td align="left">将操作限制为根据指定的节点</td>
+</tr>
+<tr>
+<td align="left">Custom (string) value</td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<h4 id="Explain"><a href="#Explain" class="headerlink" title="Explain"></a>Explain</h4><p>允许解释每次命中的分数是如何计算的.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;explain&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="Sequence-Numbers-and-Primary-Term"><a href="#Sequence-Numbers-and-Primary-Term" class="headerlink" title="Sequence Numbers and Primary Term"></a>Sequence Numbers and Primary Term</h4><p>返回每个搜索命中的最后修改的序号和主项.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;seq_no_primary_term&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="Version"><a href="#Version" class="headerlink" title="Version"></a>Version</h4><p>返回每个搜索命中的版本.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;version&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;kimchy&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="Index-Boost"><a href="#Index-Boost" class="headerlink" title="Index Boost"></a>Index Boost</h4><h4 id="min-score"><a href="#min-score" class="headerlink" title="min_score"></a>min_score</h4><h4 id="Named-Queries"><a href="#Named-Queries" class="headerlink" title="Named Queries"></a>Named Queries</h4><h4 id="Inner-hits"><a href="#Inner-hits" class="headerlink" title="Inner hits"></a>Inner hits</h4><h4 id="Field-Collapsing"><a href="#Field-Collapsing" class="headerlink" title="Field Collapsing"></a>Field Collapsing</h4><h4 id="Search-After"><a href="#Search-After" class="headerlink" title="Search After"></a>Search After</h4><p>通过提供一个活动游标来降低滚动成本.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;size&quot;</span>: <span class="number">10</span>,</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;match&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;title&quot;</span>: <span class="string">&quot;elasticsearch&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;search_after&quot;</span>: [</span><br><span class="line">        <span class="number">1463538857</span>,</span><br><span class="line">        <span class="string">&quot;654323&quot;</span></span><br><span class="line">    ],</span><br><span class="line">    <span class="attr">&quot;sort&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;date&quot;</span>: <span class="string">&quot;asc&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;tie_breaker_id&quot;</span>: <span class="string">&quot;asc&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="multi-search-api"><a href="#multi-search-api" class="headerlink" title="multi search api"></a>multi search api</h3><h3 id="search-template"><a href="#search-template" class="headerlink" title="search template"></a>search template</h3><h4 id="存储搜索模板"><a href="#存储搜索模板" class="headerlink" title="存储搜索模板"></a>存储搜索模板</h4><p><code>post _scripts/&lt;templateid&gt;</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;script&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;lang&quot;</span>: <span class="string">&quot;mustache&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;source&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;match&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;title&quot;</span>: <span class="string">&quot;&#123;&#123;query_string&#125;&#125;&quot;</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="获取-删除搜索模板"><a href="#获取-删除搜索模板" class="headerlink" title="获取/删除搜索模板"></a>获取/删除搜索模板</h4><p><code>get _scripts/&lt;templateid&gt;</code><br><code>delete _scripts/&lt;templateid&gt;</code></p>
+<h4 id="使用搜索模板"><a href="#使用搜索模板" class="headerlink" title="使用搜索模板"></a>使用搜索模板</h4><p>在搜索时使用存储的模板,<br><code>get _search/template</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;id&quot;</span>: <span class="string">&quot;&lt;templateid&gt;&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;params&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;query_string&quot;</span>: <span class="string">&quot;search for these words&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="验证搜索模板"><a href="#验证搜索模板" class="headerlink" title="验证搜索模板"></a>验证搜索模板</h4><p><code>get _render/template</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;source&quot;</span>: <span class="string">&quot;&#123; \&quot;query\&quot;: &#123; \&quot;terms\&quot;: &#123;&#123;#toJson&#125;&#125;statuses&#123;&#123;/toJson&#125;&#125; &#125;&#125;&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;params&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;statuses&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;status&quot;</span>: [</span><br><span class="line">                <span class="string">&quot;pending&quot;</span>,</span><br><span class="line">                <span class="string">&quot;published&quot;</span></span><br><span class="line">            ]</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="填充查询字符串"><a href="#填充查询字符串" class="headerlink" title="填充查询字符串"></a>填充查询字符串</h4><p><code>get _search/template</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;source&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;message&quot;</span>: <span class="string">&quot;&#123;&#123;query_string&#125;&#125;&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;params&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;query_string&quot;</span>: <span class="string">&quot;search for these words&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>转化成json</p>
+</blockquote>
+<p>函数可用于将参数(如映射和数组)转换为其JSON表示形式.<br><code>get _search/template</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;source&quot;</span>: <span class="string">&quot;&#123;\&quot;query\&quot;:&#123;\&quot;bool\&quot;:&#123;\&quot;must\&quot;: &#123;&#123;#toJson&#125;&#125;clauses&#123;&#123;/toJson&#125;&#125; &#125;&#125;&#125;&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;params&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;clauses&quot;</span>: [</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;foo&quot;</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;,</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;user&quot;</span>: <span class="string">&quot;bar&quot;</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可用于将数组的值连接为逗号分隔的字符串.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;source&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;match&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;emails&quot;</span>: <span class="string">&quot;&#123;&#123;#join&#125;&#125;emails&#123;&#123;/join&#125;&#125;&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;params&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;emails&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;username@email.com&quot;</span>,</span><br><span class="line">            <span class="string">&quot;lastname@email.com&quot;</span></span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="multi-search-template"><a href="#multi-search-template" class="headerlink" title="multi search template"></a>multi search template</h3><h3 id="search-shards-api"><a href="#search-shards-api" class="headerlink" title="search shards api"></a>search shards api</h3><h3 id="suggesters"><a href="#suggesters" class="headerlink" title="suggesters"></a>suggesters</h3><h3 id="count-api"><a href="#count-api" class="headerlink" title="count api"></a>count api</h3><p>执行查询并获取该查询的匹配数.<br><code>get library/book/_count?q=name:Dune</code></p>
+<h3 id="validate-api"><a href="#validate-api" class="headerlink" title="validate api"></a>validate api</h3><p>允许用户在不执行查询的情况下验证一个可能非常昂贵的查询.<br><code>get library/_validate/query?q=name:Dune</code></p>
+<p>explain可以指定参数以获取有关查询失败原因的详细信息.<br><code>get library/book/_validate/query?explain=true</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;query_string&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;query&quot;</span>: <span class="string">&quot;name:Dune&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;lenient&quot;</span>: <span class="literal">false</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="explain-api"><a href="#explain-api" class="headerlink" title="explain api"></a>explain api</h3><p><code>get library/&lt;type&gt;/&lt;id&gt;/_explain</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;match&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;Dune&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="profile-api"><a href="#profile-api" class="headerlink" title="profile api"></a>profile api</h3><h3 id="field-capabilities-api"><a href="#field-capabilities-api" class="headerlink" title="field capabilities api"></a>field capabilities api</h3><h3 id="ranking-evaluation-api"><a href="#ranking-evaluation-api" class="headerlink" title="ranking evaluation api"></a>ranking evaluation api</h3>
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/elasticsearch/" rel="tag"># elasticsearch</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/11/04/elasticsearch-java-transport%20client/" rel="prev" title="elasticsearch-java-transport client">
+                  <i class="fa fa-chevron-left"></i> elasticsearch-java-transport client
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/11/15/elasticsearch-sql/" rel="next" title="elasticsearch-sql">
+                  elasticsearch-sql <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

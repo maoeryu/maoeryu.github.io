@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="在java项目中使用发送消息到钉钉群,实现业务监控. 官方文档:https:&#x2F;&#x2F;developers.dingtalk.com&#x2F;document&#x2F;app&#x2F;custom-robot-access?spm&#x3D;ding_open_doc.document.0.0.6d9d28e1KU4YxN#topic-2026027">
+<meta property="og:type" content="article">
+<meta property="og:title" content="dingtalk报警监控">
+<meta property="og:url" content="https://maoeryu.github.io/2021/03/16/dingtalk%E6%8A%A5%E8%AD%A6%E7%9B%91%E6%8E%A7/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="在java项目中使用发送消息到钉钉群,实现业务监控. 官方文档:https:&#x2F;&#x2F;developers.dingtalk.com&#x2F;document&#x2F;app&#x2F;custom-robot-access?spm&#x3D;ding_open_doc.document.0.0.6d9d28e1KU4YxN#topic-2026027">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/dd101.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/dd102.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/dd103.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/dd104.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/dd105.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/dd106.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/dd1066.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/dd107.png">
+<meta property="article:published_time" content="2021-03-15T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-10-08T06:35:32.149Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="dingtalk">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/dd101.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/03/16/dingtalk%E6%8A%A5%E8%AD%A6%E7%9B%91%E6%8E%A7/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>dingtalk报警监控 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E6%9C%BA%E5%99%A8%E4%BA%BA"><span class="nav-number">1.</span> <span class="nav-text">创建机器人</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%85%B3%E9%94%AE%E5%AD%97"><span class="nav-number">1.1.</span> <span class="nav-text">自定义关键字</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A0%E7%AD%BE"><span class="nav-number">1.2.</span> <span class="nav-text">加签</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ip%E5%9C%B0%E5%9D%80%E6%AE%B5"><span class="nav-number">1.3.</span> <span class="nav-text">ip地址段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#webhook"><span class="nav-number">1.4.</span> <span class="nav-text">webhook</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%91%E9%80%81%E6%B6%88%E6%81%AF"><span class="nav-number">2.</span> <span class="nav-text">发送消息</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%91%BD%E4%BB%A4"><span class="nav-number">2.1.</span> <span class="nav-text">命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#maven"><span class="nav-number">2.2.</span> <span class="nav-text">maven</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%91%E9%80%81%E6%96%B9%E6%B3%95"><span class="nav-number">2.3.</span> <span class="nav-text">发送方法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E5%92%8C%E6%A0%BC%E5%BC%8F"><span class="nav-number">3.</span> <span class="nav-text">数据类型和格式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#text"><span class="nav-number">3.1.</span> <span class="nav-text">text</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#link"><span class="nav-number">3.2.</span> <span class="nav-text">link</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#markdown"><span class="nav-number">3.3.</span> <span class="nav-text">markdown</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#actioncard"><span class="nav-number">3.4.</span> <span class="nav-text">actioncard</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B4%E4%BD%93%E8%B7%B3%E8%BD%AC"><span class="nav-number">3.4.1.</span> <span class="nav-text">整体跳转</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8B%AC%E7%AB%8B%E8%B7%B3%E8%BD%AC"><span class="nav-number">3.4.2.</span> <span class="nav-text">独立跳转</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#feedcard"><span class="nav-number">3.5.</span> <span class="nav-text">feedcard</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E9%94%99%E8%AF%AF%E7%B1%BB%E5%9E%8B"><span class="nav-number">4.</span> <span class="nav-text">常见错误类型</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/03/16/dingtalk%E6%8A%A5%E8%AD%A6%E7%9B%91%E6%8E%A7/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          dingtalk报警监控
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-03-16 00:00:00" itemprop="dateCreated datePublished" datetime="2021-03-16T00:00:00+08:00">2021-03-16</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-10-08 14:35:32" itemprop="dateModified" datetime="2022-10-08T14:35:32+08:00">2022-10-08</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E8%BF%90%E7%BB%B4/" itemprop="url" rel="index"><span itemprop="name">运维</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>在java项目中使用发送消息到钉钉群,实现业务监控.</p>
+<p>官方文档:<br><a target="_blank" rel="noopener" href="https://developers.dingtalk.com/document/app/custom-robot-access?spm=ding_open_doc.document.0.0.6d9d28e1KU4YxN#topic-2026027">https://developers.dingtalk.com/document/app/custom-robot-access?spm=ding_open_doc.document.0.0.6d9d28e1KU4YxN#topic-2026027</a></p>
+<span id="more"></span>
+<h2 id="创建机器人"><a href="#创建机器人" class="headerlink" title="创建机器人"></a>创建机器人</h2><p>依次点击群设置-&gt;智能群助手-&gt;添加机器人-&gt;自定义-&gt;添加,填写机器人名字,勾选安全设置.</p>
+<img src="/images/dd101.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="自定义关键字"><a href="#自定义关键字" class="headerlink" title="自定义关键字"></a>自定义关键字</h3><p>最多可以设置10个关键词,消息中至少包含其中1个关键词才可以发送成功.</p>
+<p>例如添加了一个自定义关键词<code>监控报警</code>,则这个机器人所发送的消息,必须包含监控报警这个词,才能发送成功.</p>
+<img src="/images/dd102.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="加签"><a href="#加签" class="headerlink" title="加签"></a>加签</h3><blockquote>
+<p>获取签名代码</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.commons.codec.binary.Base64;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> javax.crypto.Mac;</span><br><span class="line"><span class="keyword">import</span> javax.crypto.spec.SecretKeySpec;</span><br><span class="line"><span class="keyword">import</span> java.net.URLEncoder;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> String <span class="title">getSign</span><span class="params">(Long timestamp)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">  String secret = <span class="string">&quot;SECxxx&quot;</span>;</span><br><span class="line"></span><br><span class="line">  String stringToSign = timestamp + <span class="string">&quot;\n&quot;</span> + secret;</span><br><span class="line">  Mac mac = Mac.getInstance(<span class="string">&quot;HmacSHA256&quot;</span>);</span><br><span class="line">  mac.init(<span class="keyword">new</span> SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), <span class="string">&quot;HmacSHA256&quot;</span>));</span><br><span class="line">  <span class="keyword">byte</span>[] signData = mac.doFinal(stringToSign.getBytes(StandardCharsets.UTF_8));</span><br><span class="line">  <span class="keyword">return</span> URLEncoder.encode(<span class="keyword">new</span> String(Base64.encodeBase64(signData)),<span class="string">&quot;UTF-8&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>url后面需拼上timestamp和sign,<code>&amp;timestamp=XXX&amp;sign=XXX</code>.</p>
+<h3 id="ip地址段"><a href="#ip地址段" class="headerlink" title="ip地址段"></a>ip地址段</h3><p>设定后,只有来自IP地址范围内的请求才会被正常处理.<br>支持两种设置方式:IP地址和IP地址段,暂不支持IPv6地址白名单.</p>
+<p>格式如下,<br>1.1.1.1<br>1.1.1.0/24</p>
+<h3 id="webhook"><a href="#webhook" class="headerlink" title="webhook"></a>webhook</h3><p>复制webhook,点击完成.</p>
+<img src="/images/dd103.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="发送消息"><a href="#发送消息" class="headerlink" title="发送消息"></a>发送消息</h2><h3 id="命令"><a href="#命令" class="headerlink" title="命令"></a>命令</h3><blockquote>
+<p>linux</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">curl <span class="string">&#x27;https://oapi.dingtalk.com/robot/send?access_token=xxxxxxxx&#x27;</span> \</span><br><span class="line">   -H <span class="string">&#x27;Content-Type: application/json&#x27;</span> \</span><br><span class="line">   -d <span class="string">&#x27;&#123;&quot;xxx&quot;: &quot;xxx&quot;&#125;&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>java</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">String serverUrl = <span class="string">&quot;https://oapi.dingtalk.com/robot/send?access_token=xxx&quot;</span>;</span><br><span class="line"><span class="comment">//加签</span></span><br><span class="line">String serverUrl =</span><br><span class="line">      <span class="string">&quot;https://oapi.dingtalk.com/robot/send?access_token=&quot;</span> +</span><br><span class="line">          <span class="string">&quot;xxx&quot;</span> +</span><br><span class="line">          <span class="string">&quot;&amp;timestamp=&quot;</span> + timestamp +</span><br><span class="line">          <span class="string">&quot;&amp;sign=&quot;</span> + sign;</span><br></pre></td></tr></table></figure>
+
+<h3 id="maven"><a href="#maven" class="headerlink" title="maven"></a>maven</h3><p>可以封装bean对象,然后使用http发送post请求,或使用dingtalk sdk.</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.aliyun<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>alibaba-dingtalk-service-sdk<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.0.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="发送方法"><a href="#发送方法" class="headerlink" title="发送方法"></a>发送方法</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> String <span class="title">doPostJson</span><span class="params">(String url, String json)</span> </span>&#123;</span><br><span class="line">  HttpPost httpPost = <span class="keyword">new</span> HttpPost(url);</span><br><span class="line">  StringEntity entity = <span class="keyword">new</span> StringEntity(json, ContentType.APPLICATION_JSON);</span><br><span class="line">  httpPost.setEntity(entity);</span><br><span class="line">  <span class="keyword">try</span> (CloseableHttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(buildRequestConfig()).</span><br><span class="line">      setRetryHandler(<span class="keyword">new</span> DefaultHttpRequestRetryHandler(<span class="number">3</span>, <span class="keyword">true</span>)).build();</span><br><span class="line">       CloseableHttpResponse response = httpClient.execute(httpPost)) &#123;</span><br><span class="line">    <span class="keyword">return</span> EntityUtils.toString(response.getEntity(), <span class="string">&quot;utf-8&quot;</span>);</span><br><span class="line">  &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    SystemDataLog.error(<span class="string">&quot;doPostJson fail.&quot;</span>, e);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> RequestConfig <span class="title">buildRequestConfig</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> RequestConfig.custom()</span><br><span class="line">      .setSocketTimeout(<span class="number">30000</span>)</span><br><span class="line">      .setConnectTimeout(<span class="number">10000</span>)</span><br><span class="line">      .setConnectionRequestTimeout(<span class="number">10000</span>)</span><br><span class="line">      .build();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="数据类型和格式"><a href="#数据类型和格式" class="headerlink" title="数据类型和格式"></a>数据类型和格式</h2><h3 id="text"><a href="#text" class="headerlink" title="text"></a>text</h3><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;msgtype&quot;</span>: <span class="string">&quot;text&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;text&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;content&quot;</span>: <span class="string">&quot;我就是我, @150XXXXXXXX 是不一样的烟火&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;at&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;atMobiles&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;150XXXXXXXX&quot;</span></span><br><span class="line">        ],</span><br><span class="line">        <span class="attr">&quot;isAtAll&quot;</span>: <span class="literal">false</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">参数类型</th>
+<th align="left">是否必填</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">msgtype</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">消息类型,此时固定为:text.</td>
+</tr>
+<tr>
+<td align="left">content</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">消息内容.</td>
+</tr>
+<tr>
+<td align="left">atMobiles</td>
+<td align="left">Array</td>
+<td align="left">否</td>
+<td align="left">被@人的手机号.注意,在content里添加@人的手机号.</td>
+</tr>
+<tr>
+<td align="left">isAtAll</td>
+<td align="left">Boolean</td>
+<td align="left">否</td>
+<td align="left">是否@所有人.</td>
+</tr>
+</tbody></table>
+<h3 id="link"><a href="#link" class="headerlink" title="link"></a>link</h3><img src="/images/dd104.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;msgtype&quot;</span>: <span class="string">&quot;link&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;link&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;text&quot;</span>: <span class="string">&quot;这个即将发布的新版本,创始人xx称它为红树林.而在此之前,每当面临重大升级,产品经理们都会取一个应景的代号,这一次,为什么是红树林&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;title&quot;</span>: <span class="string">&quot;时代的火车向前开&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;picUrl&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;messageUrl&quot;</span>: <span class="string">&quot;https://www.dingtalk.com/&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">参数类型</th>
+<th align="left">是否必填</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">msgtype</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">消息类型,此时固定为:link.</td>
+</tr>
+<tr>
+<td align="left">title</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">消息标题.</td>
+</tr>
+<tr>
+<td align="left">text</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">消息内容.如果太长只会部分展示.</td>
+</tr>
+<tr>
+<td align="left">messageUrl</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">点击消息跳转的URL.</td>
+</tr>
+<tr>
+<td align="left">picUrl</td>
+<td align="left">String</td>
+<td align="left">否</td>
+<td align="left">图片URL.</td>
+</tr>
+</tbody></table>
+<h3 id="markdown"><a href="#markdown" class="headerlink" title="markdown"></a>markdown</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">  <span class="keyword">long</span> timestamp = System.currentTimeMillis();</span><br><span class="line">  String sign = getSign(timestamp);</span><br><span class="line">  String serverUrl =</span><br><span class="line">      <span class="string">&quot;https://oapi.dingtalk.com/robot/send?access_token=&quot;</span> +</span><br><span class="line">          <span class="string">&quot;xxx&quot;</span> +</span><br><span class="line">          <span class="string">&quot;&amp;timestamp=&quot;</span> + timestamp +</span><br><span class="line">          <span class="string">&quot;&amp;sign=&quot;</span> + sign;</span><br><span class="line"></span><br><span class="line">  MarkdownBean markdownBean = <span class="keyword">new</span> MarkdownBean();</span><br><span class="line">  markdownBean.setMsgtype(<span class="string">&quot;markdown&quot;</span>);</span><br><span class="line"></span><br><span class="line">  MarkdownBean.Markdown markdown = <span class="keyword">new</span> MarkdownBean.Markdown();</span><br><span class="line">  markdown.setText(<span class="string">&quot;#### 杭州天气 @150XXXXXXXX \n &gt; 9度,西北风1级,空气良89,相对温度73%\n &gt; ![screenshot](https://img.alicdn.com/tfs/TB1NwmBEL9TBuNjy1zbXXXpepXa-2400-1218.png) \n &gt; ###### 10点20分发布 [天气](https://www.dingtalk.com) \n&quot;</span>);</span><br><span class="line">  markdown.setTitle(<span class="string">&quot;杭州天气&quot;</span>);</span><br><span class="line">  markdownBean.setMarkdown(markdown);</span><br><span class="line"></span><br><span class="line">  MarkdownBean.At at = <span class="keyword">new</span> MarkdownBean.At();</span><br><span class="line">  at.setIsAtAll(<span class="keyword">false</span>);</span><br><span class="line">  at.setAtMobiles(Collections.singletonList(<span class="string">&quot;xxx&quot;</span>));</span><br><span class="line">  markdownBean.setAt(at);</span><br><span class="line"></span><br><span class="line">  String res = Util.doPostJson(serverUrl, JSONObject.toJSONString(markdownBean));</span><br><span class="line">  System.out.println(res);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/dd105.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;msgtype&quot;</span>: <span class="string">&quot;markdown&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;markdown&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;title&quot;</span>: <span class="string">&quot;杭州天气&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;text&quot;</span>: <span class="string">&quot;#### 杭州天气 @150XXXXXXXX \n&gt; 9度,西北风1级,空气良89,相对温度73%\n&gt; ![screenshot](https://img.alicdn.com/tfs/TB1NwmBEL9TBuNjy1zbXXXpepXa-2400-1218.png)\n&gt; ###### 10点20分发布 [天气](https://www.dingtalk.com) \n&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;at&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;atMobiles&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;150XXXXXXXX&quot;</span></span><br><span class="line">        ],</span><br><span class="line">        <span class="attr">&quot;isAtAll&quot;</span>: <span class="literal">false</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">类型</th>
+<th align="left">是否必填</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">msgtype</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">消息类型,此时固定为:markdown.</td>
+</tr>
+<tr>
+<td align="left">title</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">首屏会话透出的展示内容.</td>
+</tr>
+<tr>
+<td align="left">text</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">markdown格式的消息.</td>
+</tr>
+<tr>
+<td align="left">atMobiles</td>
+<td align="left">Array</td>
+<td align="left">否</td>
+<td align="left">被@人的手机号.</td>
+</tr>
+<tr>
+<td align="left">isAtAll</td>
+<td align="left">Boolean</td>
+<td align="left">否</td>
+<td align="left">是否@所有人.</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>支持的markdown语法</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">标题</span><br><span class="line"># 一级标题</span><br><span class="line">## 二级标题</span><br><span class="line">### 三级标题</span><br><span class="line">#### 四级标题</span><br><span class="line">##### 五级标题</span><br><span class="line">###### 六级标题</span><br><span class="line"></span><br><span class="line">引用</span><br><span class="line">&gt; A man who stands for nothing will fall for anything.</span><br><span class="line"></span><br><span class="line">文字加粗&#x2F;斜体</span><br><span class="line">**bold**</span><br><span class="line">*italic*</span><br><span class="line"></span><br><span class="line">链接</span><br><span class="line">[this is a link](http:&#x2F;&#x2F;name.com)</span><br><span class="line"></span><br><span class="line">图片</span><br><span class="line">![](http:&#x2F;&#x2F;name.com&#x2F;pic.jpg)</span><br><span class="line"></span><br><span class="line">无序列表</span><br><span class="line">- item1</span><br><span class="line">- item2</span><br><span class="line"></span><br><span class="line">有序列表</span><br><span class="line">1. item1</span><br><span class="line">2. item2</span><br></pre></td></tr></table></figure>
+
+<h3 id="actioncard"><a href="#actioncard" class="headerlink" title="actioncard"></a>actioncard</h3><h4 id="整体跳转"><a href="#整体跳转" class="headerlink" title="整体跳转"></a>整体跳转</h4><img src="/images/dd106.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;actionCard&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;title&quot;</span>: <span class="string">&quot;乔布斯 20 年前想打造一间苹果咖啡厅,而它正是 Apple Store 的前身&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;text&quot;</span>: <span class="string">&quot;![screenshot](@lADOpwk3K80C0M0FoA) ### 乔布斯 20 年前想打造的苹果咖啡厅 Apple Store 的设计正从原来满满的科技感走向生活化,而其生活化的走向其实可以追溯到 20 年前苹果一个建立咖啡馆的计划&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;btnOrientation&quot;</span>: <span class="string">&quot;0&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;singleTitle&quot;</span>: <span class="string">&quot;阅读全文&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;singleURL&quot;</span>: <span class="string">&quot;https://www.dingtalk.com/&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;msgtype&quot;</span>: <span class="string">&quot;actionCard&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">类型</th>
+<th align="left">是否必填</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">msgtype</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">消息类型,此时固定为:actionCard.</td>
+</tr>
+<tr>
+<td align="left">title</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">首屏会话透出的展示内容.</td>
+</tr>
+<tr>
+<td align="left">text</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">markdown格式的消息.</td>
+</tr>
+<tr>
+<td align="left">singleTitle</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">单个按钮的标题.注意,设置此项和singleURL后,btns无效.</td>
+</tr>
+<tr>
+<td align="left">singleURL</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">点击singleTitle按钮触发的URL.</td>
+</tr>
+<tr>
+<td align="left">btnOrientation</td>
+<td align="left">String</td>
+<td align="left">否</td>
+<td align="left">0:按钮竖直排列,1:按钮横向排列</td>
+</tr>
+</tbody></table>
+<h4 id="独立跳转"><a href="#独立跳转" class="headerlink" title="独立跳转"></a>独立跳转</h4><img src="/images/dd1066.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;msgtype&quot;</span>: <span class="string">&quot;actionCard&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;actionCard&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;title&quot;</span>: <span class="string">&quot;我 20 年前想打造一间苹果咖啡厅，而它正是 Apple Store 的前身&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;text&quot;</span>: <span class="string">&quot;![screenshot](@lADOpwk3K80C0M0FoA) \n\n #### 乔布斯 20 年前想打造的苹果咖啡厅 \n\n Apple Store 的设计正从原来满满的科技感走向生活化，而其生活化的走向其实可以追溯到 20 年前苹果一个建立咖啡馆的计划&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;hideAvatar&quot;</span>: <span class="string">&quot;0&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;btnOrientation&quot;</span>: <span class="string">&quot;0&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;btns&quot;</span>: [</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">&quot;title&quot;</span>: <span class="string">&quot;内容不错&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;actionURL&quot;</span>: <span class="string">&quot;https://www.dingtalk.com/&quot;</span></span><br><span class="line">            &#125;,</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">&quot;title&quot;</span>: <span class="string">&quot;不感兴趣&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;actionURL&quot;</span>: <span class="string">&quot;https://www.dingtalk.com/&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">类型</th>
+<th align="left">是否必填</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">msgtype</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">此消息类型为固定actionCard.</td>
+</tr>
+<tr>
+<td align="left">title</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">首屏会话透出的展示内容.</td>
+</tr>
+<tr>
+<td align="left">text</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">markdown格式的消息.</td>
+</tr>
+<tr>
+<td align="left">btns</td>
+<td align="left">Array</td>
+<td align="left">是</td>
+<td align="left">按钮.</td>
+</tr>
+<tr>
+<td align="left">title</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">按钮标题.</td>
+</tr>
+<tr>
+<td align="left">actionURL</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">点击按钮触发的URL.</td>
+</tr>
+<tr>
+<td align="left">btnOrientation</td>
+<td align="left">String</td>
+<td align="left">否</td>
+<td align="left">0:按钮竖直排列,1:按钮横向排列</td>
+</tr>
+</tbody></table>
+<h3 id="feedcard"><a href="#feedcard" class="headerlink" title="feedcard"></a>feedcard</h3><img src="/images/dd107.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;msgtype&quot;</span>: <span class="string">&quot;feedCard&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;feedCard&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;links&quot;</span>: [</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">&quot;title&quot;</span>: <span class="string">&quot;时代的火车向前开1&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;messageURL&quot;</span>: <span class="string">&quot;https://www.dingtalk.com/&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;picURL&quot;</span>: <span class="string">&quot;https://img.alicdn.com/tfs/TB1NwmBEL9TBuNjy1zbXXXpepXa-2400-1218.png&quot;</span></span><br><span class="line">            &#125;,</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">&quot;title&quot;</span>: <span class="string">&quot;时代的火车向前开2&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;messageURL&quot;</span>: <span class="string">&quot;https://www.dingtalk.com/&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;picURL&quot;</span>: <span class="string">&quot;https://img.alicdn.com/tfs/TB1NwmBEL9TBuNjy1zbXXXpepXa-2400-1218.png&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">类型</th>
+<th align="left">是否必填</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">msgtype</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">此消息类型为固定feedCard.</td>
+</tr>
+<tr>
+<td align="left">title</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">单条信息文本.</td>
+</tr>
+<tr>
+<td align="left">messageURL</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">点击单条信息到跳转链接.</td>
+</tr>
+<tr>
+<td align="left">picURL</td>
+<td align="left">String</td>
+<td align="left">是</td>
+<td align="left">单条信息后面图片的URL.</td>
+</tr>
+</tbody></table>
+<h2 id="常见错误类型"><a href="#常见错误类型" class="headerlink" title="常见错误类型"></a>常见错误类型</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; 消息内容中不包含任何关键词</span><br><span class="line">&#123;</span><br><span class="line">  &quot;errcode&quot;:310000,</span><br><span class="line">  &quot;errmsg&quot;:&quot;keywords not in content&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; timestamp无效</span><br><span class="line">&#123;</span><br><span class="line">  &quot;errcode&quot;:310000,</span><br><span class="line">  &quot;errmsg&quot;:&quot;invalid timestamp&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 签名不匹配</span><br><span class="line">&#123;</span><br><span class="line">  &quot;errcode&quot;:310000,</span><br><span class="line">  &quot;errmsg&quot;:&quot;sign not match&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; IP地址不在白名单</span><br><span class="line">&#123;</span><br><span class="line">  &quot;errcode&quot;:310000,</span><br><span class="line">  &quot;errmsg&quot;:&quot;ip X.X.X.X not in whitelist&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/dingtalk/" rel="tag"># dingtalk</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/03/10/guava%20eventbus/" rel="prev" title="guava eventbus(事件总线)">
+                  <i class="fa fa-chevron-left"></i> guava eventbus(事件总线)
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/03/31/elasticsearch-java-rest%20client/" rel="next" title="elasticsearch-java-rest client">
+                  elasticsearch-java-rest client <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

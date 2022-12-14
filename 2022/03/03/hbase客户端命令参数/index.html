@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="hbase工具命令.shell下执行$&amp;#123;HBASE_HOME&amp;#125;&#x2F;bin&#x2F;hbase查看.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hbase客户端命令参数">
+<meta property="og:url" content="https://maoeryu.github.io/2022/03/03/hbase%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%91%BD%E4%BB%A4%E5%8F%82%E6%95%B0/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="hbase工具命令.shell下执行$&amp;#123;HBASE_HOME&amp;#125;&#x2F;bin&#x2F;hbase查看.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbq6.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbq7.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbsnap1.png">
+<meta property="article:published_time" content="2022-03-02T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-09T06:24:37.695Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hbase">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/hbq6.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/03/03/hbase%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%91%BD%E4%BB%A4%E5%8F%82%E6%95%B0/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hbase客户端命令参数 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Usage"><span class="nav-number">1.</span> <span class="nav-text">Usage</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Options"><span class="nav-number">1.1.</span> <span class="nav-text">Options</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Commands"><span class="nav-number">1.2.</span> <span class="nav-text">Commands</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hbck"><span class="nav-number">1.3.</span> <span class="nav-text">hbck</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%83%E6%95%B0%E6%8D%AE%E4%BF%AE%E5%A4%8D%E9%80%89%E9%A1%B9"><span class="nav-number">1.3.1.</span> <span class="nav-text">元数据修复选项</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Datafile%E4%BF%AE%E5%A4%8D%E9%80%89%E9%A1%B9"><span class="nav-number">1.3.2.</span> <span class="nav-text">Datafile修复选项</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Meta%E4%BF%AE%E5%A4%8D%E5%BF%AB%E6%8D%B7%E6%8C%87%E4%BB%A4"><span class="nav-number">1.3.3.</span> <span class="nav-text">Meta修复快捷指令</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Table-lock%E9%80%89%E9%A1%B9"><span class="nav-number">1.3.4.</span> <span class="nav-text">Table lock选项</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Znode%E9%80%89%E9%A1%B9"><span class="nav-number">1.3.5.</span> <span class="nav-text">Znode选项</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D"><span class="nav-number">1.4.</span> <span class="nav-text">修复</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B1%80%E9%83%A8%E4%BD%8E%E5%8D%B1%E4%BF%AE%E5%A4%8D"><span class="nav-number">1.4.1.</span> <span class="nav-text">局部低危修复</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%AB%98%E5%8D%B1%E4%BF%AE%E5%A4%8D"><span class="nav-number">1.4.2.</span> <span class="nav-text">高危修复</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E5%AE%83"><span class="nav-number">1.5.</span> <span class="nav-text">其它</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B"><span class="nav-number">1.6.</span> <span class="nav-text">案例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Tools"><span class="nav-number">2.</span> <span class="nav-text">Tools</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#snapshot"><span class="nav-number">2.1.</span> <span class="nav-text">snapshot</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#balance-switch"><span class="nav-number">2.2.</span> <span class="nav-text">balance_switch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#major-compact"><span class="nav-number">2.3.</span> <span class="nav-text">major_compact</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#merge-region"><span class="nav-number">2.4.</span> <span class="nav-text">merge region</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#split"><span class="nav-number">2.5.</span> <span class="nav-text">split</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E9%85%8Dregion"><span class="nav-number">2.6.</span> <span class="nav-text">分配region</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#regionserver%E9%87%8D%E5%90%AF"><span class="nav-number">2.7.</span> <span class="nav-text">regionserver重启</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#regionserver%E5%85%B3%E9%97%AD%E4%B8%8B%E7%BA%BF"><span class="nav-number">2.8.</span> <span class="nav-text">regionserver关闭下线</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BB%9A%E5%8A%A8%E9%87%8D%E5%90%AF-rolling-restart-sh"><span class="nav-number">2.9.</span> <span class="nav-text">滚动重启(rolling-restart.sh)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#flush%E8%A1%A8"><span class="nav-number">2.10.</span> <span class="nav-text">flush表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#truncate"><span class="nav-number">2.11.</span> <span class="nav-text">truncate</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#alter"><span class="nav-number">2.12.</span> <span class="nav-text">alter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dml"><span class="nav-number">2.13.</span> <span class="nav-text">dml</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#scan"><span class="nav-number">2.13.1.</span> <span class="nav-text">scan</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#get"><span class="nav-number">2.13.2.</span> <span class="nav-text">get</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#put"><span class="nav-number">2.13.3.</span> <span class="nav-text">put</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#incr"><span class="nav-number">2.13.4.</span> <span class="nav-text">incr</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#get-counter"><span class="nav-number">2.13.5.</span> <span class="nav-text">get_counter</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#delete"><span class="nav-number">2.13.6.</span> <span class="nav-text">delete</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#deleteall"><span class="nav-number">2.13.7.</span> <span class="nav-text">deleteall</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#get-splits"><span class="nav-number">2.13.8.</span> <span class="nav-text">get_splits</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#count"><span class="nav-number">2.13.9.</span> <span class="nav-text">count</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Export-Import"><span class="nav-number">2.14.</span> <span class="nav-text">Export&#x2F;Import</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ImportTsv"><span class="nav-number">2.15.</span> <span class="nav-text">ImportTsv</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LoadIncrementalHFiles"><span class="nav-number">2.16.</span> <span class="nav-text">LoadIncrementalHFiles</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E6%89%B9%E9%87%8F%E5%AF%BC%E5%85%A5%E6%95%B0%E6%8D%AE"><span class="nav-number">2.16.1.</span> <span class="nav-text">测试批量导入数据</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HFile"><span class="nav-number">2.17.</span> <span class="nav-text">HFile</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CopyTable"><span class="nav-number">2.18.</span> <span class="nav-text">CopyTable</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/03/03/hbase%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%91%BD%E4%BB%A4%E5%8F%82%E6%95%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hbase客户端命令参数
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-03-03 00:00:00" itemprop="dateCreated datePublished" datetime="2022-03-03T00:00:00+08:00">2022-03-03</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-09 14:24:37" itemprop="dateModified" datetime="2022-09-09T14:24:37+08:00">2022-09-09</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>hbase工具命令.<br>shell下执行<code>$&#123;HBASE_HOME&#125;/bin/hbase</code>查看.</p>
+<span id="more"></span>
+
+<h2 id="Usage"><a href="#Usage" class="headerlink" title="Usage"></a>Usage</h2><p><code>hbase [&lt;options&gt;] &lt;command&gt; [&lt;args&gt;]</code></p>
+<h3 id="Options"><a href="#Options" class="headerlink" title="Options"></a>Options</h3><table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">--config DIR</td>
+<td align="left">Configuration direction to use. Default: ./conf</td>
+</tr>
+<tr>
+<td align="left">--hosts HOSTS</td>
+<td align="left">Override the list in &#39;regionservers&#39; file</td>
+</tr>
+<tr>
+<td align="left">--auth-as-server</td>
+<td align="left">Authenticate to ZooKeeper using servers configuration</td>
+</tr>
+</tbody></table>
+<h3 id="Commands"><a href="#Commands" class="headerlink" title="Commands"></a>Commands</h3><p>Some commands take arguments. Pass no args or -h for usage.</p>
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">shell</td>
+<td align="left">Run the HBase shell</td>
+</tr>
+<tr>
+<td align="left">hbck</td>
+<td align="left">Run the hbase &#39;fsck&#39; tool</td>
+</tr>
+<tr>
+<td align="left">snapshot</td>
+<td align="left">Create a new snapshot of a table</td>
+</tr>
+<tr>
+<td align="left">snapshotinfo</td>
+<td align="left">Tool for dumping snapshot information</td>
+</tr>
+<tr>
+<td align="left">wal</td>
+<td align="left">Write-ahead-log analyzer</td>
+</tr>
+<tr>
+<td align="left">hfile</td>
+<td align="left">Store file analyzer</td>
+</tr>
+<tr>
+<td align="left">zkcli</td>
+<td align="left">Run the ZooKeeper shell</td>
+</tr>
+<tr>
+<td align="left">upgrade</td>
+<td align="left">Upgrade hbase</td>
+</tr>
+<tr>
+<td align="left">master</td>
+<td align="left">Run an HBase HMaster node</td>
+</tr>
+<tr>
+<td align="left">regionserver</td>
+<td align="left">Run an HBase HRegionServer node</td>
+</tr>
+<tr>
+<td align="left">zookeeper</td>
+<td align="left">Run a Zookeeper server</td>
+</tr>
+<tr>
+<td align="left">rest</td>
+<td align="left">Run an HBase REST server</td>
+</tr>
+<tr>
+<td align="left">thrift</td>
+<td align="left">Run the HBase Thrift server</td>
+</tr>
+<tr>
+<td align="left">thrift2</td>
+<td align="left">Run the HBase Thrift2 server</td>
+</tr>
+<tr>
+<td align="left">clean</td>
+<td align="left">Run the HBase clean up script</td>
+</tr>
+<tr>
+<td align="left">classpath</td>
+<td align="left">Dump hbase CLASSPATH</td>
+</tr>
+<tr>
+<td align="left">mapredcp</td>
+<td align="left">Dump CLASSPATH entries required by mapreduce</td>
+</tr>
+<tr>
+<td align="left">pe</td>
+<td align="left">Run PerformanceEvaluation</td>
+</tr>
+<tr>
+<td align="left">ltt</td>
+<td align="left">Run LoadTestTool</td>
+</tr>
+<tr>
+<td align="left">version</td>
+<td align="left">Print the version</td>
+</tr>
+<tr>
+<td align="left">CLASSNAME</td>
+<td align="left">Run the class named CLASSNAME</td>
+</tr>
+</tbody></table>
+<h3 id="hbck"><a href="#hbck" class="headerlink" title="hbck"></a>hbck</h3><p>是一个用于检查区域一致性和表完整性问题并修复损坏的工具.</p>
+<blockquote>
+<p>检查方面</p>
+</blockquote>
+<ol>
+<li><p>HBase Region一致性<br>集群中所有region都被assign,而且deploy到唯一一台RegionServer上,该region的状态在内存中/hbase:meta表中以及zookeeper这三个地方需要保持一致.</p>
+</li>
+<li><p>HBase 表完整性<br>对于集群中任意一张表,每个rowkey都仅能存在于一个region区间.</p>
+</li>
+</ol>
+<p><code>Usage: fsck [opts] &#123;only tables&#125;</code><br><code>where [opts] are:</code></p>
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">-help</td>
+<td align="left">帮助信息</td>
+</tr>
+<tr>
+<td align="left">-details</td>
+<td align="left">显示所有Region的详情</td>
+</tr>
+<tr>
+<td align="left">-timelag <code>&lt;timeInSeconds&gt;</code></td>
+<td align="left">处理在过去的指定时间内没有发生过元数据更新的region,秒级时间</td>
+</tr>
+<tr>
+<td align="left">-sleepBeforeRerun <code>&lt;timeInSeconds&gt;</code></td>
+<td align="left">在执行-fix指令后时睡眠指定的时间后再检查fix是否生效,秒级时间</td>
+</tr>
+<tr>
+<td align="left">-summary</td>
+<td align="left">只打印表和状态的概要信息</td>
+</tr>
+<tr>
+<td align="left">-metaonly</td>
+<td align="left">只检查hbase:meta表的状态</td>
+</tr>
+<tr>
+<td align="left">-sidelineDir <code>&lt;hdfs://&gt;</code></td>
+<td align="left">备份当前的元数据到HDFS上</td>
+</tr>
+<tr>
+<td align="left">-boundaries</td>
+<td align="left">校验META表和StoreFiles的Region边界是否一致</td>
+</tr>
+<tr>
+<td align="left">-exclusive</td>
+<td align="left">Abort if another hbck is exclusive or fixing.</td>
+</tr>
+<tr>
+<td align="left">-disableBalancer</td>
+<td align="left">Disable the load balancer.</td>
+</tr>
+</tbody></table>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;hbase hbck fsck -summary xx1</span><br><span class="line">#检查集群是否损坏</span><br><span class="line">.&#x2F;bin&#x2F;hbase hbck</span><br><span class="line">#只检查元数据表的状态</span><br><span class="line">.&#x2F;bin&#x2F;hbase hbck -metaonly</span><br><span class="line">#只检查xx1表</span><br><span class="line">.&#x2F;bin&#x2F;hbase hbck xx1</span><br><span class="line">#包括所以正在进行的split任务</span><br><span class="line">.&#x2F;bin&#x2F;hbase hbck -details</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>Status: OK,表示没有发现不一致问题.<br>Status: INCONSISTENT,表示有不一致问题.</p>
+<h4 id="元数据修复选项"><a href="#元数据修复选项" class="headerlink" title="元数据修复选项"></a>元数据修复选项</h4><table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">-fix</td>
+<td align="left">尝试修复Region的分配,通常用于向后兼容</td>
+</tr>
+<tr>
+<td align="left">-fixAssignments</td>
+<td align="left">修复region没有分配(unassigned),错误分配(incorrectly assigned)以及多次分配(multiply assigned)的问题,用来替换-fix指令</td>
+</tr>
+<tr>
+<td align="left">-fixMeta</td>
+<td align="left">删除META表里有记录但HDFS里没有数据记录的region,添加HDFS里有数据但是META表里没有记录的region到META表</td>
+</tr>
+<tr>
+<td align="left">-noHdfsChecking</td>
+<td align="left">不从HDFS加载/检查Region信息,这里假设hbase:meta表中的Region信息是正确的,</br>不会在检查或修复任何HDFS相关的问题,如黑洞(hole)/孤岛(orphan)或是重叠(overlap)</td>
+</tr>
+<tr>
+<td align="left">-fixHdfsHoles</td>
+<td align="left">如果rowkey出现空洞,即相邻的两个region的rowkey不连续,则使用这个参数会在HDFS里面创建一个新的region.</br>创建新的region之后要使用-fixMeta和-fixAssignments参数来使用挂载这个region,所以一般和前两个参数一起使用</td>
+</tr>
+<tr>
+<td align="left">-fixHdfsOrphans</td>
+<td align="left">将文件系统中的没有metadata文件(.regioninfo)的region目录加入到hbase中,即创建.regioninfo目录并将region分配到regionser</td>
+</tr>
+<tr>
+<td align="left">-fixTableOrphans</td>
+<td align="left">尝试修复hdfs中没有.tableinfo文件的table目录(只支持在线模式)</td>
+</tr>
+<tr>
+<td align="left">-fixHdfsOverlaps</td>
+<td align="left">通过两种方式可以将rowkey有重叠的region合并:</br>1)merge:将重叠的region合并成一个大的region</br>2)sideline:将region重叠的部分去掉,并将重叠的数据先写入到临时文件,然后再导入进来.</br>如果重叠的数据很大,直接合并成一个大的region会产生大量的split和compact操作,可以通过以下参数控制region过大:</br>-maxMerge <code>&lt;n&gt;</code> 合并重叠region的最大数量</br>-sidelineBigOverlaps 如有大于maxMerge个数的region重叠,则采用sideline方式处理与其它region的重叠.</br>-maxOverlapsToSideline <code>&lt;n&gt;</code> 如果用sideline方式处理重叠region,最多sideline n个region</td>
+</tr>
+<tr>
+<td align="left">-fixVersionFile</td>
+<td align="left">Hbase的数据文件启动时需要一个version file,如果这个文件丢失,可以用这个命令来新建一个,但是要保证hbck的版本和Hbase集群的版本是一样的</td>
+</tr>
+<tr>
+<td align="left">-maxMerge <code>&lt;n&gt;</code></td>
+<td align="left">在修复region重叠的现时,允许merge最多<code>&lt;n&gt;</code>个region(默认n等于5)</td>
+</tr>
+<tr>
+<td align="left">-sidelineBigOverlaps</td>
+<td align="left">在修复region重叠问题时,允许暂时搁置重叠量较大的部分</td>
+</tr>
+<tr>
+<td align="left">-maxOverlapsToSideline <code>&lt;n&gt;</code></td>
+<td align="left">在修复region重叠问题时,允许一组里暂时搁置最多n个region不处理(默认n等于2)</td>
+</tr>
+<tr>
+<td align="left">-fixSplitParents</td>
+<td align="left">当region做split操作的时候,父region会被自动清除掉.但是有时候子region在父region被清除之前又做了split.造成有些延迟离线的父region存在于META表和HDFS中,但是没有部署,HBASE又不能清除他们.这种情况下可以使用此命令重置这些在META表中的region为在线状态并且没有split.然后就可以使用之前的修复命令把这个region修复</td>
+</tr>
+<tr>
+<td align="left">-removeParents</td>
+<td align="left">在执行检查时忽略文件系统权限</td>
+</tr>
+<tr>
+<td align="left">-ignorePreCheckPermission</td>
+<td align="left">尝试下线引用断开(lingering reference)的StoreFile</td>
+</tr>
+<tr>
+<td align="left">-fixReferenceFiles</td>
+<td align="left">尝试下线引用断开(lingering reference)的StoreFile</td>
+</tr>
+<tr>
+<td align="left">-fixEmptyMetaCells</td>
+<td align="left">尝试修复hbase:meta表中没有引用到任何region的entry(REGIONINFO_QUALIFIER为空的行)</td>
+</tr>
+</tbody></table>
+<h4 id="Datafile修复选项"><a href="#Datafile修复选项" class="headerlink" title="Datafile修复选项"></a>Datafile修复选项</h4><table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">-checkCorruptHFiles</td>
+<td align="left">检查所有HFile,通过逐一打开所有的HFile来确定其是否可用</td>
+</tr>
+<tr>
+<td align="left">-sidelineCorruptHFiles</td>
+<td align="left">隔离损坏的HFile,该指令中包含-checkCorruptHFiles操作</td>
+</tr>
+</tbody></table>
+<h4 id="Meta修复快捷指令"><a href="#Meta修复快捷指令" class="headerlink" title="Meta修复快捷指令"></a>Meta修复快捷指令</h4><table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">-repair</td>
+<td align="left">是以下指令的简写:-fixAssignments -fixMeta -fixHdfsHoles -fixHdfsOrphans -fixHdfsOverlaps -fixVersionFile -sidelineBigOverlaps -fixReferenceFiles -fixTableLocks -fixOrphanedTableZnodes,后面可以指定1个或多个表名</td>
+</tr>
+<tr>
+<td align="left">-repairHoles</td>
+<td align="left">是以下指令的简写:-fixAssignments -fixMeta -fixHdfsHoles</td>
+</tr>
+</tbody></table>
+<h4 id="Table-lock选项"><a href="#Table-lock选项" class="headerlink" title="Table lock选项"></a>Table lock选项</h4><table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">-fixTableLocks</td>
+<td align="left">删除已持有超过很长时间的table lock(hbase.table.lock.expire.ms配置项,默认值为10分钟)</td>
+</tr>
+</tbody></table>
+<h4 id="Znode选项"><a href="#Znode选项" class="headerlink" title="Znode选项"></a>Znode选项</h4><table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">-fixOrphanedTableZnodes</td>
+<td align="left">如果表不存在,则将其在zookeeper中ZNode状态设置为disabled</td>
+</tr>
+</tbody></table>
+<h3 id="修复"><a href="#修复" class="headerlink" title="修复"></a>修复</h3><h4 id="局部低危修复"><a href="#局部低危修复" class="headerlink" title="局部低危修复"></a>局部低危修复</h4><p>-fixAssignments:<br>修复没有assign/assign不正确或者同时assign到多台RegionServer的问题region.</p>
+<p>-fixMeta:<br>主要修复.regioninfo文件和hbase:meta元数据表的不一致.<br>修复的原则是以HDFS文件为准:如果region在HDFS上存在,但在hbase.meta表中不存在,就会在hbase:meta表中添加一条记录.<br>反之如果在HDFS上不存在,而在hbase:meta表中存在,就会将hbase:meta表中对应的记录删除.</p>
+<h4 id="高危修复"><a href="#高危修复" class="headerlink" title="高危修复"></a>高危修复</h4><p>region区间overlap相关问题的修复属于高危修复操作,因为这类修复通常需要修改HDFS上的文件,有时甚至需要人工介入.<br>对于这类高危修复操作,建议先执行hbck -details详细了解更多的问题细节,再执行相应的修复命令.<br><code>-repair｜-fix</code>命令不建议生产线使用.</p>
+<h3 id="其它"><a href="#其它" class="headerlink" title="其它"></a>其它</h3><p>如果ROOT表和META表都出问题了Hbase无法启动,可以用这个命令来创建新的ROOT和META表.<br>这个命令的前提是Hbase已经关闭,执行时它会从hbase的home目录加载hbase的相关信息(.regioninfo),如果表的信息是完整的就会创建新的root和meta目录及数据.<br>hbase org.apache.hadoop.hbase.util.hbck.OfflineMetaRepair</p>
+<h3 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h3><img src="/images/hbq6.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/hbq7.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="Tools"><a href="#Tools" class="headerlink" title="Tools"></a>Tools</h2><h3 id="snapshot"><a href="#snapshot" class="headerlink" title="snapshot"></a>snapshot</h3><p>1)产生快照<br>snapshot &#39;sourceTable&#39;, &#39;snapshotName&#39;<br>snapshot &#39;namespace:sourceTable&#39;, &#39;snapshotName&#39;, {SKIP_FLUSH =&gt; true}</p>
+<p>2)列出所有快照<br>list_snapshots</p>
+<img src="/images/hbsnap1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>3)删除快照<br>delete_snapshot &#39;snapshotName&#39;<br>delete_all_snapshot <code>&#39;s.*&#39;</code><br>delete_all_snapshot:删除所有快照<br>delete_table_snapshots:删除符合正则表达式的快照</p>
+<p>4)从指定快照生成新表<br>clone_snapshot &#39;snapshotName&#39;, &#39;tableName&#39;<br>clone_snapshot &#39;snapshotName&#39;, &#39;namespace:tableName&#39;</p>
+<p>5)使用快照生成原表数据,需要先disable表<br>disable &#39;tableName&#39;<br>restore_snapshot &#39;snapshotName&#39;<br>enable &#39;tableName&#39;</p>
+<p>6)使用ExportSnapshot工具将现有快照导出至其他集群<br>./bin/hbase org.apache.hadoop.hbase.snapshot.ExportSnapshot -snapshot snapxx2 -copy-to hdfs://172.18.250.101:8020/hbase</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">Usage: bin&#x2F;hbase org.apache.hadoop.hbase.snapshot.ExportSnapshot [options]</span><br><span class="line"> where [options] are:</span><br><span class="line">  -h|-help                Show this help and exit.</span><br><span class="line">  -snapshot NAME          Snapshot to restore.</span><br><span class="line">  -copy-to NAME           Remote destination hdfs:&#x2F;&#x2F;</span><br><span class="line">  -copy-from NAME         Input folder hdfs:&#x2F;&#x2F; (default hbase.rootdir)</span><br><span class="line">  -no-checksum-verify     Do not verify checksum, use name+length only.</span><br><span class="line">  -no-target-verify       Do not verify the integrity of the \exported snapshot.</span><br><span class="line">  -overwrite              Rewrite the snapshot manifest if already exists</span><br><span class="line">  -chuser USERNAME        Change the owner of the files to the specified one.</span><br><span class="line">  -chgroup GROUP          Change the group of the files to the specified one.</span><br><span class="line">  -chmod MODE             Change the permission of the files to the specified one.</span><br><span class="line">  -mappers                Number of mappers to use during the copy (mapreduce.job.maps).</span><br><span class="line">  -bandwidth              Limit bandwidth to this value in MB&#x2F;second.</span><br><span class="line"></span><br><span class="line">Examples:</span><br><span class="line">  hbase org.apache.hadoop.hbase.snapshot.ExportSnapshot \</span><br><span class="line">    -snapshot MySnapshot -copy-to hdfs:&#x2F;&#x2F;srv2:8082&#x2F;hbase \</span><br><span class="line">    -chuser MyUser -chgroup MyGroup -chmod 700 -mappers 16</span><br><span class="line"></span><br><span class="line">  hbase org.apache.hadoop.hbase.snapshot.ExportSnapshot \</span><br><span class="line">    -snapshot MySnapshot -copy-from hdfs:&#x2F;&#x2F;srv2:8082&#x2F;hbase \</span><br><span class="line">    -copy-to hdfs:&#x2F;&#x2F;srv1:50070&#x2F;hbase \</span><br></pre></td></tr></table></figure>
+
+<h3 id="balance-switch"><a href="#balance-switch" class="headerlink" title="balance_switch"></a>balance_switch</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">#打开</span><br><span class="line">balance_switch true</span><br><span class="line">#关闭</span><br><span class="line">balance_switch false</span><br><span class="line">#查看当前状态</span><br><span class="line">balancer</span><br><span class="line">balancer_enabled</span><br></pre></td></tr></table></figure>
+
+<p>配置master是否执行平衡各个regionserver的region数量,当我们需要维护或者重启一个regionserver时,会关闭balancer,这样就使得region在regionserver上的分布不均,这个时候需要手工的开启balance.</p>
+<h3 id="major-compact"><a href="#major-compact" class="headerlink" title="major_compact"></a>major_compact</h3><p>进行操作前先将balancer关闭,操作完成后再打开balancer.</p>
+<p>选择一个系统比较空闲的时间手动major_compact.<br>如果hbase更新不是太频繁,可以一个星期对所有表做一次major_compact,这个可以在做完一次major_compact后,观看所有的storefile数量.<br>如果storefile数量增加到major_compact后的storefile的近二倍时,可以对所有表做一次major_compact,时间比较长,操作尽量避免高锋期.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">#Compact all regions in a table</span><br><span class="line">major_compact &#39;t1&#39;</span><br><span class="line">major_compact &#39;ns1:t1&#39;</span><br><span class="line"></span><br><span class="line">#Compact an entire region</span><br><span class="line">major_compact &#39;r1&#39;</span><br><span class="line">major_compact &#39;42c52e1082b3befbe8d388e3be5e7470&#39;</span><br><span class="line"></span><br><span class="line">#Compact a single column family within a region</span><br><span class="line">major_compact &#39;r1&#39;, &#39;c1&#39;</span><br><span class="line">major_compact &#39;42c52e1082b3befbe8d388e3be5e7470&#39;,&#39;d&#39;</span><br><span class="line"></span><br><span class="line">#Compact a single column family within a table</span><br><span class="line">major_compact &#39;t1&#39;, &#39;c1&#39;</span><br><span class="line">major_compact &#39;xx1&#39;,&#39;d&#39;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">#Compact all regions in a table:</span><br><span class="line">compact &#39;ns1:t1&#39;</span><br><span class="line">compact &#39;t1&#39;</span><br><span class="line">#Compact an entire region:</span><br><span class="line">compact &#39;r1&#39;</span><br><span class="line">#Compact only a column family within a region:</span><br><span class="line">compact &#39;r1&#39;, &#39;c1&#39;</span><br><span class="line">#Compact a column family within a table:</span><br><span class="line">compact &#39;t1&#39;, &#39;c1&#39;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">#Compact all regions on a regionserver:</span><br><span class="line">compact_rs &#39;host187.example.com,60020&#39;</span><br><span class="line">compact_rs &#39;host187.example.com,60020,1289493121758&#39;</span><br><span class="line">#Major compact all regions on a regionserver:</span><br><span class="line">compact_rs &#39;host187.example.com,60020,1289493121758&#39;, true</span><br></pre></td></tr></table></figure>
+
+<h3 id="merge-region"><a href="#merge-region" class="headerlink" title="merge region"></a>merge region</h3><p>进行操作前先将balancer关闭,操作完成后再打开balancer.<br>经过一段时间的运行之后有可能会产生一些很小的region,需要定期检查这些region并将它们和相邻的region合并以减少系统的总region数,减少管理开销.</p>
+<blockquote>
+<p>合并方法</p>
+</blockquote>
+<ol>
+<li>找到需要合并的region的encoded name</li>
+<li>进入hbase shell</li>
+<li>执行merge_region &#39;region1&#39;,&#39;region2&#39;</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">merge_region &#39;ENCODED_REGIONNAME&#39;, &#39;ENCODED_REGIONNAME&#39;</span><br><span class="line">merge_region &#39;ENCODED_REGIONNAME&#39;, &#39;ENCODED_REGIONNAME&#39;, true</span><br><span class="line"></span><br><span class="line">merge_region &#39;ab63cf5e0db9ffdf2626a5ac005cb1dd&#39;,&#39;441d6f6dcf16f6b85f7d44cb4c909214&#39;</span><br></pre></td></tr></table></figure>
+
+<h3 id="split"><a href="#split" class="headerlink" title="split"></a>split</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">split &#39;tableName&#39;</span><br><span class="line">split &#39;namespace:tableName&#39;</span><br><span class="line">split &#39;regionName&#39; # format: &#39;tableName,startKey,id&#39;</span><br><span class="line">split &#39;tableName&#39;, &#39;splitKey&#39;</span><br><span class="line">split &#39;regionName&#39;, &#39;splitKey&#39;</span><br><span class="line">split &#39;bde4229f455f62124f279c3e0d246a62&#39;,&#39;25&#39;</span><br></pre></td></tr></table></figure>
+
+<h3 id="分配region"><a href="#分配region" class="headerlink" title="分配region"></a>分配region</h3><p>如果发现1台regionServer资源占用特别高,可以检查这台regionserver上的region是否存在过多比较大的region,通过hbase shell将部分比较大的region分配给其他不是很忙的regions server.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">move &#39;ENCODED_REGIONNAME&#39;</span><br><span class="line">move &#39;ENCODED_REGIONNAME&#39;, &#39;SERVER_NAME&#39;</span><br><span class="line">move &#39;bde4229f455f62124f279c3e0d246a62&#39;</span><br></pre></td></tr></table></figure>
+
+<h3 id="regionserver重启"><a href="#regionserver重启" class="headerlink" title="regionserver重启"></a>regionserver重启</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;graceful_stop.sh --restart --reload --debug nodename</span><br></pre></td></tr></table></figure>
+
+<p>进行操作前先将balancer关闭,操作完成后再打开balancer.<br>这个操作是平滑的重启regionserver进程,对服务不会有影响,会先将需要重启的regionserver上面的所有 region迁移到其它的服务器,然后重启,最后又会将之前的region迁移回来,但修改一个配置时,可以用这种方式重启每一台机子,对于hbase regionserver重启,不要直接kill进程,这样会造成在<code>zookeeper.session.timeout</code>这个时间长的中断,也不要通过 <code>bin/hbase-daemon.sh stop regionserver</code>去重启,如果运气不太好,-ROOT-或者.META.表在上面的话,所有的请求会全部失败.</p>
+<h3 id="regionserver关闭下线"><a href="#regionserver关闭下线" class="headerlink" title="regionserver关闭下线"></a>regionserver关闭下线</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin&#x2F;graceful_stop.sh  nodename</span><br></pre></td></tr></table></figure>
+
+<p>进行操作前先将balancer关闭,操作完成后再打开balancer.<br>和上面一样,系统会在关闭之前迁移所有region,然后stop进程.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Usage: graceful_stop.sh [--config &lt;conf-dir&gt;] [-d] [-e] [--restart [--reload]] [--thrift] [--rest] &lt;hostname&gt;</span><br><span class="line"> thrift         If we should stop&#x2F;start thrift before&#x2F;after the hbase stop&#x2F;start</span><br><span class="line"> rest           If we should stop&#x2F;start rest before&#x2F;after the hbase stop&#x2F;start</span><br><span class="line"> restart        If we should restart after graceful stop</span><br><span class="line"> reload         Move offloaded regions back on to the restarted server</span><br><span class="line"> d|debug        Print helpful debug information</span><br><span class="line"> maxthreads xx  Limit the number of threads used by the region mover. Default value is 1.</span><br><span class="line"> hostname       Hostname of server we are to stop</span><br><span class="line"> e|failfast     Set -e so exit immediately if any command exits with non-zero status</span><br></pre></td></tr></table></figure>
+
+<h3 id="滚动重启-rolling-restart-sh"><a href="#滚动重启-rolling-restart-sh" class="headerlink" title="滚动重启(rolling-restart.sh)"></a>滚动重启(rolling-restart.sh)</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Usage: rolling-restart.sh [--config &lt;hbase-confdir&gt;] [--rs-only] [--master-only] [--graceful] [--maxthreads xx]</span><br></pre></td></tr></table></figure>
+
+<p>1)仅在RegionServers上滚动重启<br>要仅在RegionServers上执行滚动重启,请使用该--rs-only选项.<br>如果需要重新启动单个RegionServer,或者进行的配置更改仅影响RegionServers而不会影响其他HBase进程,这可能是必要的.</p>
+<p>2)仅在Master上滚动重启<br>要在活动和备份Master上执行滚动重启,请使用该--master-only选项.<br>如果知道配置更改仅影响Master而不是RegionServers,或者需要重新启动正在运行活动Master的服务器,则可以使用此选项.</p>
+<p>3)优雅重启<br>如果指定该--graceful选项,RegionServers将使用bin/graceful_stop.sh脚本重新启动,该脚本在重新启动之前将区域移出RegionServer.<br>这更安全,但可能会延迟重新启动</p>
+<h3 id="flush表"><a href="#flush表" class="headerlink" title="flush表"></a>flush表</h3><p>所有memstore刷新到hdfs,通常如果发现regionserver的内存使用过大,造成该机的 regionserver很多线程block,可以执行一下flush操作.<br>这个操作会造成hbase的storefile数量剧增,应尽量避免这个操 作.<br>还有一种情况,在hbase进行迁移的时候,如果选择拷贝文件方式,可以先停写入,然后flush所有表,拷贝文件.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">flush &#39;TABLENAME&#39;</span><br><span class="line">flush &#39;REGIONNAME&#39;</span><br><span class="line">flush &#39;ENCODED_REGIONNAME&#39;</span><br></pre></td></tr></table></figure>
+
+<h3 id="truncate"><a href="#truncate" class="headerlink" title="truncate"></a>truncate</h3><p><code>truncate</code><br>禁用/删除/重新创建指定的表.</p>
+<p><code>truncate_preserve</code><br>同上,但保持以前的region预分区信息.</p>
+<h3 id="alter"><a href="#alter" class="headerlink" title="alter"></a>alter</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">#to change or add the &#39;f1&#39; column family in table &#39;t1&#39; from current value to keep a maximum of 5 cell VERSIONS</span><br><span class="line">alter &#39;t1&#39;, NAME &#x3D;&gt; &#39;f1&#39;, VERSIONS &#x3D;&gt; 5</span><br><span class="line"></span><br><span class="line">#operate on several column families</span><br><span class="line">alter &#39;t1&#39;, &#39;f1&#39;, &#123;NAME &#x3D;&gt; &#39;f2&#39;, IN_MEMORY &#x3D;&gt; true&#125;, &#123;NAME &#x3D;&gt; &#39;f3&#39;, VERSIONS &#x3D;&gt; 5&#125;</span><br><span class="line"></span><br><span class="line">#delete the &#39;f1&#39; column family in table &#39;ns1:t1&#39;</span><br><span class="line">alter &#39;ns1:t1&#39;, NAME &#x3D;&gt; &#39;f1&#39;, METHOD &#x3D;&gt; &#39;delete&#39;</span><br><span class="line">alter &#39;ns1:t1&#39;, &#39;delete&#39; &#x3D;&gt; &#39;f1&#39;</span><br><span class="line"></span><br><span class="line">#change table-scope attributes like MAX_FILESIZE, READONLY, MEMSTORE_FLUSHSIZE, DURABILITY</span><br><span class="line">#to change the max size of a region to 128MB</span><br><span class="line">alter &#39;t1&#39;, MAX_FILESIZE &#x3D;&gt; &#39;134217728&#39;</span><br><span class="line"></span><br><span class="line">#add a table coprocessor by setting a table coprocessor attribute</span><br><span class="line">alter &#39;t1&#39;, &#39;coprocessor&#39;&#x3D;&gt;&#39;hdfs:&#x2F;&#x2F;&#x2F;foo.jar|com.foo.FooRegionObserver|1001|arg1&#x3D;1,arg2&#x3D;2&#39;</span><br><span class="line"></span><br><span class="line">alter &#39;t1&#39;, CONFIGURATION &#x3D;&gt; &#123;&#39;hbase.hregion.scan.loadColumnFamiliesOnDemand&#39; &#x3D;&gt; &#39;true&#39;&#125;</span><br><span class="line">alter &#39;t1&#39;, &#123;NAME &#x3D;&gt; &#39;f2&#39;, CONFIGURATION &#x3D;&gt; &#123;&#39;hbase.hstore.blockingStoreFiles&#39; &#x3D;&gt; &#39;10&#39;&#125;&#125;</span><br><span class="line"></span><br><span class="line">#remove a table-scope attribute</span><br><span class="line">alter &#39;t1&#39;, METHOD &#x3D;&gt; &#39;table_att_unset&#39;, NAME &#x3D;&gt; &#39;MAX_FILESIZE&#39;</span><br><span class="line">alter &#39;t1&#39;, METHOD &#x3D;&gt; &#39;table_att_unset&#39;, NAME &#x3D;&gt; &#39;coprocessor$1&#39;</span><br><span class="line"></span><br><span class="line">#set REGION_REPLICATION</span><br><span class="line">alter &#39;t1&#39;, &#123;REGION_REPLICATION &#x3D;&gt; 2&#125;</span><br><span class="line"></span><br><span class="line">#more than one alteration in one command</span><br><span class="line">alter &#39;t1&#39;, &#123; NAME &#x3D;&gt; &#39;f1&#39;, VERSIONS &#x3D;&gt; 3 &#125;, &#123; MAX_FILESIZE &#x3D;&gt; &#39;134217728&#39; &#125;, &#123; METHOD &#x3D;&gt; &#39;delete&#39;, NAME &#x3D;&gt; &#39;f2&#39; &#125;, OWNER &#x3D;&gt; &#39;johndoe&#39;, METADATA &#x3D;&gt; &#123; &#39;mykey&#39; &#x3D;&gt; &#39;myvalue&#39; &#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="dml"><a href="#dml" class="headerlink" title="dml"></a>dml</h3><p>append, count, delete, deleteall, get, get_counter, get_splits, incr, put, scan, truncate, truncate_preserve</p>
+<h4 id="scan"><a href="#scan" class="headerlink" title="scan"></a>scan</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">scan &#39;hbase:meta&#39;</span><br><span class="line">scan &#39;hbase:meta&#39;, &#123;COLUMNS &#x3D;&gt; &#39;info:regioninfo&#39;&#125;</span><br><span class="line">scan &#39;ns1:t1&#39;, &#123;COLUMNS &#x3D;&gt; [&#39;c1&#39;, &#39;c2&#39;], LIMIT &#x3D;&gt; 10, STARTROW &#x3D;&gt; &#39;xyz&#39;&#125;</span><br><span class="line">scan &#39;t1&#39;, &#123;COLUMNS &#x3D;&gt; [&#39;c1&#39;, &#39;c2&#39;], LIMIT &#x3D;&gt; 10, STARTROW &#x3D;&gt; &#39;xyz&#39;&#125;</span><br><span class="line">scan &#39;t1&#39;, &#123;COLUMNS &#x3D;&gt; &#39;c1&#39;, TIMERANGE &#x3D;&gt; [1303668804, 1303668904]&#125;</span><br><span class="line">scan &#39;t1&#39;, &#123;REVERSED &#x3D;&gt; true&#125;</span><br><span class="line">scan &#39;t1&#39;, &#123;ALL_METRICS &#x3D;&gt; true&#125;</span><br><span class="line">scan &#39;t1&#39;, &#123;METRICS &#x3D;&gt; [&#39;RPC_RETRIES&#39;, &#39;ROWS_FILTERED&#39;]&#125;</span><br><span class="line">scan &#39;t1&#39;, &#123;ROWPREFIXFILTER &#x3D;&gt; &#39;row2&#39;, FILTER &#x3D;&gt; &quot;(QualifierFilter (&gt;&#x3D;, &#39;binary:xyz&#39;)) AND (TimestampsFilter(123, 456))&quot;&#125;</span><br><span class="line">scan &#39;t1&#39;, &#123;FILTER &#x3D;&gt; org.apache.hadoop.hbase.filter.ColumnPaginationFilter.new(1, 0)&#125;</span><br><span class="line">scan &#39;t1&#39;, &#123;CONSISTENCY &#x3D;&gt; &#39;TIMELINE&#39;&#125;</span><br><span class="line"></span><br><span class="line">#For setting the Operation Attributes </span><br><span class="line">scan &#39;t1&#39;, &#123; COLUMNS &#x3D;&gt; [&#39;c1&#39;, &#39;c2&#39;], ATTRIBUTES &#x3D;&gt; &#123;&#39;mykey&#39; &#x3D;&gt; &#39;myvalue&#39;&#125;&#125;</span><br><span class="line">scan &#39;t1&#39;, &#123; COLUMNS &#x3D;&gt; [&#39;c1&#39;, &#39;c2&#39;], AUTHORIZATIONS &#x3D;&gt; [&#39;PRIVATE&#39;,&#39;SECRET&#39;]&#125;</span><br><span class="line"></span><br><span class="line">scan &#39;t1&#39;, &#123;COLUMNS &#x3D;&gt; [&#39;c1&#39;, &#39;c2&#39;], CACHE_BLOCKS &#x3D;&gt; false&#125;</span><br><span class="line">scan &#39;t1&#39;, &#123;RAW &#x3D;&gt; true, VERSIONS &#x3D;&gt; 10&#125;</span><br><span class="line"></span><br><span class="line">#1. either as a org.apache.hadoop.hbase.util.Bytes method name (e.g, toInt, toString)</span><br><span class="line">#2. or as a custom class followed by method name: e.g. &#39;c(MyFormatterClass).format&#39;.</span><br><span class="line">#formatting cf:qualifier1 and cf:qualifier2 both as Integers: </span><br><span class="line">scan &#39;t1&#39;, &#123;COLUMNS &#x3D;&gt; [&#39;cf:qualifier1:toInt&#39;, &#39;cf:qualifier2:c(org.apache.hadoop.hbase.util.Bytes).toInt&#39;] &#125; </span><br><span class="line"></span><br><span class="line">t &#x3D; get_table &#39;t&#39;</span><br><span class="line">t.scan</span><br></pre></td></tr></table></figure>
+
+<h4 id="get"><a href="#get" class="headerlink" title="get"></a>get</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">get &#39;ns1:t1&#39;, &#39;r1&#39;</span><br><span class="line">get &#39;t1&#39;, &#39;r1&#39;</span><br><span class="line">get &#39;t1&#39;, &#39;r1&#39;, &#123;TIMERANGE &#x3D;&gt; [ts1, ts2]&#125;</span><br><span class="line">get &#39;t1&#39;, &#39;r1&#39;, &#123;COLUMN &#x3D;&gt; &#39;c1&#39;&#125;</span><br><span class="line">get &#39;t1&#39;, &#39;r1&#39;, &#123;COLUMN &#x3D;&gt; [&#39;c1&#39;, &#39;c2&#39;, &#39;c3&#39;]&#125;</span><br><span class="line">get &#39;t1&#39;, &#39;r1&#39;, &#123;COLUMN &#x3D;&gt; &#39;c1&#39;, TIMESTAMP &#x3D;&gt; ts1&#125;</span><br><span class="line">get &#39;t1&#39;, &#39;r1&#39;, &#123;COLUMN &#x3D;&gt; &#39;c1&#39;, TIMERANGE &#x3D;&gt; [ts1, ts2], VERSIONS &#x3D;&gt; 4&#125;</span><br><span class="line">get &#39;t1&#39;, &#39;r1&#39;, &#123;COLUMN &#x3D;&gt; &#39;c1&#39;, TIMESTAMP &#x3D;&gt; ts1, VERSIONS &#x3D;&gt; 4&#125;</span><br><span class="line">get &#39;t1&#39;, &#39;r1&#39;, &#123;FILTER &#x3D;&gt; &quot;ValueFilter(&#x3D;, &#39;binary:abc&#39;)&quot;&#125;</span><br><span class="line">get &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;</span><br><span class="line">get &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#39;c2&#39;</span><br><span class="line">get &#39;t1&#39;, &#39;r1&#39;, [&#39;c1&#39;, &#39;c2&#39;]</span><br><span class="line">get &#39;t1&#39;, &#39;r1&#39;, &#123;COLUMN &#x3D;&gt; &#39;c1&#39;, ATTRIBUTES &#x3D;&gt; &#123;&#39;mykey&#39;&#x3D;&gt;&#39;myvalue&#39;&#125;&#125;</span><br><span class="line">get &#39;t1&#39;, &#39;r1&#39;, &#123;COLUMN &#x3D;&gt; &#39;c1&#39;, AUTHORIZATIONS &#x3D;&gt; [&#39;PRIVATE&#39;,&#39;SECRET&#39;]&#125;</span><br><span class="line">get &#39;t1&#39;, &#39;r1&#39;, &#123;CONSISTENCY &#x3D;&gt; &#39;TIMELINE&#39;&#125;</span><br><span class="line">get &#39;t1&#39;, &#39;r1&#39;, &#123;CONSISTENCY &#x3D;&gt; &#39;TIMELINE&#39;, REGION_REPLICA_ID &#x3D;&gt; 1&#125;</span><br><span class="line"></span><br><span class="line">get &#39;t1&#39;, &#39;r1&#39; &#123;COLUMN &#x3D;&gt; [&#39;cf:qualifier1:toInt&#39;, &#39;cf:qualifier2:c(org.apache.hadoop.hbase.util.Bytes).toInt&#39;] &#125; </span><br></pre></td></tr></table></figure>
+
+<h4 id="put"><a href="#put" class="headerlink" title="put"></a>put</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">put &#39;ns1:t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;</span><br><span class="line">put &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;</span><br><span class="line">put &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;, ts1</span><br><span class="line">put &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;, &#123;ATTRIBUTES&#x3D;&gt;&#123;&#39;mykey&#39;&#x3D;&gt;&#39;myvalue&#39;&#125;&#125;</span><br><span class="line">put &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;, ts1, &#123;ATTRIBUTES&#x3D;&gt;&#123;&#39;mykey&#39;&#x3D;&gt;&#39;myvalue&#39;&#125;&#125;</span><br><span class="line">put &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#39;value&#39;, ts1, &#123;VISIBILITY&#x3D;&gt;&#39;PRIVATE|SECRET&#39;&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="incr"><a href="#incr" class="headerlink" title="incr"></a>incr</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">incr &#39;ns1:t1&#39;, &#39;r1&#39;, &#39;c1&#39;</span><br><span class="line">incr &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;</span><br><span class="line">incr &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, 1</span><br><span class="line">incr &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, 10</span><br><span class="line">incr &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, 10, &#123;ATTRIBUTES&#x3D;&gt;&#123;&#39;mykey&#39;&#x3D;&gt;&#39;myvalue&#39;&#125;&#125;</span><br><span class="line">incr &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, &#123;ATTRIBUTES&#x3D;&gt;&#123;&#39;mykey&#39;&#x3D;&gt;&#39;myvalue&#39;&#125;&#125;</span><br><span class="line">incr &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, 10, &#123;VISIBILITY&#x3D;&gt;&#39;PRIVATE|SECRET&#39;&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="get-counter"><a href="#get-counter" class="headerlink" title="get_counter"></a>get_counter</h4><p>返回指定表/行/列坐标处的计数器单元格值,long型.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">get_counter &#39;ns1:t1&#39;, &#39;r1&#39;, &#39;c1&#39;</span><br><span class="line">get_counter &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;</span><br></pre></td></tr></table></figure>
+
+<h4 id="delete"><a href="#delete" class="headerlink" title="delete"></a>delete</h4><p>Put a delete cell value at specified table/row/column and optionally<br>timestamp coordinates.  Deletes must match the deleted cell&#39;s<br>coordinates exactly.  When scanning, a delete cell suppresses older<br>versions.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">delete &#39;ns1:t1&#39;, &#39;r1&#39;, &#39;c1&#39;, ts1</span><br><span class="line">delete &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, ts1</span><br><span class="line">delete &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, ts1, &#123;VISIBILITY&#x3D;&gt;&#39;PRIVATE|SECRET&#39;&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="deleteall"><a href="#deleteall" class="headerlink" title="deleteall"></a>deleteall</h4><p>Delete all cells in a given row.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">deleteall &#39;ns1:t1&#39;, &#39;r1&#39;</span><br><span class="line">deleteall &#39;t1&#39;, &#39;r1&#39;</span><br><span class="line">deleteall &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;</span><br><span class="line">deleteall &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, ts1</span><br><span class="line">deleteall &#39;t1&#39;, &#39;r1&#39;, &#39;c1&#39;, ts1, &#123;VISIBILITY&#x3D;&gt;&#39;PRIVATE|SECRET&#39;&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="get-splits"><a href="#get-splits" class="headerlink" title="get_splits"></a>get_splits</h4><p>Get the splits of the named table.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">get_splits &#39;t1&#39;</span><br><span class="line">get_splits &#39;ns1:t1&#39;</span><br></pre></td></tr></table></figure>
+
+<h4 id="count"><a href="#count" class="headerlink" title="count"></a>count</h4><p>Count the number of rows in a table.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">count &#39;ns1:t1&#39;</span><br><span class="line">count &#39;t1&#39;</span><br><span class="line">count &#39;t1&#39;, INTERVAL &#x3D;&gt; 100000</span><br><span class="line">count &#39;t1&#39;, CACHE &#x3D;&gt; 1000</span><br><span class="line">count &#39;t1&#39;, INTERVAL &#x3D;&gt; 10, CACHE &#x3D;&gt; 1000</span><br></pre></td></tr></table></figure>
+
+<h3 id="Export-Import"><a href="#Export-Import" class="headerlink" title="Export/Import"></a>Export/Import</h3><p>默认导出路径为hdfs路径,也可以加<code>file:///</code>导出本地目录</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;hbase org.apache.hadoop.hbase.mapreduce.Export testtable &#x2F;user&#x2F;testtable [versions] [starttime] [stoptime]</span><br><span class="line">.&#x2F;bin&#x2F;hbase org.apache.hadoop.hbase.mapreduce.Import testtable  &#x2F;user&#x2F;testtable</span><br><span class="line"></span><br><span class="line">.&#x2F;bin&#x2F;hbase org.apache.hadoop.hbase.mapreduce.Export xx1 .&#x2F;xx1 1 0 2658195800850</span><br><span class="line">.&#x2F;bin&#x2F;hbase org.apache.hadoop.hbase.mapreduce.Export xx1 file:&#x2F;&#x2F;&#x2F;opt&#x2F;hbase&#x2F;xx1 1 0 2658195800850</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">Usage: Export [-D &lt;property&#x3D;value&gt;]* &lt;tablename&gt; &lt;outputdir&gt; [&lt;versions&gt; [&lt;starttime&gt; [&lt;endtime&gt;]] [^[regex pattern] or [Prefix] to filter]]</span><br><span class="line"></span><br><span class="line">  Note: -D properties will be applied to the conf used. </span><br><span class="line">  For example: </span><br><span class="line">   -D mapreduce.output.fileoutputformat.compress&#x3D;true</span><br><span class="line">   -D mapreduce.output.fileoutputformat.compress.codec&#x3D;org.apache.hadoop.io.compress.GzipCodec</span><br><span class="line">   -D mapreduce.output.fileoutputformat.compress.type&#x3D;BLOCK</span><br><span class="line">  Additionally, the following SCAN properties can be specified</span><br><span class="line">  to control&#x2F;limit what is exported..</span><br><span class="line">   -D hbase.mapreduce.scan.column.family&#x3D;&lt;familyName&gt;</span><br><span class="line">   -D hbase.mapreduce.include.deleted.rows&#x3D;true</span><br><span class="line">   -D hbase.mapreduce.scan.row.start&#x3D;&lt;ROWSTART&gt;</span><br><span class="line">   -D hbase.mapreduce.scan.row.stop&#x3D;&lt;ROWSTOP&gt;</span><br><span class="line">For performance consider the following properties:</span><br><span class="line">   -Dhbase.client.scanner.caching&#x3D;100</span><br><span class="line">   -Dmapreduce.map.speculative&#x3D;false</span><br><span class="line">   -Dmapreduce.reduce.speculative&#x3D;false</span><br><span class="line">For tables with very wide rows consider setting the batch size as below:</span><br><span class="line">   -Dhbase.export.scanner.batch&#x3D;10</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">Usage: Import [options] &lt;tablename&gt; &lt;inputdir&gt;</span><br><span class="line">By default Import will load data directly into HBase. To instead generate</span><br><span class="line">HFiles of data to prepare for a bulk data load, pass the option:</span><br><span class="line">  -Dimport.bulk.output&#x3D;&#x2F;path&#x2F;for&#x2F;output</span><br><span class="line"> To apply a generic org.apache.hadoop.hbase.filter.Filter to the input, use</span><br><span class="line">  -Dimport.filter.class&#x3D;&lt;name of filter class&gt;</span><br><span class="line">  -Dimport.filter.args&#x3D;&lt;comma separated list of args for filter</span><br><span class="line"> NOTE: The filter will be applied BEFORE doing key renames via the HBASE_IMPORTER_RENAME_CFS property. Futher, filters will only use the Filter#filterRowKey(byte[] buffer, int offset, int length) method to identify  whether the current row needs to be ignored completely for processing and  Filter#filterKeyValue(KeyValue) method to determine if the KeyValue should be added; Filter.ReturnCode#INCLUDE and #INCLUDE_AND_NEXT_COL will be considered as including the KeyValue.</span><br><span class="line">To import data exported from HBase 0.94, use</span><br><span class="line">  -Dhbase.import.version&#x3D;0.94</span><br><span class="line">For performance consider the following options:</span><br><span class="line">  -Dmapreduce.map.speculative&#x3D;false</span><br><span class="line">  -Dmapreduce.reduce.speculative&#x3D;false</span><br><span class="line">  -Dimport.wal.durability&#x3D;&lt;Used while writing data to hbase. Allowed values are the supported durability values like SKIP_WAL&#x2F;ASYNC_WAL&#x2F;SYNC_WAL&#x2F;...&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="ImportTsv"><a href="#ImportTsv" class="headerlink" title="ImportTsv"></a>ImportTsv</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">Usage: importtsv -Dimporttsv.columns&#x3D;a,b,c &lt;tablename&gt; &lt;inputdir&gt;</span><br><span class="line"></span><br><span class="line">Imports the given input directory of TSV data into the specified table.</span><br><span class="line"></span><br><span class="line">The column names of the TSV data must be specified using the -Dimporttsv.columns</span><br><span class="line">option. This option takes the form of comma-separated column names, where each</span><br><span class="line">column name is either a simple column family, or a columnfamily:qualifier. The special</span><br><span class="line">column name HBASE_ROW_KEY is used to designate that this column should be used</span><br><span class="line">as the row key for each imported record. You must specify exactly one column</span><br><span class="line">to be the row key, and you must specify a column name for every column that exists in the</span><br><span class="line">input data. Another special columnHBASE_TS_KEY designates that this column should be</span><br><span class="line">used as timestamp for each record. Unlike HBASE_ROW_KEY, HBASE_TS_KEY is optional.</span><br><span class="line">You must specify at most one column as timestamp key for each imported record.</span><br><span class="line">Record with invalid timestamps (blank, non-numeric) will be treated as bad record.</span><br><span class="line">Note: if you use this option, then &#39;importtsv.timestamp&#39; option will be ignored.</span><br><span class="line"></span><br><span class="line">Other special columns that can be specified are HBASE_CELL_TTL and HBASE_CELL_VISIBILITY.</span><br><span class="line">HBASE_CELL_TTL designates that this column will be used as a Cell&#39;s Time To Live (TTL) attribute.</span><br><span class="line">HBASE_CELL_VISIBILITY designates that this column contains the visibility label expression.</span><br><span class="line"></span><br><span class="line">HBASE_ATTRIBUTES_KEY can be used to specify Operation Attributes per record.</span><br><span class="line"> Should be specified as key&#x3D;&gt;value where -1 is used </span><br><span class="line"> as the seperator.  Note that more than one OperationAttributes can be specified.</span><br><span class="line">By default importtsv will load data directly into HBase. To instead generate</span><br><span class="line">HFiles of data to prepare for a bulk data load, pass the option:</span><br><span class="line">  -Dimporttsv.bulk.output&#x3D;&#x2F;path&#x2F;for&#x2F;output</span><br><span class="line">  Note: if you do not use this option, then the target table must already exist in HBase</span><br><span class="line"></span><br><span class="line">Other options that may be specified with -D include:</span><br><span class="line">  -Dimporttsv.skip.bad.lines&#x3D;false - fail if encountering an invalid line</span><br><span class="line">  &#39;-Dimporttsv.separator&#x3D;|&#39; - eg separate on pipes instead of tabs</span><br><span class="line">  -Dimporttsv.timestamp&#x3D;currentTimeAsLong - use the specified timestamp for the import</span><br><span class="line">  -Dimporttsv.mapper.class&#x3D;my.Mapper - A user-defined Mapper to use instead of org.apache.hadoop.hbase.mapreduce.TsvImporterMapper</span><br><span class="line">  -Dmapreduce.job.name&#x3D;jobName - use the specified mapreduce job name for the import</span><br><span class="line">  -Dcreate.table&#x3D;no - can be used to avoid creation of table by this tool</span><br><span class="line">  Note: if you set this to &#39;no&#39;, then the target table must already exist in HBase</span><br><span class="line">  -Dno.strict&#x3D;true - ignore column family check in hbase table. Default is false</span><br><span class="line"></span><br><span class="line">For performance consider the following options:</span><br><span class="line">  -Dmapreduce.map.speculative&#x3D;false</span><br><span class="line">  -Dmapreduce.reduce.speculative&#x3D;false</span><br></pre></td></tr></table></figure>
+
+<h3 id="LoadIncrementalHFiles"><a href="#LoadIncrementalHFiles" class="headerlink" title="LoadIncrementalHFiles"></a>LoadIncrementalHFiles</h3><p>与importtsv结合使用,完成批量加载.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;hbase org.apache.hadoop.hbase.mapreduce.LoadIncrementalHFiles &lt;hdfs:&#x2F;&#x2F;storefileoutput&gt; &lt;tablename&gt;</span><br></pre></td></tr></table></figure>
+
+<h4 id="测试批量导入数据"><a href="#测试批量导入数据" class="headerlink" title="测试批量导入数据"></a>测试批量导入数据</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create &#39;wordcount&#39;, &#123;NAME &#x3D;&gt; &#39;f&#39;&#125;, &#123;SPLITS &#x3D;&gt; [&#39;g&#39;, &#39;m&#39;, &#39;r&#39;, &#39;w&#39;]&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">wget https:&#x2F;&#x2F;people.apache.org&#x2F;~jdcryans&#x2F;word_count.csv</span><br><span class="line">hdfs dfs -put word_count.csv &#x2F;user&#x2F;xxx&#x2F;</span><br><span class="line"></span><br><span class="line">.&#x2F;bin&#x2F;hbase org.apache.hadoop.hbase.mapreduce.ImportTsv \</span><br><span class="line">-Dmapreduce.map.speculative&#x3D;false \</span><br><span class="line">-Dmapreduce.reduce.speculative&#x3D;false \</span><br><span class="line">-Dimporttsv.separator&#x3D;, \</span><br><span class="line">-Dimporttsv.bulk.output&#x3D;&#x2F;user&#x2F;xxx&#x2F;output \</span><br><span class="line">-Dimporttsv.columns&#x3D;HBASE_ROW_KEY,f:count wordcount &#x2F;user&#x2F;xxx&#x2F;word_count.csv</span><br><span class="line"></span><br><span class="line">.&#x2F;bin&#x2F;hbase org.apache.hadoop.hbase.mapreduce.LoadIncrementalHFiles &#x2F;user&#x2F;xxx&#x2F;output wordcount</span><br></pre></td></tr></table></figure>
+
+<h3 id="HFile"><a href="#HFile" class="headerlink" title="HFile"></a>HFile</h3><p>看HFile内容.<br>./bin/hbase org.apache.hadoop.hbase.io.hfile.HFile -v -f /hbase/data/default/xx1/f10860829177c2f160c2f57cdebf2cd9/d/5c9a8306fde549bab1dcb278efbdf634</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">usage: HFile [-a] [-b] [-e] [-f &lt;arg&gt; | -r &lt;arg&gt;] [-h] [-k] [-m] [-p]</span><br><span class="line">       [-s] [-v] [-w &lt;arg&gt;]</span><br><span class="line"> -a,--checkfamily         Enable family check</span><br><span class="line"> -b,--printblocks         Print block index meta data</span><br><span class="line"> -e,--printkey            Print keys</span><br><span class="line"> -f,--file &lt;arg&gt;          File to scan. Pass full-path; e.g.</span><br><span class="line">                          hdfs:&#x2F;&#x2F;a:9000&#x2F;hbase&#x2F;hbase:meta&#x2F;12&#x2F;34</span><br><span class="line"> -h,--printblockheaders   Print block headers for each block.</span><br><span class="line"> -k,--checkrow            Enable row order check; looks for out-of-order</span><br><span class="line">                          keys</span><br><span class="line"> -m,--printmeta           Print meta data of file</span><br><span class="line"> -p,--printkv             Print key&#x2F;value pairs</span><br><span class="line"> -r,--region &lt;arg&gt;        Region to scan. Pass region name; e.g.</span><br><span class="line">                          &#39;hbase:meta,,1&#39;</span><br><span class="line"> -s,--stats               Print statistics</span><br><span class="line"> -v,--verbose             Verbose output; emits file and meta data</span><br><span class="line">                          delimiters</span><br><span class="line"> -w,--seekToRow &lt;arg&gt;     Seek to this row and print all the kvs for this</span><br><span class="line">                          row only</span><br></pre></td></tr></table></figure>
+
+<h3 id="CopyTable"><a href="#CopyTable" class="headerlink" title="CopyTable"></a>CopyTable</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">Usage: CopyTable [general options] [--starttime&#x3D;X] [--endtime&#x3D;Y] [--new.name&#x3D;NEW] [--peer.adr&#x3D;ADR] &lt;tablename&gt;</span><br><span class="line"></span><br><span class="line">Options:</span><br><span class="line"> rs.class     hbase.regionserver.class of the peer cluster</span><br><span class="line">              specify if different from current cluster</span><br><span class="line"> rs.impl      hbase.regionserver.impl of the peer cluster</span><br><span class="line"> startrow     the start row</span><br><span class="line"> stoprow      the stop row</span><br><span class="line"> starttime    beginning of the time range (unixtime in millis)</span><br><span class="line">              without endtime means from starttime to forever</span><br><span class="line"> endtime      end of the time range.  Ignored if no starttime specified.</span><br><span class="line"> versions     number of cell versions to copy</span><br><span class="line"> new.name     new table&#39;s name</span><br><span class="line"> peer.adr     Address of the peer cluster given in the format</span><br><span class="line">              hbase.zookeeer.quorum:hbase.zookeeper.client.port:zookeeper.znode.parent</span><br><span class="line"> families     comma-separated list of families to copy</span><br><span class="line">              To copy from cf1 to cf2, give sourceCfName:destCfName. </span><br><span class="line">              To keep the same name, just give &quot;cfName&quot;</span><br><span class="line"> all.cells    also copy delete markers and deleted cells</span><br><span class="line"> bulkload     Write input into HFiles and bulk load to the destination table</span><br><span class="line"></span><br><span class="line">Args:</span><br><span class="line"> tablename    Name of the table to copy</span><br><span class="line"></span><br><span class="line">Examples:</span><br><span class="line"> To copy &#39;TestTable&#39; to a cluster that uses replication for a 1 hour window:</span><br><span class="line"> $ bin&#x2F;hbase org.apache.hadoop.hbase.mapreduce.CopyTable --starttime&#x3D;1265875194289 --endtime&#x3D;1265878794289 --peer.adr&#x3D;server1,server2,server3:2181:&#x2F;hbase --families&#x3D;myOldCf:myNewCf,cf2,cf3 TestTable </span><br><span class="line">For performance consider the following general option:</span><br><span class="line">  It is recommended that you set the following to &gt;&#x3D;100. A higher value uses more memory but</span><br><span class="line">  decreases the round trip time to the server and may increase performance.</span><br><span class="line">    -Dhbase.client.scanner.caching&#x3D;100</span><br><span class="line">  The following should always be set to false, to prevent writing data twice, which may produce </span><br><span class="line">  inaccurate results.</span><br><span class="line">    -Dmapreduce.map.speculative&#x3D;false</span><br></pre></td></tr></table></figure>
+
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hbase/" rel="tag"># hbase</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/03/03/hive%20mysql8%20row_number/" rel="prev" title="hive mysql8 row_number">
+                  <i class="fa fa-chevron-left"></i> hive mysql8 row_number
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/03/03/hbase%E5%AE%89%E8%A3%85/" rel="next" title="hbase安装">
+                  hbase安装 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="排查思路监控体系">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hbase question">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/08/hbase%20question/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="排查思路监控体系">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbqu1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbqu2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbqu3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbqu11.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbqu12.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbqu13.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbqu14.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbqu15.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbqu16.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbqu17.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbqu18.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbqu19.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbqu4.png">
+<meta property="article:published_time" content="2022-08-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-06T06:27:37.289Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hbase">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/hbqu1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/08/hbase%20question/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hbase question | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%92%E6%9F%A5%E6%80%9D%E8%B7%AF"><span class="nav-number">1.</span> <span class="nav-text">排查思路</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%91%E6%8E%A7%E4%BD%93%E7%B3%BB"><span class="nav-number">1.1.</span> <span class="nav-text">监控体系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hbase-web"><span class="nav-number">1.2.</span> <span class="nav-text">hbase web</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90"><span class="nav-number">1.3.</span> <span class="nav-text">日志分析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#master"><span class="nav-number">1.3.1.</span> <span class="nav-text">master</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#regionserver"><span class="nav-number">1.3.2.</span> <span class="nav-text">regionserver</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="nav-number">1.4.</span> <span class="nav-text">常见问题</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E9%98%BB%E5%A1%9E"><span class="nav-number">1.4.1.</span> <span class="nav-text">写入阻塞</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E5%BB%B6%E8%BF%9F%E5%A2%9E%E5%A4%A7"><span class="nav-number">1.4.2.</span> <span class="nav-text">写入延迟增大</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%BB%E5%BB%B6%E8%BF%9F%E5%A2%9E%E5%A4%A7"><span class="nav-number">1.4.3.</span> <span class="nav-text">读延迟增大</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98"><span class="nav-number">2.</span> <span class="nav-text">问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BAhbase-WebUI%E4%BD%BF%E7%94%A8%E5%AE%89%E5%85%A8HTTP-HTTPS"><span class="nav-number">2.1.</span> <span class="nav-text">为hbase WebUI使用安全HTTP(HTTPS)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#disable-drop"><span class="nav-number">2.2.</span> <span class="nav-text">disable + drop</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B0%B8%E4%B9%85RIT-Region-In-Transition"><span class="nav-number">2.3.</span> <span class="nav-text">永久RIT(Region-In-Transition)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E8%BF%87%E5%BF%AB%E9%97%AE%E9%A2%98"><span class="nav-number">2.4.</span> <span class="nav-text">写入过快问题</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/08/hbase%20question/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hbase question
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-08 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-08T00:00:00+08:00">2022-08-08</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-06 14:27:37" itemprop="dateModified" datetime="2022-09-06T14:27:37+08:00">2022-09-06</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="排查思路"><a href="#排查思路" class="headerlink" title="排查思路"></a>排查思路</h2><h3 id="监控体系"><a href="#监控体系" class="headerlink" title="监控体系"></a>监控体系</h3><span id="more"></span>
+
+<img src="/images/hbqu1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/hbqu2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/hbqu3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="hbase-web"><a href="#hbase-web" class="headerlink" title="hbase web"></a>hbase web</h3><p>点击regionserver进入rs监控页面.</p>
+<img src="/images/hbqu11.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/hbqu12.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/hbqu13.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/hbqu14.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/hbqu15.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/hbqu16.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/hbqu17.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/hbqu18.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/hbqu19.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="日志分析"><a href="#日志分析" class="headerlink" title="日志分析"></a>日志分析</h3><img src="/images/hbqu4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="master"><a href="#master" class="headerlink" title="master"></a>master</h4><p>1)DDL操作<br>表的分布式创建/删除/修改</p>
+<p>2)balancer操作<br>集群范围负载均衡操作</p>
+<p>3)snapshot操作<br>分布式快照创建/删除,基于快照的克隆/恢复等操作</p>
+<p>4)集群宕机恢复调度</p>
+<h4 id="regionserver"><a href="#regionserver" class="headerlink" title="regionserver"></a>regionserver</h4><p>1)region的打开关闭操作<br>2)用户读写请求记录,比如慢操作记录/请求超时记录等<br>3)region flush操作<br>4)region compaction/split操作</p>
+<h3 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h3><h4 id="写入阻塞"><a href="#写入阻塞" class="headerlink" title="写入阻塞"></a>写入阻塞</h4><p>1)Memstore占用内存大小超过设定阈值导致写入阻塞.<br>2)RegionServer Active Handler资源被耗尽导致写入阻塞.</p>
+<h4 id="写入延迟增大"><a href="#写入延迟增大" class="headerlink" title="写入延迟增大"></a>写入延迟增大</h4><p>1)WAL写入延迟,IO资源是否存在竞争.<br>2)JVM young gc</p>
+<h4 id="读延迟增大"><a href="#读延迟增大" class="headerlink" title="读延迟增大"></a>读延迟增大</h4><p>1)HFile小文件是否太多<br>2)IO是否争用<br>3)缓存是否命中<br>4)JVM young gc</p>
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><h3 id="为hbase-WebUI使用安全HTTP-HTTPS"><a href="#为hbase-WebUI使用安全HTTP-HTTPS" class="headerlink" title="为hbase WebUI使用安全HTTP(HTTPS)"></a>为hbase WebUI使用安全HTTP(HTTPS)</h3><p>在core-site.xml中配置<code>hadoop.ssl.enabled</code>为true.</p>
+<p>如果启用安全 HTTP,客户端应使用<code>https://URL</code>连接到HBase.<br>使用该<code>http://URL</code>的客户端将收到HTTP响应200,但不会收到任何数据.<br>记录以下异常,<br>javax.net.ssl.SSLException: Unrecognized SSL message, plaintext connection?</p>
+<h3 id="disable-drop"><a href="#disable-drop" class="headerlink" title="disable + drop"></a>disable + drop</h3><blockquote>
+<p>如果region非常多(但没有访问量了),对线上会有什么影响吗?</p>
+</blockquote>
+<p>disable只是改了一下ZK里面table的状态.<br>drop也不是现场就把hfile删掉了,只是迁移到.archive目录下,<br>然后有一个过期时间,定期清理的.</p>
+<p>这个过程需要做flush.<br>所以执行drop命令,region数量对hbase的影响基本为0.<br>主要是hdfs要move一下文件.</p>
+<blockquote>
+<p>drop后,hfile那些是异步删除还是同步?</p>
+</blockquote>
+<p>hfile是异步删除,大部分的HBaseAdmin的api都是异步的api.</p>
+<h3 id="永久RIT-Region-In-Transition"><a href="#永久RIT-Region-In-Transition" class="headerlink" title="永久RIT(Region-In-Transition)"></a>永久RIT(Region-In-Transition)</h3><p>异常关机导致HBase表损坏和丢失,大量Regions 处于Offline状态,无法上线.<br>启动HBase时,HBase Regionserver Web UI,一直停留在The RegionServer is initializing界面.</p>
+<p>INFO  [prd-bldb-hdp-name01:60000.activeMasterManager] util.FSUtils: Waiting for dfs to exit safe mode...</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hdfs dfsadmin -safemode get</span><br><span class="line">#退出安全模式</span><br><span class="line">hdfs dfsadmin -safemode leave</span><br></pre></td></tr></table></figure>
+
+<p>Hadoop Namenode Web UI 界面的报错提示,有missing block.<br>HBase  Master Web UI界面的提示,有大量Offline Regions 和RIT(Region-In-Transition).</p>
+<blockquote>
+<p>排查</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">#查看dfs状态报告</span><br><span class="line">hdfs dfsadmin -report</span><br><span class="line"></span><br><span class="line">#查看损坏文件&#x2F;当前hdfs的副本数</span><br><span class="line">hdfs fsck &#x2F;</span><br></pre></td></tr></table></figure>
+
+<p>Under replicated blocks:副本数少于指定副本数的block数量<br>Blocks with corrupt replicas:存在损坏副本的block的数据<br>Missing blocks:丢失block数量</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#更改已经上传文件的副本数,修复Missing blocks</span><br><span class="line">hdfs dfs -setrep -R 3 &#x2F;</span><br></pre></td></tr></table></figure>
+
+<p>通过该命令,对于存在副本缺失问题(Under replicated blocks)的662个block,可以从剩下的1-2个副本,重新生成3个副本,从而找回了丢失的副本.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#删除损坏文件</span><br><span class="line">hdfs fsck -delete</span><br></pre></td></tr></table></figure>
+
+<p>通过多次运行该命令,对于副本全部丢失(Missing blocks)或损坏的53个block,可以从namenode节点删除元信息和损坏文件.</p>
+<blockquote>
+<p>处理流程</p>
+<p>1)pending_open(或pending_close)状态的region通常可以使用hbck命令修复.<br>2)failed_open(或failed_close)状态的region通常无法使用hbck命令修复.<br>3)failed_open(或failed_close)状态的region需检查日志确认region无法打开关闭的具体原因.<br>4)region处于RIT状态但hbck显示正常,把zk上的region-in-transaction节点相关region删除,重启master.</p>
+</blockquote>
+<h3 id="写入过快问题"><a href="#写入过快问题" class="headerlink" title="写入过快问题"></a>写入过快问题</h3><blockquote>
+<p>整个写入流程</p>
+</blockquote>
+<p>client api -&gt; RPC -&gt; server IPC -&gt; RPC queue -&gt; RPC handler -&gt; write WAL -&gt; write memstore -&gt; flush to filesystem<br>整个写入流程从客户端调用API开始,数据会通过protobuf编码成一个请求,通过scoket实现的IPC模块被送达server的RPC队列中.<br>最后由负责处理RPC的handler取出请求完成写入操作.<br>写入会先写WAL文件,然后再写一份到内存中(memstore模块),当满足条件时,memstore才会被flush到底层文件系统,形成HFile.</p>
+<p>写入过快时,memstore的水位会马上被推高.<br>RegionTooBusyException: Above memstore limit, regionName=xxxxx ...</p>
+<p>这个是Region的memstore占用内存大小超过正常的4倍,这时候会抛异常,写入请求会被拒绝,客户端开始重试请求.<br>当达到128M的时候会触发flush memstore,当达到128M * 4还没法触发flush时候会抛异常来拒绝写入.<br>两个相关参数的默认值如下:<br>hbase.hregion.memstore.flush.size=128M<br>hbase.hregion.memstore.block.multiplier=4</p>
+<p>或者这样的日志:<br>regionserver.MemStoreFlusher: Blocking updates on hbase.example.host.com,16020,1522286703886: the global memstore size 1.3 G is &gt;= than blocking 1.3 G size<br>regionserver.MemStoreFlusher: Memstore is above high water mark and block 528ms</p>
+<p>这是所有region的memstore内存总和开销超过配置上限,默认是配置heap的40%,这会导致写入被阻塞.<br>目的是等待flush的线程把内存里的数据flush下去,否则继续允许写入memestore会把内存写爆.</p>
+<p>hbase.regionserver.global.memstore.upperLimit=0.4  # 较旧版本,新版本兼容<br>hbase.regionserver.global.memstore.size=0.4 # 新版本</p>
+<p>当写入请求由于达到memstore上限而被阻塞,队列会开始积压,如果运气不好最后会导致OOM,可能会发现JVM由于OOM crash或者看到如下类似日志:<br>ipc.RpcServer: /192.168.x.x:16020 is unable to read call parameter from client 10.47.x.x<br>java.lang.OutOfMemoryError: Java heap space</p>
+<blockquote>
+<p>避免RS OOM</p>
+</blockquote>
+<p>加快flush速度.<br>hbase.hstore.blockingWaitTime = 90000 ms<br>hbase.hstore.flusher.count = 2<br>hbase.hstore.blockingStoreFiles = 10</p>
+<p>当达到hbase.hstore.blockingStoreFiles配置上限时,会导致flush阻塞等到compaction工作完成.<br>阻塞时间是hbase.hstore.blockingWaitTime,可以改小这个时间.<br>hbase.hstore.flusher.count可以根据机器型号去配置,这个数量不会根据写压力去动态调整,配多了,非导入数据多场景也没用,改配置还得重启.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hbase/" rel="tag"># hbase</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/08/hbase%E8%A1%A8%E5%A2%9E%E5%8A%A0snappy%E5%8E%8B%E7%BC%A9/" rel="prev" title="hbase表增加snappy压缩">
+                  <i class="fa fa-chevron-left"></i> hbase表增加snappy压缩
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/10/hbase%E8%BF%9E%E6%8E%A5zookeeper%E8%B6%85%E6%97%B6%E6%97%B6%E9%97%B4/" rel="next" title="hbase连接zookeeper超时时间">
+                  hbase连接zookeeper超时时间 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

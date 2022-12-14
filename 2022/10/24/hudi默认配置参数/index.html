@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="基本配置可用于写入&#x2F;读取 Hudi 表的基本配置. Spark 数据源配置这些配置控制 Hudi Spark 数据源,提供定义键&#x2F;分区、选择写入操作、指定如何合并记录或选择要读取的查询类型的能力. Read Options用于通过以下方式阅读表格的选项read.format.option(...)Config Class: org.apache.hudi.DataSourceOptions.sca">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hudi默认配置参数">
+<meta property="og:url" content="https://maoeryu.github.io/2022/10/24/hudi%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="基本配置可用于写入&#x2F;读取 Hudi 表的基本配置. Spark 数据源配置这些配置控制 Hudi Spark 数据源,提供定义键&#x2F;分区、选择写入操作、指定如何合并记录或选择要读取的查询类型的能力. Read Options用于通过以下方式阅读表格的选项read.format.option(...)Config Class: org.apache.hudi.DataSourceOptions.sca">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-10-23T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-10-24T08:35:04.906Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hudi">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/10/24/hudi%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hudi默认配置参数 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E9%85%8D%E7%BD%AE"><span class="nav-number">1.</span> <span class="nav-text">基本配置</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Spark-%E6%95%B0%E6%8D%AE%E6%BA%90%E9%85%8D%E7%BD%AE"><span class="nav-number">1.1.</span> <span class="nav-text">Spark 数据源配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Read-Options"><span class="nav-number">1.1.1.</span> <span class="nav-text">Read Options</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Write-Options"><span class="nav-number">1.1.2.</span> <span class="nav-text">Write Options</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Flink-Sql%E9%85%8D%E7%BD%AE"><span class="nav-number">1.2.</span> <span class="nav-text">Flink Sql配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Flink%E9%80%89%E9%A1%B9"><span class="nav-number">1.2.1.</span> <span class="nav-text">Flink选项</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E5%AE%A2%E6%88%B7%E7%AB%AF%E9%85%8D%E7%BD%AE"><span class="nav-number">1.3.</span> <span class="nav-text">写入客户端配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E9%85%8D%E7%BD%AE"><span class="nav-number">1.3.1.</span> <span class="nav-text">存储配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%83%E6%95%B0%E6%8D%AE%E9%85%8D%E7%BD%AE"><span class="nav-number">1.3.2.</span> <span class="nav-text">元数据配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E9%85%8D%E7%BD%AE"><span class="nav-number">1.3.3.</span> <span class="nav-text">写入配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%8B%E7%BC%A9%E9%85%8D%E7%BD%AE"><span class="nav-number">1.3.4.</span> <span class="nav-text">压缩配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Clean%E9%85%8D%E7%BD%AE"><span class="nav-number">1.3.5.</span> <span class="nav-text">Clean配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Archiva%E9%85%8D%E7%BD%AE"><span class="nav-number">1.3.6.</span> <span class="nav-text">Archiva配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95%E9%85%8D%E7%BD%AE"><span class="nav-number">1.3.7.</span> <span class="nav-text">索引配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E9%85%8D%E7%BD%AE"><span class="nav-number">1.3.8.</span> <span class="nav-text">常见配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Metrics%E9%85%8D%E7%BD%AE"><span class="nav-number">1.4.</span> <span class="nav-text">Metrics配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Datadog%E6%8A%A5%E5%91%8A"><span class="nav-number">1.4.1.</span> <span class="nav-text">Datadog报告</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%B0%E5%BD%95%E6%9C%89%E6%95%88%E8%B4%9F%E8%BD%BD%E9%85%8D%E7%BD%AE"><span class="nav-number">1.5.</span> <span class="nav-text">记录有效负载配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%89%E6%95%88%E8%B4%9F%E8%BD%BD%E9%85%8D%E7%BD%AE"><span class="nav-number">1.5.1.</span> <span class="nav-text">有效负载配置</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%89%80%E6%9C%89%E9%85%8D%E7%BD%AE"><span class="nav-number">2.</span> <span class="nav-text">所有配置</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%96%E9%83%A8%E5%8C%96%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">2.1.</span> <span class="nav-text">外部化配置文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Spark-%E6%95%B0%E6%8D%AE%E6%BA%90%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.2.</span> <span class="nav-text">Spark 数据源配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Read-Options-1"><span class="nav-number">2.2.1.</span> <span class="nav-text">Read Options</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E9%80%89%E9%A1%B9"><span class="nav-number">2.2.2.</span> <span class="nav-text">写入选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A2%84%E6%8F%90%E4%BA%A4%E9%AA%8C%E8%AF%81%E5%99%A8%E9%85%8D%E7%BD%AE"><span class="nav-number">2.2.3.</span> <span class="nav-text">预提交验证器配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Flink-Sql%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.3.</span> <span class="nav-text">Flink Sql配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Flink%E9%80%89%E9%A1%B9-1"><span class="nav-number">2.3.1.</span> <span class="nav-text">Flink选项</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.</span> <span class="nav-text">客户端配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%83%E5%B1%80%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.1.</span> <span class="nav-text">布局配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E5%86%99%E6%8F%90%E4%BA%A4%E5%9B%9E%E8%B0%83%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.2.</span> <span class="nav-text">编写提交回调配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Clean%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.4.3.</span> <span class="nav-text">Clean配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%83%E5%AD%98%E5%82%A8%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.4.</span> <span class="nav-text">元存储配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%A8%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.5.</span> <span class="nav-text">表配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.6.</span> <span class="nav-text">内存配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E-DynamoDB-%E7%9A%84%E9%94%81%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.7.</span> <span class="nav-text">基于 DynamoDB 的锁配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.4.8.</span> <span class="nav-text">存储配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Archival%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.9.</span> <span class="nav-text">Archival配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%83%E6%95%B0%E6%8D%AE%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.4.10.</span> <span class="nav-text">元数据配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7%E4%BF%9D%E6%8A%A4%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.11.</span> <span class="nav-text">一致性保护配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E9%98%B2%E6%8A%A4%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.12.</span> <span class="nav-text">文件系统防护配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.4.13.</span> <span class="nav-text">写入配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%86%E9%92%A5%E7%94%9F%E6%88%90%E5%99%A8%E9%80%89%E9%A1%B9"><span class="nav-number">2.4.14.</span> <span class="nav-text">密钥生成器选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HBase-%E7%B4%A2%E5%BC%95%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.15.</span> <span class="nav-text">HBase 索引配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E5%86%99%E6%8F%90%E4%BA%A4pulsar%E5%9B%9E%E8%B0%83%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.16.</span> <span class="nav-text">编写提交pulsar回调配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E5%86%99%E6%8F%90%E4%BA%A4-Kafka-%E5%9B%9E%E8%B0%83%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.17.</span> <span class="nav-text">编写提交 Kafka 回调配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%94%81%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.18.</span> <span class="nav-text">锁配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%8B%E7%BC%A9%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.4.19.</span> <span class="nav-text">压缩配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E8%A7%86%E5%9B%BE%E5%AD%98%E5%82%A8%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.20.</span> <span class="nav-text">文件系统视图存储配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.4.21.</span> <span class="nav-text">索引配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.22.</span> <span class="nav-text">集群配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.4.23.</span> <span class="nav-text">常见配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Bootstrap%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.24.</span> <span class="nav-text">Bootstrap配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Metrics%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.5.</span> <span class="nav-text">Metrics配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Datadog%E6%8A%A5%E5%91%8A-1"><span class="nav-number">2.5.1.</span> <span class="nav-text">Datadog报告</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Metrics%E9%85%8D%E7%BD%AE-2"><span class="nav-number">2.5.2.</span> <span class="nav-text">Metrics配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Jmx%E7%9A%84%E6%8C%87%E6%A0%87%E9%85%8D%E7%BD%AE"><span class="nav-number">2.5.3.</span> <span class="nav-text">Jmx的指标配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Prometheus%E7%9A%84%E6%8C%87%E6%A0%87%E9%85%8D%E7%BD%AE"><span class="nav-number">2.5.4.</span> <span class="nav-text">Prometheus的指标配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Graphite%E7%9A%84%E6%8C%87%E6%A0%87%E9%85%8D%E7%BD%AE"><span class="nav-number">2.5.5.</span> <span class="nav-text">Graphite的指标配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%B0%E5%BD%95%E6%9C%89%E6%95%88%E8%B4%9F%E8%BD%BD%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.6.</span> <span class="nav-text">记录有效负载配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%89%E6%95%88%E8%B4%9F%E8%BD%BD%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.6.1.</span> <span class="nav-text">有效负载配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Kafka-%E8%BF%9E%E6%8E%A5%E9%85%8D%E7%BD%AE"><span class="nav-number">2.7.</span> <span class="nav-text">Kafka 连接配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Kafka-%E6%8E%A5%E6%94%B6%E5%99%A8%E8%BF%9E%E6%8E%A5%E9%85%8D%E7%BD%AE"><span class="nav-number">2.7.1.</span> <span class="nav-text">Kafka 接收器连接配置</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/10/24/hudi%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hudi默认配置参数
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2022-10-24 00:00:00 / Modified: 16:35:04" itemprop="dateCreated datePublished" datetime="2022-10-24T00:00:00+08:00">2022-10-24</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="基本配置"><a href="#基本配置" class="headerlink" title="基本配置"></a>基本配置</h1><p>可用于写入/读取 Hudi 表的基本配置.</p>
+<h2 id="Spark-数据源配置"><a href="#Spark-数据源配置" class="headerlink" title="Spark 数据源配置"></a>Spark 数据源配置</h2><p>这些配置控制 Hudi Spark 数据源,提供定义键/分区、选择写入操作、指定如何合并记录或选择要读取的查询类型的能力.</p>
+<h3 id="Read-Options"><a href="#Read-Options" class="headerlink" title="Read Options"></a>Read Options</h3><p>用于通过以下方式阅读表格的选项<code>read.format.option(...)</code><br><code>Config Class</code>: org.apache.hudi.DataSourceOptions.scala</p>
+<p>hoodie.datasource.query.type<br>incremental模式,是否需要读取数据,(自瞬间以来的新数据)(或)<br>Read Optimized(读取优化模式),(获取最新视图,基于基础文件)(或)<br>Snapshot (获取最新视图,通过合并基础和(如果有)日志文件)<br>默认值:snapshot (Optional)<br>Config Param: QUERY_TYPE</p>
+<span id="more"></span>
+<h3 id="Write-Options"><a href="#Write-Options" class="headerlink" title="Write Options"></a>Write Options</h3><p>可以使用options()或option(k,v)方法直接传递任何 WriteClient 级别的配置.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">inputDF.write()</span><br><span class="line">.format(<span class="string">&quot;org.apache.hudi&quot;</span>)</span><br><span class="line">.options(clientOpts) <span class="comment">// any of the Hudi client opts can be passed in as well</span></span><br><span class="line">.option(<span class="type">DataSourceWriteOptions</span>.<span class="type">RECORDKEY_FIELD_OPT_KEY</span>(), <span class="string">&quot;_row_key&quot;</span>)</span><br><span class="line">.option(<span class="type">DataSourceWriteOptions</span>.<span class="type">PARTITIONPATH_FIELD_OPT_KEY</span>(), <span class="string">&quot;partition&quot;</span>)</span><br><span class="line">.option(<span class="type">DataSourceWriteOptions</span>.<span class="type">PRECOMBINE_FIELD_OPT_KEY</span>(), <span class="string">&quot;timestamp&quot;</span>)</span><br><span class="line">.option(<span class="type">HoodieWriteConfig</span>.<span class="type">TABLE_NAME</span>, tableName)</span><br><span class="line">.mode(<span class="type">SaveMode</span>.<span class="type">Append</span>)</span><br><span class="line">.save(basePath);</span><br></pre></td></tr></table></figure>
+
+<p>对通过以下方式编写表格有用的选项<code>write.format.option(...)</code><br><code>Config Class</code>: org.apache.hudi.DataSourceOptions.scala</p>
+<p>hoodie.datasource.write.operation<br>是否为写操作执行 upsert、insert 或 bulkinsert.<br>使用 bulkinsert 将新数据加载到表中,然后使用 upsert/insert.<br>批量插入使用基于磁盘的写入路径来扩展以加载大型输入,而无需缓存它.<br>默认值:upsert (Optional)<br>Config Param: OPERATION</p>
+<p>hoodie.datasource.write.table.type<br>此写入的基础数据的表类型.<br>这不能在写入之间改变.<br>默认值:COPY_ON_WRITE(可选)<br>Config Param: TABLE_TYPE</p>
+<p>hoodie.datasource.write.table.name<br>数据源写入的表名.<br>也用于将表注册到元存储中.<br>默认值:N/A(必需)<br>Config Param: TABLE_NAME</p>
+<p>hoodie.datasource.write.recordkey.field<br>记录key 字段.<br>用作HoodieKey的recordKey组成部分的值.<br>实际值将通过在字段值上调用 .toString() 来获得.<br>可以使用点表示法指定嵌套字段,例如:a.b.c<br>默认值:uuid(可选)<br>Config Param: RECORDKEY_FIELD</p>
+<p>hoodie.datasource.write.partitionpath.field<br>分区路径字段.<br>HoodieKey 的 partitionPath 组件中使用的值.<br>通过调用 .toString()<br>默认值获得的实际值:N/A(必需)<br>Config Param: PARTITIONPATH_FIELD</p>
+<p>hoodie.datasource.write.keygenerator.class<br>密钥生成器类,实现<code>org.apache.hudi.keygen.KeyGenerator</code><br>默认值:<code>org.apache.hudi.keygen.SimpleKeyGenerator</code>(可选)<br>Config Param: KEYGENERATOR_CLASS_NAME</p>
+<p>hoodie.datasource.write.precombine.field<br>在实际写入之前用于 preCombining 的字段.<br>当两条记录具有相同的键值时,我们将选择具有最大值的预组合字段,由 Object.compareTo(..) 确定<br>默认值:ts (可选)<br>Config Param: PRECOMBINE_FIELD</p>
+<p>hoodie.datasource.write.payload.class<br>使用的有效负载类.<br>如果您想在更新/插入时滚动自己的合并逻辑,请覆盖它.<br>这将使为 PRECOMBINE_FIELD_OPT_VAL 设置的任何值无效<br>默认值:org.apache.hudi.common.model.OverwriteWithLatestAvroPayload(可选)<br>Config Param: PAYLOAD_CLASS_NAME</p>
+<p>hoodie.datasource.write.partitionpath.urlencode<br>在创建文件夹结构之前,我们是否应该对分区路径值进行 url 编码.<br>默认值:false(可选)<br>Config Param: URL_ENCODE_PARTITIONING</p>
+<p>hoodie.datasource.hive_sync.enable<br>设置为 true 时,将表注册/同步到 Apache Hive Metastore<br>默认值:false(可选)<br>Config Param: HIVE_SYNC_ENABLED</p>
+<p>hoodie.datasource.hive_sync.mode<br>为 Hive 操作选择的模式.<br>有效值为 hms、jdbc 和 hiveql.<br>默认值:N/A(必需)<br>Config Param: HIVE_SYNC_MODE</p>
+<p>hoodie.datasource.write.hive_style_partitioning<br>指示是否使用 Hive 样式分区的标志.<br>如果设置为 true,则分区文件夹的名称遵循 <code>&lt;partition_column_name&gt;=&lt;partition_value&gt;</code> 格式.<br>默认 false(分区文件夹的名称只是分区值)<br>默认值:false(可选)<br>Config Param: HIVE_STYLE_PARTITIONING</p>
+<p>hoodie.datasource.hive_sync.partition_fields<br>表中用于确定 hive 分区列的字段.<br>默认值:(可选)<br>Config Param: HIVE_PARTITION_FIELDS</p>
+<p>hoodie.datasource.hive_sync.partition_extractor_class<br>实现 PartitionValueExtractor 以提取分区值的类,默认为&quot;MultiPartKeysValueExtractor&quot;.<br>默认值:org.apache.hudi.hive.MultiPartKeysValueExtractor(可选)<br>Config Param: HIVE_PARTITION_EXTRACTOR_CLASS</p>
+<h2 id="Flink-Sql配置"><a href="#Flink-Sql配置" class="headerlink" title="Flink Sql配置"></a>Flink Sql配置</h2><p>这些配置控制 Hudi Flink SQL 源/接收器连接器,提供定义记录键、选择写入操作、指定如何合并记录、启用/禁用异步压缩或选择要读取的查询类型的能力.</p>
+<h3 id="Flink选项"><a href="#Flink选项" class="headerlink" title="Flink选项"></a>Flink选项</h3><p>path<br>hoodie table的基本路径.<br>如果路径不存在,则将创建该路径,否则 Hoodie 表预计将成功初始化<br>默认值:N/A(必需)<br>Config Param: PATH</p>
+<p>hoodie.table.name<br>要注册到 Hive 元存储的表名<br>默认值:N/A(必需)<br>Config Param: TABLE_NAME</p>
+<p>table.type<br>要写入的表类型.<br>COPY_ON_WRITE(或)MERGE_ON_READ<br>默认值:COPY_ON_WRITE(可选)<br>Config Param: TABLE_TYPE</p>
+<p>write.operation<br>写入操作,此写入应执行<br>默认值:upsert(可选)<br>Config Param: OPERATION</p>
+<p>write.tasks<br>实际写入任务的并行度,默认为 4<br>默认值:4(可选)<br>Config Param: WRITE_TASKS</p>
+<p>write.bucket_assign.tasks<br>Bucket分配任务的并行度,默认为执行环境的并行度<br>默认值:N/A(必填)<br>Config Param: BUCKET_ASSIGN_TASKS</p>
+<p>write.precombine<br>标志以指示是否在插入/更新插入之前删除重复项.<br>默认情况下,这些情况将接受重复,以获得额外的性能:1)insert 操作.2) upsert MOR 表,MOR 表在读取时删除重复数据<br>默认值:false(可选)<br>Config Param: PRE_COMBINE</p>
+<p>read.tasks<br>执行实际读取的任务的并行度,默认为 4<br>默认值:4(可选)<br>Config Param: READ_TASKS</p>
+<p>read.start-commit<br>开始提交即时读取,提交时间格式应为&#39;yyyyMMddHHmmss&#39;,默认从最新即时读取流式读取<br>默认值:N/A(必填)<br>Config Param: READ_START_COMMIT</p>
+<p>read.streaming.enabled<br>是否读取为streaming source,默认 false<br>默认值:false(可选)<br>Config Param: READ_AS_STREAMING</p>
+<p>compaction.tasks<br>执行实际压缩的任务的并行度,默认为 4<br>默认值:4(可选)<br>Config Param: COMPACTION_TASKS</p>
+<p>hoodie.datasource.write.hive_style_partitioning<br>是否使用 Hive 风格的分区.<br>如果设置为 true,则分区文件夹的名称遵循<code>&lt; partition_column_name &gt; = &lt; partition_value &gt;</code>格式.<br>默认 false(分区文件夹的名称只是分区值)<br>默认值:false(可选)<br>Config Param: HIVE_STYLE_PARTITIONING</p>
+<p>hive_sync.enable<br>将 Hive 元异步同步到 HMS,默认 false<br>默认值:false(可选)<br>Config Param: HIVE_SYNC_ENABLED</p>
+<p>hive_sync.mode<br>为 Hive 操作选择的模式.<br>有效值为 hms、jdbc 和 hiveql,默认为 &#39;jdbc&#39;<br>默认值:jdbc(可选)<br>Config Param: HIVE_SYNC_MODE</p>
+<p>hive_sync.table<br>配置单元同步的表名,默认&quot;unknown&quot;<br>默认值:unknown(可选)<br>Config Param: HIVE_SYNC_TABLE</p>
+<p>hive_sync.db<br>配置单元同步的数据库名称,默认&quot;default&quot;<br>默认值:default(可选)<br>Config Param: HIVE_SYNC_DB</p>
+<p>hive_sync.partition_extractor_class<br>从 HDFS 路径中提取分区值的工具,默认 &#39;SlashEncodedDayPartitionValueExtractor&#39;<br>默认值:org.apache.hudi.hive.SlashEncodedDayPartitionValueExtractor(可选)<br>Config Param: HIVE_SYNC_PARTITION_EXTRACTOR_CLASS_NAME</p>
+<p>hive_sync.metastore.uris<br>用于 hive 同步的 Metastore uris,默认 &#39;&#39;<br>默认值:(可选)<br>Config Param: HIVE_SYNC_METASTORE_URIS</p>
+<h2 id="写入客户端配置"><a href="#写入客户端配置" class="headerlink" title="写入客户端配置"></a>写入客户端配置</h2><p>在内部,Hudi 数据源使用基于 RDD 的 HoodieWriteClient API 来实际执行对存储的写入.<br>这些配置提供了对文件大小、压缩、并行性、压缩、写入模式、清理等较低级别方面的深度控制.<br>尽管 Hudi 提供了合理的默认值,但有时可能需要调整这些配置以针对特定工作负载进行优化.</p>
+<h3 id="存储配置"><a href="#存储配置" class="headerlink" title="存储配置"></a>存储配置</h3><p>控制有关写入、调整大小、读取基本文件和日志文件的方面的配置.<br>Config Class: org.apache.hudi.config.HoodieStorageConfig</p>
+<p>write.parquet.block.size<br>Parquet RowGroup 大小.<br>建议将其设置得足够大,以便可以通过将足够多的列值打包到单个行组中来分摊扫描成本.<br>默认值:120(可选)<br>Config Param: WRITE_PARQUET_BLOCK_SIZE</p>
+<p>write.parquet.max.file.size<br>Hudi 写入阶段生成的 parquet 文件的目标大小.<br>对于 DFS,这需要与底层文件系统块大小保持一致以获得最佳性能.<br>默认值:120(可选)<br>Config Param: WRITE_PARQUET_MAX_FILE_SIZE</p>
+<h3 id="元数据配置"><a href="#元数据配置" class="headerlink" title="元数据配置"></a>元数据配置</h3><p>Hudi 元数据表使用的配置.<br>此表维护有关给定 Hudi 表的元数据(例如文件列表),以避免在查询期间访问云存储的开销.<br>Config Class: org.apache.hudi.common.config.HoodieMetadataConfig</p>
+<p>hoodie.metadata.enable<br>启用提供表元数据的内部元数据表,例如级别文件列表<br>默认值:true(可选)<br>Config Param: ENABLE<br>Since Version: 0.7.0</p>
+<h3 id="写入配置"><a href="#写入配置" class="headerlink" title="写入配置"></a>写入配置</h3><p>控制 Hudi 表上的写入行为的配置.<br>这些可以直接从更高级别的框架(例如 Spark 数据源、Flink 接收器)和实用程序(例如 DeltaStreamer)传递下来.<br>Config Class: org.apache.hudi.config.HoodieWriteConfig</p>
+<p>hoodie.combine.before.upsert<br>当更新插入的记录共享相同的键时,控制它们是否应该在写入存储之前首先组合(即去重).<br>仅当您绝对确定没有重复输入时才应关闭此功能,否则可能导致重复键并违反唯一性保证.<br>默认值:true(可选)<br>Config Param: COMBINE_BEFORE_UPSERT</p>
+<p>hoodie.write.markers.type<br>要使用的标记类型.<br>支持两种模式:<br>1)DIRECT:每个数据文件对应的单个标记文件由编写器直接创建.<br>2)TIMELINE_SERVER_BASED:标记操作都在充当代理的时间线服务中处理.<br>为了提高效率,新的标记条目被批量处理并存储在有限数量的基础文件中.<br>如果使用 HDFS 或禁用时间线服务器,即使已配置,也会使用 DIRECT 标记作为后备.<br>对于 Spark 结构化流,此配置不生效,即,DIRECT 标记始终用于 Spark 结构化流.<br>默认值:TIMELINE_SERVER_BASED(可选)<br>Config Param: MARKERS_TYPE<br>Since Version: 0.9.0</p>
+<p>hoodie.insert.shuffle.parallelism<br>将记录插入表的并行性.<br>插入可以在写入之前对数据进行混洗,以调整文件大小并优化存储布局.<br>默认值:200(可选)<br>Config Param: INSERT_PARALLELISM_VALUE</p>
+<p>hoodie.rollback.parallelism<br>提交回滚的并行性.<br>回滚会并行执行文件删除或将删除块记录到存储上的文件组.<br>默认值:100(可选)<br>Config Param: ROLLBACK_PARALLELISM_VALUE</p>
+<p>hoodie.combine.before.delete<br>在删除操作期间,控制我们是否应该在写入存储之前组合删除(可能还有更新插入).<br>默认值:true(可选)<br>Config Param: COMBINE_BEFORE_DELETE</p>
+<p>hoodie.combine.before.insert<br>当插入的记录共享相同的键时,控制它们是否应该在写入存储之前首先组合(即去重).<br>当设置为 true 时,precombine 字段值用于减少共享相同键的所有记录.<br>默认值:false(可选)<br>Config Param: COMBINE_BEFORE_INSERT</p>
+<p>hoodie.bulkinsert.shuffle.parallelism<br>对于使用 bulk_insert 操作的大型初始导入,控制并行性以用于排序模式或在将记录写入表之前完成的自定义分区.<br>默认值:200(可选)<br>Config Param: BULKINSERT_PARALLELISM_VALUE</p>
+<p>hoodie.delete.shuffle.parallelism<br>用于&quot;删除&quot;操作的并行性.<br>删除操作也执行 shuffle,类似于 upsert 操作.<br>默认值:200(可选)<br>Config Param: DELETE_PARALLELISM_VALUE</p>
+<p>hoodie.bulkinsert.sort.mode<br>用于对批量插入记录进行排序的排序模式.<br>这在未配置用户 hoodie.bulkinsert.user.defined.partitioner.class 时使用.<br>可用值是:<br>1)GLOBAL_SORT:这可确保最佳文件大小,以最低的内存开销为代价进行排序.<br>2)PARTITION_SORT:通过仅在分区内排序来达到平衡,仍然保持写入最低和尽力而为文件大小的内存开销.<br>3)NONE:不排序.spark.write.parquet()在文件数量、开销方面最快且匹配<br>默认值:GLOBAL_SORT(可选)<br>Config Param: BULK_INSERT_SORT_MODE</p>
+<p>hoodie.embed.timeline.server<br>如果为 true,则启动时间线服务器(提供缓存文件列表、统计信息的元服务器)的实例,在每个写入器的驱动程序进程上运行,在写入期间接受来自执行程序的请求.<br>默认值:true(可选)<br>Config Param: EMBEDDED_TIMELINE_SERVER_ENABLE</p>
+<p>hoodie.upsert.shuffle.parallelism<br>用于表上的 upsert 操作的并行性.<br>Upserts 可以打乱数据以执行索引查找、文件大小调整、将记录最佳地打包到文件组中.<br>默认值:200(可选)<br>Config Param: UPSERT_PARALLELISM_VALUE</p>
+<p>hoodie.rollback.using.markers<br>基于写入期间生成的标记文件启用更有效的回滚机制.<br>默认开启.<br>默认值:true(可选)<br>Config Param: ROLLBACK_USING_MARKERS_ENABLE</p>
+<p>hoodie.finalize.write.parallelism<br>写入完成内部操作的并行性,包括在提交写入之前从湖存储中删除任何部分写入的文件.<br>如果大量任务导致较小表或低延迟写入的延迟,请减小此值.<br>默认值:200(可选)<br>Config Param: FINALIZE_WRITE_PARALLELISM_VALUE</p>
+<h3 id="压缩配置"><a href="#压缩配置" class="headerlink" title="压缩配置"></a>压缩配置</h3><p>控制压缩的配置(将日志文件合并到新的基础文件中).<br>Config Class: org.apache.hudi.config.HoodieCompactionConfig</p>
+<p>hoodie.compaction.lazy.block.read<br>合并 delta 日志文件时,此配置有助于选择是否应该延迟读取日志块.<br>选择 true 使用延迟块读取(低内存使用,但会导致寻找每个块头)或 false 用于立即块读取(更高的内存使用)<br>默认值:true(可选)<br>Config Param: COMPACTION_LAZY_BLOCK_READ_ENABLE</p>
+<p>hoodie.parquet.small.file.limit<br>在 upsert 操作期间,我们机会性地扩展存储上现有的小文件,而不是写入新文件,以将文件数量保持在最佳状态.<br>此配置设置文件大小限制,低于该限制,存储中的文件将成为候选的small file. 默认情况下,将任何 &lt;= 100MB 的文件视为小文件.<br>另请注意,如果此设置 &lt;= 0,则不会尝试获取小文件并直接写入新文件<br>默认值:104857600(可选)<br>Config Param: PARQUET_SMALL_FILE_LIMIT</p>
+<p>hoodie.compaction.strategy<br>压缩策略决定在每次压缩运行期间选择哪些文件组进行压缩.<br>默认.<br>Hudi 选择累积未合并数据最多的日志文件<br>默认值:org.apache.hudi.table.action.compact.strategy.LogFileSizeBasedCompactionStrategy(可选)<br>Config Param: COMPACTION_STRATEGY</p>
+<p>hoodie.copyonwrite.record.size.estimate<br>平均记录大小.<br>如果未明确指定,hudi 将根据提交元数据动态计算记录大小估计.<br>这对于计算插入并行性和将插入打包到小文件中至关重要.<br>默认值:1024(可选)<br>Config Param: COPY_ON_WRITE_RECORD_SIZE_ESTIMATE</p>
+<p>hoodie.compact.inline.max.delta.seconds<br>上次压缩后,在安排新压缩之前经过的秒数.<br>默认值:3600(可选)<br>Config Param: INLINE_COMPACT_TIME_DELTA_SECONDS</p>
+<p>hoodie.compaction.target.io<br>在 LogFileSizeBasedCompactionStrategy 的压缩运行期间要花费的 MB 数量.<br>此值有助于限制摄取延迟,而压缩是内联模式运行的.<br>默认值:512000(可选)<br>Config Param: TARGET_IO_PER_COMPACTION_IN_MB</p>
+<p>hoodie.compaction.logfile.size.threshold<br>仅当日志文件大小大于以字节为单位的阈值时,才会压缩文件组.<br>默认值:0(可选)<br>Config Param: COMPACTION_LOG_FILE_SIZE_THRESHOLD</p>
+<p>hoodie.compaction.preserve.commit.metadata<br>重写数据时,保留现有的 hoodie_commit_time<br>默认值:true(可选)<br>Config Param: PRESERVE_COMMIT_METADATA<br>Since Version: 0.11.0</p>
+<p>hoodie.copyonwrite.insert.auto.split<br>配置以控制我们是否根据平均记录大小自动控制插入拆分大小.<br>建议保持打开状态,否则手动调音非常麻烦.<br>默认值:true(可选)<br>Config Param: COPY_ON_WRITE_AUTO_SPLIT_INSERTS</p>
+<p>hoodie.compact.inline.max.delta.commits<br>在尝试安排新的压缩之前,最后一次压缩之后的增量提交数.<br>默认值:5(可选)<br>Config Param: INLINE_COMPACT_NUM_DELTA_COMMITS</p>
+<p>hoodie.record.size.estimation.threshold<br>我们使用之前提交的元数据来计算估计的记录大小,并使用它将记录打包到分区中.<br>如果之前的提交太小而无法做出准确的估计,Hudi 将按相反的顺序搜索提交,直到我们找到一个 totalBytesWritten 大于 (PARQUET_SMALL_FILE_LIMIT_BYTES * this_threshold) 的提交<br>默认值:1.0(可选)<br>Config Param: RECORD_SIZE_ESTIMATION_THRESHOLD</p>
+<p>hoodie.compact.inline.trigger.strategy<br>通过时间或 num delta 提交或两者的组合来控制如何触发压缩调度.<br>有效选项:NUM_COMMITS、NUM_COMMITS_AFTER_LAST_REQUEST、TIME_ELAPSED、NUM_AND_TIME、NUM_OR_TIME<br>默认值:NUM_COMMITS(可选)<br>Config Param: INLINE_COMPACT_TRIGGER_STRATEGY</p>
+<p>hoodie.compaction.reverse.log.read<br>HoodieLogFormatReader 从 pos=0 到 pos=file_length 正向读取日志文件.<br>如果此配置设置为 true,则阅读器以相反方向读取日志文件,从 pos=file_length 到 pos=0<br>默认值:false(可选)<br>Config Param: COMPACTION_REVERSE_LOG_READ_ENABLE</p>
+<p>hoodie.copyonwrite.insert.split.size<br>为每个分区/桶分配的用于写入的插入数.<br>我们的默认设置是写出 100MB 的文件,至少有 1kb 的记录(每个文件 100K 记录),并且超过 500K.<br>只要打开了拆分的自动调整,这只会影响第一次写入,没有历史可以从中学习记录大小.<br>默认值:500000(可选)<br>Config Param: COPY_ON_WRITE_INSERT_SPLIT_SIZE</p>
+<p>hoodie.compact.schedule.inline<br>当设置为 true 时,压缩服务将在每次写入后尝试进行内联调度.<br>用户必须确保他们有一个单独的作业来为此编写器调度的作业运行异步压缩(执行).<br>用户可以选择将两者hoodie.compact.inline和hoodie.compact.schedule.inline都设置为 false,让任何异步进程同时触发调度和执行.<br>但是如果hoodie.compact.inline设置为 false 并hoodie.compact.schedule.inline设置为 true,则常规编写器将安排内联压缩,但预计用户会触发异步作业执行.<br>如果hoodie.compact.inline设置为 true,则常规编写器将同时进行调度和内联执行以进行压缩<br>默认值:false(可选)<br>Config Param: SCHEDULE_INLINE_COMPACT</p>
+<p>hoodie.compaction.daybased.target.partitions<br>由 org.apache.hudi.io.compact.strategy.DayBasedCompactionStrategy 用来表示在压缩运行期间要压缩的最新分区数.<br>默认值:10(可选)<br>Config Param: TARGET_PARTITIONS_PER_DAYBASED_COMPACTION</p>
+<p>hoodie.compact.inline<br>设置为 true 时,每次写入后都会触发压缩服务.<br>虽然操作上更简单,但这会在写入路径上增加额外的延迟.<br>默认值:false(可选)<br>Config Param: INLINE_COMPACT</p>
+<h3 id="Clean配置"><a href="#Clean配置" class="headerlink" title="Clean配置"></a>Clean配置</h3><p>清理(回收旧的/未使用的文件组/切片).<br>Config Class: org.apache.hudi.config.HoodieCleanConfig</p>
+<p>hoodie.cleaner.fileversions.retained<br>使用 KEEP_LATEST_FILE_VERSIONS 清理策略时,清理期间每个文件组中要保留的最小文件片数.<br>默认值:3(可选)<br>Config Param: CLEANER_FILE_VERSIONS_RETAINED</p>
+<p>hoodie.clean.max.commits<br>在最后一次清理操作之后,在尝试安排新清理之前的提交数.<br>默认值:1(可选)<br>Config Param: CLEAN_MAX_COMMITS</p>
+<p>hoodie.clean.allow.multiple<br>允许通过启用此配置来安排/执行多个清理.<br>如果用户希望严格确保清理请求应该是互斥的,即如果另一个清理尚未完成,则不会安排第二次清理以避免重复清理相同的文件,他们可能希望禁用此配置.<br>默认值:true(可选)<br>Config Param: ALLOW_MULTIPLE_CLEANS<br>Since Version: 0.11.0</p>
+<p>hoodie.clean.automatic<br>启用后,每次提交后都会立即调用清理表服务,以删除较旧的文件切片.<br>建议启用此功能,以确保元数据和数据存储增长受到限制.<br>默认值:true(可选)<br>Config Param: AUTO_CLEAN</p>
+<p>hoodie.cleaner.parallelism<br>清洁操作的平行度.<br>如果清洁变慢,请增加此值.<br>默认值:200(可选)<br>Config Param: CLEANER_PARALLELISM_VALUE</p>
+<p>hoodie.cleaner.incremental.mode<br>启用后,自上次清洁器运行以来,每次清洁器服务运行的计划都是根据时间线中的事件增量计算的.<br>这比为每个计划获取完整表的列表(即使使用元数据表)要高效得多.<br>默认值:true(可选)<br>Config Param: CLEANER_INCREMENTAL_MODE_ENABLE</p>
+<p>hoodie.clean.async<br>仅在打开 hoodie.clean.automatic 时适用.<br>开启时会与写入运行更清晰的异步,这可以加快整体写入性能.<br>默认值:false(可选)<br>Config Param: ASYNC_CLEAN</p>
+<p>hoodie.clean.trigger.strategy<br>控制如何安排清洁.<br>有效选项:NUM_COMMITS<br>默认值:NUM_COMMITS(可选)<br>Config Param: CLEAN_TRIGGER_STRATEGY</p>
+<p>hoodie.cleaner.delete.bootstrap.base.file<br>当设置为 true 时,cleaner 还会在清理框架基础文件时删除引导基础文件.<br>如果您想确保随着时间的推移回收引导数据集存储,请将此设置为 true,因为表会接收更新/删除.<br>启用此功能的另一个原因是确保驻留在引导程序基本文件中的数据也被物理删除,以遵守数据隐私执行流程.<br>默认值:false(可选)<br>Config Param: CLEANER_BOOTSTRAP_BASE_FILE_ENABLE</p>
+<p>hoodie.cleaner.hours.retained<br>需要保留提交的小时数.<br>与为清理服务保留的提交数量相比,此配置提供了更灵活的选项.<br>设置此属性可确保清除所有文件,但文件组中的最新文件对应于提交时间早于配置的保留小时数的提交.<br>默认值:24(可选)<br>Config Param: CLEANER_HOURS_RETAINED</p>
+<p>hoodie.cleaner.commits.retained<br>要保留的提交数,无需清理.<br>这将保留 num_of_commits * time_between_commits(预定).<br>这也直接转化为表支持增量查询的数据保留量.<br>默认值:10(可选)<br>Config Param: CLEANER_COMMITS_RETAINED</p>
+<p>hoodie.cleaner.policy.failed.writes<br>要使用的失败写入的清理策略.<br>Hudi 将删除任何写入失败的文件以回收空间.<br>选择在每个写入器启动之前急切地执行失败写入的回滚(仅支持单个写入器)或由清洁器延迟执行(多写入器需要)<br>默认值:EAGER(可选)<br>Config Param: FAILED_WRITES_CLEANER_POLICY</p>
+<p>hoodie.cleaner.policy<br>要使用的清洁政策.<br>清理服务删除旧的文件分片文件以回收空间.<br>默认情况下,cleaner 会保留由最后 N 次提交写入的文件切片,由 hoodie.cleaner.commits.retained 确定 长时间运行的查询计划可能经常引用较旧的文件切片,并且如果在查询有机会之前清理这些文件切片,则会中断跑步.<br>因此,最好确保数据的保留时间超过最大查询执行时间<br>默认值:KEEP_LATEST_COMMITS(可选)<br>Config Param: CLEANER_POLICY</p>
+<h3 id="Archiva配置"><a href="#Archiva配置" class="headerlink" title="Archiva配置"></a>Archiva配置</h3><p>控制归档的配置.<br>Config Class: org.apache.hudi.config.HoodieArchivalConfig</p>
+<p>hoodie.archive.merge.small.file.limit.bytes<br>此配置设置存档文件大小限制,低于该限制存档文件将成为被选为此类小文件的候选对象.<br>默认值:20971520(可选)<br>Config Param: ARCHIVE_MERGE_SMALL_FILE_LIMIT_BYTES</p>
+<p>hoodie.keep.max.commits<br>归档服务在每次写入后将较旧的条目从时间线移动到归档日志中,以保持元数据开销不变,即使表大小增加.<br>此配置控制要保留在活动时间线中的最大瞬间数.<br>默认值:30(可选)<br>Config Param: MAX_COMMITS_TO_KEEP</p>
+<p>hoodie.archive.merge.enable<br>启用后,hoodie 会自动将几个小的存档文件合并为一个较大的存档文件.<br>当存储方案不支持追加操作时,它很有用.<br>默认值:false(可选)<br>Config Param: ARCHIVE_MERGE_ENABLE</p>
+<p>hoodie.archive.automatic<br>启用后,归档表服务会在每次提交后立即调用,以在我们超过提交的最大值时归档提交.<br>建议启用此功能,以确保活动提交的数量是有限的.<br>默认值:true(可选)<br>Config Param: AUTO_ARCHIVE</p>
+<p>hoodie.archive.delete.parallelism<br>删除归档的连帽衫提交的并行性.<br>默认值:100(可选)<br>Config Param: DELETE_ARCHIVED_INSTANT_PARALLELISM_VALUE</p>
+<p>hoodie.archive.beyond.savepoint<br>如果启用,存档将超出保存点,跳过保存点提交.<br>如果禁用,存档将在最早的保存点提交处停止.<br>默认值:false(可选)<br>Config Param: ARCHIVE_BEYOND_SAVEPOINT<br>Since Version: 0.12.0</p>
+<p>hoodie.commits.archival.batch<br>即时存档以尽力而为的方式进行批处理,以将更多即时打包到单个存档日志中.<br>此配置控制此类存档批量大小.<br>默认值:10(可选)<br>Config Param: COMMITS_ARCHIVAL_BATCH_SIZE</p>
+<p>hoodie.archive.async<br>仅在打开 hoodie.archive.automatic 时适用.<br>开启后,归档器会与写入异步运行,这可以提高整体写入性能.<br>默认值:false(可选)<br>Config Param: ASYNC_ARCHIVE<br>Since Version: 0.11.0</p>
+<p>hoodie.keep.min.commits<br>类似于 hoodie.keep.max.commits,但控制要保留在活动时间轴中的最小实例数.<br>默认值:20(可选)<br>Config Param: MIN_COMMITS_TO_KEEP</p>
+<p>hoodie.archive.merge.files.batch.size<br>一次要合并的小存档文件的数量.<br>默认值:10(可选)<br>Config Param: ARCHIVE_MERGE_FILES_BATCH_SIZE</p>
+<h3 id="索引配置"><a href="#索引配置" class="headerlink" title="索引配置"></a>索引配置</h3><p>控制索引行为的配置,将传入记录标记为对旧记录的插入或更新.<br>Config Class: org.apache.hudi.config.HoodieIndexConfig</p>
+<p>hoodie.index.type<br>要使用的索引类型.<br>默认为布隆过滤器.<br>可能的选项是<code>[BLOOM | GLOBAL_BLOOM |SIMPLE | GLOBAL_SIMPLE | INMEMORY | HBASE | BUCKET]</code> .<br>Bloom 过滤器消除了对外部系统的依赖,并存储在 Parquet 数据文件的页脚<br>默认值:N/A(必需)<br>Config Param: INDEX_TYPE</p>
+<p>hoodie.index.bloom.fpp<br>仅在索引类型为 BLOOM 时适用.<br>给定条目数允许的错误率.<br>这用于计算应该为布隆过滤器分配多少位以及散列函数的数量.<br>这通常设置得非常低(默认值:0.000000001),我们喜欢权衡磁盘空间以降低误报率.<br>如果添加到布隆过滤器的条目数超过配置的值 (hoodie.index.bloom.num_entries),则此 fpp 可能不会被兑现.<br>默认值:0.000000001(可选)<br>Config Param: BLOOM_FILTER_FPP_VALUE</p>
+<p>hoodie.index.bloom.num_entries<br>仅在索引类型为 BLOOM 时适用.<br>这是要存储在布隆过滤器中的条目数.<br>默认的基本原理:假设 maxParquetFileSize 为 128MB,averageRecordSize 为 1kb,因此我们在一个文件中总共大约有 130K 记录.<br>默认值 (60000) 大约是这个近似值的一半.<br>警告:将这个设置得非常低,会产生很多误报,索引查找将不得不扫描比它必须扫描的更多的文件,并且将其设置为一个非常高的数字将线性增加每个基本文件的大小(每个基本文件大约 4KB 50000 个条目).<br>此配置还与 DYNAMIC 布隆过滤器一起使用,该过滤器确定布隆的初始大小.<br>默认值:60000(可选)<br>Config Param: BLOOM_FILTER_NUM_ENTRIES_VALUE</p>
+<p>hoodie.bloom.index.update.partition.path<br>仅在索引类型为 GLOBAL_BLOOM 时适用.<br>当设置为 true 时,包含已存在记录的分区路径的更新将导致将传入记录插入新分区并删除旧分区中的原始记录.<br>设置为 false 时,仅在旧分区中更新原始记录<br>默认值:true(可选)<br>Config Param: BLOOM_INDEX_UPDATE_PARTITION_PATH_ENABLE</p>
+<p>hoodie.bloom.index.use.caching<br>仅在索引类型为 BLOOM 时适用.<br>当为 true 时,输入 RDD 将缓存以通过减少计算并行性或受影响分区的 IO 来加速索引查找<br>默认值:true(可选)<br>Config Param: BLOOM_INDEX_USE_CACHING</p>
+<p>hoodie.bloom.index.parallelism<br>仅在索引类型为 BLOOM 时适用.<br>这是索引查找的并行量,其中涉及shuffle.<br>默认情况下,这是根据输入工作负载特征自动计算的.<br>默认值:0(可选)<br>Config Param: BLOOM_INDEX_PARALLELISM</p>
+<p>hoodie.bloom.index.prune.by.ranges<br>仅在索引类型为 BLOOM 时适用.<br>如果为真,则从文件到杠杆的范围信息可加快索引查找.<br>如果键具有单调递增的前缀(例如时间戳),则特别有用.<br>如果记录键是完全随机的,最好关闭它,因为范围修剪只会增加索引查找的额外开销.<br>默认值:true(可选)<br>Config Param: BLOOM_INDEX_PRUNE_BY_RANGES</p>
+<p>hoodie.bloom.index.filter.type<br>使用的过滤器类型.<br>默认为 BloomFilterTypeCode.DYNAMIC_V0.<br>可用值为<code>[BloomFilterTypeCode.SIMPLE , BloomFilterTypeCode.DYNAMIC_V0]</code> .<br>动态布隆过滤器会根据键的数量自动调整大小.<br>默认值:DYNAMIC_V0(可选)<br>Config Param: BLOOM_FILTER_TYPE</p>
+<p>hoodie.simple.index.parallelism<br>仅在索引类型为 SIMPLE 时适用.<br>这是索引查找的并行量,其中涉及 Spark Shuffle<br>默认值:50(可选)<br>Config Param: SIMPLE_INDEX_PARALLELISM</p>
+<p>hoodie.simple.index.use.caching<br>仅在索引类型为 SIMPLE 时适用.<br>当为 true 时,传入的写入将缓存以通过减少计算并行性或受影响分区的 IO 来加速索引查找<br>默认值:true(可选)<br>Config Param: SIMPLE_INDEX_USE_CACHING</p>
+<p>hoodie.global.simple.index.parallelism<br>仅在索引类型为 GLOBAL_SIMPLE 时适用.<br>这是索引查找的并行量,其中涉及 Spark Shuffle<br>默认值:100(可选)<br>Config Param: GLOBAL_SIMPLE_INDEX_PARALLELISM</p>
+<p>hoodie.simple.index.update.partition.path<br>类似于 Key: &#39;hoodie.bloom.index.update.partition.path&#39; ,默认值:true 但用于简单索引.<br>自版本:0.6.0<br>默认值:true(可选)<br>Config Param: SIMPLE_INDEX_UPDATE_PARTITION_PATH_ENABLE</p>
+<h3 id="常见配置"><a href="#常见配置" class="headerlink" title="常见配置"></a>常见配置</h3><p>以下一组配置在 Hudi 中很常见.<br>Config Class: org.apache.hudi.common.config.HoodieCommonConfig</p>
+<p>hoodie.common.spillable.diskmap.type<br>当处理无法保存在内存中的输入数据时,为了与存储中的文件合并,使用了可溢出的磁盘映射.<br>默认情况下,我们使用松散地基于 bitcask 的持久哈希图,它提供 O(1) 插入、查找.<br>将其更改ROCKS_DB为更喜欢使用 RocksDB 来处理溢出.<br>默认值:BITCASK(可选)<br>Config Param: SPILLABLE_DISK_MAP_TYPE</p>
+<h2 id="Metrics配置"><a href="#Metrics配置" class="headerlink" title="Metrics配置"></a>Metrics配置</h2><p>这些配置集用于启用对关键 Hudi 统计数据和指标的监控和报告.</p>
+<h3 id="Datadog报告"><a href="#Datadog报告" class="headerlink" title="Datadog报告"></a>Datadog报告</h3><p>启用使用 Datadog 报告器类型报告 Hudi 指标.<br>Hudi 发布每次提交、清理、回滚等的指标.<br>Config Class: org.apache.hudi.config.metrics.HoodieMetricsDatadogConfig</p>
+<p>hoodie.metrics.on<br>打开/关闭指标报告.<br>默认关闭.<br>默认值:false(可选)<br>Config Param: TURN_METRICS_ON<br>Since Version: 0.5.0</p>
+<p>hoodie.metrics.reporter.type<br>指标报告者的类型.<br>默认值:GRAPHITE(可选)<br>Config Param: METRICS_REPORTER_TYPE_VALUE<br>Since Version: 0.5.0</p>
+<p>hoodie.metrics.reporter.class<br>默认值:(可选)<br>Config Param: METRICS_REPORTER_CLASS_NAME<br>自版本:0.6.0</p>
+<h2 id="记录有效负载配置"><a href="#记录有效负载配置" class="headerlink" title="记录有效负载配置"></a>记录有效负载配置</h2><p>这是 Hudi 提供的最低级别的定制.<br>记录有效负载定义如何根据传入的新记录和存储的旧记录生成新值以进行更新插入.<br>Hudi 提供了默认实现,例如 OverwriteWithLatestAvroPayload,它只是使用最新/最后写入的记录更新表.<br>这可以在数据源和 WriteClient 级别上覆盖为扩展 HoodieRecordPayload 类的自定义类.</p>
+<h3 id="有效负载配置"><a href="#有效负载配置" class="headerlink" title="有效负载配置"></a>有效负载配置</h3><p>有效负载相关配置,可用于根据数据中的特定业务字段控制合并.<br>Config Class: org.apache.hudi.config.HoodiePayloadConfig</p>
+<p>hoodie.payload.event.time.field<br>用于派生与记录关联的时间戳的表列/字段名称.<br>这可用于例如确定表的新鲜度.<br>默认值:ts(可选)<br>Config Param: EVENT_TIME_FIELD</p>
+<p>hoodie.payload.ordering.field<br>在合并和写入存储之前,对具有相同键的记录进行排序的表列/字段名称.<br>默认值:ts(可选)<br>Config Param: ORDERING_FIELD</p>
+<h1 id="所有配置"><a href="#所有配置" class="headerlink" title="所有配置"></a>所有配置</h1><h2 id="外部化配置文件"><a href="#外部化配置文件" class="headerlink" title="外部化配置文件"></a>外部化配置文件</h2><p>除了直接将配置设置传递给每个 Hudi 作业,您还可以在配置文件<code>hudi-default.conf</code>中集中设置它们.<br>默认情况下,Hudi 会加载<code>/etc/hudi/conf</code>目录下的配置文件.<br>您可以通过设置环境变量<code>HUDI_CONF_DIR</code>来指定不同的配置目录位置.<br>这对于在整个数据湖中统一执行重复配置(如 Hive 同步或写入/索引调整)很有用.</p>
+<h2 id="Spark-数据源配置-1"><a href="#Spark-数据源配置-1" class="headerlink" title="Spark 数据源配置"></a>Spark 数据源配置</h2><p>这些配置控制 Hudi Spark 数据源,提供定义键/分区、选择写入操作、指定如何合并记录或选择要读取的查询类型的能力.</p>
+<h3 id="Read-Options-1"><a href="#Read-Options-1" class="headerlink" title="Read Options"></a>Read Options</h3><p>用于通过以下方式阅读表格的选项<code>read.format.option(...)</code><br>Config Class: org.apache.hudi.DataSourceOptions.scala</p>
+<p>hoodie.file.index.enable<br>为 Hudi 启用 spark 文件索引实现,从而加快大型表的列出速度.<br>默认值:true(可选)<br>Config Param: ENABLE_HOODIE_FILE_INDEX<br>Deprecated Version: 0.11.0</p>
+<p>hoodie.datasource.read.paths<br>在 Hudi 表中读取的文件路径的逗号分隔列表.<br>默认值:N/A(必需)<br>Config Param: READ_PATHS</p>
+<p>hoodie.datasource.read.incr.filters<br>对于从 Hoodie Incremental 表读取并应用不透明映射函数的 DeltaStreamer 等用例,无法自动下推出现在转换序列后期的过滤器.<br>此选项允许直接在 Hoodie Source 上设置过滤器.<br>默认值:(可选)<br>Config Param: PUSH_DOWN_INCR_FILTERS</p>
+<p>hoodie.enable.data.skipping<br>启用数据跳过,允许查询利用索引通过跳过文件来减少搜索空间<br>默认值:false(可选)<br>Config Param: ENABLE_DATA_SKIPPING<br>Since Version: 0.10.0</p>
+<p>as.of.instant<br>时间旅行的查询瞬间.<br>如果不指定此选项,我们会查询最新的快照.<br>默认值:N/A(必需)<br>Config Param: TIME_TRAVEL_AS_OF_INSTANT</p>
+<p>hoodie.datasource.read.schema.use.end.instanttime<br>增量获取数据时使用结束即时模式.默认值:users latest instant schema.<br>默认值:false(可选)<br>Config Param: INCREMENTAL_READ_SCHEMA_USE_END_INSTANTTIME</p>
+<p>hoodie.datasource.read.incr.path.glob<br>对于像用户这样的用例,他们只想从某些分区而不是整个表中增量拉取.<br>此选项允许使用 glob 模式直接过滤路径.<br>默认值:(可选)<br>Config Param: INCR_PATH_GLOB</p>
+<p>hoodie.datasource.read.end.instanttime<br>限制增量获取数据的即时时间.<br>取出使用 instant_time &lt;= END_INSTANTTIME 写入的新数据.<br>默认值:N/A(必需)<br>Config Param: END_INSTANTTIME</p>
+<p>hoodie.datasource.write.precombine.field<br>在实际写入之前用于 preCombining 的字段.<br>当两条记录具有相同的键值时,我们将选择具有最大值的预组合字段,由 Object.compareTo(..) 确定<br>默认值:ts (可选)<br>Config Param: READ_PRE_COMBINE_FIELD</p>
+<p>hoodie.datasource.merge.type<br>对于读取表上合并的快照查询,控制我们是调用记录有效负载实现来合并(payload_combine)还是完全跳过合并skip_merge<br>默认值:payload_combine(可选)<br>Config Param: REALTIME_MERGE</p>
+<p>hoodie.datasource.read.extract.partition.values.from.path<br>当设置为 true 时,分区列的值(分区值)将从物理分区路径中提取(默认 Spark 行为).<br>当设置为 false 时,将从数据文件中读取分区值(在 Hudi 分区中,默认情况下会保留分区列).<br>此配置是允许保留现有行为的后备,不应以其他方式使用.<br>默认值:false(可选)<br>Config Param: EXTRACT_PARTITION_VALUES_FROM_PARTITION_PATH<br>Since Version: 0.11.0</p>
+<p>hoodie.schema.on.read.enable<br>启用对 Schema Evolution 功能的支持<br>默认值:false(可选)<br>Config Param: SCHEMA_EVOLUTION_ENABLED</p>
+<p>hoodie.datasource.read.begin.instanttime<br>立即开始增量提取数据的时间.<br>这里的instanttime不必一定对应于时间线上的一个瞬间.<br>取出使用 instant_time &gt; BEGIN_INSTANTTIME 写入的新数据.<br>例如:&quot;20170901080000&quot;将获取 2017 年 9 月 1 日上午 8:00 之后写入的所有新数据.<br>默认值:N/A(必需)<br>Config Param: BEGIN_INSTANTTIME</p>
+<p>hoodie.datasource.read.incr.fallback.fulltablescan.enable<br>在进行增量查询时,如果文件不存在,我们是否应该回退到全表扫描.<br>默认值:false(可选)<br>Config Param: INCREMENTAL_FALLBACK_TO_FULL_TABLE_SCAN_FOR_NON_EXISTING_FILES</p>
+<p>hoodie.datasource.query.type<br>是否需要读取数据,增量模式(自瞬间以来的新数据)(或)读取优化模式(获取最新视图,基于基础文件)(或)快照模式(获取最新视图,通过合并基础和(如果有) )日志文件)<br>默认值:快照(可选)<br>Config Param: QUERY_TYPE</p>
+<h3 id="写入选项"><a href="#写入选项" class="headerlink" title="写入选项"></a>写入选项</h3><p>可以使用options()或option(k,v)方法直接传递任何 WriteClient 级别的配置.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">inputDF.write()</span><br><span class="line">.format(<span class="string">&quot;org.apache.hudi&quot;</span>)</span><br><span class="line">.options(clientOpts) <span class="comment">// any of the Hudi client opts can be passed in as well</span></span><br><span class="line">.option(<span class="type">DataSourceWriteOptions</span>.<span class="type">RECORDKEY_FIELD_OPT_KEY</span>(), <span class="string">&quot;_row_key&quot;</span>)</span><br><span class="line">.option(<span class="type">DataSourceWriteOptions</span>.<span class="type">PARTITIONPATH_FIELD_OPT_KEY</span>(), <span class="string">&quot;partition&quot;</span>)</span><br><span class="line">.option(<span class="type">DataSourceWriteOptions</span>.<span class="type">PRECOMBINE_FIELD_OPT_KEY</span>(), <span class="string">&quot;timestamp&quot;</span>)</span><br><span class="line">.option(<span class="type">HoodieWriteConfig</span>.<span class="type">TABLE_NAME</span>, tableName)</span><br><span class="line">.mode(<span class="type">SaveMode</span>.<span class="type">Append</span>)</span><br><span class="line">.save(basePath);</span><br></pre></td></tr></table></figure>
+
+<p>对通过以下方式编写表格有用的选项<code>write.format.option(...)</code><br>Config Class: org.apache.hudi.DataSourceOptions.scala</p>
+<p>hoodie.clustering.async.enabled<br>启用集群服务的运行,在表上发生插入时异步运行.<br>默认值:false(可选)<br>Config Param: ASYNC_CLUSTERING_ENABLE<br>Since Version: 0.7.0</p>
+<p>hoodie.datasource.write.operation<br>是否为写操作执行 upsert、insert 或 bulkinsert.<br>使用 bulkinsert 将新数据加载到表中,然后使用 upsert/insert.<br>批量插入使用基于磁盘的写入路径来扩展以加载大型输入,而无需缓存它.<br>默认值:upsert(可选)<br>Config Param: OPERATION</p>
+<p>hoodie.datasource.write.reconcile.schema<br>当新一批写入具有旧模式的记录,但最新的表模式得到发展时,此配置将升级记录以利用最新的表模式(默认值将注入缺失的字段).<br>否则,写入批处理将失败.<br>默认值:false(可选)<br>Config Param: RECONCILE_SCHEMA</p>
+<p>hoodie.datasource.write.recordkey.field<br>记录关键字段.<br>用作 的recordKey组成部分的值HoodieKey.<br>实际值将通过在字段值上调用 .toString() 来获得.<br>可以使用点表示法指定嵌套字段,例如:a.b.c<br>默认值:uuid(可选)<br>Config Param: RECORDKEY_FIELD</p>
+<p>hoodie.datasource.hive_sync.skip_ro_suffix<br>注册时跳过读取优化表的 _ro 后缀<br>默认值:false(可选)<br>Config Param: HIVE_SKIP_RO_SUFFIX_FOR_READ_OPTIMIZED_TABLE</p>
+<p>hoodie.datasource.write.partitionpath.urlencode<br>在创建文件夹结构之前,我们是否应该对分区路径值进行 url 编码.<br>默认值:false(可选)<br>Config Param: URL_ENCODE_PARTITIONING</p>
+<p>hoodie.datasource.hive_sync.partition_extractor_class<br>实现 PartitionValueExtractor 以提取分区值的类,默认为 &#39;org.apache.hudi.hive.MultiPartKeysValueExtractor&#39;.<br>默认值:org.apache.hudi.hive.MultiPartKeysValueExtractor(可选)<br>Config Param: HIVE_PARTITION_EXTRACTOR_CLASS</p>
+<p>hoodie.datasource.hive_sync.serde_properties<br>Serde 属性到 hive 表.<br>默认值:N/A(必需)<br>Config Param: HIVE_TABLE_SERDE_PROPERTIES</p>
+<p>hoodie.datasource.hive_sync.sync_comment<br>同步表格时是否同步表格列注释.<br>默认值:false(可选)<br>Config Param: HIVE_SYNC_COMMENT</p>
+<p>hoodie.datasource.hive_sync.password<br>使用的hive密码<br>默认值:hive(可选)<br>Config Param: HIVE_PASS</p>
+<p>hoodie.datasource.write.keygenerator.consistent.logical.timestamp.enabled<br>当设置为 true 时,将为逻辑时间戳类型列生成一致的值,例如 timestamp-millis 和 timestamp-micros,无论是否启用了行写入器.<br>默认情况下禁用,以免破坏部署完全行写入器路径或非行写入器路径的管道.<br>例如,如果它保持禁用状态,则带值的时间戳类型的记录键2016-12-29 09:54:00将在行写入器路径中写入时间戳,而在非行写入器路径2016-12-29 09:54:00.0中将写入长值.<br>1483023240000000如果启用,则时间戳值将在两种情况下写入.<br>默认值:false(可选)<br>Config Param: KEYGENERATOR_CONSISTENT_LOGICAL_TIMESTAMP_ENABLED</p>
+<p>hoodie.datasource.hive_sync.support_timestamp<br>具有原始类型 TIMESTAMP_MICROS 的&quot;INT64&quot;转换为配置单元&quot;时间戳&quot;类型.<br>默认情况下禁用以实现向后兼容性.<br>默认值:false(可选)<br>Config Param: HIVE_SUPPORT_TIMESTAMP_TYPE</p>
+<p>hoodie.datasource.hive_sync.create_managed_table<br>是否将表同步为托管表.<br>默认值:false(可选)<br>Config Param: HIVE_CREATE_MANAGED_TABLE</p>
+<p>hoodie.clustering.inline<br>打开内联集群 -每次写入操作完成后将运行集群<br>默认值:false(可选)<br>Config Param: INLINE_CLUSTERING_ENABLE<br>Since Version: 0.7.0</p>
+<p>hoodie.datasource.compaction.async.enable<br>控制是否应该为 MOR 表写入打开异步压缩.<br>默认值:true(可选)<br>Config Param: ASYNC_COMPACT_ENABLE</p>
+<p>hoodie.datasource.meta.sync.enable<br>启用将 Hudi 表与外部元存储或数据目录同步.<br>默认值:false(可选)<br>Config Param: META_SYNC_ENABLED</p>
+<p>hoodie.datasource.write.streaming.ignore.failed.batch<br>配置以指示是否忽略流式微批处理中的任何非异常错误(例如 writestatus 错误)<br>默认值:true(可选)<br>Config Param: STREAMING_IGNORE_FAILED_BATCH</p>
+<p>hoodie.datasource.write.precombine.field<br>在实际写入之前用于 preCombining 的字段.<br>当两条记录具有相同的键值时,我们将选择具有最大值的预组合字段,由 Object.compareTo(..) 确定<br>默认值:ts (可选)<br>Config Param: PRECOMBINE_FIELD</p>
+<p>hoodie.datasource.hive_sync.username<br>hive 用户名使用<br>默认值:hive(可选)<br>Config Param: HIVE_USER</p>
+<p>hoodie.datasource.write.partitionpath.field<br>分区路径字段.<br>HoodieKey 的 partitionPath 组件中使用的值.<br>通过调用 .toString()<br>默认值获得的实际值:N/A(必需)<br>Config Param: PARTITIONPATH_FIELD</p>
+<p>hoodie.datasource.write.streaming.retry.count<br>配置以指示流作业应为失败的微批处理重试多少次.<br>默认值:3(可选)<br>Config Param: STREAMING_RETRY_CNT</p>
+<p>hoodie.datasource.hive_sync.partition_fields<br>表中用于确定 hive 分区列的字段.<br>默认值:(可选)<br>Config Param: HIVE_PARTITION_FIELDS</p>
+<p>hoodie.datasource.hive_sync.sync_as_datasource<br>默认值:true(可选)<br>配置参数:HIVE_SYNC_AS_DATA_SOURCE_TABLE</p>
+<p>hoodie.sql.insert.mode<br>向 pk-table 插入数据时的插入模式.<br>可选模式有:upsert、strict 和 non-strict.<br>对于 upsert 模式,insert 语句对 pk-table 执行 upsert 操作,这将更新重复记录.<br>对于严格模式,insert 语句将保留主键唯一性约束不允许重复记录.<br>而对于非严格模式,hudi 只是对 pk-table 进行插入操作.<br>默认值:upsert(可选)<br>Config Param: SQL_INSERT_MODE</p>
+<p>hoodie.datasource.hive_sync.use_jdbc<br>启用 hive 同步时使用 JDBC<br>默认值:true(可选)<br>Config Param: HIVE_USE_JDBC<br>Deprecated Version: 0.9.0</p>
+<p>hoodie.meta.sync.client.tool.class<br>用于同步到 Metastore 的同步工具类名称.<br>默认为 Hive.<br>默认值:org.apache.hudi.hive.HiveSyncTool(可选)<br>Config Param: META_SYNC_CLIENT_TOOL_CLASS_NAME</p>
+<p>hoodie.datasource.write.keygenerator.class<br>密钥生成器类,实现org.apache.hudi.keygen.KeyGenerator<br>默认值:org.apache.hudi.keygen.SimpleKeyGenerator(可选)<br>Config Param: KEYGENERATOR_CLASS_NAME</p>
+<p>hoodie.datasource.write.payload.class<br>使用的有效负载类.<br>如果您想在更新/插入时滚动自己的合并逻辑,请覆盖它.<br>这将使为 PRECOMBINE_FIELD_OPT_VAL 设置的任何值无效<br>默认值:org.apache.hudi.common.model.OverwriteWithLatestAvroPayload(可选)<br>Config Param: PAYLOAD_CLASS_NAME</p>
+<p>hoodie.datasource.hive_sync.table_properties<br>与表一起存储的其他属性.<br>默认值:N/A(必需)<br>Config Param: HIVE_TABLE_PROPERTIES</p>
+<p>hoodie.datasource.hive_sync.jdbcurl<br>Hive Metastore url<br>默认值:jdbc:hive2://localhost:10000(可选)<br>Config Param: HIVE_URL</p>
+<p>hoodie.datasource.hive_sync.batch_num<br>同步分区到hive时一批分区数.<br>默认值:1000(可选)<br>Config Param: HIVE_BATCH_SYNC_PARTITION_NUM</p>
+<p>hoodie.datasource.hive_sync.assume_date_partitioning<br>假设分区为 yyyy/MM/dd<br>默认值:false(可选)<br>Config Param: HIVE_ASSUME_DATE_PARTITION</p>
+<p>hoodie.datasource.hive_sync.bucket_sync<br>使用存储桶索引时是否同步 hive Metastore 存储桶规范.<br>规范为 &#39;CLUSTERED BY (trace_id) SORTED BY (trace_id ASC) INTO 65536 BUCKETS&#39;<br>默认值:false(可选)<br>Config Param: HIVE_SYNC_BUCKET_SYNC</p>
+<p>hoodie.datasource.hive_sync.auto_create_database<br>如果不存在则自动创建配置单元数据库<br>默认值:true(可选)<br>Config Param: HIVE_AUTO_CREATE_DATABASE</p>
+<p>hoodie.datasource.hive_sync.database<br>我们应该将 hudi 表同步到的目标数据库的名称.<br>默认值:default(可选)<br>Config Param: HIVE_DATABASE</p>
+<p>hoodie.datasource.write.streaming.retry.interval.ms<br>配置以指示应在为失败的微批处理发出重试之前多长时间(以毫秒为单位)<br>默认值:2000(可选)<br>Config Param: STREAMING_RETRY_INTERVAL_MS</p>
+<p>hoodie.sql.bulk.insert.enable<br>当设置为 true 时,sql insert 语句将使用批量插入.<br>默认值:false(可选)<br>Config Param: SQL_ENABLE_BULK_INSERT</p>
+<p>hoodie.datasource.write.commitmeta.key.prefix<br>以此前缀开头的选项键会自动添加到 commit/deltacommit 元数据中.<br>这对于存储检查点信息很有用,以与 hudi 时间线一致的方式<br>默认值:_(可选)<br>Config Param: COMMIT_METADATA_KEYPREFIX</p>
+<p>hoodie.datasource.write.drop.partition.columns<br>设置为 true 时,不会将分区列写入 hudi.<br>默认为假.<br>默认值:false(可选)<br>Config Param: DROP_PARTITION_COLUMNS</p>
+<p>hoodie.datasource.hive_sync.enable<br>设置为 true 时,将表注册/同步到 Apache Hive 元存储.<br>默认值:false(可选)<br>Config Param: HIVE_SYNC_ENABLED</p>
+<p>hoodie.datasource.hive_sync.table<br>我们应该将 hudi 表同步到的目标表的名称.<br>默认值:unknown(可选)<br>Config Param: HIVE_TABLE</p>
+<p>hoodie.datasource.hive_sync.ignore_exceptions<br>与 Hive 同步时忽略异常.<br>默认值:false(可选)<br>Config Param: HIVE_IGNORE_EXCEPTIONS</p>
+<p>hoodie.datasource.hive_sync.use_pre_apache_input_format<br>标记选择 com.uber.hoodie 包下的 InputFormat 而不是 org.apache.hudi 包.<br>当您正在从 com.uber.hoodie 迁移到 org.apache.hudi 时使用它.<br>将表定义迁移到 org.apache.hudi 输入格式后停止使用此<br>默认值:false(可选)<br>Config Param: HIVE_USE_PRE_APACHE_INPUT_FORMAT</p>
+<p>hoodie.datasource.write.table.type<br>此写入的基础数据的表类型.<br>这不能在写入之间改变.<br>默认值:COPY_ON_WRITE(可选)<br>Config Param: TABLE_TYPE</p>
+<p>hoodie.datasource.write.row.writer.enable<br>设置为 true 时,将直接使用 spark 原生表示执行写入操作Row,避免任何额外的转换成本.<br>默认值:true(可选)<br>Config Param: ENABLE_ROW_WRITER</p>
+<p>hoodie.datasource.write.hive_style_partitioning<br>指示是否使用 Hive 样式分区的标志.<br>如果设置为 true,则分区文件夹的名称遵循 <code>&lt;partition_column_name&gt;=&lt;partition_value&gt;</code> 格式.<br>默认 false(分区文件夹的名称只是分区值)<br>默认值:false(可选)<br>Config Param: HIVE_STYLE_PARTITIONING</p>
+<p>hoodie.datasource.meta_sync.condition.sync<br>如果为 true,则仅在架构更改或分区更改等条件下同步.<br>默认值:false(可选)<br>Config Param: HIVE_CONDITIONAL_SYNC</p>
+<p>hoodie.datasource.hive_sync.mode<br>为 Hive 操作选择的模式.<br>有效值为 hms、jdbc 和 hiveql.<br>默认值:N/A(必需)<br>Config Param: HIVE_SYNC_MODE</p>
+<p>hoodie.datasource.write.table.name<br>数据源写入的表名.<br>也用于将表注册到元存储中.<br>默认值:N/A(必需)<br>Config Param: TABLE_NAME</p>
+<p>hoodie.datasource.hive_sync.base_file_format<br>同步的基本文件格式.<br>默认值:PARQUET(可选)<br>Config Param: HIVE_BASE_FILE_FORMAT</p>
+<p>hoodie.deltastreamer.source.kafka.value.deserializer.class<br>kafka客户端使用此类反序列化记录<br>默认值:io.confluent.kafka.serializers.KafkaAvroDeserializer(可选)<br>Config Param: KAFKA_AVRO_VALUE_DESERIALIZER_CLASS<br>Since Version: 0.9.0</p>
+<p>hoodie.datasource.hive_sync.metastore.uris<br>Hive Metastore url<br>默认值:thrift://localhost:9083(可选)<br>Config Param: METASTORE_URIS</p>
+<p>hoodie.datasource.write.insert.drop.duplicates<br>如果设置为 true,则在插入操作期间过滤掉传入数据帧中的所有重复记录.<br>默认值:false(可选)<br>Config Param: INSERT_DROP_DUPS</p>
+<p>hoodie.datasource.write.partitions.to.delete<br>逗号分隔的要删除的分区列表<br>默认值:N/A(必需)<br>Config Param: PARTITIONS_TO_DELETE</p>
+<h3 id="预提交验证器配置"><a href="#预提交验证器配置" class="headerlink" title="预提交验证器配置"></a>预提交验证器配置</h3><p>以下一组配置有助于在提交之前验证新数据.<br>Config Class: org.apache.hudi.config.HoodiePreCommitValidatorConfig</p>
+<p>hoodie.precommit.validators.single.value.sql.queries<br>在提交新数据以验证提交后的状态之前,在表上运行 Spark SQL 查询.<br>多个查询以&quot;;&quot;分隔 支持分隔符.<br>预期结果包含在查询中,以&quot;#&quot;分隔.<br>示例查询:&#39;query1#result1:query2#result2&#39;.<br>注意 <code>&lt;TABLE_NAME&gt;</code>变量应出现在查询中.<br>默认值:(可选)<br>Config Param: SINGLE_VALUE_SQL_QUERIES</p>
+<p>hoodie.precommit.validators.equality.sql.queries<br>在提交新数据之前在表上运行 Spark SQL 查询以验证提交前后的状态.<br>多个查询用&#39;;&#39;分隔 支持分隔符.<br>示例:<code>select count(*) from &lt;TABLE_NAME &gt;&lt;TABLE_NAME &gt;</code>在提交前后被表状态替换.<br>默认值:(可选)<br>Config Param: EQUALITY_SQL_QUERIES</p>
+<p>hoodie.precommit.validators<br>可以调用以验证提交的逗号分隔的类名列表<br>默认值:(可选)<br>Config Param: VALIDATOR_CLASS_NAMES</p>
+<p>hoodie.precommit.validators.inequality.sql.queries<br>在提交新数据之前和之后在表上运行 Spark SQL 查询以验证提交前后的状态.<br>多个查询由&quot;;&quot;分隔 支持分隔符.<br>示例查询:<code>select count(*) from &lt;TABLE_NAME &gt;&lt;TABLE_NAME &gt; where col=null</code> 变量应出现在查询中.<br>默认值:(可选)<br>Config Param: INEQUALITY_SQL_QUERIES</p>
+<h2 id="Flink-Sql配置-1"><a href="#Flink-Sql配置-1" class="headerlink" title="Flink Sql配置"></a>Flink Sql配置</h2><p>这些配置控制 Hudi Flink SQL 源/接收器连接器,提供定义记录键、选择写入操作、指定如何合并记录、启用/禁用异步压缩或选择要读取的查询类型的能力.</p>
+<h3 id="Flink选项-1"><a href="#Flink选项-1" class="headerlink" title="Flink选项"></a>Flink选项</h3><p>使用 SQL 的 Flink 作业可以通过 WITH 子句中的选项进行配置.<br>下面列出了实际的数据源级别配置.<br>Config Class: org.apache.hudi.configuration.FlinkOptions</p>
+<p>compaction.trigger.strategy<br>触发压缩的策略,选项是&#39;num_commits&#39;:当达到N个增量提交时触发压缩.&#39;time_elapsed&#39;:自上次压缩以来经过的时间&gt; N 秒时触发压缩.&#39;num_and_time&#39;:当同时满足 NUM_COMMITS 和 TIME_ELAPSED 时触发压缩.&#39;num_or_time&#39;:当满足 NUM_COMMITS 或 TIME_ELAPSED 时触发压缩.<br>默认为&quot;num_commits&quot;<br>默认值:num_commits(可选)<br>Config Param: COMPACTION_TRIGGER_STRATEGY</p>
+<p>index.state.ttl<br>索引状态 ttl 以天为单位,默认永久存储索引<br>默认值:0.0(可选)<br>Config Param: INDEX_STATE_TTL</p>
+<p>hive_sync.serde_properties<br>Serde 属性到 hive 表,数据格式为 k1=v1 k2=v2<br>默认值:N/A(必需)<br>Config Param: HIVE_SYNC_TABLE_SERDE_PROPERTIES</p>
+<p>hive_sync.table<br>配置单元同步的表名,默认&quot;unknown&quot;<br>默认值:unknown(可选)<br>Config Param: HIVE_SYNC_TABLE</p>
+<p>write.payload.class<br>使用的有效负载类.<br>如果您想在更新/插入时滚动自己的合并逻辑,请覆盖它.<br>这将使为选项设置的任何值无效<br>默认值:org.apache.hudi.common.model.OverwriteWithLatestAvroPayload(可选)<br>Config Param: PAYLOAD_CLASS_NAME</p>
+<p>compaction.tasks<br>执行实际压缩的任务的并行度,默认为 4<br>默认值:4(可选)<br>Config Param: COMPACTION_TASKS</p>
+<p>hoodie.datasource.write.hive_style_partitioning<br>是否使用 Hive 风格的分区.<br>如果设置为 true,则分区文件夹的名称遵循<code>&lt; partition_column_name &gt; = &lt; partition_value &gt;</code>格式.<br>默认 false(分区文件夹的名称只是分区值)<br>默认值:false(可选)<br>Config Param: HIVE_STYLE_PARTITIONING</p>
+<p>table.type<br>要写入的表类型.<br>COPY_ON_WRITE(或)MERGE_ON_READ<br>默认值:COPY_ON_WRITE(可选)<br>Config Param: TABLE_TYPE</p>
+<p>hive_sync.auto_create_db<br>如果 hive 数据库不存在则自动创建,默认为 true<br>默认值:true(可选)<br>Config Param: HIVE_SYNC_AUTO_CREATE_DB</p>
+<p>compaction.timeout.seconds<br>在线压缩到回滚的最大超时时间(秒),默认 20 分钟<br>默认值:1200(可选)<br>Config Param: COMPACTION_TIMEOUT_SECONDS</p>
+<p>hive_sync.username<br>hive 同步的用户名,默认 &#39;hive&#39;<br>默认值:hive(可选)<br>Config Param: HIVE_SYNC_USERNAME</p>
+<p>write.sort.memory<br>以 MB 为单位排序内存,默认 128MB<br>默认值:128(可选)<br>Config Param: WRITE_SORT_MEMORY</p>
+<p>write.bulk_insert.shuffle_input<br>是否为批量插入任务按特定字段打乱输入,默认为 true<br>默认值:true(可选)<br>Config Param: WRITE_BULK_INSERT_SHUFFLE_INPUT</p>
+<p>write.retry.times<br>指示流作业应为失败的检查点批处理重试多少次的标志.<br>默认 3<br>默认值:3(可选)<br>Config Param: RETRY_TIMES</p>
+<p>metadata.enabled<br>启用提供表元数据的内部元数据表,例如级别文件列表,默认禁用<br>默认值:false(可选)<br>Config Param: METADATA_ENABLED</p>
+<p>write.parquet.max.file.size<br>Hudi 写入阶段生成的 parquet 文件的目标大小.<br>对于 DFS,这需要与底层文件系统块大小保持一致以获得最佳性能.<br>默认值:120(可选)<br>Config Param: WRITE_PARQUET_MAX_FILE_SIZE</p>
+<p>clustering.plan.strategy.daybased.skipfromlatest.partitions<br>选择创建 ClusteringPlan 的分区时要从最新跳过的分区数<br>默认值:0(可选)<br>Config Param: CLUSTERING_PLAN_STRATEGY_SKIP_PARTITIONS_FROM_LATEST</p>
+<p>hoodie.bucket.index.hash.field<br>索引键字段.<br>用作散列以查找存储桶 ID 的值.<br>应该是或等于 recordKey 字段的子集.<br>实际值将通过在字段值上调用 .toString() 来获得.<br>可以使用点表示法指定嵌套字段,例如:a.b.c<br>默认值:(可选)<br>Config Param: INDEX_KEY_FIELD</p>
+<p>hoodie.bucket.index.num.buckets<br>每个分区的 Hudi 桶数.<br>仅在使用 Hudi 存储桶索引时受影响.<br>默认值:4(可选)<br>Config Param: BUCKET_INDEX_NUM_BUCKETS</p>
+<p>hive_sync.mode<br>为 Hive 操作选择的模式.<br>有效值为 hms、jdbc 和 hiveql,默认为 &#39;jdbc&#39;<br>默认值:jdbc(可选)<br>Config Param: HIVE_SYNC_MODE</p>
+<p>write.retry.interval.ms<br>标志以指示应在为失败的检查点批处理发出重试之前多长时间(以毫秒为单位).<br>默认为 2000,每次重试时加倍<br>默认值:2000(可选)<br>Config Param: RETRY_INTERVAL_MS</p>
+<p>write.partition.format<br>分区路径格式,仅在&#39;write.datetime.partitioning&#39;为真时有效,默认为:<br>1)&#39;yyyyMMddHH&#39; for timestamp(3) WITHOUT TIME ZONE, LONG, FLOAT, DOUBLE, DECIMAL;<br>2)&#39;yyyyMMdd&#39; for DATE and INT.<br>默认值:N/A(必需)<br>Config Param: PARTITION_FORMAT</p>
+<p>clustering.async.enabled<br>异步集群,默认 false<br>默认值:false(可选)<br>Config Param: CLUSTERING_ASYNC_ENABLED</p>
+<p>clustering.plan.partition.filter.mode<br>用于创建集群计划的分区过滤模式.<br>可用值为:<br>1)NONE:不过滤表分区,因此集群计划将包括所有具有集群候选者的分区.<br>2)RECENT_DAYS:保持分区的连续范围,与配置一起使用 &#39;hoodie.clustering.plan.strategy.daybased.lookback.partitions&#39; 和 &#39;hoodie.clustering.plan.strategy.daybased.skipfromlatest.partitions&#39;.<br>3)SELECTED_PARTITIONS:保留指定范围内的分区<code>[&#39;hoodie.clustering.plan.strategy.cluster.begin.partition&#39;, &#39;hoodie.clustering .plan.strategy.cluster.end.partition&#39;]</code> .<br>默认值:NONE(可选)<br>Config Param: CLUSTERING_PLAN_PARTITION_FILTER_MODE_NAME</p>
+<p>hive_sync.db<br>配置单元同步的数据库名称,默认&quot;default&quot;<br>默认值:default(可选)<br>Config Param: HIVE_SYNC_DB</p>
+<p>clustering.plan.strategy.sort.columns<br>聚类时对数据进行排序的列<br>默认值:(可选)<br>Config Param: CLUSTERING_SORT_COLUMNS</p>
+<p>compaction.schedule.enabled<br>调度压缩计划,默认启用 MOR<br>默认值:true(可选)<br>Config Param: COMPACTION_SCHEDULE_ENABLED</p>
+<p>hive_sync.partition_extractor_class<br>从 HDFS 路径中提取分区值的工具,默认 &#39;SlashEncodedDayPartitionValueExtractor&#39;<br>默认值:org.apache.hudi.hive.SlashEncodedDayPartitionValueExtractor(可选)<br>Config Param: HIVE_SYNC_PARTITION_EXTRACTOR_CLASS_NAME</p>
+<p>write.precombine<br>标志以指示是否在插入/更新插入之前删除重复项.<br>默认情况下,这些情况将接受重复,以获得额外的性能:1)插入操作.2) 更新 MOR 表,MOR 表在读取时删除重复数据<br>默认值:false(可选)<br>Config Param: PRE_COMBINE</p>
+<p>write.batch.size<br>以 MB 为单位的批处理缓冲区大小,用于将数据刷新到下面的文件系统中,默认 256MB<br>默认值:256.0(可选)<br>Config Param: WRITE_BATCH_SIZE</p>
+<p>hoodie.datasource.write.keygenerator.class<br>密钥生成器类,实现将从传入记录中提取密钥<br>默认值:N/A(必需)<br>Config Param: KEYGEN_CLASS_NAME</p>
+<p>index.global.enabled<br>如果有不同分区路径的相同键记录进入,是否更新旧分区路径的索引,默认为true<br>默认值:true(可选)<br>Config Param: INDEX_GLOBAL_ENABLED</p>
+<p>clustering.delta_commits<br>触发集群所需的最大增量提交,默认 4 次提交<br>默认值:4(可选)<br>Config Param: CLUSTERING_DELTA_COMMITS</p>
+<p>path<br>目标hoodie table的基本路径.<br>如果路径不存在,则将创建该路径,否则 Hoodie 表预计将成功初始化<br>默认值:N/A(必需)<br>Config Param: PATH</p>
+<p>index.bootstrap.enabled<br>是否从现有 hoodie 表中引导索引状态,默认 false<br>默认值:false(可选)<br>Config Param: INDEX_BOOTSTRAP_ENABLED</p>
+<p>read.streaming.skip_compaction<br>是否跳过压缩瞬间进行流式读取,有两种情况可以使用此选项来避免读取重复:<br>1)您确定消费者读取速度比任何压缩瞬间都快,通常使用足够长的增量时间压缩策略,例如一周.<br>2)changelog模式已启用,此选项是保持数据完整性的解决方案<br>默认值:false(可选)<br>Config Param: READ_STREAMING_SKIP_COMPACT</p>
+<p>compaction.async.enabled<br>异步压缩,默认为 MOR 启用<br>默认值:true(可选)<br>Config Param: COMPACTION_ASYNC_ENABLED</p>
+<p>hive_sync.ignore_exceptions<br>hive 同步时忽略异常,默认 false<br>默认值:false(可选)<br>Config Param: HIVE_SYNC_IGNORE_EXCEPTIONS</p>
+<p>hive_sync.table_properties<br>与表一起存储的附加属性,数据格式为 k1=v1 k2=v2<br>默认值:N/A(必需)<br>Config Param: HIVE_SYNC_TABLE_PROPERTIES</p>
+<p>write.ignore.failed<br>指示是否忽略任何非异常错误(例如 writestatus 错误)的标志.<br>在检查点批处理中.<br>默认情况下为真(有利于通过数据完整性进行流式传输)<br>默认值:true(可选)<br>Config Param: IGNORE_FAILED</p>
+<p>write.commit.ack.timeout<br>编写器任务完成检查点并等待即时提交成功后的超时限制,仅供内部使用<br>默认值:-1(可选)<br>Config Param: WRITE_COMMIT_ACK_TIMEOUT</p>
+<p>write.operation<br>写入操作,此写入应执行<br>默认值:upsert(可选)<br>Config Param: OPERATION</p>
+<p>hoodie.datasource.write.partitionpath.field<br>分区路径字段.<br>要在 的partitionPath组件处使用的值HoodieKey.<br>调用 .toString() 得到的实际值, default &#39;&#39;<br>Default Value : (可选)<br>Config Param: PARTITION_PATH_FIELD</p>
+<p>write.bucket_assign.tasks<br>Bucket分配任务的并行度,默认为执行环境的并行度<br>默认值:N/A(必填)<br>Config Param: BUCKET_ASSIGN_TASKS</p>
+<p>compaction.delta_commits<br>触发压缩所需的最大增量提交,默认 5 次提交<br>默认值:5(可选)<br>Config Param: COMPACTION_DELTA_COMMITS</p>
+<p>partition.default_name<br>动态分区列值为空/空字符串时的默认分区名称<br>默认值:HIVE_DEFAULT_PARTITION(可选)<br>Config Param: PARTITION_DEFAULT_NAME</p>
+<p>write.bulk_insert.sort_input<br>是否按特定字段对批量插入任务的输入进行排序,默认为 true<br>默认值:true(可选)<br>Config Param: WRITE_BULK_INSERT_SORT_INPUT</p>
+<p>clustering.plan.strategy.small.file.limit<br>小于此处指定大小的文件是集群的候选者,默认 600 MB<br>默认值:600(可选)<br>Config Param: CLUSTERING_PLAN_STRATEGY_SMALL_FILE_LIMIT</p>
+<p>clustering.schedule.enabled<br>调度集群计划,默认 false<br>默认值:false(可选)<br>Config Param: CLUSTERING_SCHEDULE_ENABLED</p>
+<p>压缩.target_io<br>每次压缩的目标 IO(以 MB 为单位)(读取和写入),默认 500 GB<br>默认值:512000(可选)<br>Config Param: COMPACTION_TARGET_IO</p>
+<p>clustering.plan.strategy.class<br>配置为提供一个策略类(ClusteringPlanStrategy 的子类)来创建集群计划,即选择要集群的文件组.<br>默认策略,查看最后 N(由 clustering.plan.strategy.daybased.lookback.partitions 确定)基于天的分区选择这些分区中的小文件片.<br>默认值:org.apache.hudi.client.clustering.plan.strategy.FlinkSizeBasedClusteringPlanStrategy(可选)<br>Config Param: CLUSTERING_PLAN_STRATEGY_CLASS</p>
+<p>write.log_block.size<br>日志文件的最大日志块大小(以 MB 为单位),默认 128MB<br>默认值:128(可选)<br>Config Param: WRITE_LOG_BLOCK_SIZE</p>
+<p>write.tasks<br>实际写入任务的并行度,默认为 4<br>默认值:4(可选)<br>Config Param: WRITE_TASKS</p>
+<p>clean.async.enabled<br>是否在新提交时立即清理旧提交,默认启用<br>默认值:true(可选)<br>Config Param: CLEAN_ASYNC_ENABLED</p>
+<p>clean.retain_commits<br>要保留的提交数.<br>因此数据将保留 num_of_commits * time_between_commits(预定).<br>这也直接转化为您可以在此表上增量拉多少,默认 30<br>默认值:30(可选)<br>Config Param: CLEAN_RETAIN_COMMITS</p>
+<p>archive.max_commits<br>在将旧提交归档到顺序日志之前要保留的最大提交数,默认 50<br>默认值:50(可选)<br>Config Param: ARCHIVE_MAX_COMMITS</p>
+<p>write.index_bootstrap.tasks<br>执行索引引导的任务的并行度,默认为执行环境的并行度<br>默认值:N/A(必填)<br>Config Param: INDEX_BOOTSTRAP_TASKS</p>
+<p>write.task.max.size<br>写入任务的最大内存MB,当达到阈值时,它会刷新最大大小的数据桶以避免OOM,默认1GB<br>默认值:1024.0(可选)<br>Config Param: WRITE_TASK_MAX_SIZE</p>
+<p>hoodie.datasource.write.recordkey.field<br>记录关键字段.<br>用作HoodieKey的recordKey组成部分的值.<br>实际值将通过在字段值上调用 .toString() 来获得.<br>可以使用点表示法指定嵌套字段,例如:a.b.c<br>默认值:uuid(可选)<br>Config Param: RECORD_KEY_FIELD</p>
+<p>compaction.delta_seconds<br>触发压缩所需的最大增量秒时间,默认 1 小时<br>默认值:3600(可选)<br>Config Param: COMPACTION_DELTA_SECONDS</p>
+<p>hive_sync.partition_fields<br>hive 同步的分区字段,默认 &#39;&#39;<br>默认值:(可选)<br>Config Param: HIVE_SYNC_PARTITION_FIELDS</p>
+<p>read.streaming.enabled<br>是否读取为streaming source,默认 false<br>默认值:false(可选)<br>Config Param: READ_AS_STREAMING</p>
+<p>hoodie.datasource.write.keygenerator.type<br>密钥生成器类型,实现将从传入记录中提取密钥<br>默认值:SIMPLE(可选)<br>Config Param: KEYGEN_TYPE</p>
+<p>clean.retain_file_versions<br>要保留的文件版本数.<br>默认值 5<br>默认值:5(可选)<br>Config Param: CLEAN_RETAIN_FILE_VERSIONS</p>
+<p>compaction.max_memory<br>用于压缩可溢出映射的最大内存(MB),默认 100MB<br>默认值:100(可选)<br>Config Param: COMPACTION_MAX_MEMORY</p>
+<p>hive_sync.support_timestamp<br>具有原始类型 TIMESTAMP_MICROS 的 INT64 转换为 hive 时间戳类型.<br>默认情况下禁用以实现向后兼容性.<br>默认值:true(可选)<br>Config Param: HIVE_SYNC_SUPPORT_TIMESTAMP</p>
+<p>hive_sync.skip_ro_suffix<br>注册时跳过读取优化表的_ro后缀,默认false<br>默认值:false(可选)<br>Config Param: HIVE_SYNC_SKIP_RO_SUFFIX</p>
+<p>metadata.compaction.delta_commits<br>元数据表的最大增量提交以触发压缩,默认 10<br>默认值:10(可选)<br>Config Param: METADATA_COMPACTION_DELTA_COMMITS</p>
+<p>hive_sync.assume_date_partitioning<br>假设分区为 yyyy/mm/dd,默认为 false<br>默认值:false(可选)<br>Config Param: HIVE_SYNC_ASSUME_DATE_PARTITION</p>
+<p>write.parquet.block.size<br>Parquet RowGroup 大小.<br>建议将其设置得足够大,以便可以通过将足够多的列值打包到单个行组中来分摊扫描成本.<br>默认值:120(可选)<br>Config Param: WRITE_PARQUET_BLOCK_SIZE</p>
+<p>clustering.plan.strategy.target.file.max.bytes<br>每个组可以产生&#39;N&#39;(CLUSTERING_MAX_GROUP_SIZE/CLUSTERING_TARGET_FILE_SIZE)输出文件组,默认1 GB<br>默认值:1073741824(可选)<br>Config Param: CLUSTERING_PLAN_STRATEGY_TARGET_FILE_MAX_BYTES</p>
+<p>clustering.tasks<br>执行实际集群的任务的并行度,默认为 4<br>默认值:4(可选)<br>Config Param: CLUSTERING_TASKS</p>
+<p>hive_sync.enable<br>将 Hive 元异步同步到 HMS,默认 false<br>默认值:false(可选)<br>Config Param: HIVE_SYNC_ENABLED</p>
+<p>changelog.enabled<br>是否保留所有中间更改,启用时我们尝试保留记录的所有更改:<br>1).接收器接受 UPDATE_BEFORE 消息.<br>2).源尝试发出记录的每个更改.<br>语义是尽力而为,因为压缩作业最终会将记录的所有更改合并为一个.<br>默认 false 具有 UPSERT 语义<br>默认值:false(可选)<br>Config Param: CHANGELOG_ENABLED</p>
+<p>read.streaming.check-interval<br>检查 SECOND 的流式读取间隔,默认 1 分钟<br>默认值:60(可选)<br>Config Param: READ_STREAMING_CHECK_INTERVAL</p>
+<p>hoodie.datasource.merge.type<br>对于读取表上的合并快照查询.<br>使用这个键来定义payloads是如何被合并的,在<br>1)skip_merge:读取基础文件记录加上日志文件记录.<br>2)payload_combine:先读取base文件记录,对于base文件中的每条记录,检查key是否在日志文件记录中(将base文件和日志文件记录的key相同的两条记录结合起来),然后读取左边的日志文件记录<br>默认值:payload_combine(可选)<br>Config Param: MERGE_TYPE</p>
+<p>read.tasks<br>执行实际读取的任务的并行度,默认为 4<br>默认值:4(可选)<br>Config Param: READ_TASKS</p>
+<p>read.end-commit<br>结束提交即时读取,提交时间格式应为 &#39;yyyyMMddHHmmss&#39;<br>默认值:N/A(必填)<br>Config Param: READ_END_COMMIT</p>
+<p>write.log.max.size<br>在滚动到下一个版本之前,日志文件允许的最大大小(以 MB 为单位),默认 1GB<br>默认值:1024(可选)<br>Config Param: WRITE_LOG_MAX_SIZE</p>
+<p>clustering.plan.strategy.daybased.lookback.partitions<br>要列出以创建 ClusteringPlan 的分区数,默认为 2<br>默认值:2(可选)<br>Config Param: CLUSTERING_TARGET_PARTITIONS</p>
+<p>hive_sync.file_format<br>hive 同步的文件格式,默认 &#39;PARQUET&#39;<br>默认值:PARQUET(可选)<br>Config Param: HIVE_SYNC_FILE_FORMAT</p>
+<p>clustering.plan.strategy.max.num.groups<br>作为 ClusteringPlan 的一部分创建的最大组数.<br>增加组将增加并行度,默认为 30<br>默认值:30(可选)<br>Config Param: CLUSTERING_MAX_NUM_GROUPS</p>
+<p>index.type<br>Flink 写作业的索引类型,默认使用 state backed index.<br>默认值:FLINK_STATE(可选)<br>Config Param: INDEX_TYPE</p>
+<p>read.data.skipping.enabled<br>启用数据跳过,允许查询利用索引通过跳过文件来减少搜索空间<br>默认值:false(可选)<br>Config Param: READ_DATA_SKIPPING_ENABLED</p>
+<p>clean.policy<br>清理策略来管理 Hudi 表.<br>可用选项:KEEP_LATEST_COMMITS、KEEP_LATEST_FILE_VERSIONS、KEEP_LATEST_BY_HOURS.<br>默认为 KEEP_LATEST_COMMITS.<br>默认值:KEEP_LATEST_COMMITS(可选)<br>Config Param: CLEAN_POLICY</p>
+<p>hive_sync.password<br>hive 同步密码,默认 &#39;hive&#39;<br>默认值:hive(可选)<br>Config Param: HIVE_SYNC_PASSWORD</p>
+<p>hive_sync.use_jdbc<br>启用 hive 同步时使用 JDBC,默认为 true<br>默认值:true(可选)<br>Config Param: HIVE_SYNC_USE_JDBC</p>
+<p>hive_sync.jdbc_url<br>用于 Hive 同步的 Jdbc URL,默认为 &#39;jdbc:hive2://localhost:10000&#39;<br>默认值:jdbc:hive2://localhost:10000(可选)<br>Config Param: HIVE_SYNC_JDBC_URL</p>
+<p>read.start-commit<br>开始提交即时读取,提交时间格式应为&#39;yyyyMMddHHmmss&#39;,默认从最新即时读取流式读取<br>默认值:N/A(必填)<br>Config Param: READ_START_COMMIT</p>
+<p>archive.min_commits<br>在将旧提交归档到顺序日志之前要保留的最小提交数,默认 40<br>默认值:40(可选)<br>Config Param: ARCHIVE_MIN_COMMITS</p>
+<p>index.partition.regex<br>分区路径匹配时是否加载分区,默认*<br>默认值:.*(可选)<br>Config Param: INDEX_PARTITION_REGEX</p>
+<p>hoodie.table.name<br>要注册到 Hive 元存储的表名<br>默认值:N/A(必需)<br>Config Param: TABLE_NAME</p>
+<p>hoodie.datasource.write.partitionpath.urlencode<br>是否对分区路径url进行编码,默认false<br>默认值:false(可选)<br>Config Param: URL_ENCODE_PARTITIONING</p>
+<p>source.avro-schema.path<br>源 avro schema 文件路径,解析后的 schema 用于反序列化<br>默认值:N/A (必填)<br>Config Param: SOURCE_AVRO_SCHEMA_PATH</p>
+<p>write.insert.cluster<br>是否合并插入模式的小文件,如果为true,由于现有小文件的读/写,写入吞吐量会降低,仅对COW表有效,默认false<br>默认值:false(可选)<br>Config Param: INSERT_CLUSTER</p>
+<p>source.avro-schema<br>源 avro 架构字符串,解析后的架构用于反序列化<br>默认值:N/A(必需)<br>Config Param: SOURCE_AVRO_SCHEMA</p>
+<p>hive_sync.conf.dir<br>hive-site.xml所在的hive配置目录,该文件应该放在客户端机器上<br>默认值:N/A(必填)<br>Config Param: HIVE_SYNC_CONF_DIR</p>
+<p>write.rate.limit<br>每秒写入记录速率限制,防止流量抖动,提高稳定性,默认 0(无限制)<br>默认值:0(可选)<br>Config Param: WRITE_RATE_LIMIT</p>
+<p>clean.retain_hours<br>需要保留提交的小时数.<br>与为清理服务保留的提交数量相比,此配置提供了更灵活的选项.<br>设置此属性可确保清除所有文件,但文件组中的最新文件对应于提交时间早于配置的保留小时数的提交.<br>默认值:24(可选)<br>Config Param: CLEAN_RETAIN_HOURS</p>
+<p>read.utc-timezone<br>使用 UTC 时区或本地时区来进行纪元时间和 LocalDateTime 之间的转换.<br>Hive 0.x/1.x/2.x 使用本地时区.<br>但是 Hive 3.x 使用 UTC 时区,默认为 true<br>默认值:true(可选)<br>Config Param: UTC_TIMEZONE</p>
+<p>hoodie.datasource.query.type<br>决定如何读取数据文件,<br>1)Snapshot模式(获取最新视图,基于行和列数据).<br>2)incremental模式(从instantTime开始的新数据).<br>3)Read Optimized模式(获取最新视图,基于列数据).<br>默认:snapshot<br>默认值:snapshot(可选)<br>Config Param: QUERY_TYPE</p>
+<p>write.precombine.field<br>在实际写入之前用于 preCombining 的字段.<br>当两条记录具有相同的键值时,我们将选择具有最大值的预组合字段,由 Object.compareTo(..) 确定<br>默认值:ts (可选)<br>Config Param: PRECOMBINE_FIELD</p>
+<p>write.parquet.page.size<br>Parquet 页面大小.<br>页是 parquet 文件中的读取单位.<br>在一个块内,页面被单独压缩.<br>默认值:1(可选)<br>Config Param: WRITE_PARQUET_PAGE_SIZE</p>
+<p>hive_sync.metastore.uris<br>用于 hive 同步的 Metastore uris,默认 &#39;&#39;<br>默认值:(可选)<br>Config Param: HIVE_SYNC_METASTORE_URIS</p>
+<p>write.merge.max_memory<br>合并的最大内存 MB,默认 100MB<br>默认值:100(可选)<br>Config Param: WRITE_MERGE_MAX_MEMORY</p>
+<h2 id="客户端配置"><a href="#客户端配置" class="headerlink" title="客户端配置"></a>客户端配置</h2><p>在内部,Hudi 数据源使用基于 RDD 的 HoodieWriteClient API 来实际执行对存储的写入.<br>这些配置提供了对文件大小、压缩、并行性、压缩、写入模式、清理等较低级别方面的深度控制.<br>尽管 Hudi 提供了合理的默认值,但有时可能需要调整这些配置以针对特定工作负载进行优化.</p>
+<h3 id="布局配置"><a href="#布局配置" class="headerlink" title="布局配置"></a>布局配置</h3><p>控制存储布局和数据分布的配置,它定义了文件在表中的组织方式.<br>Config Class: org.apache.hudi.config.HoodieLayoutConfig</p>
+<p>hoodie.storage.layout.type<br>存储布局类型.<br>可能的选项是<code>[DEFAULT | BUCKET]</code><br>默认值:DEFAULT(可选)<br>Config Param: LAYOUT_TYPE</p>
+<p>hoodie.storage.layout.partitioner.class<br>Partitioner 类,用于以特定方式分配数据.<br>默认值:N/A(必需)<br>Config Param: LAYOUT_PARTITIONER_CLASS_NAME</p>
+<h3 id="编写提交回调配置"><a href="#编写提交回调配置" class="headerlink" title="编写提交回调配置"></a>编写提交回调配置</h3><p>控制 HTTP 端点的回调行为,以在 hudi 表上推送通知.<br>Config Class: org.apache.hudi.config.HoodieWriteCommitCallbackConfig</p>
+<p>hoodie.write.commit.callback.on<br>打开/关闭提交回调.<br>默认关闭.<br>默认值:false(可选)<br>Config Param: TURN_CALLBACK_ON<br>Since Version: 0.6.0</p>
+<p>hoodie.write.commit.callback.http.url<br>与回调消息一起发送的回调主机<br>默认值:N/A(必需)<br>Config Param: CALLBACK_HTTP_URL<br>Since Version: 0.6.0</p>
+<p>hoodie.write.commit.callback.http.timeout.seconds<br>以秒为单位的回调超时.<br>默认为 3<br>默认值:3(可选)<br>Config Param: CALLBACK_HTTP_TIMEOUT_IN_SECONDS<br>Since Version: 0.6.0</p>
+<p>hoodie.write.commit.callback.class<br>回调类的完整路径,必须是 HoodieWriteCommitCallback 类的子类,默认为 org.apache.hudi.callback.impl.HoodieWriteCommitHttpCallback<br>默认值:org.apache.hudi.callback.impl.HoodieWriteCommitHttpCallback(可选)<br>Config Param: CALLBACK_CLASS_NAME<br>Since Version: 0.6.0</p>
+<p>hoodie.write.commit.callback.http.api.key<br>Http 回调 API 密钥.<br>hudi_write_commit_http_callback 默认<br>默认值:hudi_write_commit_http_callback(可选)<br>Config Param: CALLBACK_HTTP_API_KEY_VALUE<br>Since Version: 0.6.0</p>
+<h3 id="Clean配置-1"><a href="#Clean配置-1" class="headerlink" title="Clean配置"></a>Clean配置</h3><p>清理(回收旧的/未使用的文件组/切片).<br>Config Class: org.apache.hudi.config.HoodieCleanConfig</p>
+<p>hoodie.cleaner.fileversions.retained<br>使用 KEEP_LATEST_FILE_VERSIONS 清理策略时,清理期间每个文件组中要保留的最小文件片数.<br>默认值:3(可选)<br>Config Param: CLEANER_FILE_VERSIONS_RETAINED</p>
+<p>hoodie.clean.max.commits<br>在最后一次清理操作之后,在尝试安排新清理之前的提交数.<br>默认值:1(可选)<br>Config Param: CLEAN_MAX_COMMITS</p>
+<p>hoodie.clean.allow.multiple<br>允许通过启用此配置来安排/执行多个清理.<br>如果用户希望严格确保清理请求应该是互斥的,即如果另一个清理尚未完成,则不会安排第二次清理以避免重复清理相同的文件,他们可能希望禁用此配置.<br>默认值:true(可选)<br>Config Param: ALLOW_MULTIPLE_CLEANS<br>Since Version: 0.11.0</p>
+<p>hoodie.clean.automatic<br>启用后,每次提交后都会立即调用清理表服务,以删除较旧的文件切片.<br>建议启用此功能,以确保元数据和数据存储增长受到限制.<br>默认值:true(可选)<br>Config Param: AUTO_CLEAN</p>
+<p>hoodie.cleaner.parallelism<br>清洁操作的平行度.<br>如果清洁变慢,请增加此值.<br>默认值:200(可选)<br>Config Param: CLEANER_PARALLELISM_VALUE</p>
+<p>hoodie.cleaner.incremental.mode<br>启用后,自上次清洁器运行以来,每次清洁器服务运行的计划都是根据时间线中的事件增量计算的.<br>这比为每个计划获取完整表的列表(即使使用元数据表)要高效得多.<br>默认值:true(可选)<br>Config Param: CLEANER_INCREMENTAL_MODE_ENABLE</p>
+<p>hoodie.clean.async<br>仅在打开 hoodie.clean.automatic 时适用.<br>开启时会与写入运行更清晰的异步,这可以加快整体写入性能.<br>默认值:false(可选)<br>Config Param: ASYNC_CLEAN</p>
+<p>hoodie.clean.trigger.strategy<br>控制如何安排清洁.<br>有效选项:NUM_COMMITS<br>默认值:NUM_COMMITS(可选)<br>Config Param: CLEAN_TRIGGER_STRATEGY</p>
+<p>hoodie.cleaner.delete.bootstrap.base.file<br>当设置为 true 时,cleaner 还会在清理框架基础文件时删除引导基础文件.<br>如果您想确保随着时间的推移回收引导数据集存储,请将此设置为 true,因为表会接收更新/删除.<br>启用此功能的另一个原因是确保驻留在引导程序基本文件中的数据也被物理删除,以遵守数据隐私执行流程.<br>默认值:false(可选)<br>Config Param: CLEANER_BOOTSTRAP_BASE_FILE_ENABLE</p>
+<p>hoodie.cleaner.hours.retained<br>需要保留提交的小时数.<br>与为清理服务保留的提交数量相比,此配置提供了更灵活的选项.<br>设置此属性可确保清除所有文件,但文件组中的最新文件对应于提交时间早于配置的保留小时数的提交.<br>默认值:24(可选)<br>Config Param: CLEANER_HOURS_RETAINED</p>
+<p>hoodie.cleaner.commits.retained<br>要保留的提交数,无需清理.<br>这将保留 num_of_commits * time_between_commits(预定).<br>这也直接转化为表支持增量查询的数据保留量.<br>默认值:10(可选)<br>Config Param: CLEANER_COMMITS_RETAINED</p>
+<p>hoodie.cleaner.policy.failed.writes<br>要使用的失败写入的清理策略.<br>Hudi 将删除任何写入失败的文件以回收空间.<br>选择在每个写入器启动之前急切地执行失败写入的回滚(仅支持单个写入器)或由清洁器延迟执行(多写入器需要)<br>默认值:EAGER(可选)<br>Config Param: FAILED_WRITES_CLEANER_POLICY</p>
+<p>hoodie.cleaner.policy<br>要使用的清洁政策.<br>清理服务删除旧的文件分片文件以回收空间.<br>默认情况下,cleaner 会保留由最后 N 次提交写入的文件切片,由 hoodie.cleaner.commits.retained 确定 长时间运行的查询计划可能经常引用较旧的文件切片,并且如果在查询有机会之前清理这些文件切片,则会中断跑步.<br>因此,最好确保数据的保留时间超过最大查询执行时间<br>默认值:KEEP_LATEST_COMMITS(可选)<br>Config Param: CLEANER_POLICY</p>
+<h3 id="元存储配置"><a href="#元存储配置" class="headerlink" title="元存储配置"></a>元存储配置</h3><p>Hudi Metastore 使用的配置.<br>Config Class: org.apache.hudi.common.config.HoodieMetastoreConfig</p>
+<p>hoodie.metastore.uris<br>Metastore 服务器 uris<br>默认值:thrift://localhost:9090(可选)<br>Config Param: METASTORE_URLS</p>
+<p>hoodie.metastore.enable<br>使用 metastore 服务器存储 hoodie 表元数据<br>默认值:false(可选)<br>Config Param: METASTORE_ENABLE</p>
+<p>hoodie.metastore.connect.retries<br>打开与 Metastore 的连接时的重试次数<br>默认值:3(可选)<br>Config Param: METASTORE_CONNECTION_RETRIES</p>
+<p>hoodie.metastore.connect.retry.delay<br>客户端在连续连接尝试之间等待的秒数<br>默认值:1(可选)<br>Config Param: METASTORE_CONNECTION_RETRY_DELAY</p>
+<h3 id="表配置"><a href="#表配置" class="headerlink" title="表配置"></a>表配置</h3><p>在 Hudi 表上持续写入和读取的配置,如基础、日志文件格式、表名、创建模式、表版本布局.<br>配置从 hoodie.properties 加载,这些属性通常在将路径初始化为 hoodie 基本路径时设置,并且在表的生命周期内很少更改.<br>编写器/查询的配置每次都针对这些进行验证以确保兼容性.<br>Config Class: org.apache.hudi.common.table.HoodieTableConfig</p>
+<p>hoodie.table.precombine.field<br>在实际写入之前用于 preCombining 的字段.<br>默认情况下,当两条记录具有相同的键值时,将选取由 Object.compareTo(..) 确定的预组合字段的最大值.<br>默认值:N/A(必需)<br>Config Param: PRECOMBINE_FIELD</p>
+<p>hoodie.archivelog.folder<br>元文件夹下的路径,用于存储存档的时间线瞬间.<br>默认值:archived(可选)<br>Config Param: ARCHIVELOG_FOLDER</p>
+<p>hoodie.table.type<br>此写入的基础数据的表类型.<br>这不能在写入之间改变.<br>默认值:COPY_ON_WRITE(可选)<br>Config Param: TYPE</p>
+<p>hoodie.table.timeline.timezone<br>用户可以设置 hoodie 提交时间线时区,例如 utc、local 等.<br>local是默认<br>默认值:LOCAL(可选)<br>Config Param: TIMELINE_TIMEZONE</p>
+<p>hoodie.partition.metafile.use.base.format<br>如果为真,则分区元文件以与此数据集的基本文件相同的格式保存(例如 Parquet / ORC).<br>如果为 false(默认),则分区元文件将保存为属性文件.<br>默认值:false(可选)<br>Config Param: PARTITION_METAFILE_USE_BASE_FORMAT</p>
+<p>hoodie.table.checksum<br>表校验和用于防止 HDFS 中的部分写入.<br>它被添加为 hoodie.properties 中的最后一个条目,然后用于在读取表配置时进行验证.<br>默认值:N/A(必需)<br>Config Param: TABLE_CHECKSUM<br>Since Version: 0.11.0</p>
+<p>hoodie.table.create.schema<br>第一次创建表时使用的模式.<br>默认值:N/A(必需)<br>Config Param: CREATE_SCHEMA</p>
+<p>hoodie.table.recordkey.fields<br>用于唯一标识表的列.<br>这些字段的连接值用作 HoodieKey 的记录键组件.<br>默认值:N/A(必需)<br>Config Param: RECORDKEY_FIELDS</p>
+<p>hoodie.table.log.file.format<br>用于增量日志的日志格式.<br>默认值:HOODIE_LOG(可选)<br>Config Param: LOG_FILE_FORMAT</p>
+<p>hoodie.bootstrap.index.enable<br>无论是否,这是一个自举表,定义了自举基础数据和映射索引,默认为 true.<br>默认值:true(可选)<br>Config Param: BOOTSTRAP_INDEX_ENABLE</p>
+<p>hoodie.table.metadata.partitions<br>已完全构建并与数据表同步的元数据分区的逗号分隔列表.<br>这些分区可供读者使用<br>默认值:N/A(必需)<br>Config Param: TABLE_METADATA_PARTITIONS<br>Since Version: 0.11.0</p>
+<p>hoodie.table.metadata.partitions.inflight<br>正在构建的元数据分区的逗号分隔列表.<br>这些分区尚未准备好供读者使用.<br>默认值:N/A(必需)<br>Config Param: TABLE_METADATA_PARTITIONS_INFLIGHT<br>Since Version: 0.11.0</p>
+<p>hoodie.table.partition.fields<br>用于对表进行分区的字段.<br>这些字段的连接值用作分区路径,通过调用 toString()<br>默认值:N/A(必需)<br>Config Param: PARTITION_FIELDS</p>
+<p>hoodie.populate.meta.fields<br>启用后,填充所有元字段.<br>禁用时,不会填充元字段,增量查询将不起作用.<br>这仅用于批处理的附加/不可变数据<br>默认值:true(可选)<br>Config Param: POPULATE_META_FIELDS</p>
+<p>hoodie.compaction.payload.class<br>用于执行压缩的有效负载类,即将增量日志与当前基本文件合并,然后生成一个新的基本文件.<br>默认值:org.apache.hudi.common.model.OverwriteWithLatestAvroPayload(可选)<br>Config Param: PAYLOAD_CLASS_NAME</p>
+<p>hoodie.bootstrap.index.class<br>要使用的实现,用于将基本文件映射到包含实际数据的引导程序基本文件.<br>默认值:org.apache.hudi.common.bootstrap.index.HFileBootstrapIndex(可选)<br>Config Param: BOOTSTRAP_INDEX_CLASS_NAME</p>
+<p>hoodie.datasource.write.partitionpath.urlencode<br>在创建文件夹结构之前,我们是否应该对分区路径值进行 url 编码.<br>默认值:false(可选)<br>Config Param: URL_ENCODE_PARTITIONING</p>
+<p>hoodie.datasource.write.hive_style_partitioning<br>指示是否使用 Hive 样式分区的标志.<br>如果设置为 true,则分区文件夹的名称遵循 <code>&lt;partition_column_name&gt;=&lt;partition_value&gt;</code> 格式.<br>默认 false(分区文件夹的名称只是分区值)<br>默认值:false(可选)<br>Config Param: HIVE_STYLE_PARTITIONING_ENABLE</p>
+<p>hoodie.table.keygenerator.class<br>hoodie table的密钥生成器类属性<br>默认值:N/A(必需)<br>Config Param: KEY_GENERATOR_CLASS_NAME</p>
+<p>hoodie.table.version<br>表的版本,用于在具有潜在破坏/向后兼容更改的版本之间运行升级/降级步骤.<br>默认值:ZERO(可选)<br>Config Param: VERSION</p>
+<p>hoodie.table.base.file.format<br>存储所有基本文件数据的基本文件格式.<br>默认值:PARQUET(可选)<br>Config Param: BASE_FILE_FORMAT</p>
+<p>hoodie.bootstrap.base.path<br>需要作为 Hudi 表引导的数据集的基本路径<br>默认值:N/A(必需)<br>Config Param: BOOTSTRAP_BASE_PATH</p>
+<p>hoodie.datasource.write.drop.partition.columns<br>设置为 true 时,不会将分区列写入 hudi.<br>默认为假.<br>默认值:false(可选)<br>Config Param: DROP_PARTITION_COLUMNS</p>
+<p>hoodie.database.name<br>增量查询时使用的数据库名.<br>如果增量查询时不同数据库的表名相同,我们可以设置它来限制特定数据库下的表名<br>默认值:N/A(必填)<br>Config Param: DATABASE_NAME</p>
+<p>hoodie.timeline.layout.version<br>表格使用的时间线版本.<br>默认值:N/A(必需)<br>Config Param: TIMELINE_LAYOUT_VERSION</p>
+<p>hoodie.table.name<br>将用于向 Hive 注册的表名.<br>需要在运行中相同.<br>默认值:N/A(必需)<br>Config Param: NAME</p>
+<h3 id="内存配置"><a href="#内存配置" class="headerlink" title="内存配置"></a>内存配置</h3><p>控制压缩和合并的内存使用,由 Hudi 在内部执行.<br>Config Class: org.apache.hudi.config.HoodieMemoryConfig</p>
+<p>hoodie.memory.merge.fraction<br>此分数乘以用户内存分数 (1 -spark.memory.fraction) 以获得在合并期间使用的堆空间的最终分数<br>默认值:0.6(可选)<br>Config Param: MAX_MEMORY_FRACTION_FOR_MERGE</p>
+<p>hoodie.memory.dfs.buffer.max.size<br>用于控制 dfs 输入流缓冲区大小的最大内存(以字节为单位)的属性<br>默认值:16777216(可选)<br>Config Param: MAX_DFS_STREAM_BUFFER_SIZE</p>
+<p>hoodie.memory.writestatus.failure.fraction<br>属性控制失败记录的多少,我们向驱动程序报告异常.<br>默认值为 10%.<br>如果设置为 100%,有很多故障,这可能会导致内存压力,导致 OOM 并掩盖实际数据错误.<br>默认值:0.1(可选)<br>Config Param: WRITESTATUS_FAILURE_FRACTION</p>
+<p>hoodie.memory.compaction.fraction<br>HoodieCompactedLogScanner 读取日志块,将记录转换为 HoodieRecords,然后合并这些日志块和记录.<br>在任何时候,日志块中的条目数都可以小于或等于相应 parquet 文件中的条目数.<br>这可能会导致 Scanner 中出现 OOM.<br>因此,可溢出映射有助于减轻内存压力.<br>使用此配置设置可溢出映射的最大允许内存占用<br>默认值:0.6(可选)<br>Config Param: MAX_MEMORY_FRACTION_FOR_COMPACTION</p>
+<p>hoodie.memory.merge.max.size<br>在溢出到本地存储之前,用于合并操作的最大内存量(以字节为单位).<br>默认值:1073741824(可选)<br>Config Param: MAX_MEMORY_FOR_MERGE</p>
+<p>hoodie.memory.spillable.map.path<br>可溢出地图的默认文件路径前缀<br>默认值:/tmp/(可选)<br>Config Param: SPILLABLE_MAP_BASE_PATH</p>
+<p>hoodie.memory.compaction.max.size<br>在溢出到本地存储之前,用于压缩操作的最大内存量(以字节为单位).<br>默认值:N/A(必需)<br>Config Param: MAX_MEMORY_FOR_COMPACTION</p>
+<h3 id="基于-DynamoDB-的锁配置"><a href="#基于-DynamoDB-的锁配置" class="headerlink" title="基于 DynamoDB 的锁配置"></a>基于 DynamoDB 的锁配置</h3><p>控制 Hudi 表的写入者之间的并发控制所需的基于 DynamoDB 的锁定机制的配置.<br>Hudi 自己的表服务之间的并发是在内部自动管理的.<br>Config Class: org.apache.hudi.config.DynamoDbBasedLockConfig</p>
+<p>hoodie.write.lock.dynamodb.billing_mode<br>对于基于 DynamoDB 的锁提供程序,默认为 PAY_PER_REQUEST 模式<br>默认值:PAY_PER_REQUEST(可选)<br>Config Param: DYNAMODB_LOCK_BILLING_MODE<br>Since Version: 0.10.0</p>
+<p>hoodie.write.lock.dynamodb.table<br>对于基于 DynamoDB 的锁提供程序,作为锁表的 DynamoDB 表的名称<br>默认值:N/A(必需)<br>Config Param: DYNAMODB_LOCK_TABLE_NAME<br>Since Version: 0.10.0</p>
+<p>hoodie.write.lock.dynamodb.region<br>对于基于 DynamoDB 的锁定提供程序,Amazon DynamoDB 服务的终端节点中使用的区域.<br>将尝试首先从 AWS_REGION 环境变量中获取它.<br>如果找不到,默认使用 us-east-1<br>默认值:us-east-1(可选)<br>Config Param: DYNAMODB_LOCK_REGION<br>Since Version: 0.10.0</p>
+<p>hoodie.write.lock.dynamodb.partition_key<br>对于基于 DynamoDB 的锁提供程序,DynamoDB 锁表的分区键.<br>每个 Hudi 数据集都应该有它的唯一键,以便并发写入者可以引用相同的分区键.<br>默认情况下,我们使用指定的 Hudi 表名作为分区键<br>默认值:N/A(必需)<br>Config Param: DYNAMODB_LOCK_PARTITION_KEY<br>Since Version: 0.10.0</p>
+<p>hoodie.write.lock.dynamodb.write_capacity<br>对于基于 DynamoDB 的锁提供程序,使用 PROVISIONED 计费模式时写入容量单位<br>默认值:10(可选)<br>Config Param: DYNAMODB_LOCK_WRITE_CAPACITY<br>Since Version: 0.10.0</p>
+<p>hoodie.write.lock.dynamodb.table_creation_timeout<br>对于基于 DynamoDB 的锁提供程序,等待创建 DynamoDB 表的最大毫秒数<br>默认值:600000(可选)<br>Config Param: DYNAMODB_LOCK_TABLE_CREATION_TIMEOUT<br>Since Version: 0.10.0</p>
+<p>hoodie.write.lock.dynamodb.read_capacity<br>对于基于 DynamoDB 的锁提供程序,使用 PROVISIONED 计费模式时读取容量单位<br>默认值:20(可选)<br>Config Param: DYNAMODB_LOCK_READ_CAPACITY<br>Since Version: 0.10.0</p>
+<p>hoodie.write.lock.dynamodb.endpoint_url<br>对于基于 DynamoDB 的锁提供程序,用于 Amazon DynamoDB 服务的 url 端点.<br>对于使用本地 dynamodb 实例进行开发很有用.<br>默认值:N/A(必需)<br>Config Param: DYNAMODB_ENDPOINT_URL<br>Since Version: 0.10.1</p>
+<h3 id="存储配置-1"><a href="#存储配置-1" class="headerlink" title="存储配置"></a>存储配置</h3><p>控制有关写入、调整大小、读取基本文件和日志文件的方面的配置.<br>Config Class: org.apache.hudi.config.HoodieStorageConfig</p>
+<p>hoodie.logfile.data.block.max.size<br>LogFile 数据块最大大小(以字节为单位).<br>这是允许将单个数据块附加到日志文件的最大大小.<br>这有助于确保附加到日志文件的数据被分解成相当大的块,以防止出现 OOM 错误.<br>此大小应大于 JVM 内存.<br>默认值:268435456(可选)<br>Config Param: LOGFILE_DATA_BLOCK_MAX_SIZE</p>
+<p>hoodie.parquet.outputtimestamptype<br>设置 spark.sql.parquet.outputTimestampType.<br>Spark 将数据写入 Parquet 文件时使用的 Parquet 时间戳类型.<br>默认值:TIMESTAMP_MICROS(可选)<br>Config Param: PARQUET_OUTPUT_TIMESTAMP_TYPE</p>
+<p>hoodie.orc.stripe.size<br>用于写入的内存缓冲区大小(以字节为单位)<br>默认值:67108864(可选)<br>Config Param: ORC_STRIPE_SIZE</p>
+<p>hoodie.orc.block.size<br>ORC块大小,建议与目标文件大小对齐.<br>默认值:125829120(可选)<br>Config Param: ORC_BLOCK_SIZE</p>
+<p>hoodie.orc.compression.codec<br>用于 ORC 基本文件的压缩编解码器.<br>默认值:ZLIB(可选)<br>Config Param: ORC_COMPRESSION_CODEC_NAME</p>
+<p>hoodie.parquet.max.file.size<br>Hudi 写入阶段生成的 parquet 文件的目标大小(以字节为单位).<br>对于 DFS,这需要与底层文件系统块大小保持一致以获得最佳性能.<br>默认值:125829120(可选)<br>Config Param: PARQUET_MAX_FILE_SIZE</p>
+<p>hoodie.hfile.max.file.size<br>HFile 基本文件的目标文件大小(以字节为单位).<br>默认值:125829120(可选)<br>Config Param: HFILE_MAX_FILE_SIZE</p>
+<p>hoodie.parquet.writelegacyformat.enabled<br>设置 spark.sql.parquet.writeLegacyFormat.<br>如果为真,数据将以 Spark 1.4 及更早版本的方式写入.<br>例如,十进制值将以 Parquet 的固定长度字节数组格式写入,Apache Hive 和 Apache Impala 等其他系统使用该格式.<br>如果为 false,将使用 Parquet 中较新的格式.<br>例如,小数将以基于 int 的格式写入.<br>默认值:false(可选)<br>Config Param: PARQUET_WRITE_LEGACY_FORMAT_ENABLED</p>
+<p>hoodie.parquet.block.size<br>Parquet RowGroup 大小(以字节为单位).<br>建议将其设置得足够大,以便可以通过将足够多的列值打包到单个行组中来分摊扫描成本.<br>默认值:125829120(可选)<br>Config Param: PARQUET_BLOCK_SIZE</p>
+<p>hoodie.logfile.max.size<br>日志文件最大大小(以字节为单位).<br>这是日志文件在滚动到下一个版本之前允许的最大大小.<br>默认值:1073741824(可选)<br>Config Param: LOGFILE_MAX_SIZE</p>
+<p>hoodie.parquet.dictionary.enabled<br>是否使用字典编码<br>默认值:true(可选)<br>Config Param: PARQUET_DICTIONARY_ENABLED</p>
+<p>hoodie.hfile.block.size<br>较低的值会增加 HFile 中跟踪的元数据的字节大小,但可能会提供更快的查找时间.<br>默认值:1048576(可选)<br>Config Param: HFILE_BLOCK_SIZE</p>
+<p>hoodie.parquet.field_id.write.enabled<br>仅对 Spark 3.3+ 有效.<br>设置 spark.sql.parquet.fieldId.write.enabled.<br>如果启用,Spark 会将存储在 StructField 元数据中的 parquet 本机字段 id 作为 parquet.field.id 写入 parquet 文件.<br>默认值:true(可选)<br>Config Param: PARQUET_FIELD_ID_WRITE_ENABLED<br>Since Version: 0.12.0</p>
+<p>hoodie.parquet.page.size<br>Parquet 页面大小(以字节为单位).<br>页是 parquet 文件中的读取单位.<br>在一个块内,页面被单独压缩.<br>默认值:1048576(可选)<br>Config Param: PARQUET_PAGE_SIZE</p>
+<p>hoodie.hfile.compression.algorithm<br>用于 hfile 基本文件的压缩编解码器.<br>默认值:GZ(可选)<br>Config Param: HFILE_COMPRESSION_ALGORITHM_NAME</p>
+<p>hoodie.orc.max.file.size<br>ORC 基础文件的目标文件大小(以字节为单位).<br>默认值:125829120(可选)<br>Config Param: ORC_FILE_MAX_SIZE</p>
+<p>hoodie.logfile.data.block.format<br>增量日志中数据块的格式.<br>当前支持以下格式&quot;avro&quot;、&quot;hfile&quot;、&quot;parquet&quot;<br>默认值:N/A(必需)<br>Config Param: LOGFILE_DATA_BLOCK_FORMAT</p>
+<p>hoodie.logfile.to.parquet.compression.ratio<br>随着记录从日志文件移动到镶木地板,预计会出现额外的压缩.<br>用于 merge_on_read 表以将插入发送到日志文件并控制压缩 parquet 文件的大小.<br>默认值:0.35(可选)<br>Config Param: LOGFILE_TO_PARQUET_COMPRESSION_RATIO_FRACTION</p>
+<p>hoodie.parquet.compression.ratio<br>当 Hudi 尝试调整新 parquet 文件的大小时,预期的 parquet 数据压缩.<br>如果 bulk_insert 生成的文件小于预期大小,则增加此值<br>默认值:0.1(可选)<br>Config Param: PARQUET_COMPRESSION_RATIO_FRACTION</p>
+<p>hoodie.parquet.compression.codec<br>parquet 文件的压缩编解码器<br>默认值:gzip(可选)<br>Config Param: PARQUET_COMPRESSION_CODEC_NAME</p>
+<h3 id="Archival配置"><a href="#Archival配置" class="headerlink" title="Archival配置"></a>Archival配置</h3><p>控制归档的配置.<br>Config Class: org.apache.hudi.config.HoodieArchivalConfig</p>
+<p>hoodie.archive.merge.small.file.limit.bytes<br>此配置设置存档文件大小限制,低于该限制存档文件将成为被选为此类小文件的候选对象.<br>默认值:20971520(可选)<br>Config Param: ARCHIVE_MERGE_SMALL_FILE_LIMIT_BYTES</p>
+<p>hoodie.keep.max.commits<br>归档服务在每次写入后将较旧的条目从时间线移动到归档日志中,以保持元数据开销不变,即使表大小增加.<br>此配置控制要保留在活动时间线中的最大瞬间数.<br>默认值:30(可选)<br>Config Param: MAX_COMMITS_TO_KEEP</p>
+<p>hoodie.archive.merge.enable<br>启用后,hoodie 会自动将几个小的存档文件合并为一个较大的存档文件.<br>当存储方案不支持追加操作时,它很有用.<br>默认值:false(可选)<br>Config Param: ARCHIVE_MERGE_ENABLE</p>
+<p>hoodie.archive.automatic<br>启用后,归档表服务会在每次提交后立即调用,以在我们超过提交的最大值时归档提交.<br>建议启用此功能,以确保活动提交的数量是有限的.<br>默认值:true(可选)<br>Config Param: AUTO_ARCHIVE</p>
+<p>hoodie.archive.delete.parallelism<br>删除归档的连帽衫提交的并行性.<br>默认值:100(可选)<br>Config Param: DELETE_ARCHIVED_INSTANT_PARALLELISM_VALUE</p>
+<p>hoodie.archive.beyond.savepoint<br>如果启用,存档将超出保存点,跳过保存点提交.<br>如果禁用,存档将在最早的保存点提交处停止.<br>默认值:false(可选)<br>Config Param: ARCHIVE_BEYOND_SAVEPOINT<br>Since Version: 0.12.0</p>
+<p>hoodie.commits.archival.batch<br>即时存档以尽力而为的方式进行批处理,以将更多即时打包到单个存档日志中.<br>此配置控制此类存档批量大小.<br>默认值:10(可选)<br>Config Param: COMMITS_ARCHIVAL_BATCH_SIZE</p>
+<p>hoodie.archive.async<br>仅在打开 hoodie.archive.automatic 时适用.<br>开启后,归档器会与写入异步运行,这可以提高整体写入性能.<br>默认值:false(可选)<br>Config Param: ASYNC_ARCHIVE<br>Since Version: 0.11.0</p>
+<p>hoodie.keep.min.commits<br>类似于 hoodie.keep.max.commits,但控制要保留在活动时间轴中的最小实例数.<br>默认值:20(可选)<br>Config Param: MIN_COMMITS_TO_KEEP</p>
+<p>hoodie.archive.merge.files.batch.size<br>一次要合并的小存档文件的数量.<br>默认值:10(可选)<br>Config Param: ARCHIVE_MERGE_FILES_BATCH_SIZE</p>
+<h3 id="元数据配置-1"><a href="#元数据配置-1" class="headerlink" title="元数据配置"></a>元数据配置</h3><p>Hudi 元数据表使用的配置.<br>此表维护有关给定 Hudi 表的元数据(例如文件列表),以避免在查询期间访问云存储的开销.<br>Config Class: org.apache.hudi.common.config.HoodieMetadataConfig</p>
+<p>hoodie.metadata.index.column.stats.parallelism<br>生成列统计索引时使用的并行性.<br>默认值:10(可选)<br>Config Param: COLUMN_STATS_INDEX_PARALLELISM<br>Since Version: 0.11.0</p>
+<p>hoodie.metadata.compact.max.delta.commits<br>控制元数据表的压缩频率.<br>默认值:10(可选)<br>Config Param: COMPACT_NUM_DELTA_COMMITS<br>Since Version: 0.7.0</p>
+<p>hoodie.assume.date.partitioning<br>HoodieWriteClient 是否应该假设数据按日期分区,即从基本路径开始的三个级别.<br>这是支持由版本 &lt; 0.3.1 创建的表的权宜之计.<br>最终将被删除<br>默认值:false(可选)<br>Config Param: ASSUME_DATE_PARTITIONING<br>Since Version: 0.3.0</p>
+<p>hoodie.metadata.metrics.enable<br>启用围绕元数据表的指标发布.<br>默认值:false(可选)<br>Config Param: METRICS_ENABLE<br>Since Version: 0.7.0</p>
+<p>hoodie.metadata.index.bloom.filter.file.group.count<br>元数据布隆过滤器索引分区文件组计数.<br>这控制了基本文件和日志文件的大小以及布隆过滤器索引分区中的读取并行度.<br>建议调整文件组计数的大小,使基本文件小于 1GB.<br>默认值:4(可选)<br>Config Param: METADATA_INDEX_BLOOM_FILTER_FILE_GROUP_COUNT<br>Since Version: 0.11.0</p>
+<p>_hoodie.metadata.ignore.spurious.deletes<br>在某些情况下,请求从元数据表中删除以前从未添加过的额外文件.<br>此配置确定如何处理此类虚假删除<br>默认值:true(可选)<br>Config Param: IGNORE_SPURIOUS_DELETES<br>Since Version: 0.10.0</p>
+<p>hoodie.file.listing.parallelism<br>在湖存储上列出表时使用的并行性.<br>默认值:200(可选)<br>Config Param: FILE_LISTING_PARALLELISM_VALUE<br>Since Version: 0.7.0</p>
+<p>hoodie.metadata.index.async<br>启用元数据表的异步索引.<br>默认值:false(可选)<br>Config Param: ASYNC_INDEX_ENABLE<br>Since Version: 0.11.0</p>
+<p>hoodie.metadata.index.column.stats.column.list<br>将为其构建列统计索引的列的逗号分隔列表.<br>如果未设置,所有列都将被索引<br>默认值:N/A(必需)<br>Config Param: COLUMN_STATS_INDEX_FOR_COLUMNS<br>Since Version: 0.11.0</p>
+<p>hoodie.metadata.enable.full.scan.log.files<br>在读取日志记录时启用日志文件的完整扫描.<br>如果禁用,Hudi 只会查找感兴趣的条目.<br>默认值:true(可选)<br>Config Param: ENABLE_FULL_SCAN_LOG_FILES<br>Since Version: 0.10.0</p>
+<p>hoodie.metadata.index.bloom.filter.enable<br>启用元数据表下用户数据文件的索引布隆过滤器.<br>启用后,元数据表将有一个分区来存储布隆过滤器索引,并将在索引查找期间使用.<br>默认值:false(可选)<br>Config Param: ENABLE_METADATA_INDEX_BLOOM_FILTER<br>Since Version: 0.11.0</p>
+<p>hoodie.metadata.clean.async<br>为元数据表启用异步清理<br>默认值:false(可选)<br>Config Param: ASYNC_CLEAN_ENABLE<br>Since Version: 0.7.0</p>
+<p>hoodie.metadata.keep.max.commits<br>与 hoodie.metadata.keep.min.commits 类似,此配置控制要保留在活动时间轴中的最大瞬间数.<br>默认值:30(可选)<br>Config Param: MAX_COMMITS_TO_KEEP<br>Since Version: 0.7.0</p>
+<p>hoodie.metadata.insert.parallelism<br>插入元数据表时使用的并行度<br>默认值:1(可选)<br>Config Param: INSERT_PARALLELISM_VALUE<br>Since Version: 0.7.0</p>
+<p>hoodie.metadata.dir.filter.regex<br>首次从湖存储初始化元数据表时,将过滤掉与此正则表达式匹配的目录.<br>默认值:(可选)<br>Config Param: DIR_FILTER_REGEX<br>Since Version: 0.7.0</p>
+<p>hoodie.metadata.index.column.stats.processing.mode.override<br>默认情况下,Column Stats Index 会根据索引大小和索引数量等因素自动确定是否应该在&quot;内存中&quot;(在执行进程中)或使用 Spark(在集群上)读取和处理它列被读取.<br>此配置允许覆盖此行为.<br>默认值:N/A(必需)<br>Config Param: COLUMN_STATS_INDEX_PROCESSING_MODE_OVERRIDE<br>Since Version: 0.12.0</p>
+<p>hoodie.metadata.keep.min.commits<br>归档服务在每次写入后将元数据表时间线中的旧条目移动到归档日志中,以保持开销不变,即使元数据表大小增加.<br>此配置控制要保留在活动时间轴中的最小瞬间数.<br>默认值:20(可选)<br>Config Param: MIN_COMMITS_TO_KEEP<br>Since Version: 0.7.0</p>
+<p>hoodie.metadata.index.column.stats.inMemory.projection.threshold<br>在读取 Column Stats Index 时,如果预期结果投影的大小低于内存阈值(按行数计算),则会尝试将其加载到&quot;内存中&quot;(即不使用类似的执行引擎) Spark、Flink 等).<br>如果该值高于阈值,则执行引擎将用于组成投影.<br>默认值:100000(可选)<br>Config Param: COLUMN_STATS_INDEX_IN_MEMORY_PROJECTION_THRESHOLD<br>Since Version: 0.12.0</p>
+<p>hoodie.metadata.index.column.stats.enable<br>在元数据表键查找下启用用户数据文件的索引列范围.<br>启用后,元数据表将有一个分区来存储列范围,并将用于在索引查找期间修剪文件.<br>默认值:false(可选)<br>Config Param: ENABLE_METADATA_INDEX_COLUMN_STATS<br>Since Version: 0.11.0</p>
+<p>hoodie.metadata.index.bloom.filter.column.list<br>将为其构建布隆过滤器索引的列的逗号分隔列表.<br>如果未设置,则仅记录键将被索引.<br>默认值:N/A(必需)<br>Config Param: BLOOM_FILTER_INDEX_FOR_COLUMNS<br>Since Version: 0.11.0</p>
+<p>hoodie.metadata.cleaner.commits.retained<br>在元数据表上保留而不清理的提交数.<br>默认值:3(可选)<br>Config Param: CLEANER_COMMITS_RETAINED<br>Since Version: 0.7.0</p>
+<p>hoodie.metadata.index.check.timeout.seconds<br>在异步索引器完成索引到基本时刻之后,它将确保所有飞行编写器也可靠地写入索引更新.<br>如果此超时到期,则索引器将自行安全中止.<br>默认值:900(可选)<br>Config Param: METADATA_INDEX_CHECK_TIMEOUT_SECONDS<br>Since Version: 0.11.0</p>
+<p>hoodie.metadata.populate.meta.fields<br>启用后,填充所有元字段.<br>禁用时,不会填充任何元字段.<br>默认值:false(可选)<br>Config Param: POPULATE_META_FIELDS<br>Since Version: 0.10.0</p>
+<p>hoodie.metadata.index.column.stats.file.group.count<br>元数据列统计分区文件组计数.<br>这控制了基本文件和日志文件的大小以及列统计索引分区中的读取并行度.<br>建议调整文件组计数的大小,使基本文件小于 1GB.<br>默认值:2(可选)<br>Config Param: METADATA_INDEX_COLUMN_STATS_FILE_GROUP_COUNT<br>Since Version: 0.11.0</p>
+<p>hoodie.metadata.enable<br>启用提供表元数据的内部元数据表,例如级别文件列表<br>默认值:true(可选)<br>Config Param: ENABLE<br>Since Version: 0.7.0</p>
+<p>hoodie.metadata.index.bloom.filter.parallelism<br>用于在元数据表中生成布隆过滤器索引的并行性.<br>默认值:200(可选)<br>Config Param: BLOOM_FILTER_INDEX_PARALLELISM<br>Since Version: 0.11.0</p>
+<h3 id="一致性保护配置"><a href="#一致性保护配置" class="headerlink" title="一致性保护配置"></a>一致性保护配置</h3><p>与一致性保护相关的配置选项,以帮助与最终一致的对象存储进行对话.<br>(提示:S3 不再是最终一致的！)<br>Config Class: org.apache.hudi.common.fs.ConsistencyGuardConfig</p>
+<p>hoodie.optimistic.consistency.guard.sleep_time_ms<br>等待的时间量(以毫秒为单位),之后我们假设存储是一致的.<br>默认值:500(可选)<br>Config Param: OPTIMISTIC_CONSISTENCY_GUARD_SLEEP_TIME_MS<br>Since Version: 0.6.0</p>
+<p>hoodie.consistency.check.max_interval_ms<br>等待一致性检查的最长时间(以毫秒为单位).<br>默认值:20000(可选)<br>Config Param: MAX_CHECK_INTERVAL_MS<br>Since Version: 0.5.0<br>Deprecated Version: 0.7.0</p>
+<p>_hoodie.optimistic.consistency.guard.enable<br>启用一致性保护,它乐观地假设在一定时间段后实现一致性.<br>默认值:false(可选)<br>Config Param: OPTIMISTIC_CONSISTENCY_GUARD_ENABLE<br>Since Version: 0.6.0</p>
+<p>hoodie.consistency.check.enabled<br>启用以处理 S3 最终一致性问题.<br>由于 S3 现在是强一致的,因此不再需要此属性.<br>将在未来的版本中删除.<br>默认值:false(可选)<br>Config Param: ENABLE<br>Since Version: 0.5.0<br>Deprecated Version: 0.7.0</p>
+<p>hoodie.consistency.check.max_checks<br>要执行的最大一致性检查次数,具有指数退避.<br>默认值:6(可选)<br>Config Param: MAX_CHECKS<br>Since Version: 0.5.0<br>Deprecated Version: 0.7.0</p>
+<p>hoodie.consistency.check.initial_interval_ms<br>在对存储进行操作后检查一致性之前等待的时间(以毫秒为单位).<br>默认值:400(可选)<br>Config Param: INITIAL_CHECK_INTERVAL_MS<br>Since Version: 0.5.0<br>Deprecated Version: 0.7.0</p>
+<h3 id="文件系统防护配置"><a href="#文件系统防护配置" class="headerlink" title="文件系统防护配置"></a>文件系统防护配置</h3><p>文件系统重试相关的配置选项,以帮助处理运行时异常,如 list/get/put/delete 性能问题.<br>Config Class: org.apache.hudi.common.fs.FileSystemRetryConfig</p>
+<p>hoodie.filesystem.operation.retry.max_interval_ms<br>等待下一次重试的最长时间(以毫秒为单位).<br>默认值:2000(可选)<br>Config Param: MAX_RETRY_INTERVAL_MS<br>Since Version: 0.11.0</p>
+<p>hoodie.filesystem.operation.retry.enable<br>启用以处理列表/获取/删除等文件系统性能问题.<br>默认值:false(可选)<br>Config Param: FILESYSTEM_RETRY_ENABLE<br>Since Version: 0.11.0</p>
+<p>hoodie.filesystem.operation.retry.max_numbers<br>要执行的最大重试操作数,具有指数退避.<br>默认值:4(可选)<br>Config Param: MAX_RETRY_NUMBERS<br>Since Version: 0.11.0</p>
+<p>hoodie.filesystem.operation.retry.exceptions<br>需要重试的Exception的类名,逗号分隔.<br>默认为空,这意味着重试文件系统中的所有 IOException 和 RuntimeException<br>默认值:(可选)<br>Config Param: RETRY_EXCEPTIONS<br>Since Version: 0.11.0</p>
+<p>hoodie.filesystem.operation.retry.initial_interval_ms<br>在重试对存储执行操作之前等待的时间量(以毫秒为单位).<br>默认值:100(可选)<br>Config Param: INITIAL_RETRY_INTERVAL_MS<br>Since Version: 0.11.0</p>
+<h3 id="写入配置-1"><a href="#写入配置-1" class="headerlink" title="写入配置"></a>写入配置</h3><p>控制 Hudi 表上的写入行为的配置.<br>这些可以直接从更高级别的框架(例如 Spark 数据源、Flink 接收器)和实用程序(例如 DeltaStreamer)传递下来.<br>Config Class: org.apache.hudi.config.HoodieWriteConfig</p>
+<p>hoodie.combine.before.upsert<br>当更新插入的记录共享相同的键时,控制它们是否应该在写入存储之前首先组合(即去重).<br>仅当您绝对确定没有重复输入时才应关闭此功能,否则可能导致重复键并违反唯一性保证.<br>默认值:true(可选)<br>Config Param: COMBINE_BEFORE_UPSERT</p>
+<p>hoodie.write.markers.type<br>要使用的标记类型.<br>支持两种模式:<br>1)DIRECT:每个数据文件对应的单个标记文件由编写器直接创建.<br>2)TIMELINE_SERVER_BASED:标记操作都在充当代理的时间线服务中处理.<br>为了提高效率,新的标记条目被批量处理并存储在有限数量的基础文件中.<br>如果使用 HDFS 或禁用时间线服务器,则 DIRECT 标记将用作回退,即使已配置.<br>对于 Spark 结构化流,此配置不生效,即,DIRECT 标记始终用于 Spark 结构化流.<br>默认值:TIMELINE_SERVER_BASED(可选)<br>Config Param: MARKERS_TYPE<br>Since Version: 0.9.0</p>
+<p>hoodie.consistency.check.max_interval_ms<br>在连续尝试执行一致性检查之间等待的最长时间<br>默认值:300000(可选)<br>Config Param: MAX_CONSISTENCY_CHECK_INTERVAL_MS</p>
+<p>hoodie.embed.timeline.server.port<br>时间线服务器侦听请求的端口.<br>当嵌入在每个编写器中运行时,它会选择一个空闲端口并与所有执行器通信.<br>这应该很少改变.<br>默认值:0(可选)<br>Config Param: EMBEDDED_TIMELINE_SERVER_PORT_NUM</p>
+<p>hoodie.auto.adjust.lock.configs<br>启用元数据表和异步表服务时自动调整锁定配置.<br>默认值:false(可选)<br>Config Param: AUTO_ADJUST_LOCK_CONFIGS<br>Since Version: 0.11.0</p>
+<p>hoodie.table.services.enabled<br>禁用所有表服务的主控制,包括归档、清理、压缩、集群等.<br>默认值:true(可选)<br>Config Param: TABLE_SERVICES_ENABLED<br>Since Version: 0.11.0</p>
+<p>hoodie.table.base.file.format<br>存储所有基本文件数据的基本文件格式.<br>默认值:PARQUET(可选)<br>Config Param: BASE_FILE_FORMAT</p>
+<p>hoodie.avro.schema.validate<br>根据最新模式验证用于写入的模式,以实现向后兼容性.<br>默认值:false(可选)<br>Config Param: AVRO_SCHEMA_VALIDATE_ENABLE</p>
+<p>hoodie.write.buffer.limit.bytes<br>用于并行化网络读取和湖存储写入的内存缓冲区大小.<br>默认值:4194304(可选)<br>Config Param: WRITE_BUFFER_LIMIT_BYTES_VALUE</p>
+<p>hoodie.insert.shuffle.parallelism<br>将记录插入表的并行性.<br>插入可以在写入之前对数据进行混洗,以调整文件大小并优化存储布局.<br>默认值:200(可选)<br>Config Param: INSERT_PARALLELISM_VALUE</p>
+<p>hoodie.embed.timeline.server.async<br>控制是否以异步方式处理对时间线服务器的请求,从而潜在地提高吞吐量.<br>默认值:false(可选)<br>Config Param: EMBEDDED_TIMELINE_SERVER_USE_ASYNC_ENABLE</p>
+<p>hoodie.rollback.parallelism<br>提交回滚的并行性.<br>回滚会并行执行文件删除或将删除块记录到存储上的文件组.<br>默认值:100(可选)<br>Config Param: ROLLBACK_PARALLELISM_VALUE</p>
+<p>hoodie.write.status.storage.level<br>写入状态对象保存有关尚未提交到存储的写入(统计信息、错误)的元数据.<br>这控制了如何缓存该信息以供客户端检查.<br>我们很少期望这种情况会改变.<br>默认值:MEMORY_AND_DISK_SER(可选)<br>Config Param: WRITE_STATUS_STORAGE_LEVEL_VALUE</p>
+<p>hoodie.writestatus.class<br>org.apache.hudi.client.WriteStatus 的子类,用于收集有关写入的信息.<br>如果需要,可以覆盖以收集有关数据的其他指标/统计信息.<br>默认值:org.apache.hudi.client.WriteStatus(可选)<br>Config Param: WRITE_STATUS_CLASS_NAME</p>
+<p>hoodie.base.path<br>湖泊存储的基本路径,所有表数据都存储在该路径下.<br>始终使用存储方案明确地为其添加前缀(例如 hdfs://、s3:// 等).<br>Hudi 将有关提交、保存点、清理审计日志等的所有主要元数据存储在此基本路径目录下的 .hoodie 目录中.<br>默认值:N/A(必需)<br>Config Param: BASE_PATH</p>
+<p>hoodie.allow.empty.commit<br>是否允许生成空提交,即使提交中没有写入数据.<br>在需要发布额外元数据的情况下很有用,例如在摄取数据时跟踪源偏移量<br>默认值:true(可选)<br>Config Param: ALLOW_EMPTY_COMMIT</p>
+<p>hoodie.bulkinsert.user.defined.partitioner.class<br>如果指定,则此类将用于在批量插入记录之前对其进行重新分区.<br>这可用于对常见查询模式的数据进行最佳排序、打包和聚类.<br>目前,我们支持内置的用户定义 bulkinsert 分区器 org.apache.hudi.execution.bulkinsert.RDDCustomColumnsSortPartitioner,它可以根据 hoodie.bulkinsert.user.defined.partitioner.sort.columns设置的指定列值进行排序<br>默认值:N/A(必填)<br>Config Param: BULKINSERT_USER_DEFINED_PARTITIONER_CLASS_NAME</p>
+<p>hoodie.table.name<br>将用于向 HMS 等元存储注册的表名.<br>需要在运行中相同.<br>默认值:N/A(必需)<br>Config Param: TBL_NAME</p>
+<p>hoodie.combine.before.delete<br>在删除操作期间,控制我们是否应该在写入存储之前组合删除(可能还有更新插入).<br>默认值:true(可选)<br>Config Param: COMBINE_BEFORE_DELETE</p>
+<p>hoodie.embed.timeline.server.threads<br>在时间线服务器中服务请求的线程数.<br>默认情况下,根据底层内核的数量自动配置.<br>默认值:-1(可选)<br>Config Param: EMBEDDED_TIMELINE_NUM_SERVER_THREADS</p>
+<p>hoodie.fileid.prefix.provider.class<br>文件 ID 前缀提供程序类,实现org.apache.hudi.fileid.FileIdPrefixProvider<br>默认值:org.apache.hudi.table.RandomFileIdPrefixProvider(可选)<br>Config Param: FILEID_PREFIX_PROVIDER_CLASS<br>Since Version: 0.10.0</p>
+<p>hoodie.fail.on.timeline.archiving<br>时间线归档会在每次写入操作后从时间线中删除较旧的瞬间,以最大限度地减少元数据开销.<br>控制如果归档失败,写入是否也应该失败.<br>默认值:true(可选)<br>Config Param: FAIL_ON_TIMELINE_ARCHIVING_ENABLE</p>
+<p>hoodie.datasource.write.keygenerator.class<br>密钥生成器类,实现org.apache.hudi.keygen.KeyGenerator从传入记录中提取密钥.<br>默认值:N/A(必需)<br>Config Param: KEYGENERATOR_CLASS_NAME</p>
+<p>hoodie.combine.before.insert<br>当插入的记录共享相同的键时,控制它们是否应该在写入存储之前首先组合(即去重).<br>默认值:false(可选)<br>Config Param: COMBINE_BEFORE_INSERT</p>
+<p>hoodie.embed.timeline.server.gzip<br>控制是否对来自时间线服务器的大型响应使用 gzip 压缩以改善延迟.<br>默认值:true(可选)<br>Config Param: EMBEDDED_TIMELINE_SERVER_COMPRESS_ENABLE</p>
+<p>hoodie.markers.timeline_server_based.batch.interval_ms<br>标记创建批处理的批处理间隔(以毫秒为单位)<br>默认值:50(可选)<br>Config Param: MARKERS_TIMELINE_SERVER_BASED_BATCH_INTERVAL_MS<br>Since Version: 0.9.0</p>
+<p>hoodie.skip.default.partition.validation<br>当表从 pre 0.12 升级到 0.12 时,我们检查&quot;默认&quot;分区,如果找到则失败.<br>预计用户将重写这些分区中的数据.<br>启用此配置将绕过此验证<br>默认值:false(可选)<br>Config Param: SKIP_DEFAULT_PARTITION_VALIDATION<br>Since Version: 0.12.0</p>
+<p>hoodie.markers.timeline_server_based.batch.num_threads<br>在时间线服务器上用于批处理标记创建请求的线程数<br>默认值:20(可选)<br>Config Param: MARKERS_TIMELINE_SERVER_BASED_BATCH_NUM_THREADS<br>Since Version: 0.9.0</p>
+<p>_.hoodie.allow.multi.write.on.same.instant<br>默认值:false(可选)<br>Config Param: ALLOW_MULTI_WRITE_ON_SAME_INSTANT_ENABLE</p>
+<p>hoodie.datasource.write.payload.class<br>使用的有效负载类.<br>如果您想在更新/插入时滚动自己的合并逻辑,请覆盖它.<br>这将使为 PRECOMBINE_FIELD_OPT_VAL 设置的任何值无效<br>默认值:org.apache.hudi.common.model.OverwriteWithLatestAvroPayload(可选)<br>Config Param: WRITE_PAYLOAD_CLASS_NAME</p>
+<p>hoodie.bulkinsert.shuffle.parallelism<br>对于使用 bulk_insert 操作的大型初始导入,控制并行性以用于排序模式或在将记录写入表之前完成的自定义分区.<br>默认值:200(可选)<br>Config Param: BULKINSERT_PARALLELISM_VALUE</p>
+<p>hoodie.delete.shuffle.parallelism<br>用于&quot;删除&quot;操作的并行性.<br>删除操作也执行 shuffle,类似于 upsert 操作.<br>默认值:200(可选)<br>Config Param: DELETE_PARALLELISM_VALUE</p>
+<p>hoodie.consistency.check.max_checks<br>最大检查次数,用于写入数据的一致性.<br>默认值:7(可选)<br>Config Param: MAX_CONSISTENCY_CHECKS</p>
+<p>hoodie.datasource.write.keygenerator.type<br>轻松配置一个内置密钥生成器,而不是指定密钥生成器类.<br>目前支持 SIMPLE、COMPLEX、TIMESTAMP、CUSTOM、NON_PARTITION、GLOBAL_DELETE<br>默认值:SIMPLE(可选)<br>Config Param: KEYGENERATOR_TYPE</p>
+<p>hoodie.merge.allow.duplicate.on.inserts<br>启用后,即使插入路由以与现有文件合并,我们也允许重复键(以确保文件大小).<br>这仅与插入操作相关,因为 upsert、删除操作将确保保持唯一键约束.<br>默认值:false(可选)<br>Config Param: MERGE_ALLOW_DUPLICATE_ON_INSERTS_ENABLE</p>
+<p>hoodie.embed.timeline.server.reuse.enabled<br>控制是否应在 JVM(跨任务生命周期)缓存和重用时间线服务器实例以避免启动成本.<br>这应该很少改变.<br>默认值:false(可选)<br>Config Param: EMBEDDED_TIMELINE_SERVER_REUSE_ENABLED</p>
+<p>hoodie.datasource.write.precombine.field<br>在实际写入之前用于 preCombining 的字段.<br>当两条记录具有相同的键值时,我们将选择具有最大值的预组合字段,由 Object.compareTo(..) 确定<br>默认值:ts (可选)<br>Config Param: PRECOMBINE_FIELD_NAME</p>
+<p>hoodie.bulkinsert.sort.mode<br>用于对批量插入记录进行排序的排序模式.<br>这在未配置用户 hoodie.bulkinsert.user.defined.partitioner.class 时使用.<br>可用值是:<br>1)GLOBAL_SORT:这可确保最佳文件大小,以最低的内存开销为代价进行排序.<br>2)PARTITION_SORT:通过仅在分区内排序来达到平衡,仍然保持写入最低和尽力而为文件大小的内存开销.<br>3)NONE:不排序.spark.write.parquet()在文件数量、开销方面最快且匹配<br>默认值:NONE(可选)<br>Config Param: BULK_INSERT_SORT_MODE</p>
+<p>hoodie.avro.schema<br>表示表的当前写入模式的模式字符串.<br>Hudi 将此传递给 HoodieRecordPayload 的实现,以将传入记录转换为 avro.<br>这也用作更新期间的写入模式演变记录.<br>默认值:N/A(必需)<br>Config Param: AVRO_SCHEMA_STRING</p>
+<p>hoodie.auto.commit<br>控制写入操作是否应自动提交.<br>在决定提交之前,可以关闭此功能以检查未提交的写入.<br>默认值:true(可选)<br>Config Param: AUTO_COMMIT_ENABLE</p>
+<p>hoodie.embed.timeline.server<br>如果为 true,则启动时间线服务器(提供缓存文件列表、统计信息的元服务器)的实例,在每个写入器的驱动程序进程上运行,在写入期间接受来自执行程序的请求.<br>默认值:true(可选)<br>Config Param: EMBEDDED_TIMELINE_SERVER_ENABLE</p>
+<p>hoodie.timeline.layout.version<br>控制时间线的布局.<br>版本 0 依赖于重命名,版本 1(默认)将时间线建模为不可变日志,仅依赖于对象存储的原子写入.<br>默认值:1(可选)<br>Config Param: TIMELINE_LAYOUT_VERSION_NUM<br>Since Version: 0.5.1</p>
+<p>hoodie.schema.cache.enable<br>在驱动程序/执行程序端缓存查询 internalSchemas<br>默认值:false(可选)<br>Config Param: ENABLE_INTERNAL_SCHEMA_CACHE</p>
+<p>hoodie.upsert.shuffle.parallelism<br>用于表上的 upsert 操作的并行性.<br>Upserts 可以打乱数据以执行索引查找、文件大小调整、将记录最佳地打包到文件组中.<br>默认值:200(可选)<br>Config Param: UPSERT_PARALLELISM_VALUE</p>
+<p>hoodie.write.schema<br>指定的写入架构.<br>在大多数情况下,我们不需要设置这个参数,但是对于写模式不等于指定的表模式的情况,我们可以通过这个参数来指定写模式.<br>由 MergeIntoHoodieTableCommand 使用<br>默认值:N/A(必需)<br>Config Param: WRITE_SCHEMA</p>
+<p>hoodie.rollback.using.markers<br>基于写入期间生成的标记文件启用更有效的回滚机制.<br>默认开启.<br>默认值:true(可选)<br>Config Param: ROLLBACK_USING_MARKERS_ENABLE</p>
+<p>hoodie.merge.data.validation.enabled<br>启用后,将在合并期间执行数据验证检查,以确保合并操作后的预期记录数.<br>默认值:false(可选)<br>Config Param: MERGE_DATA_VALIDATION_CHECK_ENABLE</p>
+<p>hoodie.internal.schema<br>表示表的最新架构的架构字符串.<br>Hudi 将此传递给模式进化的实现<br>默认值:N/A(必需)<br>Config Param: INTERNAL_SCHEMA_STRING</p>
+<p>hoodie.client.heartbeat.tolerable.misses<br>在写入器被视为不活动且所有挂起的写入被中止之前,心跳未命中数.<br>默认值:2(可选)<br>Config Param: CLIENT_HEARTBEAT_NUM_TOLERABLE_MISSES</p>
+<p>hoodie.write.concurrency.mode<br>启用不同的并发模式.<br>选项是 SINGLE_WRITER:只有一个活跃的表写入者.<br>最大化吞吐量OPTIMISTIC_CONCURRENCY_CONTROL:多个写入者可以对表进行操作,如果检测到冲突(写入影响同一个文件组),其中一个会成功.<br>默认值:SINGLE_WRITER(可选)<br>Config Param: WRITE_CONCURRENCY_MODE</p>
+<p>hoodie.markers.delete.parallelism<br>确定删除标记文件的并行度,这些标记文件用于跟踪在写入操作期间写入的所有文件(有效或无效/部分).<br>如果在大批量写入时观察到延迟,则增加此值.<br>默认值:100(可选)<br>Config Param: MARKERS_DELETE_PARALLELISM_VALUE</p>
+<p>hoodie.release.resource.on.completion.enable<br>控制以在 spark 作业完成时启用释放所有持久 rdds.<br>默认值:true(可选)<br>Config Param: RELEASE_RESOURCE_ENABLE<br>Since Version: 0.11.0</p>
+<p>hoodie.bulkinsert.user.defined.partitioner.sort.columns<br>在 bulk_insert 期间使用 org.apache.hudi.execution.bulkinsert.RDDCustomColumnsSortPartitioner 作为用户定义的分区器时对数据进行排序的列.<br>例如 &#39;column1,column2&#39;<br>默认值:N/A(必需)<br>Config Param: BULKINSERT_USER_DEFINED_PARTITIONER_SORT_COLUMNS</p>
+<p>hoodie.finalize.write.parallelism<br>写入完成内部操作的并行性,包括在提交写入之前从湖存储中删除任何部分写入的文件.<br>如果大量任务导致较小表或低延迟写入的延迟,请减小此值.<br>默认值:200(可选)<br>Config Param: FINALIZE_WRITE_PARALLELISM_VALUE</p>
+<p>hoodie.merge.small.file.group.candidates.limit<br>限制文件组的数量,其基本文件满足小文件限制,以考虑在 upsert 操作期间附加记录.<br>仅适用于 MOR 表<br>默认值:1(可选)<br>Config Param: MERGE_SMALL_FILE_GROUP_CANDIDATES_LIMIT</p>
+<p>hoodie.client.heartbeat.interval_in_ms<br>作家通过心跳来表示活跃度.<br>控制多久(以毫秒为单位)将此类心跳注册到湖存储.<br>默认值:60000(可选)<br>Config Param: CLIENT_HEARTBEAT_INTERVAL_IN_MS</p>
+<p>hoodie.allow.operation.metadata.field<br>是否在元数据字段中包含&quot;_hoodie_operation&quot;.<br>启用后,记录的所有更改将直接保存到增量日志中,无需合并<br>默认值:false(可选)<br>Config Param: ALLOW_OPERATION_METADATA_FIELD<br>Since Version: 0.9.0</p>
+<p>hoodie.consistency.check.initial_interval_ms<br>确保写入数据的元数据在存储上保持一致的连续尝试之间的初始时间.<br>在初始值之后以指数退避增长.<br>默认值:2000(可选)<br>Config Param: INITIAL_CONSISTENCY_CHECK_INTERVAL_MS</p>
+<p>hoodie.avro.schema.external.transformation<br>启用后,旧模式中的记录在更新插入、删除和后台压缩、集群操作期间被重写为新模式.<br>默认值:false(可选)<br>Config Param: AVRO_EXTERNAL_SCHEMA_TRANSFORMATION_ENABLE</p>
+<h3 id="密钥生成器选项"><a href="#密钥生成器选项" class="headerlink" title="密钥生成器选项"></a>密钥生成器选项</h3><p>Hudi 维护键(记录键+分区路径)用于唯一标识特定记录.<br>此配置允许开发人员设置密钥生成器类,该类将从传入记录中提取这些.<br>Config Class: org.apache.hudi.keygen.constant.KeyGeneratorOptions</p>
+<p>hoodie.datasource.write.partitionpath.urlencode<br>在创建文件夹结构之前,我们是否应该对分区路径值进行 url 编码.<br>默认值:false(可选)<br>Config Param: URL_ENCODE_PARTITIONING</p>
+<p>hoodie.datasource.write.hive_style_partitioning<br>指示是否使用 Hive 样式分区的标志.<br>如果设置为 true,则分区文件夹的名称遵循 <code>&lt;partition_column_name&gt;=&lt;partition_value&gt;</code> 格式.<br>默认 false(分区文件夹的名称只是分区值)<br>默认值:false(可选)<br>Config Param: HIVE_STYLE_PARTITIONING_ENABLE</p>
+<p>hoodie.datasource.write.keygenerator.consistent.logical.timestamp.enabled<br>当设置为 true 时,将为逻辑时间戳类型列生成一致的值,例如 timestamp-millis 和 timestamp-micros,无论是否启用了行写入器.<br>默认情况下禁用,以免破坏部署完全行写入器路径或非行写入器路径的管道.<br>例如,如果它保持禁用状态,则带值的时间戳类型的记录键2016-12-29 09:54:00将在行写入器路径中写入时间戳,而在非行写入器路径2016-12-29 09:54:00.0中将写入长值.<br>1483023240000000如果启用,则时间戳值将在两种情况下写入.<br>默认值:false(可选)<br>Config Param: KEYGENERATOR_CONSISTENT_LOGICAL_TIMESTAMP_ENABLED</p>
+<p>hoodie.datasource.write.partitionpath.field<br>分区路径字段.<br>HoodieKey 的 partitionPath 组件中使用的值.<br>通过调用 .toString()获得的实际值<br>默认值:N/A(必需)<br>Config Param: PARTITIONPATH_FIELD_NAME</p>
+<p>hoodie.datasource.write.recordkey.field<br>记录关键字段.<br>用作 的recordKey组成部分的值HoodieKey.<br>实际值将通过在字段值上调用 .toString() 来获得.<br>可以使用点表示法指定嵌套字段,例如:a.b.c<br>默认值:uuid(可选)<br>Config Param: RECORDKEY_FIELD_NAME</p>
+<h3 id="HBase-索引配置"><a href="#HBase-索引配置" class="headerlink" title="HBase 索引配置"></a>HBase 索引配置</h3><p>控制索引行为的配置(启用基于 HBase 的索引时),将传入记录标记为对旧记录的插入或更新.<br>Config Class: org.apache.hudi.config.HoodieHBaseIndexConfig</p>
+<p>hoodie.index.hbase.zkport<br>仅在索引类型为 HBASE 时适用.<br>HBase ZK Quorum 端口连接到<br>默认值:N/A(必需)<br>Config Param: ZKPORT</p>
+<p>hoodie.index.hbase.put.batch.size.autocompute<br>要设置的属性以启用 put 批量大小的自动计算<br>默认值:false(可选)<br>Config Param: PUT_BATCH_SIZE_AUTO_COMPUTE</p>
+<p>hoodie.index.hbase.bucket.number<br>仅在使用 RebalancedSparkHoodieHBaseIndex 时适用,与 hbase 区域计数相同可以获得最佳性能<br>默认值:8(可选)<br>Config Param: BUCKET_NUMBER</p>
+<p>hoodie.index.hbase.rollback.sync<br>当设置为 true 时,回滚方法将删除最后失败的任务索引.<br>默认值为假.<br>因为删除索引会在每次回滚时给 Hbase 集群增加额外的负载<br>默认值:false(可选)<br>Config Param: ROLLBACK_SYNC_ENABLE</p>
+<p>hoodie.index.hbase.max.qps.per.region.server<br>设置每个区域服务器允许的最大 QPS 的属性.<br>这在各种工作中应该是相同的.<br>这旨在将跨各种作业生成的聚合 QPS 限制到 Hbase 区域服务器.<br>建议根据全局索引吞吐量需求设置此值,最重要的是,在 Region Servers 不停机的情况下,使用中的 HBase 安装能够容忍多少.<br>默认值:1000(可选)<br>Config Param: MAX_QPS_PER_REGION_SERVER</p>
+<p>hoodie.index.hbase.min.qps.fraction<br>用于稳定倾斜写入工作负载的 HBASE_QPS_FRACTION_PROP 的最小值<br>默认值:N/A(必需)<br>Config Param: MIN_QPS_FRACTION</p>
+<p>hoodie.index.hbase.zk.connection_timeout_ms<br>用于从 HBase 客户端与 zookeeper 建立连接的超时.<br>默认值:15000(可选)<br>Config Param: ZK_CONNECTION_TIMEOUT_MS</p>
+<p>hoodie.index.hbase.table<br>仅在索引类型为 HBASE 时适用.<br>用作索引的 HBase 表名称.<br>Hudi 将 row_key 和<code>[partition_path, fileID, commitTime]</code>映射存储在表中<br>默认值: N/A(必需)<br>Config Param: TABLENAME</p>
+<p>hoodie.index.hbase.zknode.path<br>仅在索引类型为 HBASE 时适用.<br>这是包含 HBase 创建/使用的所有 znode 的根 znode<br>默认值:N/A(必需)<br>Config Param: ZK_NODE_PATH</p>
+<p>hoodie.index.hbase.kerberos.user.keytab<br>连接hbase集群的kerberos keytab文件的文件名.<br>默认值:N/A(必需)<br>Config Param: KERBEROS_USER_KEYTAB</p>
+<p>hoodie.index.hbase.zkquorum<br>仅在索引类型为 HBASE 时适用.<br>HBase ZK Quorum url 连接到<br>默认值:N/A(必需)<br>Config Param: ZKQUORUM</p>
+<p>hoodie.index.hbase.qps.fraction<br>用于设置应分配给此作业的 QPS 的全局份额比例的属性.<br>假设有 3 个作业的输入大小(就 HbaseIndexing 所需的行数而言分别为 x、2x、3x).<br>那么这个工作分数将分别为 (0.17) 1/6、0.33 (2/6) 和 0.5 (3/6).<br>默认为 50%,这意味着总共 2 个作业可以使用 HbaseIndex 运行而不会压倒 Region Server.<br>默认值:0.5(可选)<br>Config Param: QPS_FRACTION</p>
+<p>hoodie.index.hbase.zk.session_timeout_ms<br>用于 HBase 客户端的 Zookeeper 故障检测的会话超时值.<br>如果您想更快地失败,请降低此值.<br>默认值:60000(可选)<br>Config Param: ZK_SESSION_TIMEOUT_MS</p>
+<p>hoodie.index.hbase.put.batch.size<br>控制对 HBase 执行 put 的批量大小.<br>批处理通过节省往返行程来提高吞吐量.<br>默认值:100(可选)<br>Config Param: PUT_BATCH_SIZE</p>
+<p>hoodie.hbase.index.update.partition.path<br>仅在索引类型为 HBASE 时适用.<br>当与存储中的内容相比,将现有记录更新到新分区时,设置此配置时,将删除旧分区中的旧记录并将其作为新记录插入新分区中.<br>默认值:false(可选)<br>Config Param: UPDATE_PARTITION_PATH_ENABLE</p>
+<p>hoodie.index.hbase.security.authentication<br>决定是否启用 hbase 集群安全身份验证的属性.<br>可能的值是&quot;simple&quot;(无身份验证)和&quot;kerberos&quot;.<br>默认值:simple(可选)<br>Config Param: SECURITY_AUTHENTICATION</p>
+<p>hoodie.index.hbase.qps.allocator.class<br>属性设置要使用的 HBase QPS 资源分配器的实现,它动态控制批处理率.<br>默认值:org.apache.hudi.index.hbase.DefaultHBaseQPSResourceAllocator(可选)<br>Config Param: QPS_ALLOCATOR_CLASS_NAME</p>
+<p>hoodie.index.hbase.get.batch.size<br>控制针对 HBase 执行 get 的批处理大小.<br>批处理通过节省往返行程来提高吞吐量.<br>默认值:100(可选)<br>Config Param: GET_BATCH_SIZE</p>
+<p>hoodie.index.hbase.zkpath.qps_root<br>Zookeeper 中的 chroot,用于所有 qps 分配协调.<br>默认值:/QPS_ROOT(可选)<br>Config Param: ZKPATH_QPS_ROOT</p>
+<p>hoodie.index.hbase.max.qps.fraction<br>HBASE_QPS_FRACTION_PROP 用于稳定偏斜写入工作负载的最大值<br>默认值:N/A(必需)<br>Config Param: MAX_QPS_FRACTION</p>
+<p>hoodie.index.hbase.regionserver.kerberos.principal<br>hbase 集群中 hbase.regionserver.kerberos.principal 的值.<br>默认值:N/A(必需)<br>Config Param: REGIONSERVER_PRINCIPAL</p>
+<p>hoodie.index.hbase.dynamic_qps<br>用于决定 HBASE_QPS_FRACTION_PROP 是否根据写入量动态计算的属性.<br>默认值:false(可选)<br>Config Param: COMPUTE_QPS_DYNAMICALLY</p>
+<p>hoodie.index.hbase.master.kerberos.principal<br>hbase 集群中 hbase.master.kerberos.principal 的值.<br>默认值:N/A(必需)<br>Config Param: MASTER_PRINCIPAL</p>
+<p>hoodie.index.hbase.kerberos.user.principal<br>用于连接到 hbase 集群的 kerberos 主体名称.<br>默认值:N/A(必需)<br>Config Param: KERBEROS_USER_PRINCIPAL</p>
+<p>hoodie.index.hbase.desired_puts_time_in_secs<br>默认值:600(可选)<br>Config Param: DESIRED_PUTS_TIME_IN_SECONDS</p>
+<p>hoodie.index.hbase.sleep.ms.for.put.batch<br>默认值:N/A(必需)<br>Config Param: SLEEP_MS_FOR_PUT_BATCH</p>
+<p>hoodie.index.hbase.sleep.ms.for.get.batch<br>默认值:N/A(必需)<br>Config Param: SLEEP_MS_FOR_GET_BATCH</p>
+<h3 id="编写提交pulsar回调配置"><a href="#编写提交pulsar回调配置" class="headerlink" title="编写提交pulsar回调配置"></a>编写提交pulsar回调配置</h3><p>控制发送到 pulsar 的通知,通知发生在 hudi 表上的事件.<br>Config Class: org.apache.hudi.utilities.callback.pulsar.HoodieWriteCommitPulsarCallbackConfig</p>
+<p>hoodie.write.commit.callback.pulsar.operation-timeout<br>等待完成操作的持续时间.<br>默认值:30s(可选)<br>Config Param: OPERATION_TIMEOUT<br>Since Version: 0.11.0</p>
+<p>hoodie.write.commit.callback.pulsar.topic<br>将时间线活动发布到的pulsar主题名称.<br>默认值:N/A(必需)<br>Config Param: TOPIC<br>Since Version: 0.11.0</p>
+<p>hoodie.write.commit.callback.pulsar.producer.block-if-queue-full<br>当队列已满时,该方法被阻塞而不是抛出异常.<br>默认值:true(可选)<br>Config Param: PRODUCER_BLOCK_QUEUE_FULL<br>Since Version: 0.11.0</p>
+<p>hoodie.write.commit.callback.pulsar.producer.send-timeout<br>每次发送到 pulsar 的超时时间.<br>默认值:30s(可选)<br>Config Param: PRODUCER_SEND_TIMEOUT<br>Since Version: 0.11.0</p>
+<p>hoodie.write.commit.callback.pulsar.broker.service.url<br>pulsar 集群的服务器 url,用于发布提交元数据.<br>默认值:N/A(必需)<br>Config Param: BROKER_SERVICE_URL<br>Since Version: 0.11.0</p>
+<p>hoodie.write.commit.callback.pulsar.keepalive-interval<br>每个客户端代理连接的保持活动间隔的持续时间.<br>默认值:30s(可选)<br>Config Param: KEEPALIVE_INTERVAL<br>Since Version: 0.11.0</p>
+<p>hoodie.write.commit.callback.pulsar.producer.pending-total-size<br>跨分区的最大挂起消息数.<br>默认值:50000(可选)<br>Config Param: PRODUCER_PENDING_SIZE<br>Since Version: 0.11.0</p>
+<p>hoodie.write.commit.callback.pulsar.request-timeout<br>等待完成请求的持续时间.<br>默认值:60s(可选)<br>Config Param: REQUEST_TIMEOUT<br>Since Version: 0.11.0</p>
+<p>hoodie.write.commit.callback.pulsar.producer.pending-queue-size<br>保存待处理消息的队列的最大大小.<br>默认值:1000(可选)<br>Config Param: PRODUCER_PENDING_QUEUE_SIZE<br>Since Version: 0.11.0</p>
+<p>hoodie.write.commit.callback.pulsar.producer.route-mode<br>针对分区主题的生产者的消息路由逻辑.<br>默认值:RoundRobinPartition(可选)<br>Config Param: PRODUCER_ROUTE_MODE<br>Since Version: 0.11.0</p>
+<p>hoodie.write.commit.callback.pulsar.connection-timeout<br>等待与代理建立连接的持续时间.<br>默认值:10s(可选)<br>Config Param: CONNECTION_TIMEOUT<br>Since Version: 0.11.0</p>
+<h3 id="编写提交-Kafka-回调配置"><a href="#编写提交-Kafka-回调配置" class="headerlink" title="编写提交 Kafka 回调配置"></a>编写提交 Kafka 回调配置</h3><p>控制发送到 Kafka 的通知,通知发生在 hudi 表上的事件.<br>Config Class: org.apache.hudi.utilities.callback.kafka.HoodieWriteCommitKafkaCallbackConfig</p>
+<p>hoodie.write.commit.callback.kafka.topic<br>将时间线活动发布到的 Kafka 主题名称.<br>默认值:N/A(必需)<br>Config Param: TOPIC<br>Since Version: 0.7.0</p>
+<p>hoodie.write.commit.callback.kafka.partition<br>可能需要将所有更改序列化到单个 Kafka 分区中以提供严格的排序.<br>默认情况下,Kafka 消息以表名作为键,这保证了表级别的排序,但不是全局的(或添加新分区时)<br>默认值:N/A(必需)<br>Config Param: PARTITION<br>Since Version: 0.7.0</p>
+<p>hoodie.write.commit.callback.kafka.retries<br>重试产品的时间.<br>默认为 3<br>默认值:3(可选)<br>Config Param: RETRIES<br>Since Version: 0.7.0</p>
+<p>hoodie.write.commit.callback.kafka.acks<br>kafka acks level,默认都是保证强持久性.<br>默认值:全部(可选)<br>Config Param: ACKS<br>Since Version: 0.7.0</p>
+<p>hoodie.write.commit.callback.kafka.bootstrap.servers<br>kafka 集群的引导服务器,用于发布提交元数据.<br>默认值:N/A(必需)<br>Config Param: BOOTSTRAP_SERVERS<br>Since Version: 0.7.0</p>
+<h3 id="锁配置"><a href="#锁配置" class="headerlink" title="锁配置"></a>锁配置</h3><p>控制 Hudi 表写入者之间并发控制所需的锁定机制的配置.<br>Hudi 自己的表服务之间的并发是在内部自动管理的.<br>Config Class: org.apache.hudi.config.HoodieLockConfig</p>
+<p>hoodie.write.lock.zookeeper.base_path<br>Zookeeper 上创建锁相关 ZNode 的基本路径.<br>对于同一个表的所有并发写入者,这应该是相同的<br>默认值:N/A(必需)<br>Config Param: ZK_BASE_PATH<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.zookeeper.lock_key<br>创建 ZNode 并获取锁的 base_path 下的键名.<br>zk 上的最终路径将类似于 base_path/lock_key.<br>如果未设置此参数,我们将其设置为表名<br>默认值:N/A (Required)<br>Config Param: ZK_LOCK_KEY<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.client.num_retries<br>重试从锁管理器额外获取锁的最大次数.<br>默认值:10(可选)<br>Config Param: LOCK_ACQUIRE_CLIENT_NUM_RETRIES<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.wait_time_ms_between_retry<br>重试获取锁之间等待的初始时间量,后续重试将呈指数回退.<br>默认值:1000(可选)<br>Config Param: LOCK_ACQUIRE_RETRY_WAIT_TIME_IN_MILLIS<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.num_retries<br>每个锁提供者重试锁获取的最大次数<br>默认值:15(可选)<br>Config Param: LOCK_ACQUIRE_NUM_RETRIES<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.wait_time_ms<br>在锁提供者处等待单个锁获取()调用的超时(以毫秒为单位).<br>默认值:60000(可选)<br>Config Param: LOCK_ACQUIRE_WAIT_TIMEOUT_MS<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.zookeeper.connection_timeout_ms<br>超时毫秒,等待与 Zookeeper 建立连接.<br>默认值:15000(可选)<br>Config Param: ZK_CONNECTION_TIMEOUT_MS<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.zookeeper.port<br>要连接的 Zookeeper 端口.<br>默认值:N/A(必需)<br>Config Param: ZK_PORT<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.hivemetastore.table<br>对于基于 Hive 的锁提供程序,Hive 表根据获取锁<br>默认值:N/A(必需)<br>Config Param: HIVE_TABLE_NAME<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.zookeeper.url<br>要连接到的 Zookeeper URL.<br>默认值:N/A(必需)<br>Config Param: ZK_CONNECT_URL<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.filesystem.expire<br>对于基于 DFS 的锁提供者,过期时间以分钟为单位,必须是非负数,默认表示没有过期<br>默认值:0(可选)<br>Config Param: FILESYSTEM_LOCK_EXPIRE<br>Since Version: 0.12.0</p>
+<p>hoodie.write.lock.filesystem.path<br>对于基于 DFS 的锁提供程序,存储锁的路径.<br>使用表的元路径作为默认<br>默认值:N/A(必需)<br>Config Param: FILESYSTEM_LOCK_PATH<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.provider<br>锁提供者类名,用户可以提供自己的 LockProvider 实现,它应该是 org.apache.hudi.common.lock.LockProvider 的子类<br>默认值:org.apache.hudi.client.transaction.lock.ZookeeperBasedLockProvider (可选)<br>Config Param: LOCK_PROVIDER_CLASS_NAME<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.zookeeper.session_timeout_ms<br>超时(毫秒),在失去与 ZooKeeper 的连接后,在会话过期之前等待<br>默认值:60000(可选)<br>Config Param: ZK_SESSION_TIMEOUT_MS<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.conflict.resolution.strategy<br>锁提供者类名,应该是 org.apache.hudi.client.transaction.ConflictResolutionStrategy<br>默认值:org.apache.hudi.client.transaction.SimpleConcurrentFileWritesConflictResolutionStrategy (可选)<br>Config Param: WRITE_CONFLICT_RESOLUTION_STRATEGY_CLASS_NAME<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.hivemetastore.database<br>对于基于 Hive 的锁提供程序,Hive 数据库根据获取锁<br>默认值:N/A(必需)<br>Config Param: HIVE_DATABASE_NAME<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.hivemetastore.uris<br>对于基于 Hive 的锁提供程序,用于获取锁的 Hive 元存储 URI.<br>默认值:N/A(必需)<br>Config Param: HIVE_METASTORE_URI<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.max_wait_time_ms_between_retry<br>锁定提供程序客户端重试之间等待的最长时间.<br>这限制了指数退避的最大延迟.<br>目前仅由基于 ZK 的锁提供者使用.<br>默认值:5000(可选)<br>Config Param: LOCK_ACQUIRE_RETRY_MAX_WAIT_TIME_IN_MILLIS<br>Since Version: 0.8.0</p>
+<p>hoodie.write.lock.client.wait_time_ms_between_retry<br>锁管理器在锁提供者上重试之间等待的时间<br>默认值:10000(可选)<br>Config Param: LOCK_ACQUIRE_CLIENT_RETRY_WAIT_TIME_IN_MILLIS<br>Since Version: 0.8.0</p>
+<h3 id="压缩配置-1"><a href="#压缩配置-1" class="headerlink" title="压缩配置"></a>压缩配置</h3><p>控制压缩的配置(将日志文件合并到新的基础文件中).<br>Config Class: org.apache.hudi.config.HoodieCompactionConfig</p>
+<p>hoodie.compaction.lazy.block.read<br>合并 delta 日志文件时,此配置有助于选择是否应该延迟读取日志块.<br>选择 true 使用延迟块读取(低内存使用,但会导致寻找每个块头)或 false 用于立即块读取(更高的内存使用)<br>默认值:true(可选)<br>Config Param: COMPACTION_LAZY_BLOCK_READ_ENABLE</p>
+<p>hoodie.parquet.small.file.limit<br>在 upsert 操作期间,我们机会性地扩展存储上现有的小文件,而不是写入新文件,以将文件数量保持在最佳状态.<br>此配置设置文件大小限制,低于该限制,存储中的文件将成为候选的small file. 默认情况下,将任何 &lt;= 100MB 的文件视为小文件.<br>另请注意,如果此设置 &lt;= 0,则不会尝试获取小文件并直接写入新文件<br>默认值:104857600(可选)<br>Config Param: PARQUET_SMALL_FILE_LIMIT</p>
+<p>hoodie.compaction.strategy<br>压缩策略决定在每次压缩运行期间选择哪些文件组进行压缩.<br>默认.<br>Hudi 选择累积未合并数据最多的日志文件<br>默认值:org.apache.hudi.table.action.compact.strategy.LogFileSizeBasedCompactionStrategy(可选)<br>Config Param: COMPACTION_STRATEGY</p>
+<p>hoodie.copyonwrite.record.size.estimate<br>平均记录大小.<br>如果未明确指定,hudi 将根据提交元数据动态计算记录大小估计.<br>这对于计算插入并行性和将插入打包到小文件中至关重要.<br>默认值:1024(可选)<br>Config Param: COPY_ON_WRITE_RECORD_SIZE_ESTIMATE</p>
+<p>hoodie.compact.inline.max.delta.seconds<br>上次压缩后,在安排新压缩之前经过的秒数.<br>默认值:3600(可选)<br>Config Param: INLINE_COMPACT_TIME_DELTA_SECONDS</p>
+<p>hoodie.compaction.target.io<br>在 LogFileSizeBasedCompactionStrategy 的压缩运行期间要花费的 MB 数量.<br>此值有助于限制摄取延迟,而压缩是内联模式运行的.<br>默认值:512000(可选)<br>Config Param: TARGET_IO_PER_COMPACTION_IN_MB</p>
+<p>hoodie.compaction.logfile.size.threshold<br>仅当日志文件大小大于以字节为单位的阈值时,才会压缩文件组.<br>默认值:0(可选)<br>Config Param: COMPACTION_LOG_FILE_SIZE_THRESHOLD</p>
+<p>hoodie.compaction.preserve.commit.metadata<br>重写数据时,保留现有的 hoodie_commit_time<br>默认值:true(可选)<br>Config Param: PRESERVE_COMMIT_METADATA<br>Since Version: 0.11.0</p>
+<p>hoodie.copyonwrite.insert.auto.split<br>配置以控制我们是否根据平均记录大小自动控制插入拆分大小.<br>建议保持打开状态,否则手动调音非常麻烦.<br>默认值:true(可选)<br>Config Param: COPY_ON_WRITE_AUTO_SPLIT_INSERTS</p>
+<p>hoodie.compact.inline.max.delta.commits<br>在尝试安排新的压缩之前,最后一次压缩之后的增量提交数.<br>默认值:5(可选)<br>Config Param: INLINE_COMPACT_NUM_DELTA_COMMITS</p>
+<p>hoodie.record.size.estimation.threshold<br>我们使用之前提交的元数据来计算估计的记录大小,并使用它将记录打包到分区中.<br>如果之前的提交太小而无法做出准确的估计,Hudi 将按相反的顺序搜索提交,直到我们找到一个 totalBytesWritten 大于 (PARQUET_SMALL_FILE_LIMIT_BYTES * this_threshold) 的提交<br>默认值:1.0(可选)<br>Config Param: RECORD_SIZE_ESTIMATION_THRESHOLD</p>
+<p>hoodie.compact.inline.trigger.strategy<br>通过时间或 num delta 提交或两者的组合来控制如何触发压缩调度.<br>有效选项:NUM_COMMITS、NUM_COMMITS_AFTER_LAST_REQUEST、TIME_ELAPSED、NUM_AND_TIME、NUM_OR_TIME<br>默认值:NUM_COMMITS(可选)<br>Config Param: INLINE_COMPACT_TRIGGER_STRATEGY</p>
+<p>hoodie.compaction.reverse.log.read<br>HoodieLogFormatReader 从 pos=0 到 pos=file_length 正向读取日志文件.<br>如果此配置设置为 true,则阅读器以相反方向读取日志文件,从 pos=file_length 到 pos=0<br>默认值:false(可选)<br>Config Param: COMPACTION_REVERSE_LOG_READ_ENABLE</p>
+<p>hoodie.copyonwrite.insert.split.size<br>为每个分区/桶分配的用于写入的插入数.<br>我们的默认设置是写出 100MB 的文件,至少有 1kb 的记录(每个文件 100K 记录),并且超过 500K.<br>只要打开了拆分的自动调整,这只会影响第一次写入,没有历史可以从中学习记录大小.<br>默认值:500000(可选)<br>Config Param: COPY_ON_WRITE_INSERT_SPLIT_SIZE</p>
+<p>hoodie.compact.schedule.inline<br>当设置为 true 时,压缩服务将在每次写入后尝试进行内联调度.<br>用户必须确保他们有一个单独的作业来为此编写器调度的作业运行异步压缩(执行).<br>用户可以选择将两者都设置为 false,hoodie.compact.inline并hoodie.compact.schedule.inline让任何异步进程同时触发调度和执行.<br>但是如果hoodie.compact.inline设置为 false 并hoodie.compact.schedule.inline设置为 true,则常规编写器将安排内联压缩,但预计用户会触发异步作业执行.<br>如果hoodie.compact.inline设置为 true,则常规编写器将同时进行调度和内联执行以进行压缩<br>默认值:false(可选)<br>Config Param: SCHEDULE_INLINE_COMPACT</p>
+<p>hoodie.compaction.daybased.target.partitions<br>由 org.apache.hudi.io.compact.strategy.DayBasedCompactionStrategy 用来表示在压缩运行期间要压缩的最新分区数.<br>默认值:10(可选)<br>Config Param: TARGET_PARTITIONS_PER_DAYBASED_COMPACTION</p>
+<p>hoodie.compact.inline<br>设置为 true 时,每次写入后都会触发压缩服务.<br>虽然操作上更简单,但这会在写入路径上增加额外的延迟.<br>默认值:false(可选)<br>Config Param: INLINE_COMPACT</p>
+<h3 id="文件系统视图存储配置"><a href="#文件系统视图存储配置" class="headerlink" title="文件系统视图存储配置"></a>文件系统视图存储配置</h3><p>控制 Hudi 如何存储文件元数据的配置,用于事务处理和查询.<br>Config Class: org.apache.hudi.common.table.view.FileSystemViewStorageConfig</p>
+<p>hoodie.filesystem.view.remote.retry.exceptions<br>需要重试的Exception的类名,逗号分隔.<br>默认为空,这意味着重试远程请求中的所有 IOException 和 RuntimeException.<br>默认值:(可选)<br>Config Param: RETRY_EXCEPTIONS<br>Since Version: 0.12.0</p>
+<p>hoodie.filesystem.view.remote.retry.initial_interval_ms<br>在重试对存储执行操作之前等待的时间量(以毫秒为单位).<br>默认值:100(可选)<br>Config Param: REMOTE_INITIAL_RETRY_INTERVAL_MS<br>Since Version: 0.12.0</p>
+<p>hoodie.filesystem.view.spillable.replaced.mem.fraction<br>文件系统视图内存的一部分,用于保存替换提交相关的元数据.<br>默认值:0.01(可选)<br>Config Param: SPILLABLE_REPLACED_MEM_FRACTION</p>
+<p>hoodie.filesystem.view.spillable.dir<br>当文件系统视图保存在可溢出映射中时,要使用的本地存储路径.<br>默认值:/tmp/(可选)<br>Config Param: SPILLABLE_DIR</p>
+<p>hoodie.filesystem.remote.backup.view.enable<br>配置以控制如果客户端无法访问时间线服务是否需要配置备份.<br>默认值:true(可选)<br>Config Param: REMOTE_BACKUP_VIEW_ENABLE</p>
+<p>hoodie.filesystem.view.spillable.compaction.mem.fraction<br>文件系统视图内存的一部分,用于保存与压缩相关的元数据.<br>默认值:0.8(可选)<br>Config Param: SPILLABLE_COMPACTION_MEM_FRACTION</p>
+<p>hoodie.filesystem.view.remote.retry.max_numbers<br>针对远程文件系统视图的 API 请求的最大重试次数.<br>例如时间线服务器.<br>默认值:3(可选)<br>Config Param: REMOTE_MAX_RETRY_NUMBERS<br>Since Version: 0.12.0</p>
+<p>hoodie.filesystem.view.spillable.mem<br>在溢出到磁盘之前,用于保存文件系统视图的内存量(以字节为单位).<br>默认值:104857600(可选)<br>Config Param: SPILLABLE_MEMORY</p>
+<p>hoodie.filesystem.view.secondary.type<br>如果主要(例如时间线服务器)不可用,则指定文件系统视图的次要存储形式.<br>默认值:MEMORY(可选)<br>Config Param: SECONDARY_VIEW_TYPE</p>
+<p>hoodie.filesystem.view.remote.retry.enable<br>是否为远程文件系统视图启用 API 请求重试.<br>默认值:false(可选)<br>Config Param: REMOTE_RETRY_ENABLE<br>Since Version: 0.12.0</p>
+<p>hoodie.filesystem.view.remote.host<br>我们希望这很少是手动配置的.<br>默认值:localhost(可选)<br>Config Param: REMOTE_HOST_NAME</p>
+<p>hoodie.filesystem.view.remote.retry.max_interval_ms<br>等待下一次重试的最长时间(以毫秒为单位).<br>默认值:2000(可选)<br>Config Param: REMOTE_MAX_RETRY_INTERVAL_MS<br>Since Version: 0.12.0</p>
+<p>hoodie.filesystem.view.type<br>文件系统视图提供 API 用于查看底层湖存储上的文件,如文件组和文件切片.<br>此配置控制如何保持这样的视图.<br>选项包括 MEMORY、SPILLABLE_DISK、EMBEDDED_KV_STORE、REMOTE_ONLY、REMOTE_FIRST,它们为内存使用和 API 请求性能提供了不同的权衡.<br>默认值:MEMORY(可选)<br>Config Param: VIEW_TYPE</p>
+<p>hoodie.filesystem.view.remote.timeout.secs<br>以秒为单位的超时,等待针对远程文件系统视图的 API 请求.<br>例如时间线服务器.<br>默认值:300(可选)<br>Config Param: REMOTE_TIMEOUT_SECS</p>
+<p>hoodie.filesystem.view.remote.port<br>远程时服务文件系统视图查询的端口.<br>我们希望这很少是手动配置的.<br>默认值:26754(可选)<br>Config Param: REMOTE_PORT_NUM</p>
+<p>hoodie.filesystem.view.spillable.bootstrap.base.file.mem.fraction<br>文件系统视图内存的一部分,用于保存到引导程序基本文件的映射.<br>默认值:0.05(可选)<br>Config Param: BOOTSTRAP_BASE_FILE_MEM_FRACTION</p>
+<p>hoodie.filesystem.view.spillable.clustering.mem.fraction<br>文件系统视图内存的一部分,用于保存与集群相关的元数据.<br>默认值:0.01(可选)<br>Config Param: SPILLABLE_CLUSTERING_MEM_FRACTION</p>
+<p>hoodie.filesystem.view.rocksdb.base.path<br>在嵌入式 kv store/rocksdb 中存储文件系统视图时要使用的本地存储路径.<br>默认值:/tmp/hoodie_timeline_rocksdb(可选)<br>Config Param: ROCKSDB_BASE_PATH</p>
+<p>hoodie.filesystem.view.incr.timeline.sync.enable<br>控制文件系统视图是否随着时间轴上执行新操作而增量更新.<br>默认值:false(可选)<br>Config Param: INCREMENTAL_TIMELINE_SYNC_ENABLE</p>
+<h3 id="索引配置-1"><a href="#索引配置-1" class="headerlink" title="索引配置"></a>索引配置</h3><p>控制索引行为的配置,将传入记录标记为对旧记录的插入或更新.<br>Config Class: org.apache.hudi.config.HoodieIndexConfig</p>
+<p>hoodie.index.bloom.num_entries<br>仅在索引类型为 BLOOM 时适用.<br>这是要存储在布隆过滤器中的条目数.<br>默认的基本原理:假设 maxParquetFileSize 为 128MB,averageRecordSize 为 1kb,因此我们在一个文件中总共大约有 130K 记录.<br>默认值 (60000) 大约是这个近似值的一半.<br>警告:将这个设置得非常低,会产生很多误报,索引查找将不得不扫描比它必须扫描的更多的文件,并且将其设置为一个非常高的数字将线性增加每个基本文件的大小(每个基本文件大约 4KB 50000 个条目).<br>此配置还与 DYNAMIC 布隆过滤器一起使用,该过滤器确定布隆的初始大小.<br>默认值:60000(可选)<br>Config Param: BLOOM_FILTER_NUM_ENTRIES_VALUE</p>
+<p>hoodie.bloom.index.keys.per.bucket<br>仅在启用bloomIndexBucketizedChecking 且索引类型为bloom 时适用.<br>此配置控制&quot;桶&quot;大小,它跟踪针对单个文件进行的记录键检查的数量,并且是分配给执行布隆过滤器查找的每个分区的工作单元.<br>较高的值将分摊将布隆过滤器读取到内存的固定成本.<br>默认值:10000000(可选)<br>Config Param: BLOOM_INDEX_KEYS_PER_BUCKET</p>
+<p>hoodie.simple.index.input.storage.level<br>仅在设置 #simpleIndexUseCaching 时适用.<br>确定用于缓存输入 RDD 的持久性级别.<br>不同值参考 org.apache.spark.storage.StorageLevel<br>默认值:MEMORY_AND_DISK_SER(可选)<br>Config Param: SIMPLE_INDEX_INPUT_STORAGE_LEVEL_VALUE</p>
+<p>hoodie.simple.index.parallelism<br>仅在索引类型为 SIMPLE 时适用.<br>这是索引查找的并行量,其中涉及 Spark Shuffle<br>默认值:100(可选)<br>Config Param: SIMPLE_INDEX_PARALLELISM</p>
+<p>hoodie.global.simple.index.parallelism<br>仅在索引类型为 GLOBAL_SIMPLE 时适用.<br>这是索引查找的并行量,其中涉及 Spark Shuffle<br>默认值:100(可选)<br>Config Param: GLOBAL_SIMPLE_INDEX_PARALLELISM</p>
+<p>hoodie.simple.index.update.partition.path<br>类似于 Key: &#39;hoodie.bloom.index.update.partition.path&#39; ,默认值:true 描述:仅在索引类型为 GLOBAL_BLOOM 时适用.<br>当设置为 true 时,包含已存在记录的分区路径的更新将导致将传入记录插入新分区并删除旧分区中的原始记录.<br>当设置为false时,原始记录将只在旧分区中更新,因为版本:未定义版本已弃用:未定义版本),但用于简单索引.<br>默认值:true(可选)<br>Config Param: SIMPLE_INDEX_UPDATE_PARTITION_PATH_ENABLE</p>
+<p>hoodie.bucket.index.num.buckets<br>仅在索引类型为 BUCKET 时适用.<br>确定hudi表的桶数,每个分区分为N个桶.<br>默认值:256(可选)<br>Config Param: BUCKET_INDEX_NUM_BUCKETS</p>
+<p>hoodie.bucket.index.hash.field<br>索引键.<br>它用于索引记录并查找其文件组.<br>如果未设置,则使用记录键字段作为默认<br>值 默认值:N/A(必填)<br>Config Param: BUCKET_INDEX_HASH_FIELD</p>
+<p>hoodie.bloom.index.use.metadata<br>仅当索引类型为 BLOOM 时才适用.<br>当为 true 时,索引查找将使用元数据表中的布隆过滤器和列统计信息(如果可用)以加快进程.<br>默认值:false(可选)<br>Config Param: BLOOM_INDEX_USE_METADATA<br>Since Version: 0.11.0</p>
+<p>hoodie.bloom.index.bucketized.checking<br>仅在索引类型为 BLOOM 时适用.<br>如果为 true,则启用分桶布隆过滤.<br>这减少了在基于排序的布隆索引查找中看到的偏差<br>默认值:true(可选)<br>Config Param: BLOOM_INDEX_BUCKETIZED_CHECKING</p>
+<p>hoodie.index.type<br>要使用的索引类型.<br>在 Spark 引擎上默认为 SIMPLE,在 Flink 和 Java 引擎上默认为 INMEMORY.<br>可能的选项是<code>[BLOOM | GLOBAL_BLOOM |SIMPLE | GLOBAL_SIMPLE | INMEMORY | HBASE | BUCKET]</code>.<br>Bloom 过滤器消除了对外部系统的依赖,并存储在 Parquet 数据文件的页脚<br>默认值:N/A(必需)<br>Config Param: INDEX_TYPE</p>
+<p>hoodie.index.bloom.fpp<br>仅在索引类型为 BLOOM 时适用.<br>给定条目数允许的错误率.<br>这用于计算应该为布隆过滤器分配多少位以及散列函数的数量.<br>这通常设置得非常低(默认值:0.000000001),我们喜欢权衡磁盘空间以降低误报率.<br>如果添加到布隆过滤器的条目数超过配置的值 (hoodie.index.bloom.num_entries),则此 fpp 可能不会被兑现.<br>默认值:0.000000001(可选)<br>Config Param: BLOOM_FILTER_FPP_VALUE</p>
+<p>hoodie.bloom.index.update.partition.path<br>仅在索引类型为 GLOBAL_BLOOM 时适用.<br>当设置为 true 时,包含已存在记录的分区路径的更新将导致将传入记录插入新分区并删除旧分区中的原始记录.<br>设置为 false 时,仅在旧分区中更新原始记录<br>默认值:true(可选)<br>Config Param: BLOOM_INDEX_UPDATE_PARTITION_PATH_ENABLE</p>
+<p>hoodie.bloom.index.use.caching<br>仅在索引类型为 BLOOM 时适用.<br>当为 true 时,输入 RDD 将缓存以通过减少 IO 用于计算并行度或受影响的分区来加速索引查找<br>默认值:true(可选)<br>Config Param: BLOOM_INDEX_USE_CACHING</p>
+<p>hoodie.bloom.index.input.storage.level<br>仅在设置 #bloomIndexUseCaching 时适用.<br>确定用于缓存输入 RDD 的持久性级别.<br>不同值参考 org.apache.spark.storage.StorageLevel<br>默认值:MEMORY_AND_DISK_SER(可选)<br>Config Param: BLOOM_INDEX_INPUT_STORAGE_LEVEL_VALUE</p>
+<p>hoodie.bloom.index.use.treebased.filter<br>仅在索引类型为 BLOOM 时适用.<br>如果为 true,则启用基于间隔树的文件修剪优化.<br>与蛮力模式相比,此模式基于键范围加快文件修剪<br>默认值:true(可选)<br>Config Param: BLOOM_INDEX_TREE_BASED_FILTER</p>
+<p>hoodie.bloom.index.parallelism<br>仅在索引类型为 BLOOM 时适用.<br>这是索引查找的并行量,其中涉及洗牌.<br>默认情况下,这是根据输入工作负载特征自动计算的.<br>默认值:0(可选)<br>Config Param: BLOOM_INDEX_PARALLELISM</p>
+<p>hoodie.index.bucket.engine<br>要使用的存储桶索引引擎的类型.<br>默认为 SIMPLE 存储桶索引,具有固定数量的存储桶.<br>可能的选项是<code>[SIMPLE | CONSISTENT_HASHING]</code> .<br>Consistent hashing支持动态调整bucket数量,解决SIMPLE hashing引擎潜在的数据倾斜和文件大小问题.<br>默认值:SIMPLE(可选)<br>Config Param: BUCKET_INDEX_ENGINE_TYPE<br>Since Version: 0.11.0</p>
+<p>hoodie.bloom.index.filter.dynamic.max.entries<br>在动态布隆过滤器行中记录的最大键数的阈值.<br>仅在过滤器类型为 BloomFilterTypeCode.DYNAMIC_V0 时适用.<br>默认值:100000(可选)<br>Config Param: BLOOM_INDEX_FILTER_DYNAMIC_MAX_ENTRIES</p>
+<p>hoodie.simple.index.use.caching<br>仅在索引类型为 SIMPLE 时适用.<br>当为 true 时,传入的写入将缓存以通过减少计算并行性或受影响分区的 IO 来加速索引查找<br>默认值:true(可选)<br>Config Param: SIMPLE_INDEX_USE_CACHING</p>
+<p>hoodie.bloom.index.prune.by.ranges<br>仅在索引类型为 BLOOM 时适用.<br>如果为真,则从文件到杠杆的范围信息可加快索引查找.<br>如果键具有单调递增的前缀(例如时间戳),则特别有用.<br>如果记录键是完全随机的,最好关闭它,因为范围修剪只会增加索引查找的额外开销.<br>默认值:true(可选)<br>Config Param: BLOOM_INDEX_PRUNE_BY_RANGES</p>
+<p>hoodie.bloom.index.filter.type<br>使用的过滤器类型.<br>默认为 BloomFilterTypeCode.DYNAMIC_V0.<br>可用值为<code>[BloomFilterTypeCode.SIMPLE , BloomFilterTypeCode.DYNAMIC_V0]</code> .<br>动态布隆过滤器会根据键的数量自动调整大小.<br>默认值:DYNAMIC_V0(可选)<br>Config Param: BLOOM_FILTER_TYPE</p>
+<p>hoodie.index.class<br>用户自定义索引类的完整路径,必须是 HoodieIndex 类的子类.<br>如果指定默认值,它将优先于 hoodie.index.type 配置.<br>默认值:(可选)<br>Config Param: INDEX_CLASS_NAME</p>
+<h3 id="集群配置"><a href="#集群配置" class="headerlink" title="集群配置"></a>集群配置</h3><p>在 hudi 中控制集群表服务的配置,通过对数据文件进行排序和调整大小来优化存储布局以获得更好的查询性能.<br>Config Class: org.apache.hudi.config.HoodieClusteringConfig</p>
+<p>hoodie.clustering.plan.strategy.cluster.end.partition<br>结束分区用于过滤分区(包括),仅当过滤模式&#39;hoodie.clustering.plan.partition.filter.mode&#39;为SELECTED_PARTITIONS时有效<br>默认值:N/A(必填)<br>Config Param: PARTITION_FILTER_END_PARTITION<br>Since Version: 0.11.0</p>
+<p>hoodie.clustering.rollback.pending.replacecommit.on.conflict<br>如果允许对挂起集群的文件组进行更新,则将此配置设置为回滚失败或挂起的集群时刻.<br>仅当传入的 upsert 和要集群的文件组之间存在冲突时,才会回滚待处理的集群.<br>设置此配置时请谨慎行事,尤其是在非常频繁地进行集群时.<br>在极少数情况下,这可能会导致竞争条件,例如,当集群在获取瞬间后但在回滚完成之前完成时.<br>默认值:false(可选)<br>Config Param: ROLLBACK_PENDING_CLUSTERING_ON_CONFLICT<br>Since Version: 0.10.0</p>
+<p>hoodie.clustering.async.max.commits<br>配置为控制异步集群的频率<br>默认值:4(可选)<br>Config Param: ASYNC_CLUSTERING_MAX_COMMITS<br>Since Version: 0.9.0</p>
+<p>hoodie.clustering.inline.max.commits<br>配置以控制集群计划的频率<br>默认值:4(可选)<br>Config Param: INLINE_CLUSTERING_MAX_COMMITS<br>Since Version: 0.7.0</p>
+<p>hoodie.layout.optimize.enable<br>此设置无效.<br>请参考集群配置,以及 LAYOUT_OPTIMIZE_STRATEGY 配置以启用高级记录布局优化策略<br>默认值:false(可选)<br>Config Param: LAYOUT_OPTIMIZE_ENABLE<br>Since Version: 0.10.0<br>Deprecated Version: 0.11.0</p>
+<p>hoodie.clustering.plan.strategy.target.file.max.bytes<br>每个组可以产生&#39;N&#39;(CLUSTERING_MAX_GROUP_SIZE/CLUSTERING_TARGET_FILE_SIZE)输出文件组<br>默认值:1073741824(可选)<br>Config Param: PLAN_STRATEGY_TARGET_FILE_MAX_BYTES<br>Since Version: 0.7.0</p>
+<p>hoodie.clustering.plan.strategy.daybased.skipfromlatest.partitions<br>选择创建 ClusteringPlan 的分区时要从最新跳过的分区数<br>默认值:0(可选)<br>Config Param: PLAN_STRATEGY_SKIP_PARTITIONS_FROM_LATEST<br>Since Version: 0.9.0</p>
+<p>hoodie.clustering.execution.strategy.class<br>配置提供一个策略类(RunClusteringStrategy 的子类)来定义如何执行集群计划.<br>默认情况下,我们按指定列对计划中的文件组进行排序,同时满足配置的目标文件大小.<br>默认值:org.apache.hudi.client.clustering.run.strategy.SparkSortAndSizeExecutionStrategy(可选)<br>Config Param: EXECUTION_STRATEGY_CLASS_NAME<br>Since Version: 0.7.0</p>
+<p>hoodie.clustering.async.enabled<br>启用集群服务的运行,在表上发生插入时异步运行.<br>默认值:false(可选)<br>Config Param: ASYNC_CLUSTERING_ENABLE<br>Since Version: 0.7.0</p>
+<p>hoodie.clustering.plan.strategy.class<br>配置为提供一个策略类(ClusteringPlanStrategy 的子类)来创建集群计划,即选择要集群的文件组.<br>默认策略,查看集群小文件大小限制(由 hoodie.clustering.plan.strategy.small.file.limit 确定)以选择分区内的小文件切片进行集群.<br>默认值:org.apache.hudi.client.clustering.plan.strategy.SparkSizeBasedClusteringPlanStrategy(可选)<br>Config Param: PLAN_STRATEGY_CLASS_NAME<br>Since Version: 0.7.0</p>
+<p>hoodie.layout.optimize.build.curve.sample.size<br>确定构建空间填充曲线的基于边界的交错索引方法使用的目标样本大小.<br>更大的样本量需要更好的布局优化结果,但代价是更高的内存占用.<br>默认值:200000(可选)<br>Config Param: LAYOUT_OPTIMIZE_BUILD_CURVE_SAMPLE_SIZE<br>Since Version: 0.10.0</p>
+<p>hoodie.clustering.plan.strategy.partition.selected<br>运行集群的分区<br>默认值:N/A(必需)<br>Config Param: PARTITION_SELECTED<br>Since Version: 0.11.0</p>
+<p>hoodie.clustering.updates.strategy<br>确定如何处理集群下的文件组的更新、删除.<br>默认策略只是拒绝更新<br>默认值:org.apache.hudi.client.clustering.update.strategy.SparkRejectUpdateStrategy(可选)<br>Config Param: UPDATES_STRATEGY<br>Since Version: 0.7.0</p>
+<p>hoodie.layout.optimize.strategy<br>确定记录布局优化中使用的排序策略.<br>当前支持的策略是&quot;linear&quot;、&quot;z-order&quot;和&quot;hilbert&quot;值.<br>默认值:linear(可选)<br>Config Param: LAYOUT_OPTIMIZE_STRATEGY<br>Since Version: 0.10.0</p>
+<p>hoodie.clustering.inline<br>打开内联集群 -每次写入操作完成后将运行集群<br>默认值:false(可选)<br>Config Param: INLINE_CLUSTERING<br>Since Version: 0.7.0</p>
+<p>hoodie.clustering.plan.strategy.cluster.begin.partition<br>开始分区用于过滤分区(包括),仅当过滤模式 &#39;hoodie.clustering.plan.partition.filter.mode&#39; 为 SELECTED_PARTITIONS时有效<br>默认值:N/A(必填)<br>Config Param: PARTITION_FILTER_BEGIN_PARTITION<br>Since Version: 0.11.0</p>
+<p>hoodie.clustering.plan.strategy.sort.columns<br>聚类时用于对数据进行排序的列<br>默认值:N/A(必需)<br>Config Param: PLAN_STRATEGY_SORT_COLUMNS<br>Since Version: 0.7.0</p>
+<p>hoodie.clustering.preserve.commit.metadata<br>重写数据时,保留现有的 hoodie_commit_time<br>默认值:true(可选)<br>Config Param: PRESERVE_COMMIT_METADATA<br>Since Version: 0.9.0</p>
+<p>hoodie.clustering.plan.strategy.max.num.groups<br>作为 ClusteringPlan 的一部分创建的最大组数.<br>增加组将增加并行度<br>默认值:30(可选)<br>Config Param: PLAN_STRATEGY_MAX_GROUPS<br>Since Version: 0.7.0</p>
+<p>hoodie.clustering.plan.partition.filter.mode<br>用于创建集群计划的分区过滤模式.<br>可用值为:<br>1)NONE:不过滤表分区,因此集群计划将包括所有具有集群候选者的分区.<br>2)RECENT_DAYS:保持分区的连续范围,与配置一起使用 &#39;hoodie.clustering.plan.strategy.daybased.lookback .partitions&#39; 和 &#39;hoodie.clustering.plan.strategy.daybased.skipfromlatest.partitions.<br>3)SELECTED_PARTITIONS:保留指定范围内的分区<code>[&#39;hoodie.clustering.plan.strategy.cluster.begin.partition&#39;, &#39;hoodie.clustering .plan.strategy.cluster.end.partition&#39;]</code> .<br>默认值:无(可选)<br>Config Param: PLAN_PARTITION_FILTER_MODE_NAME<br>Since Version: 0.11.0</p>
+<p>hoodie.clustering.schedule.inline<br>当设置为 true 时,集群服务将在每次写入后尝试进行内联调度.<br>用户必须确保他们有一个单独的作业来为这个作者安排的那个运行异步集群(执行).<br>用户可以选择将两者都设置为 false,hoodie.clustering.inline并且hoodie.clustering.schedule.inline调度和执行都由任何异步进程触发,在这种情况下hoodie.clustering.async.enabled,预计将设置为 true.<br>但如果hoodie.clustering.inline设置为 false 并hoodie.clustering.schedule.inline设置为 true,则常规编写器将调度内联集群,但预计用户会触发异步作业执行.<br>如果hoodie.clustering.inline设置为 true,则常规编写器将为集群内联进行调度和执行<br>默认值:false(可选)<br>Config Param: SCHEDULE_INLINE_CLUSTERING</p>
+<p>hoodie.layout.optimize.data.skipping.enable<br>布局优化完成后,通过收集统计信息来启用数据跳过.<br>默认值:true(可选)<br>Config Param: LAYOUT_OPTIMIZE_DATA_SKIPPING_ENABLE<br>Since Version: 0.10.0<br>Deprecated Version: 0.11.0</p>
+<p>hoodie.clustering.plan.strategy.max.bytes.per.group<br>每个集群操作可以创建多个输出文件组.<br>聚类操作处理的数据总量由以下两个属性定义(CLUSTERING_MAX_BYTES_PER_GROUP * CLUSTERING_MAX_NUM_GROUPS).<br>一组中包含的最大数据量<br>默认值:2147483648(可选)<br>Config Param: PLAN_STRATEGY_MAX_BYTES_PER_OUTPUT_FILEGROUP<br>Since Version: 0.7.0</p>
+<p>hoodie.clustering.plan.strategy.small.file.limit<br>小于此处指定的字节大小的文件是集群的候选者<br>默认值:314572800(可选)<br>Config Param: PLAN_STRATEGY_SMALL_FILE_LIMIT<br>Since Version: 0.7.0</p>
+<p>hoodie.layout.optimize.curve.build.method<br>控制如何对数据进行采样以构建空间填充曲线.<br>两种方法:&quot;direct&quot;、&quot;sample&quot;.<br>直接方法比采样更快,但是采样方法会产生更好的数据布局.<br>默认值:direct(可选)<br>Config Param: LAYOUT_OPTIMIZE_SPATIAL_CURVE_BUILD_METHOD<br>Since Version: 0.10.0</p>
+<p>hoodie.clustering.plan.strategy.partition.regex.pattern<br>过滤匹配正则表达式模式的聚类分区<br>默认值:N/A(必需)<br>Config Param: PARTITION_REGEX_PATTERN<br>Since Version: 0.11.0</p>
+<p>hoodie.clustering.plan.strategy.daybased.lookback.partitions<br>要列出以创建 ClusteringPlan的分区数<br>默认值:2(可选)<br>Config Param: DAYBASED_LOOKBACK_PARTITIONS<br>Since Version: 0.7.0</p>
+<h3 id="常见配置-1"><a href="#常见配置-1" class="headerlink" title="常见配置"></a>常见配置</h3><p>以下一组配置在 Hudi 中很常见.<br>Config Class: org.apache.hudi.common.config.HoodieCommonConfig</p>
+<p>hoodie.common.diskmap.compression.enabled<br>为外部溢出映射使用的 BITCASK 磁盘映射打开压缩<br>默认值:true(可选)<br>Config Param: DISK_MAP_BITCASK_COMPRESSION_ENABLED</p>
+<p>hoodie.datasource.write.reconcile.schema<br>当新一批写入具有旧模式的记录,但最新的表模式得到发展时,此配置将升级记录以利用最新的表模式(默认值将注入缺失的字段).<br>否则,写入批处理将失败.<br>默认值:false(可选)<br>Config Param: RECONCILE_SCHEMA</p>
+<p>hoodie.common.spillable.diskmap.type<br>当处理无法保存在内存中的输入数据时,为了与存储中的文件合并,使用了可溢出的磁盘映射.<br>默认情况下,我们使用松散地基于 bitcask 的持久哈希图,它提供 O(1) 插入、查找.<br>将其更改ROCKS_DB为更喜欢使用 RocksDB 来处理溢出.<br>默认值:BITCASK(可选)<br>Config Param: SPILLABLE_DISK_MAP_TYPE</p>
+<p>hoodie.schema.on.read.enable<br>启用对 Schema Evolution 功能的支持<br>默认值:false(可选)<br>Config Param: SCHEMA_EVOLUTION_ENABLE</p>
+<h3 id="Bootstrap配置"><a href="#Bootstrap配置" class="headerlink" title="Bootstrap配置"></a>Bootstrap配置</h3><p>控制您如何首次将现有表引导到 hudi 的配置.<br>bootstrap 操作可以灵活避免在使用 Hudi 之前复制数据,并支持并行运行现有 writer 和新 hudi writer,以验证迁移.<br>Config Class: org.apache.hudi.config.HoodieBootstrapConfig</p>
+<p>hoodie.bootstrap.partitionpath.translator.class<br>将引导数据中的分区路径转换为 Hudi 表的布局方式.<br>默认值:org.apache.hudi.client.bootstrap.translator.IdentityBootstrapPartitionPathTranslator(可选)<br>Config Param: PARTITION_PATH_TRANSLATOR_CLASS_NAME<br>Since Version: 0.6.0</p>
+<p>hoodie.bootstrap.full.input.provider<br>用于读取引导数据集分区/文件的类,用于引导模式 FULL_RECORD<br>默认值:org.apache.hudi.bootstrap.SparkParquetBootstrapDataProvider(可选)<br>Config Param: FULL_BOOTSTRAP_INPUT_PROVIDER_CLASS_NAME<br>Since Version: 0.6.0</p>
+<p>hoodie.bootstrap.keygen.type<br>内置密钥生成器类型,目前支持 SIMPLE、COMPLEX、TIMESTAMP、CUSTOM、NON_PARTITION、GLOBAL_DELETE<br>默认值:SIMPLE(可选)<br>Config Param: KEYGEN_TYPE<br>Since Version: 0.9.0</p>
+<p>hoodie.bootstrap.keygen.class<br>用于从引导数据集生成密钥的密钥生成器实现<br>默认值:N/A(必需)<br>Config Param: KEYGEN_CLASS_NAME<br>Since Version: 0.6.0</p>
+<p>hoodie.bootstrap.parallelism<br>用于将数据引导到 hudi的并行度值<br>默认值:1500(可选)<br>Config Param: PARALLELISM_VALUE<br>Since Version: 0.6.0</p>
+<p>hoodie.bootstrap.base.path<br>需要作为 Hudi 表引导的数据集的基本路径<br>默认值:N/A(必需)<br>Config Param: BASE_PATH<br>Since Version: 0.6.0</p>
+<p>hoodie.bootstrap.mode.selector.regex<br>将每个引导数据集分区与此正则表达式匹配,并将以下模式应用于它.<br>默认值:.*(可选)<br>Config Param: PARTITION_SELECTOR_REGEX_PATTERN<br>Since Version: 0.6.0</p>
+<p>hoodie.bootstrap.index.class<br>要使用的实现,用于将骨架基础文件映射到 boostrap 基础文件.<br>默认值:org.apache.hudi.common.bootstrap.index.HFileBootstrapIndex(可选)<br>Config Param: INDEX_CLASS_NAME<br>Since Version: 0.6.0</p>
+<p>hoodie.bootstrap.mode.selector.regex.mode<br>引导模式申请分区路径,匹配上面的正则表达式.<br>METADATA_ONLY 将只生成带有键/页脚的骨架基础文件,避免重写数据集的全部成本.<br>FULL_RECORD 将作为 Hudi 表执行数据的完整复制/重写.<br>默认值:METADATA_ONLY(可选)<br>Config Param: PARTITION_SELECTOR_REGEX_MODE<br>Since Version: 0.6.0</p>
+<p>hoodie.bootstrap.mode.selector<br>选择引导数据集中每个文件/分区的引导模式<br>默认值:org.apache.hudi.client.bootstrap.selector.MetadataOnlyBootstrapModeSelector(可选)<br>Config Param: MODE_SELECTOR_CLASS_NAME<br>Since Version: 0.6.0</p>
+<h2 id="Metrics配置-1"><a href="#Metrics配置-1" class="headerlink" title="Metrics配置"></a>Metrics配置</h2><p>这些配置集用于启用对 keyHudi 统计数据和指标的监控和报告.</p>
+<h3 id="Datadog报告-1"><a href="#Datadog报告-1" class="headerlink" title="Datadog报告"></a>Datadog报告</h3><p>启用使用 Datadog 报告器类型报告 Hudi 指标.<br>Hudi 发布每次提交、清理、回滚等的指标.<br>Config Class: org.apache.hudi.config.metrics.HoodieMetricsDatadogConfig</p>
+<p>hoodie.metrics.datadog.api.timeout.seconds<br>Datadog API 超时(以秒为单位).<br>默认为 3.<br>默认值:3(可选)<br>Config Param: API_TIMEOUT_IN_SECONDS<br>Since Version: 0.6.0</p>
+<p>hoodie.metrics.datadog.metric.prefix<br>Datadog 指标前缀要附加到每个指标名称之前,并以点作为分隔符.<br>例如,如果设置为 foo,则 foo. 将被前置.<br>默认值:N/A(必需)<br>Config Param: METRIC_PREFIX_VALUE<br>Since Version: 0.6.0</p>
+<p>hoodie.metrics.datadog.api.site<br>Datadog API 站点:欧盟或美国<br>默认值:N/A(必需)<br>Config Param: API_SITE_VALUE<br>Since Version: 0.6.0</p>
+<p>hoodie.metrics.datadog.api.key.skip.validation<br>在通过 Datadog API 发送指标之前,是否跳过验证 Datadog API 密钥.<br>默认为假.<br>默认值:false(可选)<br>Config Param: API_KEY_SKIP_VALIDATION<br>Since Version: 0.6.0</p>
+<p>hoodie.metrics.datadog.metric.host<br>与度量数据一起发送的 Datadog 度量主机.<br>默认值:N/A(必需)<br>Config Param: METRIC_HOST_NAME<br>Since Version: 0.6.0</p>
+<p>hoodie.metrics.datadog.report.period.seconds<br>Datadog 报告周期(以秒为单位).<br>默认为 30.<br>默认值:30(可选)<br>Config Param: REPORT_PERIOD_IN_SECONDS<br>Since Version: 0.6.0</p>
+<p>hoodie.metrics.datadog.api.key<br>Datadog API 密钥<br>默认值:N/A(必需)<br>Config Param: API_KEY<br>Since Version: 0.6.0</p>
+<p>hoodie.metrics.datadog.api.key.supplier<br>Datadog API 密钥供应商在运行时提供 API 密钥.<br>如果 hoodie.metrics.datadog.api.key 未设置,这将生效.<br>默认值:N/A(必需)<br>Config Param: API_KEY_SUPPLIER<br>Since Version: 0.6.0</p>
+<p>hoodie.metrics.datadog.metric.tags<br>与度量数据一起发送的 Datadog 度量标签(逗号分隔).<br>默认值:N/A(必需)<br>Config Param: METRIC_TAG_VALUES<br>Since Version: 0.6.0</p>
+<h3 id="Metrics配置-2"><a href="#Metrics配置-2" class="headerlink" title="Metrics配置"></a>Metrics配置</h3><p>启用有关 Hudi 指标的报告.<br>Hudi 发布每次提交、清理、回滚等的指标.<br>以下部分列出了支持的报告器.<br>Config Class: org.apache.hudi.config.metrics.HoodieMetricsConfig</p>
+<p>hoodie.metrics.executor.enable<br>默认值:N/A(必需)<br>Config Param: EXECUTOR_METRICS_ENABLE<br>自版本:0.7.0</p>
+<p>hoodie.metrics.reporter.metricsname.prefix<br>给指标名称的前缀.<br>默认值:(可选)<br>Config Param: METRICS_REPORTER_PREFIX<br>Since Version: 0.11.0</p>
+<p>hoodie.metrics.reporter.type<br>指标报告者的类型.<br>默认值:GRAPHITE(可选)<br>Config Param: METRICS_REPORTER_TYPE_VALUE<br>Since Version: 0.5.0</p>
+<p>hoodie.metrics.reporter.class<br>默认值:(可选)<br>Config Param: METRICS_REPORTER_CLASS_NAME<br>自版本:0.6.0</p>
+<p>hoodie.metrics.on<br>打开/关闭指标报告.<br>默认关闭.<br>默认值:false(可选)<br>Config Param: TURN_METRICS_ON<br>Since Version: 0.5.0</p>
+<h3 id="Jmx的指标配置"><a href="#Jmx的指标配置" class="headerlink" title="Jmx的指标配置"></a>Jmx的指标配置</h3><p>启用使用 Jmx 报告 Hudi 指标.<br>Hudi 发布每次提交、清理、回滚等的指标.<br>Config Class: org.apache.hudi.config.metrics.HoodieMetricsJmxConfig</p>
+<p>hoodie.metrics.jmx.host<br>连接到的 Jmx 主机<br>默认值:localhost(可选)<br>Config Param: JMX_HOST_NAME<br>Since Version: 0.5.1</p>
+<p>hoodie.metrics.jmx.port<br>Jmx 端口连接<br>默认值:9889(可选)<br>Config Param: JMX_PORT_NUM<br>Since Version: 0.5.1</p>
+<h3 id="Prometheus的指标配置"><a href="#Prometheus的指标配置" class="headerlink" title="Prometheus的指标配置"></a>Prometheus的指标配置</h3><p>启用使用 Prometheus 报告 Hudi 指标.<br>Hudi 发布每次提交、清理、回滚等的指标.<br>Config Class: org.apache.hudi.config.metrics.HoodieMetricsPrometheusConfig</p>
+<p>hoodie.metrics.pushgateway.random.job.name.suffix<br>pushgateway 名称是否需要随机后缀,默认为 true.<br>默认值:true(可选)<br>Config Param: PUSHGATEWAY_RANDOM_JOBNAME_SUFFIX<br>Since Version: 0.6.0</p>
+<p>hoodie.metrics.pushgateway.port<br>推送网关的端口.<br>默认值:9091(可选)<br>Config Param: PUSHGATEWAY_PORT_NUM<br>Since Version: 0.6.0</p>
+<p>hoodie.metrics.pushgateway.delete.on.shutdown<br>作业关闭时是否删除推送网关信息,默认为true.<br>默认值:true(可选)<br>Config Param: PUSHGATEWAY_DELETE_ON_SHUTDOWN_ENABLE<br>Since Version: 0.6.0</p>
+<p>hoodie.metrics.prometheus.port<br>prometheus 服务器的端口.<br>默认值:9090(可选)<br>Config Param: PROMETHEUS_PORT_NUM<br>Since Version: 0.6.0</p>
+<p>hoodie.metrics.pushgateway.job.name<br>推送网关作业的名称.<br>默认值:(可选)<br>Config Param: PUSHGATEWAY_JOBNAME<br>Since Version: 0.6.0</p>
+<p>hoodie.metrics.pushgateway.report.period.seconds<br>以秒为单位的报告间隔.<br>默认值:30(可选)<br>Config Param: PUSHGATEWAY_REPORT_PERIOD_IN_SECONDS<br>Since Version: 0.6.0</p>
+<p>hoodie.metrics.pushgateway.host<br>prometheus 推送网关的主机名.<br>默认值:localhost(可选)<br>Config Param: PUSHGATEWAY_HOST_NAME<br>Since Version: 0.6.0</p>
+<h3 id="Graphite的指标配置"><a href="#Graphite的指标配置" class="headerlink" title="Graphite的指标配置"></a>Graphite的指标配置</h3><p>启用使用 Graphite 报告 Hudi 指标.<br>Hudi 发布每次提交、清理、回滚等的指标.<br>Config Class: org.apache.hudi.config.metrics.HoodieMetricsGraphiteConfig</p>
+<p>hoodie.metrics.graphite.port<br>要连接的Graphite端口.<br>默认值:4756(可选)<br>Config Param: GRAPHITE_SERVER_PORT_NUM<br>Since Version: 0.5.0</p>
+<p>hoodie.metrics.graphite.report.period.seconds<br>Graphite 报告周期(以秒为单位).<br>默认为 30.<br>默认值:30(可选)<br>Config Param: GRAPHITE_REPORT_PERIOD_IN_SECONDS<br>Since Version: 0.10.0</p>
+<p>hoodie.metrics.graphite.host<br>要连接的Graphite主机.<br>默认值:本地主机(可选)<br>Config Param: GRAPHITE_SERVER_HOST_NAME<br>Since Version: 0.5.0</p>
+<p>hoodie.metrics.graphite.metric.prefix<br>应用于所有指标的标准前缀.<br>这有助于添加数据中心、环境信息,例如<br>默认值:N/A(必需)<br>Config Param: GRAPHITE_METRIC_PREFIX_VALUE<br>Since Version: 0.5.1</p>
+<h2 id="记录有效负载配置-1"><a href="#记录有效负载配置-1" class="headerlink" title="记录有效负载配置"></a>记录有效负载配置</h2><p>这是 Hudi 提供的最低级别的定制.<br>记录有效负载定义如何根据传入的新记录和存储的旧记录生成新值以进行更新插入.<br>Hudi 提供了默认实现,例如 OverwriteWithLatestAvroPayload,它只是使用最新/最后写入的记录更新表.<br>这可以在数据源和 WriteClient 级别上覆盖为扩展 HoodieRecordPayload 类的自定义类.</p>
+<h3 id="有效负载配置-1"><a href="#有效负载配置-1" class="headerlink" title="有效负载配置"></a>有效负载配置</h3><p>有效负载相关配置,可用于根据数据中的特定业务字段控制合并.<br>Config Class: org.apache.hudi.config.HoodiePayloadConfig</p>
+<p>hoodie.compaction.payload.class<br>这需要与插入/更新插入期间使用的类相同.<br>就像写入一样,压缩也使用记录负载类将日志中的记录相互合并,再次与基本文件合并,并在压缩后生成要写入的最终记录.<br>默认值:org.apache.hudi.common.model.OverwriteWithLatestAvroPayload(可选)<br>Config Param: PAYLOAD_CLASS_NAME</p>
+<p>hoodie.payload.event.time.field<br>用于派生与记录关联的时间戳的表列/字段名称.<br>这可用于例如确定桌子的新鲜度.<br>默认值:ts(可选)<br>Config Param: EVENT_TIME_FIELD</p>
+<p>hoodie.payload.ordering.field<br>在合并和写入存储之前,对具有相同键的记录进行排序的表列/字段名称.<br>默认值:ts(可选)<br>Config Param: ORDERING_FIELD</p>
+<h2 id="Kafka-连接配置"><a href="#Kafka-连接配置" class="headerlink" title="Kafka 连接配置"></a>Kafka 连接配置</h2><p>这些配置集用于 Kafka Connect Sink 连接器,用于编写 Hudi 表</p>
+<h3 id="Kafka-接收器连接配置"><a href="#Kafka-接收器连接配置" class="headerlink" title="Kafka 接收器连接配置"></a>Kafka 接收器连接配置</h3><p>Hudi 的 Kafka Connect Sink 连接器的配置.<br>Config Class: org.apache.hudi.connect.writers.KafkaConnectConfigs</p>
+<p>hoodie.kafka.coordinator.write.timeout.secs<br>发送 END_COMMIT 后的超时时间,直到协调器将等待来自所有分区的写入状态以忽略当前提交并开始新的提交.<br>默认值:300(可选)<br>Config Param: COORDINATOR_WRITE_TIMEOUT_SECS</p>
+<p>hoodie.meta.sync.classes<br>元同步客户端工具,使用逗号分隔多个工具<br>默认值:org.apache.hudi.hive.HiveSyncTool(可选)<br>Config Param: META_SYNC_CLASSES</p>
+<p>hoodie.kafka.allow.commit.on.errors<br>即使某些记录写入失败也提交<br>默认值:true(可选)<br>Config Param: ALLOW_COMMIT_ON_ERRORS</p>
+<p>hadoop.home<br>Hadoop 主目录.<br>默认值:N/A(必需)<br>Config Param: HADOOP_HOME</p>
+<p>hoodie.meta.sync.enable<br>启用元同步,例如 Hive<br>默认值:false(可选)<br>Config Param: META_SYNC_ENABLE</p>
+<p>hoodie.kafka.commit.interval.secs<br>Hudi 将提交写入文件的记录的时间间隔,使它们在读取端可用.<br>默认值:60(可选)<br>Config Param: COMMIT_INTERVAL_SECS</p>
+<p>hoodie.kafka.control.topic<br>Hudi Sink 连接器用于发送和接收控制消息的 Kafka 主题名称.<br>不用于数据记录.<br>默认值:hudi-control-topic(可选)<br>Config Param: CONTROL_TOPIC_NAME</p>
+<p>bootstrap.servers<br>Kafka 集群的引导服务器.<br>默认值:localhost:9092(可选)<br>Config Param: KAFKA_BOOTSTRAP_SERVERS</p>
+<p>hoodie.schemaprovider.class<br>org.apache.hudi.schema.SchemaProvider 的子类,用于将模式附加到输入和目标表数据,内置选项:org.apache.hudi.schema.FilebasedSchemaProvider.<br>默认值:org.apache.hudi.schema.FilebasedSchemaProvider(可选)<br>Config Param: SCHEMA_PROVIDER_CLASS</p>
+<p>hadoop.conf.dir<br>Hadoop 配置目录.<br>默认值:N/A(必需)<br>Config Param: HADOOP_CONF_DIR</p>
+<p>hoodie.kafka.compaction.async.enable<br>控制是否应该为 MOR 表写入打开异步压缩.<br>默认值:true(可选)<br>Config Param: ASYNC_COMPACT_ENABLE</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hudi/" rel="tag"># hudi</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/10/21/hudi%E6%A6%82%E5%BF%B5/" rel="prev" title="hudi概念">
+                  <i class="fa fa-chevron-left"></i> hudi概念
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/10/24/hudi%E5%AE%9E%E8%B7%B5%E7%BB%83%E4%B9%A0/" rel="next" title="hudi实践练习">
+                  hudi实践练习 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

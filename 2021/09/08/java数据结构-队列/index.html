@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="队列(Queue)  与栈相对的一种数据结构,集合(Collection)的一个子类.队列允许在一端进行插入操作,而在另一端进行删除操作的线性表.栈的特点是后进先出,而队列的特点是先进先出.队列的用处很大,比如实现消息队列. 队列按照是否阻塞可分为:阻塞队列BlockingQueue和非阻塞队列,其中,双端队列Deque也属于非阻塞队列,双端队列除了拥有队列的先进先出的方法之外,还拥有自己独有的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="java数据结构-队列">
+<meta property="og:url" content="https://maoeryu.github.io/2021/09/08/java%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84-%E9%98%9F%E5%88%97/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="队列(Queue)  与栈相对的一种数据结构,集合(Collection)的一个子类.队列允许在一端进行插入操作,而在另一端进行删除操作的线性表.栈的特点是后进先出,而队列的特点是先进先出.队列的用处很大,比如实现消息队列. 队列按照是否阻塞可分为:阻塞队列BlockingQueue和非阻塞队列,其中,双端队列Deque也属于非阻塞队列,双端队列除了拥有队列的先进先出的方法之外,还拥有自己独有的">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/collection.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/queue.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/list.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/set.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/queue1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/map.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/map1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/map2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/map3.png">
+<meta property="article:published_time" content="2021-09-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-08-25T11:44:22.478Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="java">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/collection.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/09/08/java%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84-%E9%98%9F%E5%88%97/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>java数据结构-队列 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B1%BB%E5%9B%BE"><span class="nav-number">1.</span> <span class="nav-text">类图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%98%9F%E5%88%97-queue"><span class="nav-number">2.</span> <span class="nav-text">队列(queue)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%98%9F%E5%88%97%E5%88%86%E7%B1%BB"><span class="nav-number">2.1.</span> <span class="nav-text">队列分类</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%8C%E7%AB%AF%E9%98%9F%E5%88%97"><span class="nav-number">2.1.1.</span> <span class="nav-text">双端队列</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%98%BB%E5%A1%9E%E9%98%9F%E5%88%97"><span class="nav-number">2.1.2.</span> <span class="nav-text">阻塞队列</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9D%9E%E9%98%BB%E5%A1%9E%E9%98%9F%E5%88%97"><span class="nav-number">2.1.3.</span> <span class="nav-text">非阻塞队列</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%B9%E6%B3%95%E8%AF%B4%E6%98%8E"><span class="nav-number">2.2.</span> <span class="nav-text">方法说明</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#queue"><span class="nav-number">2.2.1.</span> <span class="nav-text">queue</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8"><span class="nav-number">2.3.</span> <span class="nav-text">使用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%98%BB%E5%A1%9E%E9%98%9F%E5%88%97-1"><span class="nav-number">2.3.1.</span> <span class="nav-text">阻塞队列</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#BlockingQueue"><span class="nav-number">2.3.1.1.</span> <span class="nav-text">BlockingQueue</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#LinkedBlockingQueue"><span class="nav-number">2.3.1.2.</span> <span class="nav-text">LinkedBlockingQueue</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#ArrayBlockingQueue"><span class="nav-number">2.3.1.3.</span> <span class="nav-text">ArrayBlockingQueue</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#DelayQueue"><span class="nav-number">2.3.1.4.</span> <span class="nav-text">DelayQueue</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9D%9E%E9%98%BB%E5%A1%9E%E9%98%9F%E5%88%97-1"><span class="nav-number">2.3.2.</span> <span class="nav-text">非阻塞队列</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#ConcurrentLinkedQueue"><span class="nav-number">2.3.2.1.</span> <span class="nav-text">ConcurrentLinkedQueue</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%98%E5%85%88%E7%BA%A7%E9%98%9F%E5%88%97"><span class="nav-number">2.3.3.</span> <span class="nav-text">优先级队列</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#PriorityQueue"><span class="nav-number">2.3.3.1.</span> <span class="nav-text">PriorityQueue</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">2.4.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#map"><span class="nav-number">3.</span> <span class="nav-text">map</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E7%B1%BB"><span class="nav-number">3.1.</span> <span class="nav-text">实现类</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Hashtable"><span class="nav-number">3.1.1.</span> <span class="nav-text">Hashtable</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HashMap"><span class="nav-number">3.1.2.</span> <span class="nav-text">HashMap</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#TreeMap"><span class="nav-number">3.1.3.</span> <span class="nav-text">TreeMap</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#LinkedHashMap"><span class="nav-number">3.1.4.</span> <span class="nav-text">LinkedHashMap</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8%E6%96%B9%E6%B3%95"><span class="nav-number">3.2.</span> <span class="nav-text">常用方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hashMap%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">3.3.</span> <span class="nav-text">hashMap数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hashMap%E9%87%8D%E8%A6%81%E6%96%B9%E6%B3%95"><span class="nav-number">3.4.</span> <span class="nav-text">hashMap重要方法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#put"><span class="nav-number">3.4.1.</span> <span class="nav-text">put</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#get"><span class="nav-number">3.4.2.</span> <span class="nav-text">get</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93-1"><span class="nav-number">3.5.</span> <span class="nav-text">总结</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#hashMap%E9%81%87%E5%88%B0%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">3.5.1.</span> <span class="nav-text">hashMap遇到的问题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#treeMap%E6%A0%B9%E6%8D%AEvalue%E5%80%92%E5%BA%8F"><span class="nav-number">3.5.2.</span> <span class="nav-text">treeMap根据value倒序</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HashMap%E9%87%8D%E8%A6%81%E5%8F%82%E6%95%B0"><span class="nav-number">3.5.3.</span> <span class="nav-text">HashMap重要参数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HashMap%E5%92%8CHashtable%E5%8C%BA%E5%88%AB"><span class="nav-number">3.5.4.</span> <span class="nav-text">HashMap和Hashtable区别</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%93%88%E5%B8%8C%E5%86%B2%E7%AA%81"><span class="nav-number">3.5.5.</span> <span class="nav-text">哈希冲突</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HashMap%E6%89%A9%E5%AE%B9"><span class="nav-number">3.5.6.</span> <span class="nav-text">HashMap扩容</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#equals-hashCode"><span class="nav-number">3.5.7.</span> <span class="nav-text">equals()&#x2F;hashCode</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HashMap%E5%9C%A8JDK7%E5%A4%9A%E7%BA%BF%E7%A8%8B%E4%B8%AD%E4%BD%BF%E7%94%A8%E9%97%AE%E9%A2%98"><span class="nav-number">3.5.8.</span> <span class="nav-text">HashMap在JDK7多线程中使用问题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HashMap%E5%9C%A8JDK7%E5%92%8CJDK8%E4%B8%AD%E4%B8%8D%E5%90%8C%E7%82%B9"><span class="nav-number">3.5.9.</span> <span class="nav-text">HashMap在JDK7和JDK8中不同点</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ArrayList-Vector"><span class="nav-number">4.</span> <span class="nav-text">ArrayList&#x2F;Vector</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ArrayList"><span class="nav-number">4.1.</span> <span class="nav-text">ArrayList</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B1%BB%E7%BB%93%E6%9E%84"><span class="nav-number">4.1.1.</span> <span class="nav-text">类结构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0"><span class="nav-number">4.1.2.</span> <span class="nav-text">构造函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%B0%83%E6%95%B4%E6%95%B0%E7%BB%84%E7%9A%84%E5%AE%B9%E9%87%8F"><span class="nav-number">4.1.3.</span> <span class="nav-text">调整数组的容量</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E5%85%83%E7%B4%A0"><span class="nav-number">4.1.4.</span> <span class="nav-text">添加元素</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E5%85%83%E7%B4%A0"><span class="nav-number">4.1.5.</span> <span class="nav-text">删除元素</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E5%85%83%E7%B4%A0"><span class="nav-number">4.1.6.</span> <span class="nav-text">修改元素</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9F%A5%E6%89%BE%E5%85%83%E7%B4%A0"><span class="nav-number">4.1.7.</span> <span class="nav-text">查找元素</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B6%E4%BB%96public%E6%96%B9%E6%B3%95"><span class="nav-number">4.1.8.</span> <span class="nav-text">其他public方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ArrayList%E7%9A%84%E5%9B%9B%E7%A7%8D%E9%81%8D%E5%8E%86%E6%96%B9%E5%BC%8F"><span class="nav-number">4.1.9.</span> <span class="nav-text">ArrayList的四种遍历方式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Fail-Fast%E6%9C%BA%E5%88%B6"><span class="nav-number">4.1.10.</span> <span class="nav-text">Fail-Fast机制</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Vector"><span class="nav-number">4.2.</span> <span class="nav-text">Vector</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JUC-java-util-concurrent"><span class="nav-number">5.</span> <span class="nav-text">JUC(java.util.concurrent)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#List-Set"><span class="nav-number">5.1.</span> <span class="nav-text">List&#x2F;Set</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Map"><span class="nav-number">5.2.</span> <span class="nav-text">Map</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Queue"><span class="nav-number">5.3.</span> <span class="nav-text">Queue</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/09/08/java%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84-%E9%98%9F%E5%88%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          java数据结构-队列
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-09-08 00:00:00" itemprop="dateCreated datePublished" datetime="2021-09-08T00:00:00+08:00">2021-09-08</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-08-25 19:44:22" itemprop="dateModified" datetime="2022-08-25T19:44:22+08:00">2022-08-25</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <blockquote>
+<p>队列(Queue)</p>
+</blockquote>
+<p>与栈相对的一种数据结构,集合(Collection)的一个子类.<br>队列允许在一端进行插入操作,而在另一端进行删除操作的线性表.<br>栈的特点是后进先出,而队列的特点是先进先出.<br>队列的用处很大,比如实现消息队列.</p>
+<p>队列按照是否阻塞可分为:阻塞队列BlockingQueue和非阻塞队列,其中,双端队列Deque也属于非阻塞队列,<br>双端队列除了拥有队列的先进先出的方法之外,还拥有自己独有的方法,如addFirst()/addLast()/getFirst()/getLast()等,支持首未插入和删除元素.<br>队列中比较常用的两个队列还有PriorityQueue(优先级队列)和DelayQueue(延迟队列),可使用延迟队列来实现延迟消息队列.</p>
+<img src="/images/collection.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/queue.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<span id="more"></span>
+<h2 id="类图"><a href="#类图" class="headerlink" title="类图"></a>类图</h2><img src="/images/list.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/set.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="队列-queue"><a href="#队列-queue" class="headerlink" title="队列(queue)"></a>队列(queue)</h2><h3 id="队列分类"><a href="#队列分类" class="headerlink" title="队列分类"></a>队列分类</h3><h4 id="双端队列"><a href="#双端队列" class="headerlink" title="双端队列"></a>双端队列</h4><p>双端队列(Deque)是Queue的子类也是Queue的补充类,头部和尾部都支持元素插入和获取.</p>
+<h4 id="阻塞队列"><a href="#阻塞队列" class="headerlink" title="阻塞队列"></a>阻塞队列</h4><p>阻塞队列(BlockingQueue)指的是在元素操作时(添加或删除),如果没有成功,会阻塞等待执行.<br>例如,当添加元素时,如果队列元素已满,队列会阻塞等待直到有空位时再插入.</p>
+<h4 id="非阻塞队列"><a href="#非阻塞队列" class="headerlink" title="非阻塞队列"></a>非阻塞队列</h4><p>非阻塞队列(AbstractQueue)和阻塞队列相反,会直接返回操作的结果,而非阻塞等待.<br>双端队列也属于非阻塞队列.</p>
+<h3 id="方法说明"><a href="#方法说明" class="headerlink" title="方法说明"></a>方法说明</h3><h4 id="queue"><a href="#queue" class="headerlink" title="queue"></a>queue</h4><img src="/images/queue1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>add(E):添加元素到队列尾部,成功返回true.<br>offer(E):添加元素到队列尾部,成功返回true.<br>remove():删除元素,成功返回true,失败返回false.<br>poll():获取并移除此队列的第一个元素,若队列为空,则返回null.<br>peek():获取但不移除此队列的第一个元素,若队列为空,则返回null.<br>element():获取但不移除此队列的第一个元素,若队列为空,则抛异常.</p>
+<h3 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Queue&lt;String&gt; linkedList = <span class="keyword">new</span> LinkedList&lt;&gt;();</span><br><span class="line">linkedList.add(<span class="string">&quot;tom1&quot;</span>);</span><br><span class="line">linkedList.add(<span class="string">&quot;tom2&quot;</span>);</span><br><span class="line">linkedList.offer(<span class="string">&quot;tom3&quot;</span>);</span><br><span class="line">linkedList.remove(<span class="string">&quot;tom2&quot;</span>);</span><br><span class="line"><span class="keyword">while</span> (!linkedList.isEmpty()) &#123;</span><br><span class="line">  System.out.println(linkedList.poll());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="阻塞队列-1"><a href="#阻塞队列-1" class="headerlink" title="阻塞队列"></a>阻塞队列</h4><h5 id="BlockingQueue"><a href="#BlockingQueue" class="headerlink" title="BlockingQueue"></a>BlockingQueue</h5><p>BlockingQueue在java.util.concurrent包下,其他阻塞类都实现自BlockingQueue接口,<br>BlockingQueue提供了线程安全的队列访问方式,<br>当向队列中插入数据时,如果队列已满,线程则会阻塞等待队列中元素被取出后再插入.<br>当从队列中取数据时,如果队列为空,则线程会阻塞等待队列中有新元素再获取.</p>
+<p>1.插入方法<br>add(E):添加元素到队列尾部,成功返回true.<br>offer(E):添加元素到队列尾部,成功返回true.<br>put(E):将元素插入到队列的尾部,如果该队列已满,则一直阻塞.</p>
+<p>2.删除方法<br>remove(Object):移除指定元素,成功返回true,失败返回false.<br>poll():获取并移除队列的第一个元素,如果队列为空,则返回null.<br>take():获取并移除队列第一个元素,如果没有元素则一直阻塞.</p>
+<p>3.检查方法<br>peek():获取但不移除队列的第一个元素,若队列为空,则返回null.</p>
+<h5 id="LinkedBlockingQueue"><a href="#LinkedBlockingQueue" class="headerlink" title="LinkedBlockingQueue"></a>LinkedBlockingQueue</h5><p>LinkedBlockingQueue是一个由链表实现的有界阻塞队列,<br>容量默认值为Integer.MAX_VALUE,也可以自定义容量,<br>建议指定容量大小,默认大小在添加速度大于删除速度情况下有造成内存溢出的风险,<br>LinkedBlockingQueue是先进先出的方式存储元素.</p>
+<h5 id="ArrayBlockingQueue"><a href="#ArrayBlockingQueue" class="headerlink" title="ArrayBlockingQueue"></a>ArrayBlockingQueue</h5><p>ArrayBlockingQueue是一个有边界的阻塞队列,它的内部实现是一个数组.<br>它的容量是有限的,必须在其初始化的时候指定它的容量大小,容量大小一旦指定就不可改变.</p>
+<p>ArrayBlockingQueue也是先进先出的方式存储数据,<br>内部的阻塞队列是通过重入锁ReenterLock和Condition条件队列实现的,因此ArrayBlockingQueue中的元素存在公平访问与非公平访问的区别.<br>对于公平访问队列,被阻塞的线程可以按照阻塞的先后顺序访问队列,即先阻塞的线程先访问队列.<br>而非公平队列,当队列可用时,阻塞的线程将进入争夺访问资源的竞争中,也就是说谁先抢到谁就执行,没有固定的先后顺序.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 默认非公平阻塞队列</span></span><br><span class="line">ArrayBlockingQueue&lt;String&gt; queue1 = <span class="keyword">new</span> ArrayBlockingQueue&lt;&gt;(<span class="number">6</span>);</span><br><span class="line"><span class="comment">// 公平阻塞队列</span></span><br><span class="line">ArrayBlockingQueue&lt;String&gt; queue2 = <span class="keyword">new</span> ArrayBlockingQueue&lt;&gt;(<span class="number">6</span>, <span class="keyword">true</span>);</span><br></pre></td></tr></table></figure>
+
+<h5 id="DelayQueue"><a href="#DelayQueue" class="headerlink" title="DelayQueue"></a>DelayQueue</h5><p>DelayQueue是一个支持延时获取元素的无界阻塞队列,队列中的元素必须实现Delayed接口,在创建元素时可以指定延迟时间,只有到达了延迟的时间之后,才能获取到该元素.</p>
+<p>实现了Delayed接口必须重写两个方法,getDelay(TimeUnit)和compareTo(Delayed).</p>
+<p>start-: 2021-9-9 9:48:27<br>2021-9-9 9:48:28<br>2021-9-9 9:48:30<br>2021-9-9 9:48:32<br>stop-: 2021-9-9 9:48:32</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">  DelayQueue&lt;DelayElement&gt; delayQueue = <span class="keyword">new</span> DelayQueue();</span><br><span class="line">  delayQueue.put(<span class="keyword">new</span> DelayElement(<span class="number">1000</span>));</span><br><span class="line">  delayQueue.put(<span class="keyword">new</span> DelayElement(<span class="number">3000</span>));</span><br><span class="line">  delayQueue.put(<span class="keyword">new</span> DelayElement(<span class="number">5000</span>));</span><br><span class="line">  System.out.println(<span class="string">&quot;start-: &quot;</span> + DateFormat.getDateTimeInstance().format(<span class="keyword">new</span> Date()));</span><br><span class="line">  <span class="keyword">while</span> (!delayQueue.isEmpty()) &#123;</span><br><span class="line">    System.out.println(delayQueue.take());</span><br><span class="line">  &#125;</span><br><span class="line">  System.out.println(<span class="string">&quot;stop-: &quot;</span> + DateFormat.getDateTimeInstance().format(<span class="keyword">new</span> Date()));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">DelayElement</span> <span class="keyword">implements</span> <span class="title">Delayed</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 延迟截止时间,单位毫秒</span></span><br><span class="line">  <span class="keyword">long</span> delayTime = System.currentTimeMillis();</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">DelayElement</span><span class="params">(<span class="keyword">long</span> delayTime)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.delayTime = (<span class="keyword">this</span>.delayTime + delayTime);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 获取剩余时间</span></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">getDelay</span><span class="params">(TimeUnit unit)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> unit.convert(delayTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 队列里元素的排序依据</span></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">compareTo</span><span class="params">(Delayed o)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> Long.compare(<span class="keyword">this</span>.getDelay(TimeUnit.MILLISECONDS), o.getDelay(TimeUnit.MILLISECONDS));</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> DateFormat.getDateTimeInstance().format(<span class="keyword">new</span> Date(delayTime));</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="非阻塞队列-1"><a href="#非阻塞队列-1" class="headerlink" title="非阻塞队列"></a>非阻塞队列</h4><h5 id="ConcurrentLinkedQueue"><a href="#ConcurrentLinkedQueue" class="headerlink" title="ConcurrentLinkedQueue"></a>ConcurrentLinkedQueue</h5><p>一个基于链接节点的无界线程安全队列,它采用先进先出的规则对节点进行排序,<br>当我们添加一个元素的时候,它会添加到队列的尾部.<br>当我们获取一个元素时,它会返回队列头部的元素.</p>
+<p>它的入队和出队操作均利用CAS(CompareAndSet)更新,这样允许多个线程并发执行,并且不会因为加锁而阻塞线程,使得并发性能更好.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">ConcurrentLinkedQueue&lt;Object&gt; queue = <span class="keyword">new</span> ConcurrentLinkedQueue&lt;&gt;();</span><br><span class="line">queue.add(<span class="string">&quot;tom1&quot;</span>);</span><br><span class="line">queue.add(<span class="string">&quot;tom2&quot;</span>);</span><br><span class="line"><span class="keyword">while</span> (!queue.isEmpty()) &#123;</span><br><span class="line">  System.out.println(queue.poll());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>不管是阻塞队列还是非阻塞队列,使用方法都是类似的,区别是底层的实现方式.</p>
+<h4 id="优先级队列"><a href="#优先级队列" class="headerlink" title="优先级队列"></a>优先级队列</h4><h5 id="PriorityQueue"><a href="#PriorityQueue" class="headerlink" title="PriorityQueue"></a>PriorityQueue</h5><p>一个基于优先级堆的无界优先级队列.<br>优先级队列的元素按照其自然顺序进行排序,或者根据构造队列时提供的Comparator进行排序,具体取决于所使用的构造方法.<br>优先级队列不允许使用null元素.<br>PriorityQueue是非线程安全的,在多线程情况下可使用PriorityBlockingQueue类替代.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Queue&lt;Integer&gt; queue = <span class="keyword">new</span> PriorityQueue&lt;&gt;(</span><br><span class="line">    (o1, o2) -&gt; o2 - o1</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line">queue.add(<span class="number">3</span>);</span><br><span class="line">queue.add(<span class="number">1</span>);</span><br><span class="line">queue.add(<span class="number">2</span>);</span><br><span class="line"><span class="keyword">while</span> (!queue.isEmpty()) &#123;</span><br><span class="line">  System.out.println(queue.poll());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>3<br>2<br>1</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>1.ArrayBlockingQueue和LinkedBlockingQueue的区别<br>都实现自阻塞队列BlockingQueue,区别主要体现在以下几个方面:<br>1)ArrayBlockingQueue使用时必须指定容量值,LinkedBlockingQueue可以不用指定.ArrayBlockingQueue的最大容量值是使用时指定的,并且指定之后就不允许修改.LinkedBlockingQueue最大的容量为Integer.MAX_VALUE.<br>2)ArrayBlockingQueue数据存储容器是采用数组存储的.而LinkedBlockingQueue采用的是Node节点存储的.</p>
+<p>2.LinkedList中add()和offer()关系<br>add()和offer()都是添加元素到队列尾部.<br>offer方法是基于add方法实现的,Offer的源码如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">offer</span><span class="params">(E e)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> add(e);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>3.Queue和Deque区别<br>Queue属于一般队列,Deque属于双端队列.<br>一般队列是先进先出,也就是只有先进的才能先出.<br>而双端队列则是两端都能插入和删除元素.</p>
+<p>4.LinkedList属于一般队列还是双端队列<br>LinkedList实现了Deque属于双端队列,因此拥有addFirst(E)/addLast(E)/getFirst()/getLast()等方法.</p>
+<p>5.Java中常见的阻塞队列<br>ArrayBlockingQueue,由数组结构组成的有界阻塞队列.<br>PriorityBlockingQueue,支持优先级排序的无界阻塞队列.<br>SynchronousQueue,是一个不存储元素的阻塞队列,会直接将任务交给消费者,必须等队列中的添加元素被消费后才能继续添加新的元素.<br>LinkedBlockingQueue,由链表结构组成的阻塞队列.<br>DelayQueue,支持延时获取元素的无界阻塞队列.</p>
+<p>6.有界队列和无界队列区别<br>有界队列:<br>有固定大小的队列叫做有界队列,比如:new ArrayBlockingQueue(6),6就是队列的大小.</p>
+<p>无界队列:<br>指的是没有设置固定大小的队列,这些队列的特点是可以直接入列,直到溢出.<br>它们并不是真的无界,它们最大值通常为Integer.MAX_VALUE,只是平常很少能用到这么大的容量(超过 Integer.MAX_VALUE),因此从使用者的体验上,就相当于&quot;无界&quot;.</p>
+<p>7.手动实现一个延迟消息队列<br>使用 DelayQueue延迟队列,消息队列分为生产者和消费者,生产者用于增加消息,消费者用于获取并消费消息,只需要生产者把消息放入到 DelayQueue队列并设置延迟时间,消费者循环使用take()阻塞获取消息即可.</p>
+<blockquote>
+<p>延迟对象</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">DelayedElement</span> <span class="keyword">implements</span> <span class="title">Delayed</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 过期时间,单位毫秒</span></span><br><span class="line">  <span class="keyword">long</span> time = System.currentTimeMillis();</span><br><span class="line">  <span class="comment">// 消息体</span></span><br><span class="line">  String message;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">DelayedElement</span><span class="params">(String message, <span class="keyword">long</span> delayTime)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.time += delayTime;</span><br><span class="line">    <span class="keyword">this</span>.message = message;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">getDelay</span><span class="params">(TimeUnit unit)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> unit.convert(time - System.currentTimeMillis(), TimeUnit.MILLISECONDS);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">compareTo</span><span class="params">(Delayed o)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> Long.compare(<span class="keyword">this</span>.getDelay(TimeUnit.MILLISECONDS), o.getDelay(TimeUnit.MILLISECONDS));</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> message + <span class="string">&quot;|start: &quot;</span> + DateFormat.getDateTimeInstance().format(<span class="keyword">new</span> Date());</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>生产者</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">producer</span><span class="params">(DelayQueue&lt;DelayedElement&gt; queue, String name)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">    <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">      <span class="keyword">long</span> time = <span class="number">1000L</span> * (<span class="keyword">new</span> Random().nextInt(<span class="number">5</span>) + <span class="number">1</span>);</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        TimeUnit.MILLISECONDS.sleep(time);</span><br><span class="line">      &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      String message = String.format(<span class="string">&quot;%s,消息编号:%s 发送时间:%s 延迟:%s 秒&quot;</span>, name, MESSAGENO.getAndIncrement(), DateFormat.getDateTimeInstance().format(<span class="keyword">new</span> Date()), time / <span class="number">1000</span>);</span><br><span class="line">      <span class="comment">// 发送消息</span></span><br><span class="line">      queue.put(<span class="keyword">new</span> DelayedElement(message, time));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;).start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>消费者</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">consumer</span><span class="params">(DelayQueue&lt;DelayedElement&gt; queue)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">    <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">      DelayedElement element;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        element = queue.take();</span><br><span class="line">        System.out.println(element);</span><br><span class="line">      &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;).start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>main方法</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">DelayQueue&lt;DelayedElement&gt; queue = <span class="keyword">new</span> DelayQueue&lt;&gt;();</span><br><span class="line">producer(queue, <span class="string">&quot;producer1&quot;</span>);</span><br><span class="line">producer(queue, <span class="string">&quot;producer2&quot;</span>);</span><br><span class="line">consumer(queue);</span><br></pre></td></tr></table></figure>
+
+<p>producer2,消息编号:1 发送时间:2021-9-9 13:49:20 延迟:1 秒|start: 2021-9-9 13:49:21<br>producer2,消息编号:3 发送时间:2021-9-9 13:49:24 延迟:4 秒|start: 2021-9-9 13:49:28<br>producer2,消息编号:4 发送时间:2021-9-9 13:49:26 延迟:2 秒|start: 2021-9-9 13:49:28<br>producer1,消息编号:2 发送时间:2021-9-9 13:49:24 延迟:5 秒|start: 2021-9-9 13:49:29<br>producer1,消息编号:5 发送时间:2021-9-9 13:49:28 延迟:4 秒|start: 2021-9-9 13:49:32</p>
+<h2 id="map"><a href="#map" class="headerlink" title="map"></a>map</h2><p>集合有两个大接口:Collection和Map</p>
+<img src="/images/map.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="实现类"><a href="#实现类" class="headerlink" title="实现类"></a>实现类</h3><h4 id="Hashtable"><a href="#Hashtable" class="headerlink" title="Hashtable"></a>Hashtable</h4><p>Java早期提供的一个哈希表实现,它是线程安全的,不支持<code>null键和值</code>,因为它的性能不如ConcurrentHashMap,所以很少被推荐使用.</p>
+<h4 id="HashMap"><a href="#HashMap" class="headerlink" title="HashMap"></a>HashMap</h4><p>最常用的哈希表实现,如果程序中没有多线程的需求,HashMap是一个很好的选择,<code>支持null键和值</code>,如果在多线程中可用ConcurrentHashMap替代.</p>
+<h4 id="TreeMap"><a href="#TreeMap" class="headerlink" title="TreeMap"></a>TreeMap</h4><p>基于红黑树的一种提供顺序访问的Map,自身实现了key的自然排序,也可以指定Comparator来自定义排序.</p>
+<h4 id="LinkedHashMap"><a href="#LinkedHashMap" class="headerlink" title="LinkedHashMap"></a>LinkedHashMap</h4><p>HashMap的一个子类,保存了记录的插入顺序,可在遍历时保持与插入一样的顺序.</p>
+<h3 id="常用方法"><a href="#常用方法" class="headerlink" title="常用方法"></a>常用方法</h3><p>常用方法包括put/remove/get/size等.</p>
+<img src="/images/map1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Hashtable&lt;Object, Object&gt; map = <span class="keyword">new</span> Hashtable&lt;&gt;();</span><br><span class="line">map.put(<span class="keyword">null</span>, <span class="keyword">null</span>);</span><br><span class="line">map.put(<span class="keyword">null</span>, <span class="string">&quot;aaa&quot;</span>);</span><br><span class="line">map.put(<span class="keyword">null</span>, <span class="string">&quot;bbb&quot;</span>);</span><br><span class="line">map.put(<span class="string">&quot;tom&quot;</span>, <span class="keyword">null</span>);</span><br><span class="line">map.put(<span class="string">&quot;tom2&quot;</span>, <span class="keyword">null</span>);</span><br><span class="line">map.put(<span class="string">&quot;tom3&quot;</span>, <span class="string">&quot;aaa&quot;</span>);</span><br><span class="line">System.out.println(map);</span><br></pre></td></tr></table></figure>
+
+<p>报错,NullPointerException</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">HashMap&lt;Object, Object&gt; map = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">map.put(<span class="keyword">null</span>, <span class="keyword">null</span>);</span><br><span class="line">map.put(<span class="keyword">null</span>, <span class="string">&quot;aaa&quot;</span>);</span><br><span class="line">map.put(<span class="keyword">null</span>, <span class="string">&quot;bbb&quot;</span>);</span><br><span class="line">map.put(<span class="string">&quot;tom&quot;</span>, <span class="keyword">null</span>);</span><br><span class="line">map.put(<span class="string">&quot;tom2&quot;</span>, <span class="keyword">null</span>);</span><br><span class="line">map.put(<span class="string">&quot;tom3&quot;</span>, <span class="string">&quot;aaa&quot;</span>);</span><br><span class="line">System.out.println(map);</span><br></pre></td></tr></table></figure>
+<p>{null=bbb, tom=null, tom2=null, tom3=aaa}</p>
+<h3 id="hashMap数据结构"><a href="#hashMap数据结构" class="headerlink" title="hashMap数据结构"></a>hashMap数据结构</h3><p>HashMap底层的数据是数组,被成为哈希桶,每个桶存放的是链表,链表中的每个节点,就是HashMap中的每个元素.<br>在JDK8当链表长度大于等于8时,就会转成红黑树的数据结构,以提升查询和插入的效率.</p>
+<img src="/images/map2.png" width="400" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="hashMap重要方法"><a href="#hashMap重要方法" class="headerlink" title="hashMap重要方法"></a>hashMap重要方法</h3><h4 id="put"><a href="#put" class="headerlink" title="put"></a>put</h4><p>1.对key进行hash操作,计算存储index.<br>2.判断是否有哈希碰撞,如果没碰撞直接放到哈希桶里,如果有碰撞则以链表的形式存储.<br>3.判断已有元素的类型,决定是追加树还是追加链表,当链表大于等于8时,把链表转换成红黑树.<br>4.如果节点已经存在就替换旧值.<br>5.判断是否超过阀值,如果超过就要扩容.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> V <span class="title">put</span><span class="params">(K key, V value)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 对key进行hash()</span></span><br><span class="line">  <span class="keyword">return</span> putVal(hash(key), key, value, <span class="keyword">false</span>, <span class="keyword">true</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> <span class="title">hash</span><span class="params">(Object key)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 对key进行hash()的具体实现</span></span><br><span class="line">  <span class="keyword">int</span> h;</span><br><span class="line">  <span class="keyword">return</span> (key == <span class="keyword">null</span>) ? <span class="number">0</span> : (h = key.hashCode()) ^ (h &gt;&gt;&gt; <span class="number">16</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">final</span> V <span class="title">putVal</span><span class="params">(<span class="keyword">int</span> hash, K key, V value, <span class="keyword">boolean</span> onlyIfAbsent,</span></span></span><br><span class="line"><span class="function"><span class="params">             <span class="keyword">boolean</span> evict)</span> </span>&#123;</span><br><span class="line">  Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; p; <span class="keyword">int</span> n, i;</span><br><span class="line">  <span class="comment">// tab为空则创建</span></span><br><span class="line">  <span class="keyword">if</span> ((tab = table) == <span class="keyword">null</span> || (n = tab.length) == <span class="number">0</span>)</span><br><span class="line">      n = (tab = resize()).length;</span><br><span class="line">  <span class="keyword">if</span> ((p = tab[i = (n - <span class="number">1</span>) &amp; hash]) == <span class="keyword">null</span>)</span><br><span class="line">    <span class="comment">// 计算index,并对null做处理</span></span><br><span class="line">      tab[i] = newNode(hash, key, value, <span class="keyword">null</span>);</span><br><span class="line">  <span class="keyword">else</span> &#123;</span><br><span class="line">      Node&lt;K,V&gt; e; K k;</span><br><span class="line">      <span class="comment">// 节点存在</span></span><br><span class="line">      <span class="keyword">if</span> (p.hash == hash &amp;&amp;</span><br><span class="line">          ((k = p.key) == key || (key != <span class="keyword">null</span> &amp;&amp; key.equals(k))))</span><br><span class="line">          e = p;</span><br><span class="line">      <span class="comment">// 该链为树</span></span><br><span class="line">      <span class="keyword">else</span> <span class="keyword">if</span> (p <span class="keyword">instanceof</span> TreeNode)</span><br><span class="line">          e = ((TreeNode&lt;K,V&gt;)p).putTreeVal(<span class="keyword">this</span>, tab, hash, key, value);</span><br><span class="line">      <span class="comment">// 该链为链表</span></span><br><span class="line">      <span class="keyword">else</span> &#123;</span><br><span class="line">          <span class="keyword">for</span> (<span class="keyword">int</span> binCount = <span class="number">0</span>; ; ++binCount) &#123;</span><br><span class="line">              <span class="keyword">if</span> ((e = p.next) == <span class="keyword">null</span>) &#123;</span><br><span class="line">                  p.next = newNode(hash, key, value, <span class="keyword">null</span>);</span><br><span class="line">                  <span class="keyword">if</span> (binCount &gt;= TREEIFY_THRESHOLD - <span class="number">1</span>) <span class="comment">// -1 for 1st</span></span><br><span class="line">                      treeifyBin(tab, hash);</span><br><span class="line">                  <span class="keyword">break</span>;</span><br><span class="line">              &#125;</span><br><span class="line">              <span class="keyword">if</span> (e.hash == hash &amp;&amp;</span><br><span class="line">                  ((k = e.key) == key || (key != <span class="keyword">null</span> &amp;&amp; key.equals(k))))</span><br><span class="line">                  <span class="keyword">break</span>;</span><br><span class="line">              p = e;</span><br><span class="line">          &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">// 写入</span></span><br><span class="line">      <span class="keyword">if</span> (e != <span class="keyword">null</span>) &#123; <span class="comment">// existing mapping for key</span></span><br><span class="line">          V oldValue = e.value;</span><br><span class="line">          <span class="keyword">if</span> (!onlyIfAbsent || oldValue == <span class="keyword">null</span>)</span><br><span class="line">              e.value = value;</span><br><span class="line">          afterNodeAccess(e);</span><br><span class="line">          <span class="keyword">return</span> oldValue;</span><br><span class="line">      &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  ++modCount;</span><br><span class="line">  <span class="comment">// 超过load factor*current capacity,resize</span></span><br><span class="line">  <span class="keyword">if</span> (++size &gt; threshold)</span><br><span class="line">      resize();</span><br><span class="line">  afterNodeInsertion(evict);</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/map3.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="get"><a href="#get" class="headerlink" title="get"></a>get</h4><p>1.比对首节点,如果首节点的hash值和key的hash值相同,并且首节点的键对象和key相同(地址相同或equals相等),则返回该节点.<br>2.如果首节点比对不相同,那么看看是否存在下一个节点.<br>3.如果存在的话,可以继续比对,如果不存在就意味着key没有匹配的键值对.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> V <span class="title">get</span><span class="params">(Object key)</span> </span>&#123;</span><br><span class="line">  Node&lt;K,V&gt; e;</span><br><span class="line">  <span class="keyword">return</span> (e = getNode(hash(key), key)) == <span class="keyword">null</span> ? <span class="keyword">null</span> : e.value;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">final</span> Node&lt;K,V&gt; <span class="title">getNode</span><span class="params">(<span class="keyword">int</span> hash, Object key)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 声明节点数组对象/链表的第一个节点对象/循环遍历时的当前节点对象/数组长度/节点的键对象</span></span><br><span class="line">  Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; first, e; <span class="keyword">int</span> n; K k;</span><br><span class="line">  <span class="comment">// 节点数组赋值/数组长度赋值/通过位运算得到求模结果确定链表的首节点</span></span><br><span class="line">  <span class="keyword">if</span> ((tab = table) != <span class="keyword">null</span> &amp;&amp; (n = tab.length) &gt; <span class="number">0</span> &amp;&amp;</span><br><span class="line">      (first = tab[(n - <span class="number">1</span>) &amp; hash]) != <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="comment">// 首先比对首节点,如果首节点的hash值和key的hash值相同,并且首节点的键对象和key相同(地址相同或equals相等),则返回该节点</span></span><br><span class="line">      <span class="keyword">if</span> (first.hash == hash &amp;&amp; <span class="comment">// always check first node</span></span><br><span class="line">          ((k = first.key) == key || (key != <span class="keyword">null</span> &amp;&amp; key.equals(k))))</span><br><span class="line">          <span class="keyword">return</span> first;</span><br><span class="line">      <span class="comment">// 如果首节点比对不相同/那么看看是否存在下一个节点,如果存在的话,可以继续比对,如果不存在就意味着key没有匹配的键值对</span></span><br><span class="line">      <span class="keyword">if</span> ((e = first.next) != <span class="keyword">null</span>) &#123;</span><br><span class="line">          <span class="comment">// 如果存在下一个节点e,那么先看看这个首节点是否是个树节点</span></span><br><span class="line">          <span class="keyword">if</span> (first <span class="keyword">instanceof</span> TreeNode)</span><br><span class="line">              <span class="comment">// 如果是首节点是树节点,那么遍历树来查找</span></span><br><span class="line">              <span class="keyword">return</span> ((TreeNode&lt;K,V&gt;)first).getTreeNode(hash, key);</span><br><span class="line">          <span class="comment">// 如果首节点不是树节点,就说明还是个普通的链表,那么逐个遍历比对即可</span></span><br><span class="line">          <span class="keyword">do</span> &#123;</span><br><span class="line">              <span class="keyword">if</span> (e.hash == hash &amp;&amp;</span><br><span class="line">                  <span class="comment">// 比对时还是先看hash值是否相同/再看地址或equals</span></span><br><span class="line">                  ((k = e.key) == key || (key != <span class="keyword">null</span> &amp;&amp; key.equals(k))))</span><br><span class="line">                  <span class="comment">// 如果当前节点e的键对象和key相同,那么返回e</span></span><br><span class="line">                  <span class="keyword">return</span> e;</span><br><span class="line">          <span class="comment">// 看看是否还有下一个节点,如果有,继续下一轮比对,否则跳出循环</span></span><br><span class="line">          &#125; <span class="keyword">while</span> ((e = e.next) != <span class="keyword">null</span>);</span><br><span class="line">      &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 在比对完了应该比对的树节点或者全部的链表节点都没能匹配到key,那么就返回null</span></span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h3><h4 id="hashMap遇到的问题"><a href="#hashMap遇到的问题" class="headerlink" title="hashMap遇到的问题"></a>hashMap遇到的问题</h4><p>HashMap在并发场景中可能出现死循环的问题,这是因为HashMap在扩容的时候会对链表进行一次倒序处理.<br>假设两个线程同时执行扩容操作,第一个线程正在执行B→A的时候,第二个线程又执行了A→B,这个时候就会出现B→A→B的问题,造成死循环.</p>
+<blockquote>
+<p>解决的方法</p>
+</blockquote>
+<p>升级JDK版本,在JDK8之后扩容不会再进行倒序,因此死循环的问题得到了极大的改善,但这不是终极的方案,因为HashMap本来就不是用在多线程版本下的,如果是多线程可使用ConcurrentHashMap替代HashMap.</p>
+<h4 id="treeMap根据value倒序"><a href="#treeMap根据value倒序" class="headerlink" title="treeMap根据value倒序"></a>treeMap根据value倒序</h4><p>使用Collections.sort(list,newComparator&lt;Map.Entry&lt;String,String&gt;&gt;()自定义比较器实现,<br>先把TreeMap转换为ArrayList,在使用Collections.sort()根据value进行倒序,完整的实现代码如下,</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">TreeMap&lt;String, String&gt; treeMap = <span class="keyword">new</span> TreeMap&lt;&gt;();</span><br><span class="line">treeMap.put(<span class="string">&quot;dog&quot;</span>, <span class="string">&quot;dog&quot;</span>);</span><br><span class="line">treeMap.put(<span class="string">&quot;camel&quot;</span>, <span class="string">&quot;camel&quot;</span>);</span><br><span class="line">treeMap.put(<span class="string">&quot;cat&quot;</span>, <span class="string">&quot;cat&quot;</span>);</span><br><span class="line">treeMap.put(<span class="string">&quot;ant&quot;</span>, <span class="string">&quot;ant&quot;</span>);</span><br><span class="line"><span class="comment">// map.entrySet()转成List</span></span><br><span class="line">List&lt;Map.Entry&lt;String, String&gt;&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;(treeMap.entrySet());</span><br><span class="line"><span class="comment">// 通过比较器实现比较排序</span></span><br><span class="line">list.sort((m1, m2) -&gt; m2.getValue().compareTo(m1.getValue()));</span><br><span class="line"><span class="keyword">for</span> (Map.Entry&lt;String, String&gt; item : list) &#123;</span><br><span class="line">  System.out.println(item.getKey() + <span class="string">&quot;:&quot;</span> + item.getValue());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>dog:dog<br>cat:cat<br>camel:camel<br>ant:ant</p>
+<h4 id="HashMap重要参数"><a href="#HashMap重要参数" class="headerlink" title="HashMap重要参数"></a>HashMap重要参数</h4><p>容量(Capacity)和负载因子(LoadFactor).</p>
+<p>容量(Capacity):是指HashMap中桶的数量,默认的初始值为16.</p>
+<p>负载因子(LoadFactor):也被称为装载因子,LoadFactor是用来判定HashMap是否扩容的依据,默认值为0.75f,<br>装载因子的计算公式=HashMap存放的KV总和(size)/Capacity.</p>
+<h4 id="HashMap和Hashtable区别"><a href="#HashMap和Hashtable区别" class="headerlink" title="HashMap和Hashtable区别"></a>HashMap和Hashtable区别</h4><p>1.Hashtable使用了synchronized关键字来保障线程安全,而HashMap是非线程安全的.<br>2.HashMap允许K/V都为null,而HashtableK/V都不允许null.<br>3.HashMap继承自AbstractMap类.而Hashtable继承自Dictionary类.</p>
+<h4 id="哈希冲突"><a href="#哈希冲突" class="headerlink" title="哈希冲突"></a>哈希冲突</h4><p>当输入两个不同值,根据同一散列函数计算出相同的散列值的现象,我们就把它叫做碰撞(哈希碰撞).</p>
+<p>哈希冲突的常用解决方案有以下4种.</p>
+<p>1.开放定址法<br>当关键字的哈希地址p=H(key)出现冲突时,以p为基础,产生另一个哈希地址p1,如果p1仍然冲突,再以p为基础,产生另一个哈希地址p2,循环此过程直到找出一个不冲突的哈希地址,将相应元素存入其中.</p>
+<p>2.再哈希法<br>同时构造多个不同的哈希函数,当哈希地址Hi=RH1(key)发生冲突时,再计算Hi=RH2(key),循环此过程直到找到一个不冲突的哈希地址,这种方法唯一的缺点就是增加了计算时间.</p>
+<p>3.链地址法<br>将所有哈希地址为i的元素构成一个称为同义词链的单链表,并将单链表的头指针存在哈希表的第i个单元中,因而查找/插入和删除主要在同义词链中进行.<br>链地址法适用于经常进行插入和删除的情况.</p>
+<p>4.建立公共溢出区<br>将哈希表分为基本表和溢出表两部分,凡是和基本表发生冲突的元素,一律填入溢出表.</p>
+<p>HashMap使用链表和红黑树来解决哈希冲突,详见put()方法的执行过程.<br>如果有哈希冲突,HashMap会循环链表中的每项key进行equals对比,返回对应的元素.</p>
+<h4 id="HashMap扩容"><a href="#HashMap扩容" class="headerlink" title="HashMap扩容"></a>HashMap扩容</h4><p>2^n是为了让散列更加均匀,从而减少哈希碰撞,以提供代码的执行效率.</p>
+<h4 id="equals-hashCode"><a href="#equals-hashCode" class="headerlink" title="equals()/hashCode"></a>equals()/hashCode</h4><p>如果两个对象equals比较相等(结果为true),那么调用hashCode也必须相等.<br>如果只重写了equals()但没有重写hashCode(),就会与规定相违背.</p>
+<h4 id="HashMap在JDK7多线程中使用问题"><a href="#HashMap在JDK7多线程中使用问题" class="headerlink" title="HashMap在JDK7多线程中使用问题"></a>HashMap在JDK7多线程中使用问题</h4><p>HashMap在JDK7中会导致死循环的问题.<br>因为在JDK7中,多线程进行HashMap扩容时会导致链表的循环引用,这个时候使用get()获取元素时就会导致死循环,造成CPU100%的情况.</p>
+<h4 id="HashMap在JDK7和JDK8中不同点"><a href="#HashMap在JDK7和JDK8中不同点" class="headerlink" title="HashMap在JDK7和JDK8中不同点"></a>HashMap在JDK7和JDK8中不同点</h4><p>1.存储结构<br>JDK7使用的是数组+链表,JDK8使用的是数组+链表+红黑树.</p>
+<p>2.存放数据的规则<br>JDK7无冲突时,存放数组,冲突时,存放链表.<br>JDK8在没有冲突的情况下直接存放数组,有冲突时,当链表长度小于8时,存放在单链表结构中,当链表长度大于8时,树化并存放至红黑树的数据结构中.</p>
+<p>3.插入数据方式<br>JDK7使用的是头插法(先将原位置的数据移到后1位,再插入数据到该位置).<br>JDK8使用的是尾插法(直接插入到链表尾部/红黑树).</p>
+<h2 id="ArrayList-Vector"><a href="#ArrayList-Vector" class="headerlink" title="ArrayList/Vector"></a>ArrayList/Vector</h2><h3 id="ArrayList"><a href="#ArrayList" class="headerlink" title="ArrayList"></a>ArrayList</h3><p>ArrayList 的底层是数组队列,相当于动态数组.<br>与 Java 中的数组相比,它的容量能动态增长.<br>在添加大量元素前,应用程序可以使用ensureCapacity操作来增加 ArrayList 实例的容量.<br>这可以减少递增式再分配的数量.</p>
+<p>它继承于 AbstractList,实现了 List, RandomAccess, Cloneable, java.io.Serializable 这些接口.<br>在我们学数据结构的时候就知道了线性表的顺序存储,插入删除元素的时间复杂度为O(n),求表长以及增加元素,取第 i 元素的时间复杂度为O(1)</p>
+<p>ArrayList 继承了AbstractList,实现了List.<br>它是一个数组队列,提供了相关的添加/删除/修改/遍历等功能.</p>
+<p>ArrayList 实现了RandomAccess 接口,即提供了随机访问功能.<br>RandomAccess 是 Java 中用来被 List 实现,为 List 提供快速访问功能的.<br>在 ArrayList 中,我们即可以通过元素的序号快速获取元素对象,这就是快速随机访问.</p>
+<p>ArrayList 实现了Cloneable 接口,即覆盖了函数 clone(),能被克隆.<br>ArrayList 实现java.io.Serializable 接口,这意味着ArrayList支持序列化,能通过序列化去传输.</p>
+<p>和Vector 不同,ArrayList 中的操作不是线程安全的.所以,建议在单线程中才使用 ArrayList,而在多线程中可以选择 Vector 或者 CopyOnWriteArrayList.</p>
+<h4 id="类结构"><a href="#类结构" class="headerlink" title="类结构"></a>类结构</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;通过ArrayList实现的接口可知,其支持随机访问,能被克隆,支持序列化</span><br><span class="line">public class ArrayList&lt;E&gt; extends AbstractList&lt;E&gt; implements List&lt;E&gt;, RandomAccess, Cloneable, java.io.Serializable &#123;</span><br><span class="line">  private static final long serialVersionUID &#x3D; 8683452581122892189L;</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F;默认初始容量</span><br><span class="line">  private static final int DEFAULT_CAPACITY &#x3D; 10;</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F;被用于空实例的共享空数组实例</span><br><span class="line">  private static final Object[] EMPTY_ELEMENTDATA &#x3D; &#123;&#125;;</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F;被用于默认大小的空实例的共享数组实例.</span><br><span class="line">  &#x2F;&#x2F;其与EMPTY_ELEMENTDATA的区别是:当我们向数组中添加第一个元素时,知道数组该扩充多少.</span><br><span class="line">  private static final Object[] DEFAULTCAPACITY_EMPTY_ELEMENTDATA &#x3D; &#123;&#125;;</span><br><span class="line"></span><br><span class="line">  &#x2F;**</span><br><span class="line">   * Object[]类型的数组,保存了添加到ArrayList中的元素.</span><br><span class="line">   * ArrayList的容量是该Object[]类型数组的长度</span><br><span class="line">   * 当第一个元素被添加时,任何空ArrayList中的elementData &#x3D;&#x3D; DEFAULTCAPACITY_EMPTY_ELEMENTDATA将会被</span><br><span class="line">   * 扩充到DEFAULT_CAPACITY(默认容量).</span><br><span class="line">   *&#x2F;</span><br><span class="line">  transient Object[] elementData; &#x2F;&#x2F;非private是为了方便嵌套类的访问</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; ArrayList的大小(指其所含的元素个数)</span><br><span class="line">  private int size;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>ArrayList包含了两个重要的对象:elementData 和 size.</p>
+<ol>
+<li>elementData 是&quot;Object[] 类型的数组&quot;,它保存了添加到ArrayList中的元素.<br>实际上,elementData是个动态数组,我们能通过构造函数 ArrayList(int initialCapacity)来执行它的初始容量为initialCapacity.<br>如果通过不含参数的构造函数ArrayList()来创建 ArrayList,则elementData的容量默认是10.<br>elementData数组的大小会根据ArrayList容量的增长而动态的增长,具 体的增长方式,请参考源码分析中的ensureCapacity()函数.</li>
+<li>size 则是动态数组的实际大小.</li>
+</ol>
+<h4 id="构造函数"><a href="#构造函数" class="headerlink" title="构造函数"></a>构造函数</h4><p>ArrayList提供了三种方式的构造器,可以构造一个默认初始容量为10的空列表/构造一个指定初始容量的空列表以及构造一个包含指定collection的元素的列表,这些元素按照该collection的迭代器返回的顺序排列的.</p>
+<p>ArrayList构造一个默认初始容量为10的空列表:</p>
+<ol>
+<li>初始情况:elementData = DEFAULTCAPACITY_EMPTY_ELEMENTDATA.<br>size = 0;</li>
+<li>当向数组中添加第一个元素时,通过add(E e)方法中调用的ensureCapacityInternal(size + 1)方法,即ensureCapacityInternal(1).</li>
+<li>在ensureCapacityInternal(int minCapacity)方法中,可得的minCapacity=DEFAULT_CAPACITY=10,然后再调用ensureExplicitCapacity(minCapacity)方法,即ensureExplicitCapacity(10).</li>
+<li>在ensureExplicitCapacity(minCapacity)方法中调用grow(minCapacity)方法,即grow(10),此处为真正具体的数组扩容的算法,在此方法中,通过elementData = Arrays.copyOf(elementData, 10)具体实现了elementData数组初始容量为10的构造.</li>
+</ol>
+<h4 id="调整数组的容量"><a href="#调整数组的容量" class="headerlink" title="调整数组的容量"></a>调整数组的容量</h4><p>从add()与addAll()方法中可以看出,每当向数组中添加元素时,都要去检查添加元素后的个数是否会超出当前数组的长度,如果超出,数组将会进行扩容,以满足添加数据的需求.<br>数组扩容实质上是通过私有的方法ensureCapacityInternal(int minCapacity) -&gt; ensureExplicitCapacity(int minCapacity) -&gt; grow(int minCapacity)来实现的,但在jdk1.8中,向用户提供了一个public的方法ensureCapacity(int minCapacity)使用户可以手动的设置ArrayList实例的容量,以减少递增式再分配的数量.<br>此处与jdk1.6中直接通过一个公开的方法ensureCapacity(int minCapacity)来实现数组容量的调整有区别 </p>
+<blockquote>
+<p>为什么ArrayList自动容量扩充选择扩充1.5倍?<br>这种算法构造出来的新的数组长度的增量都会比上一次大(而且是越来越大),即认为客户需要增加的数据很多,而避免频繁newInstance 的情况.</p>
+</blockquote>
+<h4 id="添加元素"><a href="#添加元素" class="headerlink" title="添加元素"></a>添加元素</h4><p>ArrayList提供了add(E e)/add(int index, E element)/addAll(Collection&lt;? extends E&gt; c)/addAll(int index, Collection&lt;? extends E&gt; c)这些添加元素的方法.</p>
+<h4 id="删除元素"><a href="#删除元素" class="headerlink" title="删除元素"></a>删除元素</h4><p>ArrayList提供了remove(int index)/remove(Object o)/clear()/removeRange(int fromIndex, int toIndex)/removeAll(Collection<?> c)/retainAll(Collection<?> c)这些删除元素的方法.</p>
+<h4 id="修改元素"><a href="#修改元素" class="headerlink" title="修改元素"></a>修改元素</h4><p>ArrayList提供了set(int index, E element)方法来修改指定索引上的值.</p>
+<h4 id="查找元素"><a href="#查找元素" class="headerlink" title="查找元素"></a>查找元素</h4><p>ArrayList提供了get(int index)/contains(Object o)/indexOf(Object o)/lastIndexOf(Object o)/get(int index)这些查找元素的方法.</p>
+<h4 id="其他public方法"><a href="#其他public方法" class="headerlink" title="其他public方法"></a>其他public方法</h4><p>trimToSize()/size()/isEmpty()/clone()/toArray()/toArray(T[] a) </p>
+<h4 id="ArrayList的四种遍历方式"><a href="#ArrayList的四种遍历方式" class="headerlink" title="ArrayList的四种遍历方式"></a>ArrayList的四种遍历方式</h4><p>1)通过迭代器Iterator遍历</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Iterator iter &#x3D; list.iterator();</span><br><span class="line">while (iter.hasNext())&#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>2)通过迭代器ListIterator遍历:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">ListIterator&lt;String&gt; lIter &#x3D; list.listIterator();</span><br><span class="line">&#x2F;&#x2F;顺向遍历</span><br><span class="line">while(lIter.hasNext())&#123;&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;逆向遍历</span><br><span class="line">while(lIter.hasPrevious())&#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Iterator与ListIterator主要的区别:</p>
+</blockquote>
+<ol>
+<li>Iterator可以应用于所有的集合,Set/List和Map和这些集合的子类型.而ListIterator只能用于List及其子类型.</li>
+<li>Iterator只能实现顺序向后遍历,ListIterator可实现顺序向后遍历和逆向(顺序向前)遍历.</li>
+<li>Iterator只能实现remove操作,ListIterator可以实现remove操作,add操作,set操作.</li>
+</ol>
+<p>3)随机访问,通过索引值去遍历,由于ArrayList实现了RandomAccess接口</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">int size &#x3D; list.size();</span><br><span class="line">for (int i&#x3D;0; i&lt;size; i++)&#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>4)foreach循环遍历</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">for(String str:list) &#123;&#125;   </span><br></pre></td></tr></table></figure>
+
+<p>foreach与迭代器:在Java SE5引入了新的被称为Iterable接口,该接口包含一个能够产生Iterator的Iterator()方法,并且Iterable接口被foreach用来在序列中移动.<br>因此如果你创建了任何实现Iterable的类,都可以将它用于foreach语句中.</p>
+<h4 id="Fail-Fast机制"><a href="#Fail-Fast机制" class="headerlink" title="Fail-Fast机制"></a>Fail-Fast机制</h4><p>ArrayList也采用了快速失败的机制,通过记录modCount参数来实现.<br>在面对并发的修改时,迭代器很快就会完全失败,而不是冒着在将来某个不确定时间发生任意不确定行为的风险.</p>
+<h3 id="Vector"><a href="#Vector" class="headerlink" title="Vector"></a>Vector</h3><p>Vector也是实现于 List 接口,底层数据结构和 ArrayList 类似,也是一个动态数组存放数据.<br>不过是在 add() 方法的时候使用 synchronized 进行同步写数据,但是开销较大,所以 Vector 是一个同步容器并不是一个并发容器.<br>以下是 add() 方法:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">public synchronized boolean add(E e) &#123;</span><br><span class="line">  modCount++;</span><br><span class="line">  ensureCapacityHelper(elementCount + 1);</span><br><span class="line">  elementData[elementCount++] &#x3D; e;</span><br><span class="line">  return true;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以及指定位置插入数据:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public void add(int index, E element) &#123;</span><br><span class="line">  insertElementAt(element, index);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public synchronized void insertElementAt(E obj, int index) &#123;</span><br><span class="line">  modCount++;</span><br><span class="line">  if (index &gt; elementCount) &#123;</span><br><span class="line">    throw new ArrayIndexOutOfBoundsException(index + &quot; &gt; &quot; + elementCount);</span><br><span class="line">  &#125;</span><br><span class="line">  ensureCapacityHelper(elementCount + 1);</span><br><span class="line">  System.arraycopy(elementData, index, elementData, index + 1, elementCount - index);</span><br><span class="line">  elementData[index] &#x3D; obj;</span><br><span class="line">  elementCount++;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="JUC-java-util-concurrent"><a href="#JUC-java-util-concurrent" class="headerlink" title="JUC(java.util.concurrent)"></a>JUC(java.util.concurrent)</h2><h3 id="List-Set"><a href="#List-Set" class="headerlink" title="List/Set"></a>List/Set</h3><p>CopyOnWriteArrayList<br>CopyOnWriteArraySet<br>ConcurrentSkipListSet</p>
+<p>CopyOnWriteArrayList相当于线程安全的ArrayList,它实现了List接口.CopyOnWriteArrayList,支持并发.<br>CopyOnWriteArraySet相当于线程安全的HashSet,它继承于AbstractSet类.<br>CopyOnWriteArraySet内部包含一个CopyOnWriteArrayList对象,它是通过CopyOnWriteArrayList实现的.</p>
+<h3 id="Map"><a href="#Map" class="headerlink" title="Map"></a>Map</h3><p>ConcurrentHashMap<br>ConcurrentSkipListMap</p>
+<p>ConcurrentHashMap是线程安全的哈希表(相当于线程安全的HashMap).<br>它继承于AbstractMap类,并且实现ConcurrentMap接口.ConcurrentHashMap是通过&quot;锁分段&quot;来实现的,支持并发.</p>
+<p>ConcurrentSkipListMap是线程安全的有序的哈希表(相当于线程安全的TreeMap).<br>它继承于AbstractMap类,并且实现ConcurrentNavigableMap接口.ConcurrentSkipListMap是通过&quot;跳表&quot;来实现的,支持并发.</p>
+<p>ConcurrentSkipListSet是线程安全的有序的集合(相当于线程安全的TreeSet).<br>它继承于AbstractSet,并实现了NavigableSet接口.ConcurrentSkipListSet是通过ConcurrentSkipListMap实现的,支持并发. </p>
+<h3 id="Queue"><a href="#Queue" class="headerlink" title="Queue"></a>Queue</h3><p>ArrayBlockingQueue<br>LinkedBlockingQueue<br>LinkedBlockingDeque<br>ConcurrentLinkedQueue<br>ConcurrentLinkedDeque</p>
+<p>ArrayBlockingQueue是数组实现的线程安全的有界的阻塞队列.<br>LinkedBlockingQueue是单向链表实现的(指定大小)阻塞队列,该队列按 FIFO(先进先出)排序元素.<br>LinkedBlockingDeque是双向链表实现的(指定大小)双向并发阻塞队列,该阻塞队列同时支持FIFO和FILO两种操作方式.<br>ConcurrentLinkedQueue是单向链表实现的无界队列,该队列按 FIFO(先进先出)排序元素.<br>ConcurrentLinkedDeque是双向链表实现的无界队列,该队列同时支持FIFO和FILO两种操作方式.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/java/" rel="tag"># java</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/09/07/java%20io%E5%8F%8Anio/" rel="prev" title="java io及nio">
+                  <i class="fa fa-chevron-left"></i> java io及nio
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/09/08/java%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/" rel="next" title="java类加载机制">
+                  java类加载机制 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

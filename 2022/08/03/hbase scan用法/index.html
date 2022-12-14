@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="123456789101112131415161718192021222324252627282930Scan scan &#x3D; new Scan();ResultScanner results &#x3D; table.getScanner(scan);for (Result result : results) &amp;#123;  for (Cell cell : result.rawCells()) &amp;#123">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hbase scan用法">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/03/hbase%20scan%E7%94%A8%E6%B3%95/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="123456789101112131415161718192021222324252627282930Scan scan &#x3D; new Scan();ResultScanner results &#x3D; table.getScanner(scan);for (Result result : results) &amp;#123;  for (Cell cell : result.rawCells()) &amp;#123">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbs1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbs2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbs3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbs4.png">
+<meta property="article:published_time" content="2022-08-02T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-09T06:28:38.818Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hbase">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/hbs1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/03/hbase%20scan%E7%94%A8%E6%B3%95/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hbase scan用法 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#ScanAPI"><span class="nav-number">1.</span> <span class="nav-text">ScanAPI</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#scan%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86"><span class="nav-number">1.1.</span> <span class="nav-text">scan客户端设计原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ScanAPI%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">1.2.</span> <span class="nav-text">ScanAPI应用场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ScanAPI%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="nav-number">1.3.</span> <span class="nav-text">ScanAPI最佳实践</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#scan%E7%B1%BB"><span class="nav-number">1.4.</span> <span class="nav-text">scan类</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0"><span class="nav-number">1.4.1.</span> <span class="nav-text">构造函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E6%B3%95"><span class="nav-number">1.4.2.</span> <span class="nav-text">方法</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TableScanMR"><span class="nav-number">2.</span> <span class="nav-text">TableScanMR</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#TableScanMR%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="nav-number">2.1.</span> <span class="nav-text">TableScanMR最佳实践</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.2.</span> <span class="nav-text">示例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%BB%E5%8F%96%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.2.1.</span> <span class="nav-text">读取示例</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%BB-%E5%86%99%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.2.2.</span> <span class="nav-text">读&#x2F;写示例</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B1%87%E6%80%BB%E5%86%99%E5%85%A5%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.2.3.</span> <span class="nav-text">汇总写入示例</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%91%98%E8%A6%81%E5%88%B0%E6%96%87%E4%BB%B6%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.2.4.</span> <span class="nav-text">摘要到文件示例</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B1%87%E6%80%BB%E5%88%B0RDBMS"><span class="nav-number">2.2.5.</span> <span class="nav-text">汇总到RDBMS</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AE%BF%E9%97%AE%E5%85%B6%E4%BB%96HBase%E8%A1%A8"><span class="nav-number">2.2.6.</span> <span class="nav-text">访问其他HBase表</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SnapshotScanMR"><span class="nav-number">3.</span> <span class="nav-text">SnapshotScanMR</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%A7%E8%83%BD%E5%AF%B9%E6%AF%94"><span class="nav-number">4.</span> <span class="nav-text">基本性能对比</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/03/hbase%20scan%E7%94%A8%E6%B3%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hbase scan用法
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-03 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-03T00:00:00+08:00">2022-08-03</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-09 14:28:38" itemprop="dateModified" datetime="2022-09-09T14:28:38+08:00">2022-09-09</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">Scan scan = <span class="keyword">new</span> Scan();</span><br><span class="line">ResultScanner results = table.getScanner(scan);</span><br><span class="line"><span class="keyword">for</span> (Result result : results) &#123;</span><br><span class="line">  <span class="keyword">for</span> (Cell cell : result.rawCells()) &#123;</span><br><span class="line">    System.out.printf(<span class="string">&quot;row:%s, family:%s, qualifier:%s, value:%s, timestamp:%s%n&quot;</span>,</span><br><span class="line">    Bytes.toString(CellUtil.cloneRow(cell)),</span><br><span class="line">    Bytes.toString(CellUtil.cloneFamily(cell)),</span><br><span class="line">    Bytes.toString(CellUtil.cloneQualifier(cell)),</span><br><span class="line">    Bytes.toString(CellUtil.cloneValue(cell)),</span><br><span class="line">    cell.getTimestamp()</span><br><span class="line">    );</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">results.close();</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Table table = ...      <span class="comment">// instantiate a Table instance</span></span><br><span class="line">Scan scan = <span class="keyword">new</span> Scan();</span><br><span class="line">scan.addColumn(CF, ATTR);</span><br><span class="line">scan.setRowPrefixFilter(Bytes.toBytes(<span class="string">&quot;row&quot;</span>));</span><br><span class="line">ResultScanner rs = table.getScanner(scan);</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">  <span class="keyword">for</span> (Result r = rs.next(); r != <span class="keyword">null</span>; r = rs.next()) &#123;</span><br><span class="line">    <span class="comment">// process result...</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">  rs.close();  <span class="comment">// always close the ResultScanner!</span></span><br><span class="line">&#125;</span><br><span class="line">table.close();</span><br></pre></td></tr></table></figure>
+
+<p>每次next()方法都是向server发送一次RPC请求.<br>Scanner通过batch方式控制回传时列层面上的限制.<br>将一行的所有列按照指定个数进行分片,每次next方法调用只返回指定数量数的列,因此一行的所有列可能需要多次next遍历完成,next方法返回的都是同行的列,不存在跨行的组合.</p>
+<span id="more"></span>
+<h2 id="ScanAPI"><a href="#ScanAPI" class="headerlink" title="ScanAPI"></a>ScanAPI</h2><h3 id="scan客户端设计原理"><a href="#scan客户端设计原理" class="headerlink" title="scan客户端设计原理"></a>scan客户端设计原理</h3><p>HBase中scan并不像想象的一样直接发送一个命令过去,服务器就将满足扫描条件的所有数据一次性返回给客户端.<br>而实际上它的工作原理如下图所示:</p>
+<img src="/images/hbs1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>上图右侧是HBase scan的客户端代码,其中for循环中每次遍历ResultScanner对象获取一行记录,实际上在客户端层面都会调用一次next请求.<br>next请求整个流程可以分为如下几个步骤:</p>
+<ol>
+<li>next请求首先会检查客户端缓存中是否存在还没有读取的数据行,如果有就直接返回,否则需要将next请求给HBase服务器端(RegionServer).</li>
+<li>如果客户端缓存已经没有扫描结果,就会将next请求发送给HBase服务器端.默认情况下,一次next请求仅可以请求100行数据(或者返回结果集总大小不超过2M)</li>
+<li>服务器端接收到next请求之后就开始从BlockCache/HFile以及memcache中一行一行进行扫描,扫描的行数达到100行之后就返回给客户端,客户端将这100条数据缓存到内存并返回一条给上层业务.</li>
+</ol>
+<p>上层业务不断一条一条获取扫描数据,在数据量大的情况下实际上HBase客户端会不断发送next请求到HBase服务器.</p>
+<blockquote>
+<p>为什么scan需要设计为多次next请求的模式?</p>
+</blockquote>
+<ol>
+<li>HBase本身存储了海量数据,所以很多场景下一次scan请求的数据量都会比较大.如果不限制每次请求的数据集大小,很可能会导致系统带宽吃紧从而造成整个集群的不稳定.</li>
+<li>如果不限制每次请求的数据集大小,很多情况下可能会造成客户端缓存OOM掉.</li>
+<li>如果不限制每次请求的数据集大小,很可能服务器端扫描大量数据会花费大量时间,客户端和服务器端的连接就会timeout.</li>
+</ol>
+<blockquote>
+<p>这样的设计有没有瑕疵?</p>
+</blockquote>
+<p>next策略可以避免在大数据量的情况下发生各种异常情况,但这样的设计对于扫描效率似乎并不友好,这里举两个例子:</p>
+<p>scan并没有并发执行.扫描数据分布在不同的region难道也不会并行执行扫描吗?是的,确实不会,至少在现在的版本中没有实现.这点一定出乎很多读者的意料,我们知道get的批量读请求会将所有的请求按照目标region进行分组,不同分组的get请求会并发执行读取.然而scan并没有这样实现.<br>大家有没有注意到上图中步骤3和步骤4之间HBase服务器端扫描数据的时候HBase客户端在干什么?阻塞等待是吧.确实,所以从客户端视角来看整个扫描时间＝客户端处理数据时间＋服务器端扫描数据时间.</p>
+<h3 id="ScanAPI应用场景"><a href="#ScanAPI应用场景" class="headerlink" title="ScanAPI应用场景"></a>ScanAPI应用场景</h3><p>根据上面的分析,scan API的效率很大程度上取决于扫描的数据量.通常建议OLTP业务中少量数据量扫描的scan可以使用scan API,大量数据的扫描使用scan API,扫描性能有时候并不能够得到有效保证.</p>
+<h3 id="ScanAPI最佳实践"><a href="#ScanAPI最佳实践" class="headerlink" title="ScanAPI最佳实践"></a>ScanAPI最佳实践</h3><p>1)批量OLAP扫描业务建议不要使用ScanAPI,ScanAPI适用于少量数据扫描场景(OLTP场景).<br>2)建议所有scan尽可能都设置startkey以及stopkey减少扫描范围.<br>3)建议所有仅需要扫描部分列的scan尽可能通过接口setFamilyMap设置列族以及列.</p>
+<h3 id="scan类"><a href="#scan类" class="headerlink" title="scan类"></a>scan类</h3><p>用于执行扫描操作.</p>
+<p>所有操作都与 Get 相同,除了实例化.<br>不是指定单行,而是可选的 startRow和 stopRow 可以定义.<br>如果未指定行,扫描器将遍历所有行.</p>
+<p>要从一个表的所有行中获取所有列,创建一个没有约束的实例,使用Scan() 构造函数.<br>要将扫描限制到特定的列族,为每个家庭调用 addFamily(byte[]) 以在您的 Scan 实例上检索.</p>
+<p>要获取特定列,请调用 addColumn(byte[], byte[]) 为要检索的每一列.<br>仅检索特定版本时间戳范围内的列,调用 setTimeRange(long, long) .<br>要仅检索具有特定时间戳的列,请调用setTimeStamp(long) .<br>要限制要返回的每列的版本数,请调用setMaxVersions(int) .<br>限制每次调用 next() 返回值的最大数量,调用 setBatch(int) .<br>要添加过滤器,请调用 setFilter(org.apache.hadoop.hbase.filter.Filter) .</p>
+<blockquote>
+<p>要明确禁用此扫描的服务器端块缓存,执行 setCacheBlocks(boolean).<br>用法会改变扫描实例.<br>在内部,属性更新为扫描运行,如果启用,指标会在 Scan 实例中累积.<br>请注意,当你去克隆一个 Scan 实例,或者如果你去重用一个创建的 Scan 实例,更安全的是创造每次使用一个扫描实例.</p>
+</blockquote>
+<h4 id="构造函数"><a href="#构造函数" class="headerlink" title="构造函数"></a>构造函数</h4><p>在所有行上创建一个扫描操作.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan()</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan(byte [] startRow, Filter filter)</span><br></pre></td></tr></table></figure>
+
+<p>创建从指定行开始的扫描操作.<br>如果指定的行不存在,Scanner 将从指定行之后的下一个最近的行.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan(byte [] startRow)</span><br></pre></td></tr></table></figure>
+
+<p>为指定的行范围创建一个扫描操作.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan(byte [] startRow, byte [] stopRow)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan(Scan scan)</span><br></pre></td></tr></table></figure>
+
+<p>构建一个与 get 具有相同规格的扫描对象.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan(Get get)</span><br></pre></td></tr></table></figure>
+
+<h4 id="方法"><a href="#方法" class="headerlink" title="方法"></a>方法</h4><p>获取指定族的所有列.覆盖之前对该系列的 addColumn 调用.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan addFamily(byte [] family)</span><br></pre></td></tr></table></figure>
+
+<p>从具有指定限定符的指定族中获取列.覆盖之前对该家庭的 addFamily 调用.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan addColumn(byte [] family, byte [] qualifier)</span><br></pre></td></tr></table></figure>
+
+<p>仅在指定的时间戳范围内获取列的版本,[minStamp, maxStamp).<br>请注意,默认返回的最大版本为 1.如果您的时间范围跨越多个版本,并且您想要所有版本返回,增加超出默认值的版本数.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">public Scan setTimeRange(long minStamp, long maxStamp)</span><br><span class="line">public Scan setColumnFamilyTimeRange(byte[] cf, long minStamp, long maxStamp)</span><br></pre></td></tr></table></figure>
+
+<p>获取具有指定时间戳的列版本.<br>注意,默认最大值要返回的版本为 1.如果您的时间范围跨越多个版本并且您希望返回所有版本,增加超出默认.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setTimeStamp(long timestamp)</span><br></pre></td></tr></table></figure>
+
+<p>设置扫描的起始行(包含).</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setStartRow(byte [] startRow)</span><br></pre></td></tr></table></figure>
+
+<p>设置停止行(不包含).为了使 stopRow 包含在内,添加一个尾随 0 字节.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setStopRow(byte [] stopRow)</span><br></pre></td></tr></table></figure>
+
+<p>设置一个过滤器(使用 stopRow 和 startRow),所以结果集只包含rowKey 以指定的前缀开头.<br>这是一种实用方法,可将所需的 rowPrefix 转换为适当的值,让startRow和stopRow达到想要的结果.<br>这可以安全地与 setFilter 结合使用.<br>执行 setStartRow(byte[]) / setStopRow(byte[])在这个方法之后会产生未定义的结果.<br>所有行必须以前缀开头,设置null以删除过滤器.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setRowPrefixFilter(byte[] rowPrefix)</span><br></pre></td></tr></table></figure>
+
+<p>获取所有可用版本.如果不掉用setMaxVersions,只会取到最新的版本.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setMaxVersions()</span><br></pre></td></tr></table></figure>
+
+<p>获取每列的指定数量的版本.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setMaxVersions(int maxVersions)</span><br></pre></td></tr></table></figure>
+
+<p>设置每次调用 next() 时返回的最大值数(列数,防止一行中有过多数据导致oom).<br>调用者应该知道使用任何值调用此方法相当于调用 setAllowPartialResults(boolean)<br>值为true,部分结果可能会返回,如果调用此方法.<br>使用 setMaxResultSize(long) 来改为限制扫描结果的大小.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setBatch(int batch)</span><br></pre></td></tr></table></figure>
+
+<p>设置将传递给扫描仪的缓存行数.<br>如果未设置,会读取配置<code>hbase.client.scanner.caching</code>.更高的缓存值将启用更快的扫描仪,但会使用更多内存.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setCaching(int caching)</span><br></pre></td></tr></table></figure>
+
+<p>设置最大结果大小,以字节为单位.<br>默认值为 -1,这意味着没有具体的将为此扫描设置最大结果大小,并且全局配置值将被使用.(默认为无限制).</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setMaxResultSize(long maxResultSize)</span><br></pre></td></tr></table></figure>
+
+<p>设置每个列族每行返回的最大值数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setMaxResultsPerColumnFamily(int limit)</span><br></pre></td></tr></table></figure>
+
+<p>为每个列族设置行的偏移量.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setRowOffsetPerColumnFamily(int offset)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setFilter(Filter filter)</span><br></pre></td></tr></table></figure>
+
+<p>设置是否应该为此扫描缓存块.<br>默认情况下是这样.如果为 true,则表的默认设置和使用族(如果块,这将永远不会覆盖缓存块,该系列或完全禁用缓存).<br>参数cacheBlocks 如果为 false,则覆盖默认设置并阻塞,不会被缓存</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setCacheBlocks(boolean cacheBlocks)</span><br></pre></td></tr></table></figure>
+
+<p>设置本次扫描是否为反向扫描.默认情况下为 false,表示正向(正常)扫描.<br>参数如果为真,则反转,扫描将向后顺序</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setReversed(boolean reversed)</span><br></pre></td></tr></table></figure>
+
+<p>默认情况下,此值为 false,完整的结果将在客户端组装在交付给呼叫者之前.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setAllowPartialResults(final boolean allowPartialResults)</span><br></pre></td></tr></table></figure>
+
+<p>设置是否允许按需加载CF(集群默认为假).<br>按需 CF 加载在必要之前不会加载列族,例如如果您过滤一列,则仅针对行加载其他列族数据包含在结果中,而不是像正常情况下的所有行.<br>使用特定于列的过滤器</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setLoadColumnFamiliesOnDemand(boolean value)</span><br></pre></td></tr></table></figure>
+
+<p>启用/禁用此扫描的&quot;原始&quot;模式.<br>如果启用&quot;原始&quot;,扫描将返回所有删除标记并删除没有的行已收集.<br>这对于在列族上扫描最有用,启用了 KEEP_DELETED_ROWS.<br>设置&quot;raw&quot;时指定任何列都是错误的.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setRaw(boolean raw)</span><br></pre></td></tr></table></figure>
+
+<p>设置本次扫描是否为小扫描.<br>小扫描应该使用pread,大扫描可以使用seek + read.<br>seek + read 速度很快,但会导致两个问题 (1) 资源争用 (2)导致网络 io 过多.<br>另一方面,如果设置为真,我们会做openScanner,next,closeScanner 在一个 RPC 调用中.这意味着更好小扫描的性能.<br>一般情况下,如果扫描范围在一个数据块(64KB)内,则可能是视为小扫描.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public Scan setSmall(boolean small)</span><br></pre></td></tr></table></figure>
+
+<p>创建一个扫描的实用程序,该扫描将从传递的行反向进行小扫描,寻找下一个最近的行.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">static Scan createGetClosestRowOrBeforeReverseScan(byte[] row) &#123;</span><br><span class="line">&#x2F;&#x2F; 如果添加family,以下不起作用；需要添加最高的家庭限定符</span><br><span class="line">Scan scan &#x3D; new Scan(row);</span><br><span class="line">scan.setSmall(true);</span><br><span class="line">scan.setReversed(true);</span><br><span class="line">scan.setCaching(1);</span><br><span class="line">return scan;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="TableScanMR"><a href="#TableScanMR" class="headerlink" title="TableScanMR"></a>TableScanMR</h2><p>ScanAPI仅适用于OLTP场景,那OLAP场景下需要从HBase中扫描大量数据进行分析怎么办呢?现在有很多业务需求都需要从HBase扫描大量数据进行分析,比如最常见的用户行为分析业务,通常需要扫描某些用户最近一段时间的网络行为数据进行分析.</p>
+<p>对于这类业务,HBase目前提供了两种基于MR扫描的用法,分别为TableScanMR以及SnapshotScanMR.首先来介绍TableScanMR.TableScanMR的工作原理其实很简单,说白了就是ScanAPI的并行化.如下图所示:</p>
+<img src="/images/hbs2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>TableScanMR会将scan请求根据目标region的分界进行分解,分解成多个sub-scan,每个sub-scan本质上就是一个ScanAPI.假如scan是全表扫描,那这张表有多少region,就会将这个scan分解成多个sub-scan,每个sub-scan的startkey和stopkey就是region的startkey和stopkey.</p>
+<h3 id="TableScanMR最佳实践"><a href="#TableScanMR最佳实践" class="headerlink" title="TableScanMR最佳实践"></a>TableScanMR最佳实践</h3><ol>
+<li>TableScanMR设计为OLAP场景使用,因此在离线扫描时尽可能使用该种方式</li>
+<li>TableScanMR原理上主要实现了ScanAPI的并行化,将scan按照region边界进行切分.这种场景下整个scan的时间基本等于最大region扫描的时间.在某些有数据倾斜的场景下可能出现某一个region上有大量待扫描数据,而其他大量region上都仅有很少的待扫描数据.这样并行化效果并不好.针对这种数据倾斜的场景TableScanMR做了平衡处理,它会将大region上的scan切分成多个小的scan使得所有分解后的scan扫描的数据量基本相当.这个优化默认是关闭的,需要设置参数&quot;<strong>hbase.mapreduce.input.autobalance</strong>&quot;为true.因此建议大家使用TableScanMR时将该参数设置为true.</li>
+<li>尽量将扫描表中相邻的小region合并成大region,而将大region切分成稍微小点的region.</li>
+<li>TableScanMR中Scan需要注意如下两个参数设置:</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Scan scan &#x3D; new Scan();</span><br><span class="line">scan.setCaching(500);        &#x2F;&#x2F; 1 is the default in Scan, which will be bad for MapReduce jobs</span><br><span class="line">scan.setCacheBlocks(false);  &#x2F;&#x2F; don&#39;t set to true for MR jobs</span><br></pre></td></tr></table></figure>
+
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><p>通常建议关闭使用HBase作为源的MapReduce作业的推测执行.<br>这可以通过属性在每个作业的基础上在整个集群上完成.<br>特别是对于运行时间较长的作业,推测执行会创建重复的映射任务,这会将您的数据双重写入HBase.</p>
+<p>修改mapred-site.xml配置,将默认true改为false,关闭hbase集群推测执行功能.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mapreduce.map.speculative</span><br><span class="line">mapreduce.reduce.speculative</span><br></pre></td></tr></table></figure>
+
+<h4 id="读取示例"><a href="#读取示例" class="headerlink" title="读取示例"></a>读取示例</h4><p>以只读方式使用HBase作为MapReduce源(有一个Mapper实例但没有Reducer).</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.hadoop.conf.Configuration;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.hbase.HBaseConfiguration;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.hbase.client.Scan;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.mapreduce.Job;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyReadJob</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    Configuration config = HBaseConfiguration.create();</span><br><span class="line">    config.set(<span class="string">&quot;hbase.zookeeper.quorum&quot;</span>, <span class="string">&quot;oceanbase004&quot;</span>);</span><br><span class="line">    config.set(<span class="string">&quot;hbase.zookeeper.property.clientPort&quot;</span>, <span class="string">&quot;2181&quot;</span>);</span><br><span class="line">    Job job = Job.getInstance(config, <span class="string">&quot;ExampleRead&quot;</span>);</span><br><span class="line">    job.setJarByClass(MyReadJob.class);</span><br><span class="line">    Scan scan = <span class="keyword">new</span> Scan();</span><br><span class="line">    scan.setCaching(<span class="number">500</span>);</span><br><span class="line">    scan.setCacheBlocks(<span class="keyword">false</span>);</span><br><span class="line"></span><br><span class="line">    TableMapReduceUtil.initTableMapperJob(</span><br><span class="line">        <span class="string">&quot;xx1&quot;</span>,</span><br><span class="line">        scan,</span><br><span class="line">        MyMapper.class,</span><br><span class="line">        <span class="keyword">null</span>,</span><br><span class="line">        <span class="keyword">null</span>,</span><br><span class="line">        job);</span><br><span class="line">    job.setOutputFormatClass(NullOutputFormat.class);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">boolean</span> b = job.waitForCompletion(<span class="keyword">true</span>);</span><br><span class="line">    <span class="keyword">if</span> (!b) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IOException(<span class="string">&quot;error with job!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.hadoop.hbase.Cell;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.hbase.CellUtil;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.hbase.client.Result;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.hbase.io.ImmutableBytesWritable;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.hbase.mapreduce.TableMapper;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.hbase.util.Bytes;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.io.Text;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyMapper</span> <span class="keyword">extends</span> <span class="title">TableMapper</span>&lt;<span class="title">Text</span>, <span class="title">Text</span>&gt; </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">map</span><span class="params">(ImmutableBytesWritable row, Result value, Context context)</span> <span class="keyword">throws</span> InterruptedException, IOException </span>&#123;</span><br><span class="line">    <span class="comment">// process data for the row from the Result instance.</span></span><br><span class="line">    System.out.println(Bytes.toString(row.get()));</span><br><span class="line">    <span class="keyword">if</span> (!value.isEmpty()) &#123;</span><br><span class="line">      System.out.println(Bytes.toString(value.getRow()));</span><br><span class="line">      <span class="keyword">for</span> (Cell cell : value.listCells()) &#123;</span><br><span class="line">        System.out.println(Bytes.toString(CellUtil.cloneRow(cell)));</span><br><span class="line">        System.out.println(Bytes.toString(CellUtil.cloneFamily(cell)));</span><br><span class="line">        System.out.println(Bytes.toString(CellUtil.cloneQualifier(cell)));</span><br><span class="line">        System.out.println(Bytes.toLong(CellUtil.cloneValue(cell)));</span><br><span class="line">        System.out.println(cell.getTimestamp());</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="读-写示例"><a href="#读-写示例" class="headerlink" title="读/写示例"></a>读/写示例</h4><p>使用HBase作为源和作为MapReduce的接收器,此示例将简单地将数据从一个表复制到另一个表.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">TableMapReduceUtil.initTableMapperJob(</span><br><span class="line">    <span class="string">&quot;xx1&quot;</span>,</span><br><span class="line">    scan,</span><br><span class="line">    MyMapper.class,</span><br><span class="line">    <span class="keyword">null</span>,</span><br><span class="line">    <span class="keyword">null</span>,</span><br><span class="line">    job);</span><br><span class="line">TableMapReduceUtil.initTableReducerJob(</span><br><span class="line">    <span class="string">&quot;xx111&quot;</span>,</span><br><span class="line">    <span class="keyword">null</span>,</span><br><span class="line">    job);</span><br><span class="line">job.setNumReduceTasks(<span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyMapper</span> <span class="keyword">extends</span> <span class="title">TableMapper</span>&lt;<span class="title">ImmutableBytesWritable</span>, <span class="title">Put</span>&gt; </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">map</span><span class="params">(ImmutableBytesWritable row, Result value, Context context)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line">    <span class="comment">// this example is just copying the data from the source table...</span></span><br><span class="line">    context.write(row, resultToPut(row, value));</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> Put <span class="title">resultToPut</span><span class="params">(ImmutableBytesWritable key, Result result)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    Put put = <span class="keyword">new</span> Put(key.get());</span><br><span class="line">    <span class="keyword">for</span> (Cell kv : result.rawCells()) &#123;</span><br><span class="line">      put.add(kv);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> put;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="汇总写入示例"><a href="#汇总写入示例" class="headerlink" title="汇总写入示例"></a>汇总写入示例</h4><p>使用HBase作为MapReduce源和接收器以及汇总步骤,此示例将计算表中某个值的不同实例的数量,并将这些汇总计数写入另一个表中.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">TableMapReduceUtil.initTableMapperJob(</span><br><span class="line">    <span class="string">&quot;xx1&quot;</span>,</span><br><span class="line">    scan,</span><br><span class="line">    MyMapper.class,</span><br><span class="line">    Text.class,</span><br><span class="line">    IntWritable.class,</span><br><span class="line">    job);</span><br><span class="line">TableMapReduceUtil.initTableReducerJob(</span><br><span class="line">    <span class="string">&quot;xx111&quot;</span>,</span><br><span class="line">    MyTableReducer.class,</span><br><span class="line">    job);</span><br><span class="line"></span><br><span class="line"><span class="comment">// at least one, adjust as required</span></span><br><span class="line">job.setNumReduceTasks(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+<p>选择具有字符串值的列作为要汇总的值,该值用作从映射器发出的键,IntWritable表示实例计数器.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyMapper</span> <span class="keyword">extends</span> <span class="title">TableMapper</span>&lt;<span class="title">Text</span>, <span class="title">IntWritable</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">byte</span>[] CF = <span class="string">&quot;d&quot;</span>.getBytes();</span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">byte</span>[] ATTR1 = <span class="string">&quot;c1&quot;</span>.getBytes();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> IntWritable ONE = <span class="keyword">new</span> IntWritable(<span class="number">1</span>);</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> Text text = <span class="keyword">new</span> Text();</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">map</span><span class="params">(ImmutableBytesWritable row, Result value, Context context)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line">    String val = <span class="keyword">new</span> String(value.getValue(CF, ATTR1));</span><br><span class="line">    <span class="comment">// we can only emit Writables...</span></span><br><span class="line">    text.set(val);</span><br><span class="line">    context.write(text, ONE);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在reducer中,&quot;1&quot;被计数,然后发出Put.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyTableReducer</span> <span class="keyword">extends</span> <span class="title">TableReducer</span>&lt;<span class="title">Text</span>, <span class="title">IntWritable</span>, <span class="title">ImmutableBytesWritable</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">byte</span>[] CF = <span class="string">&quot;d&quot;</span>.getBytes();</span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">byte</span>[] COUNT = <span class="string">&quot;count&quot;</span>.getBytes();</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">reduce</span><span class="params">(Text key, Iterable&lt;IntWritable&gt; values, Context context)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (IntWritable val : values) &#123;</span><br><span class="line">      i += val.get();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Put put = <span class="keyword">new</span> Put(Bytes.toBytes(key.toString()));</span><br><span class="line">    put.addColumn(CF, COUNT, Bytes.toBytes(i));</span><br><span class="line">    context.write(<span class="keyword">null</span>, put);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="摘要到文件示例"><a href="#摘要到文件示例" class="headerlink" title="摘要到文件示例"></a>摘要到文件示例</h4><p>使用HBase作为MapReduce源,但使用HDFS作为接收器.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">TableMapReduceUtil.initTableMapperJob(</span><br><span class="line">    <span class="string">&quot;xx1&quot;</span>,</span><br><span class="line">    scan,</span><br><span class="line">    MyMapper.class,</span><br><span class="line">    Text.class,</span><br><span class="line">    IntWritable.class,</span><br><span class="line">    job);</span><br><span class="line">job.setReducerClass(MyReducer.class);</span><br><span class="line"><span class="comment">// at least one, adjust as required</span></span><br><span class="line">job.setNumReduceTasks(<span class="number">1</span>);</span><br><span class="line"><span class="comment">// adjust directories as required</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//默认写到本地</span></span><br><span class="line"><span class="comment">//FileOutputFormat.setOutputPath(job, new Path(&quot;/tmp/mr/mySummaryFile&quot;));</span></span><br><span class="line">FileOutputFormat.setOutputPath(job, <span class="keyword">new</span> Path(<span class="string">&quot;hdfs://master2:8020/tmp/mr/mySummaryFile&quot;</span>));</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyMapper</span> <span class="keyword">extends</span> <span class="title">TableMapper</span>&lt;<span class="title">Text</span>, <span class="title">IntWritable</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">byte</span>[] CF = <span class="string">&quot;d&quot;</span>.getBytes();</span><br><span class="line">  <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">byte</span>[] ATTR1 = <span class="string">&quot;c1&quot;</span>.getBytes();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> IntWritable ONE = <span class="keyword">new</span> IntWritable(<span class="number">1</span>);</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> Text text = <span class="keyword">new</span> Text();</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">map</span><span class="params">(ImmutableBytesWritable row, Result value, Context context)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line">    String val = <span class="keyword">new</span> String(value.getValue(CF, ATTR1));</span><br><span class="line">    <span class="comment">// we can only emit Writables...</span></span><br><span class="line">    text.set(val);</span><br><span class="line">    context.write(text, ONE);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyReducer</span> <span class="keyword">extends</span> <span class="title">Reducer</span>&lt;<span class="title">Text</span>, <span class="title">IntWritable</span>, <span class="title">Text</span>, <span class="title">IntWritable</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">reduce</span><span class="params">(Text key, Iterable&lt;IntWritable&gt; values, Context context)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (IntWritable val : values) &#123;</span><br><span class="line">      i += val.get();</span><br><span class="line">    &#125;</span><br><span class="line">    context.write(key, <span class="keyword">new</span> IntWritable(i));</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="汇总到RDBMS"><a href="#汇总到RDBMS" class="headerlink" title="汇总到RDBMS"></a>汇总到RDBMS</h4><p>通过自定义reducer直接向RDBMS生成摘要.<br>该setup方法可以连接到RDBMS(连接信息可以通过上下文中的自定义参数传递),而cleanup方法可以关闭连接.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyRdbmsReducer</span> <span class="keyword">extends</span> <span class="title">Reducer</span>&lt;<span class="title">Text</span>, <span class="title">IntWritable</span>, <span class="title">Text</span>, <span class="title">IntWritable</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> Connection c = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setup</span><span class="params">(Context context)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// create DB connection...</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">reduce</span><span class="params">(Text key, Iterable&lt;IntWritable&gt; values, Context context)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line">    <span class="comment">// do summarization</span></span><br><span class="line">    <span class="comment">// in this example the keys are Text, but this is just an example</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">cleanup</span><span class="params">(Context context)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// close db connection</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="访问其他HBase表"><a href="#访问其他HBase表" class="headerlink" title="访问其他HBase表"></a>访问其他HBase表</h4><p>虽然框架目前允许一个HBase表作为MapReduce作业的输入,但其他HBase表可以通过在Mapper的setup方法中创建一个Table实例在MapReduce作业中作为查找表等进行访问.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyMapper</span> <span class="keyword">extends</span> <span class="title">TableMapper</span>&lt;<span class="title">Text</span>, <span class="title">LongWritable</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> Table myOtherTable;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setup</span><span class="params">(Context context)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// In here create a Connection to the cluster and save it or use the Connection</span></span><br><span class="line">    <span class="comment">// from the existing table</span></span><br><span class="line">    myOtherTable = connection.getTable(<span class="string">&quot;myOtherTable&quot;</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">map</span><span class="params">(ImmutableBytesWritable row, Result value, Context context)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line">    <span class="comment">// process Result...</span></span><br><span class="line">    <span class="comment">// use &#x27;myOtherTable&#x27; for lookups</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="SnapshotScanMR"><a href="#SnapshotScanMR" class="headerlink" title="SnapshotScanMR"></a>SnapshotScanMR</h2><p>SnapshotScanMR与TableScanMR相同都是使用MR并行化对数据进行扫描,两者用法也基本相同,直接使用TableScanMR的用法,在此基础上做部分修改即可,如下所示:</p>
+<img src="/images/hbs3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>但两者在实现上却有多个非常大的区别:</p>
+<ol>
+<li>从命名来看就知道,SnapshotScanMR扫描于原始表对应的snapshot之上(更准确来说根据snapshot restore出来的hfile),而TableScanMR扫描于原始表.</li>
+<li>SnapshotScanMR直接会在客户端打开region扫描HDFS上的文件,不需要发送Scan请求给RegionServer,再有RegionServer扫描HDFS上的文件.在客户端直接扫描HDFS上的文件,这类scanner称之为ClientSideRegionScanner.</li>
+</ol>
+<p>下图是SnapshotScanMR的工作原理图(注意和TableScanMR工作原理图对比):</p>
+<img src="/images/hbs4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>这是一个相对简单的示意图,其中省略了很多处理snapshot的过程以及切分scan的过程.总体来看和TableScanMR工作流程基本一致,最大的不同来自region扫描HDFS这个模块,TableScanMR中这个模块来自于regionserver,而SnapshotScanMR中客户端直接绕过regionserver在客户端借用region中的扫描机制直接扫描hdfs中数据.</p>
+<ol>
+<li>减小对RegionServer的影响.很显然,SnapshotScanMR这种绕过RegionServer的实现方式最大限度的减小了对集群中其他业务的影响.</li>
+<li>极大的提升了扫描效率.SnapshotScanMR相比TableScanMR在扫描效率上会有2倍-N倍的性能提升.</li>
+</ol>
+<p>1)扫描的过程少了一次网络传输,对于大数据量的扫描,网络传输花费的时间是非常庞大的,这主要可能牵扯到数据的序列化以及反序列化开销.<br>2)TableScanMR扫描中RegionServer很可能会成为瓶颈,而SnapshotScanMR扫描并没有这个瓶颈点.</p>
+<p>在最后说一个TableScanMR和SnapshotScanMR都存在的问题,两者实际上都是按照region对scan进行切分,然而对于很多大region(大于30g),单个region的扫描粒度还是太大.<br>另外,很多scan扫描可能并没有涉及多个region,而是集中在某一个region上,举个例子,扫描某个用户最近一个月的行为记录,如果rowkey设计为username+timestamp的话,待扫描数据通常会集中存储在一个region上,这种扫描如果使用MR的话,在当前的策略下只会生成一个Mapper.<br>因此有必要提供一些其他策略可以将scan分解的粒度做的更细.</p>
+<h2 id="基本性能对比"><a href="#基本性能对比" class="headerlink" title="基本性能对比"></a>基本性能对比</h2><p>使用ScanAPI的性能最差,SnapshotScanMR的性能最好.<br>SnapshotScanMR的性能相比TableScanMR(ScanMR)也有3倍的性能提升.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hbase/" rel="tag"># hbase</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/03/hbase%20sequenceId/" rel="prev" title="hbase sequenceId">
+                  <i class="fa fa-chevron-left"></i> hbase sequenceId
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/03/hbase%20jmx%E5%B8%B8%E7%94%A8%E7%9B%91%E6%8E%A7%E6%8C%87%E6%A0%87/" rel="next" title="hbase jmx常用监控指标">
+                  hbase jmx常用监控指标 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

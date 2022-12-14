@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="elasticsearch版本为6.8.2 在测试机器上部署3个节点的elasticsearch集群,测试索引快照与还原,查看数据写入情况&#x2F;数据完整性&#x2F;集群状态.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="elasticsearch集群快照与还原">
+<meta property="og:url" content="https://maoeryu.github.io/2021/03/05/elasticsearch%E9%9B%86%E7%BE%A4%E5%BF%AB%E7%85%A7%E4%B8%8E%E8%BF%98%E5%8E%9F/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="elasticsearch版本为6.8.2 在测试机器上部署3个节点的elasticsearch集群,测试索引快照与还原,查看数据写入情况&#x2F;数据完整性&#x2F;集群状态.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/elastic_1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/elastic_2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/elastic_3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/elastic_4.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/elastic_5.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/elastic_6.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/elastic_7.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/elastic_8.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/elastic_9.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/elastic_10.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/elastic_11.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/elastic_12.png">
+<meta property="article:published_time" content="2021-03-04T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-07-26T02:51:37.894Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="elasticsearch">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/elastic_1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/03/05/elasticsearch%E9%9B%86%E7%BE%A4%E5%BF%AB%E7%85%A7%E4%B8%8E%E8%BF%98%E5%8E%9F/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>elasticsearch集群快照与还原 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E7%8E%AF%E5%A2%83"><span class="nav-number">1.</span> <span class="nav-text">集群环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BF%AB%E7%85%A7%E5%A4%87%E4%BB%BD%E5%92%8C%E6%81%A2%E5%A4%8D"><span class="nav-number">2.</span> <span class="nav-text">快照备份和恢复</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#centos6%E6%8C%82%E8%BD%BDNFS"><span class="nav-number">2.1.</span> <span class="nav-text">centos6挂载NFS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%BF%AB%E7%85%A7%E5%9C%B0%E5%9D%80"><span class="nav-number">2.2.</span> <span class="nav-text">配置快照地址</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E5%86%8C%E4%BB%93%E5%BA%93"><span class="nav-number">2.3.</span> <span class="nav-text">注册仓库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B%E5%8F%8A%E5%88%A0%E9%99%A4%E4%BB%93%E5%BA%93%E4%BF%A1%E6%81%AF"><span class="nav-number">2.4.</span> <span class="nav-text">查看及删除仓库信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E5%BF%AB%E7%85%A7"><span class="nav-number">2.5.</span> <span class="nav-text">创建快照</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B%E5%BF%AB%E7%85%A7"><span class="nav-number">2.6.</span> <span class="nav-text">查看快照</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E6%9F%90%E4%B8%AA%E5%BF%AB%E7%85%A7"><span class="nav-number">2.7.</span> <span class="nav-text">删除某个快照</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%9A%E8%BF%87%E5%BF%AB%E7%85%A7%E6%81%A2%E5%A4%8D%E7%B4%A2%E5%BC%95"><span class="nav-number">2.8.</span> <span class="nav-text">通过快照恢复索引</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B%E5%BF%AB%E7%85%A7%E7%8A%B6%E6%80%81"><span class="nav-number">2.9.</span> <span class="nav-text">查看快照状态</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/03/05/elasticsearch%E9%9B%86%E7%BE%A4%E5%BF%AB%E7%85%A7%E4%B8%8E%E8%BF%98%E5%8E%9F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          elasticsearch集群快照与还原
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-03-05 00:00:00" itemprop="dateCreated datePublished" datetime="2021-03-05T00:00:00+08:00">2021-03-05</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-07-26 10:51:37" itemprop="dateModified" datetime="2022-07-26T10:51:37+08:00">2022-07-26</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>elasticsearch版本为6.8.2</p>
+<p>在测试机器上部署3个节点的elasticsearch集群,测试索引快照与还原,查看数据写入情况/数据完整性/集群状态.</p>
+<span id="more"></span>
+<h2 id="集群环境"><a href="#集群环境" class="headerlink" title="集群环境"></a>集群环境</h2><p>172.18.250.91 node-01<br>172.18.250.92 node-02<br>172.18.250.96 node-03</p>
+<p>3个节点elasticsearch.yml配置如下,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">cluster.name: elastic</span><br><span class="line">node.name: node-01&#x2F;02&#x2F;03</span><br><span class="line">bootstrap.memory_lock: false</span><br><span class="line">bootstrap.system_call_filter: false</span><br><span class="line">network.host: 0.0.0.0</span><br><span class="line">http.port: 9200</span><br><span class="line">discovery.zen.ping.unicast.hosts: [&quot;172.18.250.91&quot;, &quot;172.18.250.92&quot;, &quot;172.18.250.96&quot;]</span><br><span class="line">discovery.zen.ping_timeout: 40s</span><br><span class="line"></span><br><span class="line">http.cors.enabled: true </span><br><span class="line">http.cors.allow-origin: &quot;*&quot;</span><br><span class="line">http.cors.allow-headers: Authorization,X-Requested-With,Content-Length,Content-Type</span><br><span class="line"></span><br><span class="line">xpack.security.enabled: true</span><br><span class="line">xpack.security.transport.ssl.enabled: true</span><br><span class="line">xpack.security.transport.ssl.verification_mode: certificate</span><br><span class="line">xpack.security.transport.ssl.keystore.path: certs&#x2F;elastic-certificates.p12</span><br><span class="line">xpack.security.transport.ssl.truststore.path: certs&#x2F;elastic-certificates.p12</span><br><span class="line"></span><br><span class="line">discovery.zen.minimum_master_nodes: 2</span><br><span class="line">action.destructive_requires_name: true</span><br></pre></td></tr></table></figure>
+
+<h2 id="快照备份和恢复"><a href="#快照备份和恢复" class="headerlink" title="快照备份和恢复"></a>快照备份和恢复</h2><h3 id="centos6挂载NFS"><a href="#centos6挂载NFS" class="headerlink" title="centos6挂载NFS"></a>centos6挂载NFS</h3><p>所有节点安装nfs-utils rpcbind,启动服务并设置开机启动,</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">yum -y install nfs-utils rpcbind</span><br><span class="line">chkconfig nfs on</span><br><span class="line">chkconfig rpcbind on</span><br><span class="line">service rpcbind start</span><br><span class="line">service nfs start</span><br></pre></td></tr></table></figure>
+
+<p>91节点作为服务端,创建共享目录,并指定客户端,刷新配置.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /opt/elasticsearch-6.8.2/backups/my_backup</span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;/opt/elasticsearch-6.8.2/backups/my_backup *(rw,sync,no_root_squash)&quot;</span> &gt;&gt; /etc/exports</span><br><span class="line">exportfs –a</span><br></pre></td></tr></table></figure>
+
+<p>92/96作为客户端,创建挂载目录,并开启开机自动挂载.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /opt/elasticsearch-6.8.2/backups/my_backup</span><br><span class="line">mount -t nfs 172.18.250.91:/opt/elasticsearch-6.8.2/backups/my_backup /opt/elasticsearch-6.8.2/backups/my_backup</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;172.18.250.91:/opt/elasticsearch-6.8.2/backups/my_backup /opt/elasticsearch-6.8.2/backups/my_backup  nfs rw,tcp,intr 0 1&quot;</span> &gt;&gt; /etc/fstab</span><br></pre></td></tr></table></figure>
+
+<img src="/images/elastic_1.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/elastic_2.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="配置快照地址"><a href="#配置快照地址" class="headerlink" title="配置快照地址"></a>配置快照地址</h3><p>修改所有节点配置文件elasticsearch.yml,增加以下配置,并重启机器.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">path.repo: [&quot;&#x2F;opt&#x2F;elasticsearch-6.8.2&#x2F;backups&#x2F;my_backup&quot;]</span><br></pre></td></tr></table></figure>
+
+<h3 id="注册仓库"><a href="#注册仓库" class="headerlink" title="注册仓库"></a>注册仓库</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">curl -XPUT &#39;http:&#x2F;&#x2F;hadoop-sh1-master1:9200&#x2F;_snapshot&#x2F;my_backup&#39; -d &#39;&#123;</span><br><span class="line">  &quot;type&quot;: &quot;fs&quot;,</span><br><span class="line">  &quot;settings&quot;: &#123;</span><br><span class="line">    &quot;location&quot;: &quot;&#x2F;opt&#x2F;elasticsearch-6.8.2&#x2F;backups&#x2F;my_backup&quot;,</span><br><span class="line">    &quot;max_snapshot_bytes_per_sec&quot;: &quot;50mb&quot;,</span><br><span class="line">    &quot;max_restore_bytes_per_sec&quot;: &quot;50mb&quot;,</span><br><span class="line">    &quot;compress&quot;: true</span><br><span class="line">  &#125;</span><br><span class="line">&#125;&#39;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/elastic_3.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="查看及删除仓库信息"><a href="#查看及删除仓库信息" class="headerlink" title="查看及删除仓库信息"></a>查看及删除仓库信息</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -XGET &#39;http:&#x2F;&#x2F;hadoop-sh1-master1:9200&#x2F;_snapshot&#x2F;my_backup?pretty&#39;</span><br><span class="line">curl -XDELETE &#39;http:&#x2F;&#x2F;hadoop-sh1-master1:9200&#x2F;_snapshot&#x2F;my_backup&#39;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/elastic_4.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/elastic_5.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="创建快照"><a href="#创建快照" class="headerlink" title="创建快照"></a>创建快照</h3><p>所有索引进行快照</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -XPUT &quot;hadoop-sh1-master1:9200&#x2F;_snapshot&#x2F;my_backup&#x2F;snapshot_1?wait_for_completion&#x3D;true&quot;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/elastic_6.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>单个索引进行快照</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -XPUT &quot;hadoop-sh1-master1:9200&#x2F;_snapshot&#x2F;my_backup&#x2F;snapshot_2?wait_for_completion&#x3D;true&quot; -d &#39;&#123;&quot;indices&quot;:&quot;test&quot;&#125;&#39;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/elastic_7.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="查看快照"><a href="#查看快照" class="headerlink" title="查看快照"></a>查看快照</h3><p>查看某个快照</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -XGET &quot;hadoop-sh1-master1:9200&#x2F;_snapshot&#x2F;my_backup&#x2F;snapshot_1?pretty&quot;</span><br></pre></td></tr></table></figure>
+
+<p>查看所有快照</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -XGET &quot;hadoop-sh1-master1:9200&#x2F;_snapshot&#x2F;my_backup&#x2F;_all?pretty&quot;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/elastic_8.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="删除某个快照"><a href="#删除某个快照" class="headerlink" title="删除某个快照"></a>删除某个快照</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -XDELETE &quot;hadoop-sh1-master1:9200&#x2F;_snapshot&#x2F;my_backup&#x2F;snapshot_1&quot;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/elastic_9.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="通过快照恢复索引"><a href="#通过快照恢复索引" class="headerlink" title="通过快照恢复索引"></a>通过快照恢复索引</h3><p>恢复某个索引,索引需要关闭或删除</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -XPOST &quot;hadoop-sh1-master1:9200&#x2F;_snapshot&#x2F;my_backup&#x2F;snapshot_1&#x2F;_restore?wait_for_completion&#x3D;true&quot; -d &#39;&#123;&quot;indices&quot;:&quot;test&quot;,&quot;ignore_unavailable&quot;:&quot;true&quot;&#125;&#39;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/elastic_10.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>恢复所有索引</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -XPOST &quot;hadoop-sh1-master1:9200&#x2F;_snapshot&#x2F;my_backup&#x2F;snapshot_1&#x2F;_restore?wait_for_completion&#x3D;true&quot;</span><br></pre></td></tr></table></figure>
+
+<p>关闭/开启索引</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -XPOST &quot;hadoop-sh1-master1:9200&#x2F;test&#x2F;_close&quot;</span><br><span class="line">curl -XPOST &quot;hadoop-sh1-master1:9200&#x2F;test&#x2F;_open&quot;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/elastic_11.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/elastic_12.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="查看快照状态"><a href="#查看快照状态" class="headerlink" title="查看快照状态"></a>查看快照状态</h3><p>列出当前所有正在运行的快照</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -XGET &#39;hadoop-sh1-master1:9200&#x2F;_snapshot&#x2F;_status?pretty&#39;</span><br></pre></td></tr></table></figure>
+
+<p>查看指定仓库正在运行的快照状态</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -XGET &#39;hadoop-sh1-master1:9200&#x2F;_snapshot&#x2F;my_backup&#x2F;_status?pretty&#39;</span><br></pre></td></tr></table></figure>
+
+<p>查看指定快照状态</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -XGET &#39;hadoop-sh1-master1:9200&#x2F;_snapshot&#x2F;my_backup&#x2F;snapshot_1&#x2F;_status?pretty&#39;</span><br></pre></td></tr></table></figure>
+
+<p>查看多个快照</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -XGET &#39;hadoop-sh1-master1:9200&#x2F;_snapshot&#x2F;my_backup&#x2F;snapshot_1,snapshot_2&#x2F;_status?pretty&#39;</span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/elasticsearch/" rel="tag"># elasticsearch</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/03/05/elasticsearch%E9%9B%86%E7%BE%A4%E9%85%8D%E7%BD%AE%E4%BF%AE%E6%94%B9%E6%B5%8B%E8%AF%95/" rel="prev" title="elasticsearch集群配置修改测试">
+                  <i class="fa fa-chevron-left"></i> elasticsearch集群配置修改测试
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/03/05/elasticsearch%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/" rel="next" title="elasticsearch集群搭建">
+                  elasticsearch集群搭建 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

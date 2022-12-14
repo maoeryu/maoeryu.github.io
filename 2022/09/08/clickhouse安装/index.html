@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="ClickHouse client version 22.8.4.7">
+<meta property="og:type" content="article">
+<meta property="og:title" content="clickhouse安装">
+<meta property="og:url" content="https://maoeryu.github.io/2022/09/08/clickhouse%E5%AE%89%E8%A3%85/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="ClickHouse client version 22.8.4.7">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl106.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl107.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl108.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl109.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl110.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl111.png">
+<meta property="article:published_time" content="2022-09-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-09T03:41:53.716Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="clickhouse">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/flgl106.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/09/08/clickhouse%E5%AE%89%E8%A3%85/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>clickhouse安装 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%95%E6%9C%BA%E7%89%88%E5%AE%89%E8%A3%85"><span class="nav-number">1.</span> <span class="nav-text">单机版安装</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5SSE-4-2"><span class="nav-number">1.1.</span> <span class="nav-text">检查SSE 4.2</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8B%E8%BD%BD%E5%AE%89%E8%A3%85"><span class="nav-number">1.2.</span> <span class="nav-text">下载安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">1.3.</span> <span class="nav-text">配置</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E8%BF%9C%E7%A8%8B%E8%BF%9E%E6%8E%A5"><span class="nav-number">1.3.1.</span> <span class="nav-text">配置远程连接</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%AF%86%E7%A0%81"><span class="nav-number">1.3.2.</span> <span class="nav-text">配置密码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%9B%AE%E5%BD%95"><span class="nav-number">1.3.3.</span> <span class="nav-text">数据目录</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E6%9C%8D%E5%8A%A1%E7%AB%AF"><span class="nav-number">1.4.</span> <span class="nav-text">启动服务端</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E5%AE%A2%E6%88%B7%E7%AB%AF"><span class="nav-number">1.5.</span> <span class="nav-text">启动客户端</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%B8%E8%BD%BD"><span class="nav-number">1.6.</span> <span class="nav-text">卸载</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E5%AE%89%E8%A3%85"><span class="nav-number">2.</span> <span class="nav-text">集群安装</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%88%86%E7%89%87%E5%A4%8D%E5%88%B6%E6%96%B9%E6%A1%88"><span class="nav-number">2.1.</span> <span class="nav-text">数据分片复制方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E6%A1%88%E4%B8%80"><span class="nav-number">2.1.1.</span> <span class="nav-text">方案一</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.1.1.1.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%AF%AD%E6%B3%95"><span class="nav-number">2.1.1.2.</span> <span class="nav-text">语法</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.1.1.3.</span> <span class="nav-text">示例</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E6%A1%88%E4%BA%8C"><span class="nav-number">2.1.2.</span> <span class="nav-text">方案二</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E6%A1%88%E4%B8%89"><span class="nav-number">2.1.3.</span> <span class="nav-text">方案三</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B-1"><span class="nav-number">2.1.3.1.</span> <span class="nav-text">示例</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E6%A1%88%E5%9B%9B"><span class="nav-number">2.1.4.</span> <span class="nav-text">方案四</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E9%85%8D%E7%BD%AE"><span class="nav-number">2.1.4.1.</span> <span class="nav-text">修改配置</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B-2"><span class="nav-number">2.1.4.2.</span> <span class="nav-text">示例</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">2.1.5.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/09/08/clickhouse%E5%AE%89%E8%A3%85/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          clickhouse安装
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-09-08 00:00:00" itemprop="dateCreated datePublished" datetime="2022-09-08T00:00:00+08:00">2022-09-08</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-09 11:41:53" itemprop="dateModified" datetime="2022-09-09T11:41:53+08:00">2022-09-09</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>ClickHouse client version 22.8.4.7</p>
+<span id="more"></span>
+<h2 id="单机版安装"><a href="#单机版安装" class="headerlink" title="单机版安装"></a>单机版安装</h2><h3 id="检查SSE-4-2"><a href="#检查SSE-4-2" class="headerlink" title="检查SSE 4.2"></a>检查SSE 4.2</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#检查当前CPU是否支持SSE 4.2</span><br><span class="line">grep -q sse4_2 &#x2F;proc&#x2F;cpuinfo &amp;&amp; echo &quot;SSE 4.2 supported&quot; || echo &quot;SSE 4.2 not supported&quot;</span><br></pre></td></tr></table></figure>
+
+<h3 id="下载安装"><a href="#下载安装" class="headerlink" title="下载安装"></a>下载安装</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">yum install -y yum-utils</span><br><span class="line">yum-config-manager --add-repo https:&#x2F;&#x2F;packages.clickhouse.com&#x2F;rpm&#x2F;clickhouse.repo</span><br><span class="line">yum install -y clickhouse-server clickhouse-client</span><br></pre></td></tr></table></figure>
+
+<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><h4 id="配置远程连接"><a href="#配置远程连接" class="headerlink" title="配置远程连接"></a>配置远程连接</h4><p>clickhouse安装后,默认不支持远程连接.<br>修改配置文件<code>/etc/clickhouse-server/users.xml</code>,打开以下配置注释,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;networks&gt;</span><br><span class="line">&lt;ip&gt;::&#x2F;0&lt;&#x2F;ip&gt;</span><br><span class="line">&lt;&#x2F;networks&gt;</span><br></pre></td></tr></table></figure>
+
+<p>修改配置文件<code>/etc/clickhouse-server/config.xml</code>,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">#支持ip6</span><br><span class="line">&lt;listen_host&gt;::&lt;&#x2F;listen_host&gt;</span><br><span class="line">#禁用ip6时,打开以下配置</span><br><span class="line">&lt;listen_host&gt;0.0.0.0&lt;&#x2F;listen_host&gt;</span><br></pre></td></tr></table></figure>
+
+<h4 id="配置密码"><a href="#配置密码" class="headerlink" title="配置密码"></a>配置密码</h4><p>clickhouse默认用户名为default,密码为空.<br>修改<code>/etc/clickhouse-server/users.xml</code>,配置密码.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;password&gt;123456&lt;&#x2F;password&gt;</span><br></pre></td></tr></table></figure>
+
+<h4 id="数据目录"><a href="#数据目录" class="headerlink" title="数据目录"></a>数据目录</h4><p>clickhouse安装后,默认的数据目录在/var/lib/clickhouse,如果需要修改,修改/etc/rc.d/init.d/clickhouse-server这个文件.</p>
+<h3 id="启动服务端"><a href="#启动服务端" class="headerlink" title="启动服务端"></a>启动服务端</h3><p>如果没有service,可以运行如下命令在后台启动服务.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;etc&#x2F;init.d&#x2F;clickhouse-server start</span><br></pre></td></tr></table></figure>
+
+<p>查看端口状态,<code>TCP *:8123 (LISTEN)</code>.</p>
+<p>日志文件将输出在<code>/var/log/clickhouse-server/</code>文件夹.<br>如果服务器没有启动,检查<code>/etc/clickhouse-server/config.xml</code>中的配置.</p>
+<p>也可以手动从控制台启动服务器:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">clickhouse-server --config-file&#x3D;&#x2F;etc&#x2F;clickhouse-server&#x2F;config.xml</span><br></pre></td></tr></table></figure>
+
+<p>在这种情况下,日志将被打印到控制台,这在开发过程中很方便.</p>
+<p>如果配置文件在当前目录中,则不需要指定--config-file参数.<br>默认情况下,它的路径为./config.xml.</p>
+<p>ClickHouse支持访问限制设置.<br>它们位于users.xml文件(与config.xml同级目录).<br>默认情况下,允许default用户从任何地方访问,不需要密码.<br>可查看<code>user/default/networks</code>.</p>
+<h3 id="启动客户端"><a href="#启动客户端" class="headerlink" title="启动客户端"></a>启动客户端</h3><p>启动服务后,可以使用命令行客户端连接到它.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">clickhouse-client</span><br><span class="line">clickhouse-client --password</span><br><span class="line"></span><br><span class="line">#测试命令</span><br><span class="line">select 1</span><br></pre></td></tr></table></figure>
+
+<p>默认情况下,使用default用户并不携带密码连接到localhost:9000.<br>还可以使用--host参数连接到指定服务器.<br>终端必须使用UTF-8编码.</p>
+<h3 id="卸载"><a href="#卸载" class="headerlink" title="卸载"></a>卸载</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"># 卸载及删除安装文件(需root权限)</span><br><span class="line">yum list installed | grep clickhouse</span><br><span class="line">yum remove -y clickhouse-server clickhouse-client</span><br><span class="line">rm -rf &#x2F;var&#x2F;lib&#x2F;clickhouse</span><br><span class="line">rm -rf &#x2F;etc&#x2F;clickhouse-*</span><br><span class="line">rm -rf &#x2F;var&#x2F;log&#x2F;clickhouse-server</span><br></pre></td></tr></table></figure>
+
+<h2 id="集群安装"><a href="#集群安装" class="headerlink" title="集群安装"></a>集群安装</h2><p>先部署单机版,然后继续配置.</p>
+<p>clickhouse⾼可⽤配置主要⽤到metrika.xml,默认路径:/etc/metrika.xml.<br>如果想调整文件路径,需要在/etc/clickhouse-server/config.xml文件中使用 <code>include_from</code> 来调整(注意位置).</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;clickhouse&gt;</span><br><span class="line">&lt;!-- 默认是没有的,直接新增就行 --&gt;</span><br><span class="line">&lt;include_from&gt;&#x2F;etc&#x2F;metrika.xml&lt;&#x2F;include_from&gt;</span><br><span class="line">&lt;!-- 注释掉默认配置,新增如下 --&gt;</span><br><span class="line">&lt;remote_servers incl&#x3D;&quot;clickhouse_remote_servers&quot; &#x2F;&gt;</span><br><span class="line">&lt;zookeeper incl&#x3D;&quot;zookeeper&quot; optional&#x3D;&quot;true&quot; &#x2F;&gt;</span><br><span class="line">&lt;macros incl&#x3D;&quot;macros&quot; optional&#x3D;&quot;true&quot; &#x2F;&gt;</span><br><span class="line">&lt;compression incl&#x3D;&quot;clickhouse_compression&quot; optional&#x3D;&quot;true&quot; &#x2F;&gt;</span><br><span class="line"></span><br><span class="line">&lt;&#x2F;clickhouse&gt;</span><br></pre></td></tr></table></figure>
+
+<p>创建 <code>/etc/metrika.xml</code> 配置文件,配置见各方案.<br>启动服务.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">clickhouse-client -u default --password --port 9000 -h c100 --multiquery</span><br><span class="line">clickhouse-client -h c100 -d default -m -u default --password</span><br><span class="line"></span><br><span class="line">select * from system.clusters;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/flgl106.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>查询到zk上生成clickhouse节点.<br>登录页面查看,<code>c100:8123/play</code>.</p>
+<img src="/images/flgl107.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>主要字段说明:<br>cluster: 集群的命名<br>shard_num: 分片的编号<br>shard_weight: 分片的权重<br>replica_num: 副本的编号<br>host_name: 机器的host名称<br>host_address: 机器的ip地址<br>port: clickhouse集群的端口<br>is_local: 是否为你当前查询本地<br>user: 创建用户</p>
+<h3 id="数据分片复制方案"><a href="#数据分片复制方案" class="headerlink" title="数据分片复制方案"></a>数据分片复制方案</h3><p>数据副本官方文档:<a target="_blank" rel="noopener" href="https://clickhouse.com/docs/zh/engines/table-engines/mergetree-family/replication">https://clickhouse.com/docs/zh/engines/table-engines/mergetree-family/replication</a><br>ClickHouse 使用 Apache ZooKeeper 存储副本的元信息.</p>
+<h4 id="方案一"><a href="#方案一" class="headerlink" title="方案一"></a>方案一</h4><p>在每个节点创建一个数据表,作为一个数据分片,使用<code>ReplicatedMergeTree</code>表引擎实现数据副本,而分布表作为数据写入和查询的入口.<br>这是最常见的集群实现方式.</p>
+<img src="/images/flgl108.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h5 id="配置-1"><a href="#配置-1" class="headerlink" title="配置"></a>配置</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line">&lt;yandex&gt;</span><br><span class="line">  &lt;!-- ck集群节点--&gt;</span><br><span class="line">  &lt;clickhouse_remote_servers&gt;</span><br><span class="line">    &lt;!-- 集群名称 --&gt;</span><br><span class="line">    &lt;ck_cluster_2022&gt;</span><br><span class="line">      &lt;!-- shard 1(分片1)--&gt;</span><br><span class="line">      &lt;shard&gt;</span><br><span class="line">        &lt;weight&gt;1&lt;&#x2F;weight&gt;</span><br><span class="line">        &lt;!-- 控制写入数据到分布式表时,是否写入到所有副本中,这里设置false,就是只会写入到第一个replica,其它的通过zookeeper同步 --&gt;</span><br><span class="line">        &lt;internal_replication&gt;false&lt;&#x2F;internal_replication&gt;</span><br><span class="line">        &lt;replica&gt;</span><br><span class="line">          &lt;host&gt;c100&lt;&#x2F;host&gt;</span><br><span class="line">          &lt;port&gt;9000&lt;&#x2F;port&gt;</span><br><span class="line">          &lt;user&gt;default&lt;&#x2F;user&gt;</span><br><span class="line">          &lt;password&gt;&lt;&#x2F;password&gt;</span><br><span class="line">        &lt;&#x2F;replica&gt;</span><br><span class="line">        &lt;!-- replicat 1(副本1)--&gt;</span><br><span class="line">        &lt;replica&gt;</span><br><span class="line">          &lt;host&gt;c101&lt;&#x2F;host&gt;</span><br><span class="line">          &lt;port&gt;9000&lt;&#x2F;port&gt;</span><br><span class="line">          &lt;user&gt;default&lt;&#x2F;user&gt;</span><br><span class="line">          &lt;password&gt;&lt;&#x2F;password&gt;</span><br><span class="line">        &lt;&#x2F;replica&gt;</span><br><span class="line">      &lt;&#x2F;shard&gt;</span><br><span class="line">      &lt;!-- shard 2(分片2)--&gt;</span><br><span class="line">      &lt;shard&gt;</span><br><span class="line">        &lt;weight&gt;1&lt;&#x2F;weight&gt;</span><br><span class="line">        &lt;internal_replication&gt;false&lt;&#x2F;internal_replication&gt;</span><br><span class="line">        &lt;replica&gt;</span><br><span class="line">          &lt;host&gt;c102&lt;&#x2F;host&gt;</span><br><span class="line">          &lt;port&gt;9000&lt;&#x2F;port&gt;</span><br><span class="line">          &lt;user&gt;default&lt;&#x2F;user&gt;</span><br><span class="line">          &lt;password&gt;&lt;&#x2F;password&gt;</span><br><span class="line">        &lt;&#x2F;replica&gt;</span><br><span class="line">        &lt;!-- replicat 2(副本2)--&gt;</span><br><span class="line">        &lt;replica&gt;</span><br><span class="line">          &lt;host&gt;c103&lt;&#x2F;host&gt;</span><br><span class="line">          &lt;port&gt;9000&lt;&#x2F;port&gt;</span><br><span class="line">          &lt;user&gt;default&lt;&#x2F;user&gt;</span><br><span class="line">          &lt;password&gt;&lt;&#x2F;password&gt;</span><br><span class="line">        &lt;&#x2F;replica&gt;</span><br><span class="line">      &lt;&#x2F;shard&gt;</span><br><span class="line">    &lt;&#x2F;ck_cluster_2022&gt;</span><br><span class="line">  &lt;&#x2F;clickhouse_remote_servers&gt;</span><br><span class="line">  &lt;!--zookeeper相关配置--&gt;</span><br><span class="line">  &lt;zookeeper&gt;</span><br><span class="line">    &lt;node index&#x3D;&quot;1&quot;&gt;</span><br><span class="line">      &lt;host&gt;hadoop-sh1-core1&lt;&#x2F;host&gt;</span><br><span class="line">      &lt;port&gt;2181&lt;&#x2F;port&gt;</span><br><span class="line">    &lt;&#x2F;node&gt;</span><br><span class="line">    &lt;node index&#x3D;&quot;2&quot;&gt;</span><br><span class="line">      &lt;host&gt;hadoop-sh1-core2&lt;&#x2F;host&gt;</span><br><span class="line">      &lt;port&gt;2181&lt;&#x2F;port&gt;</span><br><span class="line">    &lt;&#x2F;node&gt;</span><br><span class="line">    &lt;node index&#x3D;&quot;3&quot;&gt;</span><br><span class="line">      &lt;host&gt;hadoop-sh1-core3&lt;&#x2F;host&gt;</span><br><span class="line">      &lt;port&gt;2181&lt;&#x2F;port&gt;</span><br><span class="line">    &lt;&#x2F;node&gt;</span><br><span class="line">  &lt;&#x2F;zookeeper&gt;</span><br><span class="line">  &lt;macros&gt;</span><br><span class="line">    &lt;!-- 本节点副本名称,创建复制表时有用,每个节点不同,整个集群唯一,建议使用主机名+副本+分片,第一个分片+第一个副本,在当前节点上--&gt;</span><br><span class="line">    &lt;shard&gt;01&lt;&#x2F;shard&gt;</span><br><span class="line">    &lt;replica&gt;c100-01-1&lt;&#x2F;replica&gt;</span><br><span class="line">  &lt;&#x2F;macros&gt;</span><br><span class="line">  &lt;!-- 监听网络 --&gt;</span><br><span class="line">  &lt;networks&gt;</span><br><span class="line">    &lt;ip&gt;::&#x2F;0&lt;&#x2F;ip&gt;</span><br><span class="line">  &lt;&#x2F;networks&gt;</span><br><span class="line">  &lt;!--压缩相关配置--&gt;</span><br><span class="line">  &lt;clickhouse_compression&gt;</span><br><span class="line">    &lt;case&gt;</span><br><span class="line">      &lt;min_part_size&gt;1073741824&lt;&#x2F;min_part_size&gt;</span><br><span class="line">      &lt;min_part_size_ratio&gt;0.01&lt;&#x2F;min_part_size_ratio&gt;</span><br><span class="line">      &lt;method&gt;lz4&lt;&#x2F;method&gt;</span><br><span class="line">      &lt;!--压缩算法lz4压缩比zstd快,更占磁盘--&gt;</span><br><span class="line">    &lt;&#x2F;case&gt;</span><br><span class="line">  &lt;&#x2F;clickhouse_compression&gt;</span><br><span class="line">&lt;&#x2F;yandex&gt;</span><br></pre></td></tr></table></figure>
+
+<p>修改其它节点上/etc/metrika.xml文件里的<code>clickhouse.macros</code>,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- node1 --&gt;</span><br><span class="line">&lt;macros&gt;</span><br><span class="line">&lt;shard&gt;01&lt;&#x2F;shard&gt;</span><br><span class="line">&lt;replica&gt;c100-01-1&lt;&#x2F;replica&gt;</span><br><span class="line">&lt;&#x2F;macros&gt;</span><br><span class="line"></span><br><span class="line">&lt;!-- node2 --&gt;</span><br><span class="line">&lt;macros&gt;</span><br><span class="line">&lt;shard&gt;01&lt;&#x2F;shard&gt;</span><br><span class="line">&lt;replica&gt;c101-01-2&lt;&#x2F;replica&gt;</span><br><span class="line">&lt;&#x2F;macros&gt;</span><br><span class="line"></span><br><span class="line">&lt;!-- node3 --&gt;</span><br><span class="line">&lt;macros&gt;</span><br><span class="line">&lt;shard&gt;02&lt;&#x2F;shard&gt;</span><br><span class="line">&lt;replica&gt;c102-02-1&lt;&#x2F;replica&gt;</span><br><span class="line">&lt;&#x2F;macros&gt;</span><br><span class="line"></span><br><span class="line">&lt;!-- node4 --&gt;</span><br><span class="line">&lt;macros&gt;</span><br><span class="line">&lt;shard&gt;02&lt;&#x2F;shard&gt;</span><br><span class="line">&lt;replica&gt;c103-02-2&lt;&#x2F;replica&gt;</span><br><span class="line">&lt;&#x2F;macros&gt;</span><br></pre></td></tr></table></figure>
+
+<h5 id="语法"><a href="#语法" class="headerlink" title="语法"></a>语法</h5><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 创建复制表</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> table_name</span><br><span class="line">(</span><br><span class="line">  EventDate DateTime,</span><br><span class="line">  CounterID UInt32,</span><br><span class="line">  UserID UInt32</span><br><span class="line">) ENGINE <span class="operator">=</span> ReplicatedMergeTree(<span class="string">&#x27;/clickhouse/tables/&#123;layer&#125;-&#123;shard&#125;/table_name&#x27;</span>, <span class="string">&#x27;&#123;replica&#125;&#x27;</span>)</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> toYYYYMM(EventDate)</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> (CounterID, EventDate, intHash32(UserID))</span><br><span class="line">SAMPLE <span class="keyword">BY</span> intHash32(UserID)</span><br></pre></td></tr></table></figure>
+
+<p><code>/clickhouse/tables/</code> -- 是公共前缀,我们推荐使用这个.<br><code>&#123;layer&#125;-&#123;shard&#125;</code> -- 是分片标识部分.<br>在此示例中,由于 Yandex.Metrica 集群使用了两级分片,所以它是由两部分组成的.<br>但对于大多数情况来说,你只需保留 {shard} 占位符即可,它会替换展开为分片标识.</p>
+<p><code>table_name</code> -- 是该表在 ZooKeeper 中的名称.<br>使其与 ClickHouse 中的表名相同比较好.<br>这里它被明确定义,跟 ClickHouse 表名不一样,它并不会被 RENAME 语句修改.<br>HINT:你也可以在 table_name 前面添加一个数据库名称.<br>例如: db_name.table_name .</p>
+<p>两个内置的占位符{database} 和 {table}也可使用,它们可以展开成数据表名称和数据库名称(只有当这些宏指令在 macros 部分已经定义时才可以).<br>因此 ZooKeeper 路径可以指定为 &#39;/clickhouse/tables/{layer}-{shard}/{database}/{table}&#39;.</p>
+<p>可以在服务器的配置文件中指定 Replicated 数据表引擎的默认参数.例如:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;default_replica_path&gt;&#x2F;clickhouse&#x2F;tables&#x2F;&#123;shard&#125;&#x2F;&#123;database&#125;&#x2F;&#123;table&#125;&lt;&#x2F;default_replica_path&gt;</span><br><span class="line">&lt;default_replica_name&gt;&#123;replica&#125;&lt;&#x2F;default_replica_name&gt;</span><br></pre></td></tr></table></figure>
+
+<p>这样,可以在建表时省略参数:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE table_name (</span><br><span class="line">  x UInt32</span><br><span class="line">) ENGINE &#x3D; ReplicatedMergeTree</span><br><span class="line">ORDER BY x;</span><br></pre></td></tr></table></figure>
+
+<p>它等价于:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE table_name (</span><br><span class="line">  x UInt32</span><br><span class="line">) ENGINE &#x3D; ReplicatedMergeTree(&#39;&#x2F;clickhouse&#x2F;tables&#x2F;&#123;shard&#125;&#x2F;&#123;database&#125;&#x2F;table_name&#39;, &#39;&#123;replica&#125;&#39;)</span><br><span class="line">ORDER BY x;</span><br></pre></td></tr></table></figure>
+
+<h5 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h5><p>{shard}和{replica}会使用macros定义的值,配置文件:/etc/metrika.xml</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">-- 在所有节点上创建这个表</span><br><span class="line">CREATE TABLE ch_test001</span><br><span class="line">(</span><br><span class="line">  &#96;id&#96; Int16,</span><br><span class="line">  &#96;createDate&#96; Date,</span><br><span class="line">  &#96;message&#96; String</span><br><span class="line">) ENGINE &#x3D; ReplicatedMergeTree(&#39;&#x2F;clickhouse&#x2F;tables&#x2F;&#123;shard&#125;&#x2F;ch_test001&#39;, &#39;&#123;replica&#125;&#39;)</span><br><span class="line">PARTITION BY toYYYYMM(createDate)</span><br><span class="line">ORDER BY id;</span><br><span class="line"></span><br><span class="line">-- 只在node1节点上添加数据</span><br><span class="line">insert into ch_test001 values(1, &#39;2020-01-01&#39;, &#39;test1&#39;);</span><br><span class="line">-- 在node2上查数据</span><br><span class="line">select * from ch_test001;</span><br><span class="line"></span><br><span class="line">-- 在node4节点上添加数据</span><br><span class="line">insert into ch_test001 values(1, &#39;2020-01-01&#39;, &#39;test2&#39;);</span><br><span class="line">-- 在node3上查看副本数据</span><br><span class="line">select * from ch_test001;</span><br></pre></td></tr></table></figure>
+
+<p>使用Distributed表引擎创建分布式表:<br><a target="_blank" rel="noopener" href="https://clickhouse.com/docs/zh/engines/table-engines/special/distributed/">https://clickhouse.com/docs/zh/engines/table-engines/special/distributed/</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE default.ck_distributed  on cluster ck_cluster_2022</span><br><span class="line">(</span><br><span class="line">  &#96;id&#96; Int16,</span><br><span class="line">  &#96;createDate&#96; Date,</span><br><span class="line">  &#96;message&#96; String</span><br><span class="line">)</span><br><span class="line">engine &#x3D; Distributed(ck_cluster_2022,default,ch_test001, rand());</span><br><span class="line"></span><br><span class="line"># 添加数据</span><br><span class="line">insert into ck_distributed  values(2, &#39;2020-01-02&#39;, &#39;test2001&#39;);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>在哪个节点上添加数据,就是添加到哪个节点的表里.<br>副本会自动同步.<br>分布式引擎本身不存储数据.</p>
+</blockquote>
+<h4 id="方案二"><a href="#方案二" class="headerlink" title="方案二"></a>方案二</h4><p>在每个节点创建一个数据表,作为一个数据分片,分布表同时负责分片和副本的数据写入工作.<br>这种实现方案下,不需要使用复制表,但分布表节点需要同时负责分片和副本的数据写入工作,它很有可能称为写入的单点瓶颈.</p>
+<p>ZooKeeper不是一个严格的要求:<br>在某些简单的情况下,可以通过将数据写入应用程序代码中的所有副本来复制数据.<br>这种方法是不建议的,在这种情况下,ClickHouse将无法保证所有副本上的数据一致性.<br>因此需要由应用来保证这一点.</p>
+<img src="/images/flgl109.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>修改配置即可.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- 设置为true,所有副本同时写--&gt;</span><br><span class="line">&lt;internal_replication&gt;false&lt;&#x2F;internal_replication&gt;</span><br></pre></td></tr></table></figure>
+
+<h4 id="方案三"><a href="#方案三" class="headerlink" title="方案三"></a>方案三</h4><p>在每个节点创建一个数据表,作为一个数据分片,同时创建两个分布表,每个分布表(Distributed)节点只纳管一半的数据.<br>副本的实现仍需要借助ReplicatedMergeTree类表引擎.</p>
+<img src="/images/flgl110.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h5 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h5><p>不同的分片创建不同的表.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 在node1和node2创建这个表</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> ch_test002</span><br><span class="line">(</span><br><span class="line">    `id` Int16,</span><br><span class="line">    `createDate` <span class="type">Date</span>,</span><br><span class="line">    `message` String</span><br><span class="line">) ENGINE <span class="operator">=</span> ReplicatedMergeTree(<span class="string">&#x27;/clickhouse/tables/&#123;shard&#125;/ch_test002&#x27;</span>, <span class="string">&#x27;&#123;replica&#125;&#x27;</span>)</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> toYYYYMM(createDate)</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> id;</span><br><span class="line"></span><br><span class="line"># 只在node1节点上添加数据</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> ch_test002 <span class="keyword">values</span>(<span class="number">1</span>, <span class="string">&#x27;2020-01-01&#x27;</span>, <span class="string">&#x27;test2&#x27;</span>);</span><br><span class="line"># 在node2上查数据</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> ch_test002;</span><br><span class="line"></span><br><span class="line"># 在node3和node4创建这个表</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> ch_test003</span><br><span class="line">(</span><br><span class="line">    `id` Int16,</span><br><span class="line">    `createDate` <span class="type">Date</span>,</span><br><span class="line">    `message` String</span><br><span class="line">) ENGINE <span class="operator">=</span> ReplicatedMergeTree(<span class="string">&#x27;/clickhouse/tables/&#123;shard&#125;/ch_test003&#x27;</span>, <span class="string">&#x27;&#123;replica&#125;&#x27;</span>)</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> toYYYYMM(createDate)</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> id;</span><br><span class="line"></span><br><span class="line"># 在node4节点上添加数据</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> ch_test003 <span class="keyword">values</span>(<span class="number">1</span>, <span class="string">&#x27;2020-01-01&#x27;</span>, <span class="string">&#x27;test3&#x27;</span>);</span><br><span class="line"># 在node3上查看副本数据</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> ch_test003;</span><br></pre></td></tr></table></figure>
+
+<p>创建两个分布表.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> default.ck_distributed_test002  <span class="keyword">on</span> cluster ck_cluster_2022</span><br><span class="line">(</span><br><span class="line">    `id` Int16,</span><br><span class="line">    `createDate` <span class="type">Date</span>,</span><br><span class="line">    `message` String</span><br><span class="line">)</span><br><span class="line">engine <span class="operator">=</span> Distributed(ck_cluster_2022,<span class="keyword">default</span>,ch_test002, rand());</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 添加数据</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> ck_distributed_test002  <span class="keyword">values</span>(<span class="number">2</span>, <span class="string">&#x27;2020-01-02&#x27;</span>, <span class="string">&#x27;test2002&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> default.ck_distributed_test003  <span class="keyword">on</span> cluster ck_cluster_2022</span><br><span class="line">(</span><br><span class="line">    `id` Int16,</span><br><span class="line">    `createDate` <span class="type">Date</span>,</span><br><span class="line">    `message` String</span><br><span class="line">)</span><br><span class="line">engine <span class="operator">=</span> Distributed(ck_cluster_2022,<span class="keyword">default</span>,ch_test003, rand());</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 添加数据</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> ck_distributed_test003  <span class="keyword">values</span>(<span class="number">2</span>, <span class="string">&#x27;2020-01-02&#x27;</span>, <span class="string">&#x27;test2003&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="方案四"><a href="#方案四" class="headerlink" title="方案四"></a>方案四</h4><p>在每个节点创建两个数据表,同一数据分片的两个副本位于不同节点上,每个分布式表纳管一般的数据.<br>这种方案可以在更少的节点上实现数据分布与冗余,但是部署上略显繁琐.</p>
+<img src="/images/flgl111.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h5 id="修改配置"><a href="#修改配置" class="headerlink" title="修改配置"></a>修改配置</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br></pre></td><td class="code"><pre><span class="line">&lt;yandex&gt;</span><br><span class="line">  &lt;!--ck集群节点--&gt;</span><br><span class="line">  &lt;clickhouse_remote_servers&gt;</span><br><span class="line">    &lt;!-- 集群名称 --&gt;</span><br><span class="line">    &lt;ck_cluster_2022&gt;</span><br><span class="line">      &lt;!--shard 1(分片1)--&gt;</span><br><span class="line">      &lt;shard&gt;</span><br><span class="line">        &lt;weight&gt;1&lt;&#x2F;weight&gt;</span><br><span class="line">        &lt;internal_replication&gt;false&lt;&#x2F;internal_replication&gt;</span><br><span class="line">        &lt;replica&gt;</span><br><span class="line">          &lt;host&gt;c100&lt;&#x2F;host&gt;</span><br><span class="line">          &lt;port&gt;9000&lt;&#x2F;port&gt;</span><br><span class="line">          &lt;user&gt;default&lt;&#x2F;user&gt;</span><br><span class="line">          &lt;password&gt;123456&lt;&#x2F;password&gt;</span><br><span class="line">        &lt;&#x2F;replica&gt;</span><br><span class="line">        &lt;!--replica 2(副本2)--&gt;</span><br><span class="line">        &lt;replica&gt;</span><br><span class="line">          &lt;host&gt;c101&lt;&#x2F;host&gt;</span><br><span class="line">          &lt;port&gt;9000&lt;&#x2F;port&gt;</span><br><span class="line">          &lt;user&gt;default&lt;&#x2F;user&gt;</span><br><span class="line">          &lt;password&gt;123456&lt;&#x2F;password&gt;</span><br><span class="line">        &lt;&#x2F;replica&gt;</span><br><span class="line">      &lt;&#x2F;shard&gt;</span><br><span class="line">      &lt;!--shard 2(分片2)--&gt;</span><br><span class="line">      &lt;shard&gt;</span><br><span class="line">        &lt;weight&gt;1&lt;&#x2F;weight&gt;</span><br><span class="line">        &lt;internal_replication&gt;false&lt;&#x2F;internal_replication&gt;</span><br><span class="line">        &lt;replica&gt;</span><br><span class="line">          &lt;host&gt;c101&lt;&#x2F;host&gt;</span><br><span class="line">          &lt;port&gt;9000&lt;&#x2F;port&gt;</span><br><span class="line">          &lt;user&gt;default&lt;&#x2F;user&gt;</span><br><span class="line">          &lt;password&gt;123456&lt;&#x2F;password&gt;</span><br><span class="line">        &lt;&#x2F;replica&gt;</span><br><span class="line">        &lt;!--replica 3(副本3)--&gt;</span><br><span class="line">        &lt;replica&gt;</span><br><span class="line">          &lt;host&gt;c102&lt;&#x2F;host&gt;</span><br><span class="line">          &lt;port&gt;9000&lt;&#x2F;port&gt;</span><br><span class="line">          &lt;user&gt;default&lt;&#x2F;user&gt;</span><br><span class="line">          &lt;password&gt;123456&lt;&#x2F;password&gt;</span><br><span class="line">        &lt;&#x2F;replica&gt;</span><br><span class="line">      &lt;&#x2F;shard&gt;</span><br><span class="line">      &lt;!--shard 3(分片3)--&gt;</span><br><span class="line">      &lt;shard&gt;</span><br><span class="line">        &lt;weight&gt;1&lt;&#x2F;weight&gt;</span><br><span class="line">        &lt;internal_replication&gt;false&lt;&#x2F;internal_replication&gt;</span><br><span class="line">        &lt;replica&gt;</span><br><span class="line">          &lt;host&gt;c102&lt;&#x2F;host&gt;</span><br><span class="line">          &lt;port&gt;9000&lt;&#x2F;port&gt;</span><br><span class="line">          &lt;user&gt;default&lt;&#x2F;user&gt;</span><br><span class="line">          &lt;password&gt;123456&lt;&#x2F;password&gt;</span><br><span class="line">        &lt;&#x2F;replica&gt;</span><br><span class="line">        &lt;!--replica 4(副本4)--&gt;</span><br><span class="line">        &lt;replica&gt;</span><br><span class="line">          &lt;host&gt;c103&lt;&#x2F;host&gt;</span><br><span class="line">          &lt;port&gt;9000&lt;&#x2F;port&gt;</span><br><span class="line">          &lt;user&gt;default&lt;&#x2F;user&gt;</span><br><span class="line">          &lt;password&gt;123456&lt;&#x2F;password&gt;</span><br><span class="line">        &lt;&#x2F;replica&gt;</span><br><span class="line">      &lt;&#x2F;shard&gt;</span><br><span class="line">      &lt;!--shard 4(分片4)--&gt;</span><br><span class="line">      &lt;shard&gt;</span><br><span class="line">        &lt;weight&gt;1&lt;&#x2F;weight&gt;</span><br><span class="line">        &lt;internal_replication&gt;false&lt;&#x2F;internal_replication&gt;</span><br><span class="line">        &lt;replica&gt;</span><br><span class="line">          &lt;host&gt;c103&lt;&#x2F;host&gt;</span><br><span class="line">          &lt;port&gt;9000&lt;&#x2F;port&gt;</span><br><span class="line">          &lt;user&gt;default&lt;&#x2F;user&gt;</span><br><span class="line">          &lt;password&gt;123456&lt;&#x2F;password&gt;</span><br><span class="line">        &lt;&#x2F;replica&gt;</span><br><span class="line">        &lt;!--replica 1(副本1)--&gt;</span><br><span class="line">        &lt;replica&gt;</span><br><span class="line">          &lt;host&gt;c100&lt;&#x2F;host&gt;</span><br><span class="line">          &lt;port&gt;9000&lt;&#x2F;port&gt;</span><br><span class="line">          &lt;user&gt;default&lt;&#x2F;user&gt;</span><br><span class="line">          &lt;password&gt;123456&lt;&#x2F;password&gt;</span><br><span class="line">        &lt;&#x2F;replica&gt;</span><br><span class="line">      &lt;&#x2F;shard&gt;</span><br><span class="line">    &lt;&#x2F;ck_cluster_2022&gt;</span><br><span class="line">  &lt;&#x2F;clickhouse_remote_servers&gt;</span><br><span class="line">  &lt;!--zookeeper相关配置--&gt;</span><br><span class="line">  &lt;zookeeper&gt;</span><br><span class="line">    &lt;node index&#x3D;&quot;1&quot;&gt;</span><br><span class="line">      &lt;host&gt;hadoop-sh1-core1&lt;&#x2F;host&gt;</span><br><span class="line">      &lt;port&gt;2181&lt;&#x2F;port&gt;</span><br><span class="line">    &lt;&#x2F;node&gt;</span><br><span class="line">    &lt;node index&#x3D;&quot;2&quot;&gt;</span><br><span class="line">      &lt;host&gt;hadoop-sh1-core2&lt;&#x2F;host&gt;</span><br><span class="line">      &lt;port&gt;2181&lt;&#x2F;port&gt;</span><br><span class="line">    &lt;&#x2F;node&gt;</span><br><span class="line">    &lt;node index&#x3D;&quot;3&quot;&gt;</span><br><span class="line">      &lt;host&gt;hadoop-sh1-core3&lt;&#x2F;host&gt;</span><br><span class="line">      &lt;port&gt;2181&lt;&#x2F;port&gt;</span><br><span class="line">    &lt;&#x2F;node&gt;</span><br><span class="line">  &lt;&#x2F;zookeeper&gt;</span><br><span class="line">  &lt;macros&gt;</span><br><span class="line">    &lt;!-- 本节点副本名称,创建复制表时有用,每个节点不同,整个集群唯一,建议使用主机名+副本+分片,第一个分片+第一个副本,在当前节点上--&gt;</span><br><span class="line">    &lt;shard&gt;01&lt;&#x2F;shard&gt;</span><br><span class="line">    &lt;replica&gt;c100-01-1&lt;&#x2F;replica&gt;</span><br><span class="line">  &lt;&#x2F;macros&gt;</span><br><span class="line">  &lt;networks&gt;</span><br><span class="line">    &lt;ip&gt;::&#x2F;0&lt;&#x2F;ip&gt;</span><br><span class="line">  &lt;&#x2F;networks&gt;</span><br><span class="line">  &lt;clickhouse_compression&gt;</span><br><span class="line">    &lt;case&gt;</span><br><span class="line">      &lt;min_part_size&gt;1073741824&lt;&#x2F;min_part_size&gt;</span><br><span class="line">      &lt;min_part_size_ratio&gt;0.01&lt;&#x2F;min_part_size_ratio&gt;</span><br><span class="line">      &lt;method&gt;lz4&lt;&#x2F;method&gt;</span><br><span class="line">    &lt;&#x2F;case&gt;</span><br><span class="line">  &lt;&#x2F;clickhouse_compression&gt;</span><br><span class="line">&lt;&#x2F;yandex&gt;</span><br></pre></td></tr></table></figure>
+<p>上面是node1的配置,其它需要修改配置如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- node2 --&gt;</span><br><span class="line">&lt;macros&gt;</span><br><span class="line">&lt;shard&gt;02&lt;&#x2F;shard&gt;</span><br><span class="line">&lt;replica&gt;c101-02-1&lt;&#x2F;replica&gt;</span><br><span class="line">&lt;&#x2F;macros&gt;</span><br><span class="line">&lt;!-- node3 --&gt;</span><br><span class="line">&lt;macros&gt;</span><br><span class="line">&lt;shard&gt;03&lt;&#x2F;shard&gt;</span><br><span class="line">&lt;replica&gt;c102-03-1&lt;&#x2F;replica&gt;</span><br><span class="line">&lt;&#x2F;macros&gt;</span><br><span class="line">&lt;!-- node4 --&gt;</span><br><span class="line">&lt;macros&gt;</span><br><span class="line">&lt;shard&gt;04&lt;&#x2F;shard&gt;</span><br><span class="line">&lt;replica&gt;c103-04-1&lt;&#x2F;replica&gt;</span><br><span class="line">&lt;&#x2F;macros&gt;</span><br></pre></td></tr></table></figure>
+
+<h5 id="示例-2"><a href="#示例-2" class="headerlink" title="示例"></a>示例</h5><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 集群方式创建,每个节点都会创建一张表,这里需要区分的就是分片和副本分别创建</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> ch_shard_test <span class="keyword">on</span> cluster </span><br><span class="line">(</span><br><span class="line">  `id` Int16,</span><br><span class="line">  `createDate` <span class="type">Date</span>,</span><br><span class="line">  `message` String</span><br><span class="line">) ENGINE <span class="operator">=</span> ReplicatedMergeTree(<span class="string">&#x27;/clickhouse/tables/&#123;shard&#125;/ch_shard_test&#x27;</span>, <span class="string">&#x27;&#123;replica&#125;&#x27;</span>)</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> toYYYYMM(createDate)</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> id;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> ch_replica_test <span class="keyword">on</span> cluster </span><br><span class="line">(</span><br><span class="line">  `id` Int16,</span><br><span class="line">  `createDate` <span class="type">Date</span>,</span><br><span class="line">  `message` String</span><br><span class="line">) ENGINE <span class="operator">=</span> ReplicatedMergeTree(<span class="string">&#x27;/clickhouse/tables/&#123;shard&#125;/ch_shard_test&#x27;</span>, <span class="string">&#x27;&#123;replica&#125;&#x27;</span>)</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> toYYYYMM(createDate)</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> id;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 创建两个分布表</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> default.ck_distributed_shard <span class="keyword">on</span> cluster ck_cluster_2022</span><br><span class="line">(</span><br><span class="line">  `id` Int16,</span><br><span class="line">  `createDate` <span class="type">Date</span>,</span><br><span class="line">  `message` String</span><br><span class="line">)</span><br><span class="line">engine <span class="operator">=</span> Distributed(ck_cluster_2022,<span class="keyword">default</span>,ch_shard_test, rand());</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 添加数据</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> ck_distributed_shard  <span class="keyword">values</span>(<span class="number">2</span>, <span class="string">&#x27;2020-01-02&#x27;</span>, <span class="string">&#x27;test2002&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> default.ck_distributed_replica  <span class="keyword">on</span> cluster ck_cluster_2022</span><br><span class="line">(</span><br><span class="line">  `id` Int16,</span><br><span class="line">  `createDate` <span class="type">Date</span>,</span><br><span class="line">  `message` String</span><br><span class="line">)</span><br><span class="line">engine <span class="operator">=</span> Distributed(ck_cluster_2022,<span class="keyword">default</span>,ch_replica_test, rand());</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 添加数据</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> ck_distributed_replica <span class="keyword">values</span>(<span class="number">2</span>, <span class="string">&#x27;2020-01-02&#x27;</span>, <span class="string">&#x27;test2003&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>CH(ClickHouse)的分片与副本功能完全靠配置文件实现,无法自动管理,所以当集群规模较大时,集群运维成本较高.<br>数据副本依赖ZooKeeper实现同步,当数据量较大时,ZooKeeper可能会称为瓶颈.<br>如果资源充足,建议使用方案一,主副本和副副本位于不同节点,以更好地实现读写分离与负载均衡.<br>如果资源不够充足,可以使用方案四,每个节点承载两个副本,但部署方式上略复杂.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/clickhouse/" rel="tag"># clickhouse</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/09/06/hive%20try/" rel="prev" title="hive try">
+                  <i class="fa fa-chevron-left"></i> hive try
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/09/08/clickhouse%E4%BB%8B%E7%BB%8D/" rel="next" title="clickhouse介绍">
+                  clickhouse介绍 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="Delta LakeDataBricks公司推出的一种数据湖方案.https:&#x2F;&#x2F;delta.io&#x2F; Apache Iceberg以类似于SQL的形式高性能的处理大型的开放式表.https:&#x2F;&#x2F;iceberg.apache.org&#x2F; Apache HudiHadoop Upserts and Incrementals,管理大型分析数据集在HDFS上的存储.https:&#x2F;&#x2F;hudi.apache.o">
+<meta property="og:type" content="article">
+<meta property="og:title" content="数据湖hudi-delta lake-iceberg对比">
+<meta property="og:url" content="https://maoeryu.github.io/2022/09/15/%E6%95%B0%E6%8D%AE%E6%B9%96hudi-delta%20lake-iceberg%E5%AF%B9%E6%AF%94/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="Delta LakeDataBricks公司推出的一种数据湖方案.https:&#x2F;&#x2F;delta.io&#x2F; Apache Iceberg以类似于SQL的形式高性能的处理大型的开放式表.https:&#x2F;&#x2F;iceberg.apache.org&#x2F; Apache HudiHadoop Upserts and Incrementals,管理大型分析数据集在HDFS上的存储.https:&#x2F;&#x2F;hudi.apache.o">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl205.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl206.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl203.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl204.png">
+<meta property="article:published_time" content="2022-09-14T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-12-02T06:15:57.135Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hudi">
+<meta property="article:tag" content="delta lake">
+<meta property="article:tag" content="iceberg">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/flgl205.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/09/15/%E6%95%B0%E6%8D%AE%E6%B9%96hudi-delta%20lake-iceberg%E5%AF%B9%E6%AF%94/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>数据湖hudi-delta lake-iceberg对比 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E6%B9%96%E7%9A%84%E4%BC%98%E7%82%B9"><span class="nav-number">1.</span> <span class="nav-text">数据湖的优点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%AE%E5%89%8D%E6%9C%89%E5%93%AA%E4%BA%9B%E5%BC%80%E6%BA%90%E6%95%B0%E6%8D%AE%E6%B9%96%E7%BB%84%E4%BB%B6"><span class="nav-number">2.</span> <span class="nav-text">目前有哪些开源数据湖组件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Iceberg"><span class="nav-number">2.1.</span> <span class="nav-text">Iceberg</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hudi"><span class="nav-number">2.2.</span> <span class="nav-text">Hudi</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">2.2.1.</span> <span class="nav-text">应用场景</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Delta-Lake"><span class="nav-number">2.3.</span> <span class="nav-text">Delta Lake</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E7%89%B9%E6%80%A7"><span class="nav-number">2.3.1.</span> <span class="nav-text">核心特性</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E6%B9%96%E7%BB%84%E4%BB%B6%E5%AF%B9%E6%AF%94"><span class="nav-number">3.</span> <span class="nav-text">数据湖组件对比</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%84%E7%BB%84%E4%BB%B6%E8%B5%B7%E6%BA%90%E6%95%85%E4%BA%8B"><span class="nav-number">3.1.</span> <span class="nav-text">各组件起源故事</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD%E5%AF%B9%E6%AF%94"><span class="nav-number">3.2.</span> <span class="nav-text">功能对比</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/09/15/%E6%95%B0%E6%8D%AE%E6%B9%96hudi-delta%20lake-iceberg%E5%AF%B9%E6%AF%94/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          数据湖hudi-delta lake-iceberg对比
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-09-15 00:00:00" itemprop="dateCreated datePublished" datetime="2022-09-15T00:00:00+08:00">2022-09-15</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-12-02 14:15:57" itemprop="dateModified" datetime="2022-12-02T14:15:57+08:00">2022-12-02</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p><code>Delta Lake</code><br>DataBricks公司推出的一种数据湖方案.<br><a target="_blank" rel="noopener" href="https://delta.io/">https://delta.io/</a></p>
+<p><code>Apache Iceberg</code><br>以类似于SQL的形式高性能的处理大型的开放式表.<br><a target="_blank" rel="noopener" href="https://iceberg.apache.org/">https://iceberg.apache.org/</a></p>
+<p><code>Apache Hudi</code><br>Hadoop Upserts and Incrementals,管理大型分析数据集在HDFS上的存储.<br><a target="_blank" rel="noopener" href="https://hudi.apache.org/">https://hudi.apache.org/</a></p>
+<span id="more"></span>
+<h2 id="数据湖的优点"><a href="#数据湖的优点" class="headerlink" title="数据湖的优点"></a>数据湖的优点</h2><p>数据湖相比传统数仓而言,最明显的便是优秀的T+0能力,这个解决了Hadoop时代数据分析的顽疾.<br>传统的数据处理流程从数据入库到数据处理通常需要一个较长的环节,涉及许多复杂的逻辑来保证数据的一致性,由于架构的复杂性使得整个流水线具有明显的延迟.</p>
+<h2 id="目前有哪些开源数据湖组件"><a href="#目前有哪些开源数据湖组件" class="headerlink" title="目前有哪些开源数据湖组件"></a>目前有哪些开源数据湖组件</h2><p>目前开源的数据湖有江湖人称&quot;数据湖三剑客&quot;的Hudi/Delta Lake/Iceberg.</p>
+<h3 id="Iceberg"><a href="#Iceberg" class="headerlink" title="Iceberg"></a>Iceberg</h3><p>Iceberg是一个通用的表格式(数据组织格式),提供高性能的读写和元数据管理功能.<br>Iceberg 的 ACID 能力可以简化整个流水线的设计,传统 Hive/Spark 在修正数据时需要将数据读取出来,修改后再写入,有极大的修正成本.</p>
+<ol>
+<li><p>ACID能力,无缝贴合流批一体数据存储<br>随着flink等技术的不断发展,流批一体生态不断完善,但在流批一体数据存储方面一直是个空白,直到Iceberg等数据湖技术的出现,这片空白被慢慢填补.<br>Iceberg 提供 ACID 事务能力,上游数据写入即可见,不影响当前数据处理任务,这大大简化了 ETL.<br>Iceberg 提供了 upsert/merge into 能力,可以极大地缩小数据入库延迟.</p>
+</li>
+<li><p>统一数据存储,无缝衔接计算引擎和数据存储<br>Iceberg提供了基于流式的增量计算模型和基于批处理的全量表计算模型.<br>批处理和流任务可以使用相同的存储模型,数据不再孤立.<br>Iceberg 支持隐藏分区和分区进化,方便业务进行数据分区策略更新.<br>Iceberg屏蔽了底层数据存储格式的差异,提供对于Parquet/ORC/Avro格式的支持.<br>将上层引擎的能力传导到下层的存储格式.</p>
+</li>
+<li><p>开放架构设计,开发维护成本相对可控<br>Iceberg 的架构和实现并未绑定于某一特定引擎,它实现了通用的数据组织格式,利用此格式可以方便地与不同引擎对接,目前 Iceberg 支持的计算引擎有 Spark/Flink/Presto/Hive.<br>相比于 Hudi/Delta Lake/Iceberg 的架构实现更为优雅,同时对于数据格式/类型系统有完备的定义和可进化的设计.<br>面向对象存储的优化.<br>Iceberg 在数据组织方式上充分考虑了对象存储的特性,避免耗时的 listing 和 rename 操作,使其在基于对象存储的数据湖架构适配上更有优势.</p>
+</li>
+<li><p>增量数据读取,实时计算的一把利剑<br>Iceberg 支持通过流式方式读取增量数据,支持 Structed Streaming/Flink table Source.</p>
+</li>
+</ol>
+<img src="/images/flgl205.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="Hudi"><a href="#Hudi" class="headerlink" title="Hudi"></a>Hudi</h3><p>Apache Hudi是一种数据湖的存储格式,在Hadoop文件系统之上提供了更新数据和删除数据的能力以及消费变化数据的能力.</p>
+<p>Hudi支持如下两种表类型:</p>
+<ol>
+<li>Copy On Write<br>使用Parquet格式存储数据.<br>Copy On Write表的更新操作需要通过重写实现.</li>
+<li>Merge On Read<br>使用列式文件格式(Parquet)和行式文件格式(Avro)混合的方式来存储数据.<br>Merge On Read使用列式格式存放Base数据,同时使用行式格式存放增量数据.<br>最新写入的增量数据存放至行式文件中,根据可配置的策略执行COMPACTION操作合并增量数据至列式文件中.</li>
+</ol>
+<img src="/images/flgl206.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h4><ol>
+<li><p>近实时数据消费<br>Hudi支持插入/更新/删除数据.<br>可以实时消费消息队列(Kafka)和日志服务SLS等日志数据至Hudi中,同时也支持实时同步数据库Binlog产生的变更数据.<br>Hudi优化了数据写入过程中产生的小文件.<br>因此,相比其他传统的文件格式,Hudi对HDFS文件系统更加的友好.</p>
+</li>
+<li><p>近实时数据分析<br>Hudi支持多种数据分析引擎,包括Hive/Spark/Presto/Impala.<br>Hudi作为一种文件格式,不需要依赖额外的服务进程,在使用上也更加的轻量化.</p>
+</li>
+<li><p>增量数据处理<br>Hudi支持Incremental Query查询类型,可以通过Spark Streaming查询给定COMMIT后发生变更的数据.<br>Hudi提供了一种消费HDFS变化数据的能力,可以用来优化现有的系统架构.</p>
+</li>
+</ol>
+<h3 id="Delta-Lake"><a href="#Delta-Lake" class="headerlink" title="Delta Lake"></a>Delta Lake</h3><p>Delta Lake是Spark计算框架和存储系统之间带有Schema信息数据的存储中间层.<br>它给Spark带来了三个最主要的功能:</p>
+<ol>
+<li>流批一体的Data Lake存储层,支持 update/delete/merge.</li>
+<li>由于出自Databricks,Spark的所有数据写入方式,包括基于dataframe的批式/流式,以及SQL的Insert/Insert Overwrite等都是支持的(开源的SQL写暂不支持,EMR做了支持).</li>
+<li>在数据写入方面,Delta 与 Spark 是强绑定的.<br>在查询方面,开源 Delta 目前支持 Spark 与 Presto,但是,Spark 是不可或缺的,因为 delta log 的处理需要用到 Spark.</li>
+</ol>
+<img src="/images/flgl203.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/flgl204.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="核心特性"><a href="#核心特性" class="headerlink" title="核心特性"></a>核心特性</h4><ol>
+<li>ACID事务<br>为数据湖提供ACID事务,确保在多个数据管道并发读写数据时,数据能保持完整性.</li>
+<li>数据版本管理和时间旅行<br>提供了数据快照,使开发人员能够访问和还原早期版本的数据以进行审核/回滚或重现实验.</li>
+<li>可伸缩的元数据管理<br>存储表或者文件的元数据信息,并且把元数据也作为数据处理,元数据与数据的对应关系存放在事务日志中.</li>
+<li>流和批统一处理<br>Delta中的表既有批量的,也有流式和sink的.</li>
+<li>数据操作审计<br>事务日志记录对数据所做的每个更改的详细信息,提供对更改的完整审计跟踪.</li>
+<li>Schema管理功能<br>提供自动验证写入数据的Schema与表的Schema是否兼容的能力,并提供显示增加列和自动更新Schema的能力.</li>
+<li>数据表操作(类似于传统数据库的SQL)<br>合并/更新/删除等,提供完全兼容Spark的Java/scala API.</li>
+<li>统一格式<br>Delta中所有的数据和元数据都存储为Apache Parquet.</li>
+</ol>
+<h2 id="数据湖组件对比"><a href="#数据湖组件对比" class="headerlink" title="数据湖组件对比"></a>数据湖组件对比</h2><h3 id="各组件起源故事"><a href="#各组件起源故事" class="headerlink" title="各组件起源故事"></a>各组件起源故事</h3><ol>
+<li><p>Delta lake<br>由于Apache Spark在商业化上取得巨大成功,所以由其背后商业公司Databricks推出的Delta lake也显得格外亮眼.<br>在没有delta数据湖之前,Databricks的客户一般会采用经典的lambda架构来构建他们的流批处理场景.</p>
+</li>
+<li><p>Hudi<br>Apache Hudi是由Uber的工程师为满足其内部数据分析的需求设计的数据湖项目,它提供的fast upsert/delete以及compaction等功能可以说是精准命中人民群众的痛点,加上项目各成员积极地社区建设,包括技术细节分享/国内社区推广等,也在逐步地吸引潜在用户的目光.</p>
+</li>
+<li><p>Iceberg<br>Netflix的数据湖原先是借助Hive来构建,但发现Hive在设计上的诸多缺陷之后,开始转为Iceberg,并最终演化成Apache下的一个高度抽象通用的开源数据湖方案.</p>
+</li>
+</ol>
+<h3 id="功能对比"><a href="#功能对比" class="headerlink" title="功能对比"></a>功能对比</h3><table>
+<thead>
+<tr>
+<th align="left">对比项</th>
+<th align="left">DeltaLake</th>
+<th align="left">Apache Hudi</th>
+<th align="left">Apache Iceberg</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">update/delete</td>
+<td align="left">Yes</td>
+<td align="left">Yes</td>
+<td align="left">Yes</td>
+</tr>
+<tr>
+<td align="left">文件合并</td>
+<td align="left">Manually</td>
+<td align="left">Automatic</td>
+<td align="left">Manually</td>
+</tr>
+<tr>
+<td align="left">历史数据清理</td>
+<td align="left">Automatic</td>
+<td align="left">Automatic</td>
+<td align="left">Manually</td>
+</tr>
+<tr>
+<td align="left">文件格式</td>
+<td align="left">parquet</td>
+<td align="left">parquet and avro</td>
+<td align="left">Parquet,avro,orc</td>
+</tr>
+<tr>
+<td align="left">计算引擎</td>
+<td align="left">Hive/Spark/Presto</td>
+<td align="left">Hive/Spark/Presto/Flink</td>
+<td align="left">Hive/Spark/Presto/Flink</td>
+</tr>
+<tr>
+<td align="left">存储引擎</td>
+<td align="left">HDFS/S3/Azure</td>
+<td align="left">HDFS/S3/OBS/ALLUXIO/Azure</td>
+<td align="left">HDFS/S3</td>
+</tr>
+<tr>
+<td align="left">SQL DML</td>
+<td align="left">Yes</td>
+<td align="left">Yes</td>
+<td align="left">Yes</td>
+</tr>
+<tr>
+<td align="left">ACID transaction</td>
+<td align="left">Yes</td>
+<td align="left">Yes</td>
+<td align="left">Yes</td>
+</tr>
+<tr>
+<td align="left">TimeLine</td>
+<td align="left">Yes</td>
+<td align="left">Yes</td>
+<td align="left">Yes</td>
+</tr>
+<tr>
+<td align="left">索引</td>
+<td align="left">No</td>
+<td align="left">Yes</td>
+<td align="left">No</td>
+</tr>
+<tr>
+<td align="left">可扩展的元数据存储</td>
+<td align="left">Yes</td>
+<td align="left">Yes</td>
+<td align="left">Yes</td>
+</tr>
+<tr>
+<td align="left">Schema约束和演化</td>
+<td align="left">Yes</td>
+<td align="left">Yes</td>
+<td align="left">Yes</td>
+</tr>
+</tbody></table>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hudi/" rel="tag"># hudi</a>
+              <a href="/tags/delta-lake/" rel="tag"># delta lake</a>
+              <a href="/tags/iceberg/" rel="tag"># iceberg</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/09/14/java%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/" rel="prev" title="java布隆过滤器">
+                  <i class="fa fa-chevron-left"></i> java布隆过滤器
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/09/19/rocketmq%E5%8F%91%E9%80%81%E5%BB%B6%E8%BF%9F%E6%B6%88%E6%81%AF%E6%B5%8B%E8%AF%95/" rel="next" title="rocketmq发送延迟消息测试">
+                  rocketmq发送延迟消息测试 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

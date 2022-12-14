@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="table th:first-of-type {   width: 40%; } table th:nth-of-type(2) {   width: 60%; }">
+<meta property="og:type" content="article">
+<meta property="og:title" content="spark streaming编程指南">
+<meta property="og:url" content="https://maoeryu.github.io/2022/11/22/spark%20streaming%E7%BC%96%E7%A8%8B%E6%8C%87%E5%8D%97/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="table th:first-of-type {   width: 40%; } table th:nth-of-type(2) {   width: 60%; }">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1342.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1343.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1344.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1345.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1346.png">
+<meta property="article:published_time" content="2022-11-21T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-12-02T06:15:13.705Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="spark">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1342.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/11/22/spark%20streaming%E7%BC%96%E7%A8%8B%E6%8C%87%E5%8D%97/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>spark streaming编程指南 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">2.</span> <span class="nav-text">一个简单的例子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-number">3.</span> <span class="nav-text">基本概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%93%BE%E6%8E%A5"><span class="nav-number">3.1.</span> <span class="nav-text">链接</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96-StreamingContext"><span class="nav-number">3.2.</span> <span class="nav-text">初始化 StreamingContext</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A6%BB%E6%95%A3%E6%B5%81-DStreams"><span class="nav-number">3.3.</span> <span class="nav-text">离散流 (DStreams)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BE%93%E5%85%A5-DStream-%E5%92%8C%E6%8E%A5%E6%94%B6%E5%99%A8"><span class="nav-number">3.4.</span> <span class="nav-text">输入 DStream 和接收器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%9D%A5%E6%BA%90"><span class="nav-number">3.4.1.</span> <span class="nav-text">基本来源</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E6%B5%81"><span class="nav-number">3.4.1.1.</span> <span class="nav-text">文件流</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E7%9B%91%E6%8E%A7%E7%9B%AE%E5%BD%95"><span class="nav-number">3.4.1.1.1.</span> <span class="nav-text">如何监控目录</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E5%AF%B9%E8%B1%A1%E5%AD%98%E5%82%A8%E4%BD%9C%E4%B8%BA%E6%95%B0%E6%8D%AE%E6%BA%90"><span class="nav-number">3.4.1.1.2.</span> <span class="nav-text">使用对象存储作为数据源</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8E%A5%E6%94%B6%E5%99%A8%E7%9A%84%E6%B5%81"><span class="nav-number">3.4.1.2.</span> <span class="nav-text">基于自定义接收器的流</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BD%9C%E4%B8%BA%E6%B5%81%E7%9A%84-RDD-%E9%98%9F%E5%88%97"><span class="nav-number">3.4.1.3.</span> <span class="nav-text">作为流的 RDD 队列</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Advanced-Sources"><span class="nav-number">3.4.2.</span> <span class="nav-text">Advanced Sources</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%9D%A5%E6%BA%90"><span class="nav-number">3.4.3.</span> <span class="nav-text">自定义来源</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%8E%A5%E6%94%B6%E6%9C%BA%E5%8F%AF%E9%9D%A0%E6%80%A7"><span class="nav-number">3.4.3.1.</span> <span class="nav-text">接收机可靠性</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DStream-%E4%B8%8A%E7%9A%84%E8%BD%AC%E6%8D%A2"><span class="nav-number">3.5.</span> <span class="nav-text">DStream 上的转换</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#UpdateStateByKey%E6%93%8D%E4%BD%9C"><span class="nav-number">3.5.1.</span> <span class="nav-text">UpdateStateByKey操作</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Transform%E6%93%8D%E4%BD%9C"><span class="nav-number">3.5.2.</span> <span class="nav-text">Transform操作</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Window%E6%93%8D%E4%BD%9C"><span class="nav-number">3.5.3.</span> <span class="nav-text">Window操作</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Join%E6%93%8D%E4%BD%9C"><span class="nav-number">3.5.4.</span> <span class="nav-text">Join操作</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%B5%81-%E6%B5%81%E8%BF%9E%E6%8E%A5"><span class="nav-number">3.5.4.1.</span> <span class="nav-text">流-流连接</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%B5%81-%E6%95%B0%E6%8D%AE%E9%9B%86%E8%BF%9E%E6%8E%A5"><span class="nav-number">3.5.4.2.</span> <span class="nav-text">流-数据集连接</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DStreams-%E7%9A%84%E8%BE%93%E5%87%BA%E6%93%8D%E4%BD%9C"><span class="nav-number">3.6.</span> <span class="nav-text">DStreams 的输出操作</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-foreachRDD-%E7%9A%84%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F"><span class="nav-number">3.6.1.</span> <span class="nav-text">使用 foreachRDD 的设计模式</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DataFrame-SQL-%E6%93%8D%E4%BD%9C"><span class="nav-number">3.7.</span> <span class="nav-text">DataFrame&#x2F;SQL 操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MLlib-%E6%93%8D%E4%BD%9C"><span class="nav-number">3.8.</span> <span class="nav-text">MLlib 操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%93%E5%AD%98-%E6%8C%81%E4%B9%85%E6%80%A7"><span class="nav-number">3.9.</span> <span class="nav-text">缓存&#x2F;持久性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5%E7%82%B9"><span class="nav-number">3.10.</span> <span class="nav-text">检查点</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%95%E6%97%B6%E5%90%AF%E7%94%A8%E6%A3%80%E6%9F%A5%E7%82%B9"><span class="nav-number">3.10.1.</span> <span class="nav-text">何时启用检查点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E9%85%8D%E7%BD%AE%E6%A3%80%E6%9F%A5%E7%82%B9"><span class="nav-number">3.10.2.</span> <span class="nav-text">如何配置检查点</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B4%AF%E5%8A%A0%E5%99%A8-%E5%B9%BF%E6%92%AD%E5%8F%98%E9%87%8F%E5%92%8C%E6%A3%80%E6%9F%A5%E7%82%B9"><span class="nav-number">3.11.</span> <span class="nav-text">累加器&#x2F;广播变量和检查点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F"><span class="nav-number">3.12.</span> <span class="nav-text">部署应用程序</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A6%81%E6%B1%82"><span class="nav-number">3.12.1.</span> <span class="nav-text">要求</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8D%87%E7%BA%A7%E5%BA%94%E7%94%A8%E4%BB%A3%E7%A0%81"><span class="nav-number">3.12.2.</span> <span class="nav-text">升级应用代码</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%91%E6%8E%A7%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F"><span class="nav-number">3.13.</span> <span class="nav-text">监控应用程序</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98"><span class="nav-number">4.</span> <span class="nav-text">性能调优</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%8F%E5%B0%91%E6%89%B9%E5%A4%84%E7%90%86%E6%97%B6%E9%97%B4"><span class="nav-number">4.1.</span> <span class="nav-text">减少批处理时间</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E6%8E%A5%E6%94%B6%E7%9A%84%E5%B9%B6%E8%A1%8C%E5%BA%A6"><span class="nav-number">4.1.1.</span> <span class="nav-text">数据接收的并行度</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86%E4%B8%AD%E7%9A%84%E5%B9%B6%E8%A1%8C%E5%BA%A6"><span class="nav-number">4.1.2.</span> <span class="nav-text">数据处理中的并行度</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%8F%E5%88%97%E5%8C%96"><span class="nav-number">4.1.3.</span> <span class="nav-text">数据序列化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E5%90%AF%E5%8A%A8%E5%BC%80%E9%94%80"><span class="nav-number">4.1.4.</span> <span class="nav-text">任务启动开销</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E6%AD%A3%E7%A1%AE%E7%9A%84%E6%89%B9%E6%AC%A1%E9%97%B4%E9%9A%94"><span class="nav-number">4.2.</span> <span class="nav-text">设置正确的批次间隔</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E8%B0%83%E6%95%B4"><span class="nav-number">4.3.</span> <span class="nav-text">内存调整</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A6%81%E8%AE%B0%E4%BD%8F%E7%9A%84%E8%A6%81%E7%82%B9"><span class="nav-number">4.4.</span> <span class="nav-text">要记住的要点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%B9%E9%94%99%E8%AF%AD%E4%B9%89"><span class="nav-number">5.</span> <span class="nav-text">容错语义</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">5.1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89"><span class="nav-number">5.2.</span> <span class="nav-text">定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E8%AF%AD%E4%B9%89"><span class="nav-number">5.3.</span> <span class="nav-text">基本语义</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8E%A5%E6%94%B6%E6%95%B0%E6%8D%AE%E7%9A%84%E8%AF%AD%E4%B9%89"><span class="nav-number">5.3.1.</span> <span class="nav-text">接收数据的语义</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%B8%A6%E6%96%87%E4%BB%B6"><span class="nav-number">5.3.1.1.</span> <span class="nav-text">带文件</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E5%9F%BA%E4%BA%8E%E6%8E%A5%E6%94%B6%E5%99%A8%E7%9A%84%E6%BA%90"><span class="nav-number">5.3.1.2.</span> <span class="nav-text">使用基于接收器的源</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-Kafka-%E7%9B%B4%E6%8E%A5-API"><span class="nav-number">5.3.1.3.</span> <span class="nav-text">使用 Kafka 直接 API</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BE%93%E5%87%BA%E6%93%8D%E4%BD%9C%E7%9A%84%E8%AF%AD%E4%B9%89"><span class="nav-number">5.3.2.</span> <span class="nav-text">输出操作的语义</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/11/22/spark%20streaming%E7%BC%96%E7%A8%8B%E6%8C%87%E5%8D%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          spark streaming编程指南
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-11-22 00:00:00" itemprop="dateCreated datePublished" datetime="2022-11-22T00:00:00+08:00">2022-11-22</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-12-02 14:15:13" itemprop="dateModified" datetime="2022-12-02T14:15:13+08:00">2022-12-02</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <style>
+table th:first-of-type {
+  width: 40%;
+}
+table th:nth-of-type(2) {
+  width: 60%;
+}
+</style>
+
+
+<span id="more"></span>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>Spark Streaming 是核心 Spark API 的扩展,支持对实时数据流进行可扩展/高吞吐量/容错的流处理.<br>数据可以从许多来源(如 Kafka/Flume/Kinesis/TCP 套接字)获取,并且可以使用复杂的算法进行处理,这些算法用高级函数(如map/reduce/join/window)表示.<br>最后,可以将处理后的数据推送到文件系统/数据库和实时仪表板.<br>事实上,您可以将 Spark 的 机器学习和 图形处理算法应用于数据流.</p>
+<img src="/images/fly1342.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>在内部,它的工作原理如下.<br>Spark Streaming 接收实时输入数据流并将数据分成批次,然后由 Spark 引擎处理以批次生成最终结果流.</p>
+<img src="/images/fly1343.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>Spark Streaming 提供了一种称为离散流或DStream的高级抽象,它表示连续的数据流.<br>DStreams 可以从来自 Kafka/Flume/Kinesis 等来源的输入数据流创建,也可以通过在其他 DStreams 上应用高级操作来创建.<br>在内部,一个 DStream 被表示为一个 RDDs序列.</p>
+<h2 id="一个简单的例子"><a href="#一个简单的例子" class="headerlink" title="一个简单的例子"></a>一个简单的例子</h2><p>在详细介绍如何编写您自己的 Spark Streaming 程序之前,让我们快速浏览一下简单的 Spark Streaming 程序是什么样的.<br>假设我们要计算从侦听 TCP 套接字的数据服务器接收到的文本数据中的单词数.<br>您需要做的就是如下.</p>
+<p>首先,我们将 Spark Streaming 类的名称和一些从 StreamingContext 的隐式转换导入我们的环境,以便向我们需要的其他类(如 DStream)添加有用的方法.<br>StreamingContext是所有流功能的主要入口点.<br>我们创建了一个具有两个执行线程和 1 秒批处理间隔的本地 StreamingContext.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.spark._</span><br><span class="line">import org.apache.spark.streaming._</span><br><span class="line">import org.apache.spark.streaming.StreamingContext._ &#x2F;&#x2F; not necessary since Spark 1.3</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Create a local StreamingContext with two working thread and batch interval of 1 second.</span><br><span class="line">&#x2F;&#x2F; The master requires 2 cores to prevent a starvation scenario.</span><br><span class="line"></span><br><span class="line">val conf &#x3D; new SparkConf().setMaster(&quot;local[2]&quot;).setAppName(&quot;NetworkWordCount&quot;)</span><br><span class="line">val ssc &#x3D; new StreamingContext(conf, Seconds(1))</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">import org.apache.spark.*;</span><br><span class="line">import org.apache.spark.api.java.function.*;</span><br><span class="line">import org.apache.spark.streaming.*;</span><br><span class="line">import org.apache.spark.streaming.api.java.*;</span><br><span class="line">import scala.Tuple2;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Create a local StreamingContext with two working thread and batch interval of 1 second</span><br><span class="line">SparkConf conf &#x3D; new SparkConf().setMaster(&quot;local[2]&quot;).setAppName(&quot;NetworkWordCount&quot;);</span><br><span class="line">JavaStreamingContext jssc &#x3D; new JavaStreamingContext(conf, Durations.seconds(1));</span><br></pre></td></tr></table></figure>
+
+<p>使用这个上下文,我们可以创建一个 DStream 来表示来自 TCP 源的流数据,指定为主机名(例如localhost)和端口(例如9999).</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; Create a DStream that will connect to hostname:port, like localhost:9999</span><br><span class="line">val lines &#x3D; ssc.socketTextStream(&quot;localhost&quot;, 9999)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">&#x2F;&#x2F; Create a DStream that will connect to hostname:port, like localhost:9999</span><br><span class="line">JavaReceiverInputDStream&lt;String&gt; lines &#x3D; jssc.socketTextStream(&quot;localhost&quot;, 9999);</span><br></pre></td></tr></table></figure>
+
+<p>此linesDStream 表示将从数据服务器接收的数据流.<br>此 DStream 中的每条记录都是一行文本.<br>接下来,我们要将空格字符的行拆分为单词.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; Split each line into words</span><br><span class="line">val words &#x3D; lines.flatMap(_.split(&quot; &quot;))</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">&#x2F;&#x2F; Split each line into words</span><br><span class="line">JavaDStream&lt;String&gt; words &#x3D; lines.flatMap(x -&gt; Arrays.asList(x.split(&quot; &quot;)).iterator());</span><br></pre></td></tr></table></figure>
+
+<p>flatMap是一个一对多的 DStream 操作,它通过从源 DStream 中的每条记录生成多条新记录来创建一个新的 DStream.<br>在这种情况下,每一行将被拆分成多个单词,单词流表示为 wordsDStream.<br>接下来,我们要统计这些单词.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.spark.streaming.StreamingContext._ &#x2F;&#x2F; not necessary since Spark 1.3</span><br><span class="line">&#x2F;&#x2F; Count each word in each batch</span><br><span class="line">val pairs &#x3D; words.map(word &#x3D;&gt; (word, 1))</span><br><span class="line">val wordCounts &#x3D; pairs.reduceByKey(_ + _)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Print the first ten elements of each RDD generated in this DStream to the console</span><br><span class="line">wordCounts.print()</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">&#x2F;&#x2F; Count each word in each batch</span><br><span class="line">JavaPairDStream&lt;String, Integer&gt; pairs &#x3D; words.mapToPair(s -&gt; new Tuple2&lt;&gt;(s, 1));</span><br><span class="line">JavaPairDStream&lt;String, Integer&gt; wordCounts &#x3D; pairs.reduceByKey((i1, i2) -&gt; i1 + i2);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Print the first ten elements of each RDD generated in this DStream to the console</span><br><span class="line">wordCounts.print();</span><br></pre></td></tr></table></figure>
+
+<p>将wordsDStream进一步映射(一对一转换)(word, 1)成对的DStream,然后对其进行归约,得到每批数据中单词出现的频率.<br>最后,wordCounts.print()将打印一些每秒产生的计数.</p>
+<p>请注意,当这些行被执行时,Spark Streaming 只设置了它在启动时将执行的计算,还没有真正的处理开始.<br>要在设置完所有转换后开始处理,我们最后调用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ssc.start()             &#x2F;&#x2F; Start the computation</span><br><span class="line">ssc.awaitTermination()  &#x2F;&#x2F; Wait for the computation to terminate</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">jssc.start();              &#x2F;&#x2F; Start the computation</span><br><span class="line">jssc.awaitTermination();   &#x2F;&#x2F; Wait for the computation to terminate</span><br></pre></td></tr></table></figure>
+
+<p>完整的代码可以在 Spark Streaming 示例 NetworkWordCount中找到.<br><a target="_blank" rel="noopener" href="https://github.com/apache/spark/blob/v2.4.8/examples/src/main/scala/org/apache/spark/examples/streaming/NetworkWordCount.scala">https://github.com/apache/spark/blob/v2.4.8/examples/src/main/scala/org/apache/spark/examples/streaming/NetworkWordCount.scala</a><br><a target="_blank" rel="noopener" href="https://github.com/apache/spark/blob/v2.4.8/examples/src/main/java/org/apache/spark/examples/streaming/JavaNetworkWordCount.java">https://github.com/apache/spark/blob/v2.4.8/examples/src/main/java/org/apache/spark/examples/streaming/JavaNetworkWordCount.java</a></p>
+<p>如果您已经下载并构建了Spark,则可以按如下方式运行此示例.<br>您首先需要运行 Netcat(大多数类 Unix 系统中的一个小实用程序)作为数据服务器,使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nc -lk 9999</span><br></pre></td></tr></table></figure>
+
+<p>然后,在不同的终端中,您可以使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;run-example streaming.NetworkWordCount localhost 9999</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;java</span><br><span class="line">.&#x2F;bin&#x2F;run-example streaming.JavaNetworkWordCount localhost 9999</span><br></pre></td></tr></table></figure>
+
+<p>然后,在运行 netcat 服务器的终端中键入的任何行都将被计算并每秒打印在屏幕上.</p>
+<h2 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h2><p>接下来,我们超越简单的示例,详细介绍 Spark Streaming 的基础知识.</p>
+<h3 id="链接"><a href="#链接" class="headerlink" title="链接"></a>链接</h3><p>与 Spark 类似,Spark Streaming 可通过 Maven Central 获得.<br>要编写您自己的 Spark Streaming 程序,您必须将以下依赖项添加到您的 SBT/Maven 项目中.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;org.apache.spark&lt;&#x2F;groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;spark-streaming_2.12&lt;&#x2F;artifactId&gt;</span><br><span class="line">    &lt;version&gt;2.4.8&lt;&#x2F;version&gt;</span><br><span class="line">    &lt;scope&gt;provided&lt;&#x2F;scope&gt;</span><br><span class="line">&lt;&#x2F;dependency&gt;</span><br></pre></td></tr></table></figure>
+
+<p>要从 Spark Streaming 核心 API 中不存在的 Kafka/Flume/Kinesis 等来源获取数据,您必须将相应的工件添加spark-streaming-xyz_2.12到依赖项中.<br>例如,一些常见的如下.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Source</th>
+<th align="left">Artifact</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Kafka</td>
+<td align="left">spark-streaming-kafka-0-10_2.12</td>
+</tr>
+<tr>
+<td align="left">Flume</td>
+<td align="left">spark-streaming-flume_2.12</td>
+</tr>
+<tr>
+<td align="left">Kinesis</td>
+<td align="left">spark-streaming-kinesis-asl_2.12 [Amazon Software License]</td>
+</tr>
+</tbody></table>
+<h3 id="初始化-StreamingContext"><a href="#初始化-StreamingContext" class="headerlink" title="初始化 StreamingContext"></a>初始化 StreamingContext</h3><p>要初始化 Spark Streaming 程序,必须创建一个StreamingContext对象,它是所有 Spark Streaming 功能的主要入口点.</p>
+<p>可以从SparkConf对象创建StreamingContext对象.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.spark._</span><br><span class="line">import org.apache.spark.streaming._</span><br><span class="line"></span><br><span class="line">val conf &#x3D; new SparkConf().setAppName(appName).setMaster(master)</span><br><span class="line">val ssc &#x3D; new StreamingContext(conf, Seconds(1))</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">import org.apache.spark.*;</span><br><span class="line">import org.apache.spark.streaming.api.java.*;</span><br><span class="line"></span><br><span class="line">SparkConf conf &#x3D; new SparkConf().setAppName(appName).setMaster(master);</span><br><span class="line">JavaStreamingContext ssc &#x3D; new JavaStreamingContext(conf, new Duration(1000));</span><br></pre></td></tr></table></figure>
+
+<p>该appName参数是您的应用程序在集群 UI 上显示的名称.<br>master是一个Spark/Mesos/Kubernetes/YARN 集群 URL,或者一个特殊的&quot;local[*]&quot;字符串以在本地模式下运行.<br>实际上,当在集群上运行时,您不会希望master在程序中进行硬编码,而是希望启动应用程序spark-submit并在那里接收它.<br>但是,对于本地测试和单元测试,您可以通过&quot;local[*]&quot;来运行 Spark Streaming in-process(检测本地系统中的核心数).<br>请注意,这会在内部创建一个SparkContext(所有 Spark 功能的起点),可以作为ssc.sparkContext.</p>
+<p>必须根据应用程序的延迟要求和可用的集群资源来设置批处理间隔.<br>有关详细信息,请参阅性能调整 部分.</p>
+<p>也可以从StreamingContext现有对象创建SparkContext对象.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.spark.streaming._</span><br><span class="line"></span><br><span class="line">val sc &#x3D; ...                &#x2F;&#x2F; existing SparkContext</span><br><span class="line">val ssc &#x3D; new StreamingContext(sc, Seconds(1))</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">import org.apache.spark.streaming.api.java.*;</span><br><span class="line"></span><br><span class="line">JavaSparkContext sc &#x3D; ...   &#x2F;&#x2F;existing JavaSparkContext</span><br><span class="line">JavaStreamingContext ssc &#x3D; new JavaStreamingContext(sc, Durations.seconds(1));</span><br></pre></td></tr></table></figure>
+
+<p>定义上下文后,您必须执行以下操作.</p>
+<ol>
+<li>通过创建输入 DStream 来定义输入源.</li>
+<li>通过对 DStreams 应用转换和输出操作来定义流计算.</li>
+<li>开始接收数据并使用streamingContext.start().</li>
+<li>等待处理停止(手动或由于任何错误)使用streamingContext.awaitTermination().</li>
+<li>可以使用streamingContext.stop()手动停止处理.</li>
+</ol>
+<p>要记住的要点:</p>
+<ol>
+<li>一旦启动了上下文,就不能设置或添加新的流计算.</li>
+<li>上下文一旦停止,就无法重新启动.</li>
+<li>一个 JVM 中只能同时激活一个 StreamingContext.</li>
+<li>StreamingContext 上的 stop() 也会停止 SparkContext.<br>要仅停止 StreamingContext,请将stop()called的可选参数设置stopSparkContext为 false.</li>
+<li>只要在创建下一个 StreamingContext 之前停止前一个 StreamingContext(不停止 SparkContext),一个 SparkContext 就可以被重新用于创建多个 StreamingContext.</li>
+</ol>
+<h3 id="离散流-DStreams"><a href="#离散流-DStreams" class="headerlink" title="离散流 (DStreams)"></a>离散流 (DStreams)</h3><p>Discretized Stream或DStream是 Spark Streaming 提供的基本抽象.<br>它表示连续的数据流,可以是从源接收的输入数据流,也可以是通过转换输入流生成的处理后的数据流.<br>在内部,DStream 由一系列连续的 RDD 表示,它是 Spark 对不可变分布式数据集的抽象(有关详细信息,请参阅Spark 编程指南).<br>DStream 中的每个 RDD 都包含来自某个区间的数据,如下图所示.</p>
+<img src="/images/fly1344.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>应用于 DStream 的任何操作都会转换为对底层 RDD 的操作.<br>例如,在前面将行流转换为单词的示例中,该flatMap操作应用于 DStream 中的每个 RDD,lines以生成 DStream 的 wordsRDD.<br>如下图所示.</p>
+<img src="/images/fly1345.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>这些底层 RDD 转换由 Spark 引擎计算.<br>DStream 操作隐藏了大部分这些细节,并为开发人员提供了更高级别的 API 以方便使用.<br>这些操作将在后面的章节中详细讨论.</p>
+<h3 id="输入-DStream-和接收器"><a href="#输入-DStream-和接收器" class="headerlink" title="输入 DStream 和接收器"></a>输入 DStream 和接收器</h3><p>输入 DStream 是表示从流式源接收的输入数据流的 DStream.<br>在快速示例中,lines是一个输入 DStream,因为它表示从 netcat 服务器接收到的数据流.<br>每个输入 DStream(文件流除外,本节稍后讨论)都与一个Receiver (Scala doc/Java doc)对象相关联,该对象从源接收数据并将其存储在 Spark 的内存中以供处理.</p>
+<p>Spark Streaming 提供了两类内置流源.</p>
+<ol>
+<li>基本来源:StreamingContext API 中直接可用的来源.<br>示例:文件系统和套接字连接.</li>
+<li>高级资源:Kafka/Flume/Kinesis 等资源可通过额外的实用程序类获得.<br>这些需要链接额外的依赖项,如 链接部分所述.</li>
+</ol>
+<p>我们将在本节后面讨论每个类别中存在的一些来源.</p>
+<p>请注意,如果您想在流应用程序中并行接收多个数据流,您可以创建多个输入 DStream(在性能调优部分进一步讨论).<br>这将创建多个接收器,它们将同时接收多个数据流.<br>但请注意,Spark worker/executor 是一项长时间运行的任务,因此它占用了分配给 Spark Streaming 应用程序的核心之一.<br>因此,重要的是要记住,Spark Streaming 应用程序需要分配足够的内核(或线程,如果在本地运行)来处理接收到的数据,以及运行接收器.</p>
+<blockquote>
+<p>要记住的要点<br>在本地运行 Spark Streaming 程序时,不要使用&quot;local&quot;或&quot;local[1]&quot;作为主 URL.<br>这些中的任何一个都意味着只有一个线程将用于在本地运行任务.<br>如果您正在使用基于接收器(例如套接字/Kafka/Flume 等)的输入 DStream,那么将使用单线程来运行接收器,而不会留下任何线程来处理接收到的数据.<br>因此,在本地运行时,始终使用&quot;local[n]&quot;作为主 URL,其中n &gt; 要运行的接收器数量(有关如何设置主的信息,请参阅Spark 属性).</p>
+</blockquote>
+<p>将逻辑扩展到集群上运行,分配给 Spark Streaming 应用程序的核心数必须大于接收器的数量.<br>否则系统将接收数据,但无法处理它.</p>
+<h4 id="基本来源"><a href="#基本来源" class="headerlink" title="基本来源"></a>基本来源</h4><p>我们已经ssc.socketTextStream(...)在快速示例中查看了从通过 TCP 套接字连接接收到的文本数据创建 DStream 的示例.<br>除了套接字之外,StreamingContext API 还提供了从文件作为输入源创建 DStream 的方法.</p>
+<h5 id="文件流"><a href="#文件流" class="headerlink" title="文件流"></a>文件流</h5><p>为了从任何与 HDFS API 兼容的文件系统(即 HDFS/S3/NFS 等)上的文件中读取数据,可以通过<code>StreamingContext.fileStream[KeyClass, ValueClass, InputFormatClass]</code>.</p>
+<p>文件流不需要运行接收器,因此无需分配任何内核来接收文件数据.<br>对于简单的文本文件,最简单的方法是<code>StreamingContext.textFileStream(dataDirectory)</code>.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">streamingContext.fileStream[KeyClass, ValueClass, InputFormatClass](dataDirectory)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;java</span><br><span class="line">streamingContext.fileStream&lt;KeyClass, ValueClass, InputFormatClass&gt;(dataDirectory);</span><br></pre></td></tr></table></figure>
+
+<p>对于文本文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">streamingContext.textFileStream(dataDirectory)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;java</span><br><span class="line">streamingContext.textFileStream(dataDirectory);</span><br></pre></td></tr></table></figure>
+
+<h6 id="如何监控目录"><a href="#如何监控目录" class="headerlink" title="如何监控目录"></a>如何监控目录</h6><p>Spark Streaming 将监视目录dataDirectory并处理在该目录中创建的任何文件.</p>
+<ol>
+<li>可以监控一个简单的目录,例如&quot;hdfs://namenode:8040/logs/&quot;. 直接位于此类路径下的所有文件都将在发现时进行处理.</li>
+<li>可以提供POSIX glob 模式,例如 &quot;hdfs://namenode:8040/logs/2017/*&quot;. 在这里,DStream 将包含目录中与模式匹配的所有文件.<br>也就是说:它是目录的模式,而不是目录中文件的模式.</li>
+<li>所有文件必须采用相同的数据格式.</li>
+<li>根据文件的修改时间而非创建时间,文件被视为时间段的一部分.</li>
+<li>一旦处理完毕,在当前窗口中对文件的更改将不会导致重新读取文件.<br>即:忽略更新.</li>
+<li>目录下的文件越多,扫描更改所需的时间就越长-即使没有文件被修改.</li>
+<li>如果使用通配符来标识目录,例如&quot;hdfs://namenode:8040/logs/2016-*&quot;,重命名整个目录以匹配路径会将目录添加到受监视目录列表中.<br>只有修改时间在当前窗口内的目录中的文件才会被包含在流中.</li>
+<li>调用FileSystem.setTimes() 修复时间戳是一种在稍后的窗口中获取文件的方法,即使其内容没有更改.</li>
+</ol>
+<h6 id="使用对象存储作为数据源"><a href="#使用对象存储作为数据源" class="headerlink" title="使用对象存储作为数据源"></a>使用对象存储作为数据源</h6><p>&quot;完整&quot;文件系统(如 HDFS)倾向于在创建输出流后立即在其文件上设置修改时间.<br>打开文件时,即使在数据完全写入之前,它也可能包含在DStream- 之后,同一窗口中对该文件的更新将被忽略.<br>即:更改可能会被遗漏,并且数据会从流中遗漏.</p>
+<p>为保证在窗口中获取更改,将文件写入不受监视的目录,然后在关闭输出流后立即将其重命名为目标目录.<br>如果重命名的文件在其创建窗口期间出现在扫描的目标目录中,则将拾取新数据.</p>
+<p>相比之下,Amazon S3/Azure Storage 等对象存储的重命名操作通常很慢,因为实际上是在复制数据.<br>此外,重命名的对象可能会将rename()操作时间作为其修改时间,因此可能不会被视为原始创建时间所暗示的窗口的一部分.</p>
+<p>需要针对目标对象存储进行仔细测试,以验证存储的时间戳行为是否与 Spark Streaming 预期的行为一致.<br>直接写入目标目录可能是通过所选对象存储流式传输数据的适当策略.</p>
+<p>有关此主题的更多详细信息,请参阅Hadoop 文件系统规范.</p>
+<h5 id="基于自定义接收器的流"><a href="#基于自定义接收器的流" class="headerlink" title="基于自定义接收器的流"></a>基于自定义接收器的流</h5><p>可以使用通过自定义接收器接收的数据流来创建 DStream.<br>有关详细信息,请参阅自定义接收器指南.<br><a target="_blank" rel="noopener" href="https://spark.apache.org/docs/2.4.8/streaming-custom-receivers.html">https://spark.apache.org/docs/2.4.8/streaming-custom-receivers.html</a></p>
+<h5 id="作为流的-RDD-队列"><a href="#作为流的-RDD-队列" class="headerlink" title="作为流的 RDD 队列"></a>作为流的 RDD 队列</h5><p>为了使用测试数据测试 Spark Streaming 应用程序,还可以创建基于 RDD 队列的 DStream,使用streamingContext.queueStream(queueOfRDDs). 每个推入队列的RDD在DStream中都会被当作一批数据,像流一样处理.</p>
+<p>有关来自套接字和文件的流的更多详细信息,请参阅 StreamingContext for Scala/JavaStreamingContext for Java 和StreamingContext for Python 中相关函数的 API 文档.</p>
+<h4 id="Advanced-Sources"><a href="#Advanced-Sources" class="headerlink" title="Advanced Sources"></a>Advanced Sources</h4><p>Python API从 Spark 2.4.8 开始,在这些资源中,Kafka/Kinesis/Flume 可在 Python API 中使用.</p>
+<p>此类源需要与外部非 Spark 库连接,其中一些具有复杂的依赖关系(例如,Kafka/Flume).<br>因此,为了最大限度地减少与依赖项的版本冲突相关的问题,从这些源创建 DStream 的功能已移至单独的库,必要时可以显式链接到这些库.</p>
+<p>请注意,这些高级源在 Spark shell 中不可用,因此无法在 shell 中测试基于这些高级源的应用程序.<br>如果你真的想在 Spark shell 中使用它们,你必须下载相应的 Maven 工件的 JAR 及其依赖项并将其添加到类路径中.</p>
+<p>其中一些高级来源如下.<br>Kafka: Spark Streaming 2.4.8 与 Kafka 代理版本 0.8.2.1 或更高版本兼容.<br>有关详细信息,请参阅Kafka 集成指南.<br><a target="_blank" rel="noopener" href="https://spark.apache.org/docs/2.4.8/streaming-kafka-integration.html">https://spark.apache.org/docs/2.4.8/streaming-kafka-integration.html</a></p>
+<p>Flume: Spark Streaming 2.4.8 兼容 Flume 1.6.0.<br>有关详细信息,请参阅Flume 集成指南.<br><a target="_blank" rel="noopener" href="https://spark.apache.org/docs/2.4.8/streaming-flume-integration.html">https://spark.apache.org/docs/2.4.8/streaming-flume-integration.html</a></p>
+<p>Kinesis: Spark Streaming 2.4.8 与 Kinesis Client Library 1.2.1 兼容.<br>有关详细信息,请参阅Kinesis 集成指南.</p>
+<h4 id="自定义来源"><a href="#自定义来源" class="headerlink" title="自定义来源"></a>自定义来源</h4><p>Python API这在 Python 中尚不支持.</p>
+<p>输入 DStreams 也可以从自定义数据源中创建.<br>您所要做的就是实现一个用户定义的接收器(请参阅下一节以了解它是什么),它可以从自定义源接收数据并将其推送到 Spark.<br>有关详细信息,请参阅自定义接收器指南.</p>
+<h5 id="接收机可靠性"><a href="#接收机可靠性" class="headerlink" title="接收机可靠性"></a>接收机可靠性</h5><p>根据可靠性,可以有两种数据源.<br>源(如 Kafka/Flume)允许确认传输的数据.<br>如果从这些可靠来源接收数据的系统正确确认接收到的数据,则可以确保不会因任何类型的故障而丢失任何数据.<br>这导致两种接收器:<br>Reliable Receiver -当数据已被接收并通过复制存储在 Spark 中时,可靠的接收器会正确地向可靠的源发送确认.<br>不可靠的接收器-不可靠的接收器不会向源发送确认.<br>这可以用于不支持确认的来源,或者当人们不想或不需要进入确认的复杂性时甚至可以用于可靠的来源.</p>
+<p>自定义接收器指南中讨论了如何编写可靠接收器的详细信息 .</p>
+<h3 id="DStream-上的转换"><a href="#DStream-上的转换" class="headerlink" title="DStream 上的转换"></a>DStream 上的转换</h3><p>与 RDD 类似,转换允许修改来自输入 DStream 的数据.<br>DStreams 支持普通 Spark RDD 上可用的许多转换.<br>一些常见的如下.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Transformation</th>
+<th align="left">意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">map(func)</td>
+<td align="left">通过函数func传递源 DStream 的每个元素,返回一个新的 DStream .</td>
+</tr>
+<tr>
+<td align="left">flatMap(func)</td>
+<td align="left">类似于map,但每个输入项可以映射到0个或多个输出项.</td>
+</tr>
+<tr>
+<td align="left">filter(func)</td>
+<td align="left">通过仅选择func返回 true的源 DStream 的记录来返回一个新的 DStream .</td>
+</tr>
+<tr>
+<td align="left">repartition(numPartitions)</td>
+<td align="left">通过创建更多或更少的分区来更改此 DStream 中的并行级别.</td>
+</tr>
+<tr>
+<td align="left">union(otherStream)</td>
+<td align="left">返回一个新的 DStream,它包含源 DStream/otherDStream中元素的并集.</td>
+</tr>
+<tr>
+<td align="left">count()</td>
+<td align="left">通过计算源 DStream 的每个 RDD 中的元素数量,返回一个新的单元素 RDD DStream.</td>
+</tr>
+<tr>
+<td align="left">reduce(func)</td>
+<td align="left">通过使用函数func(接受两个参数并返回一个)聚合源 DStream 的每个 RDD 中的元素,返回一个新的单元素 RDD DStream .该函数应该是关联的和可交换的,以便可以并行计算.</td>
+</tr>
+<tr>
+<td align="left">countByValue()</td>
+<td align="left">当调用 K 类型元素的 DStream 时,返回一个新的 (K, Long) 对 DStream,其中每个键的值是它在源 DStream 的每个 RDD 中的频率.</td>
+</tr>
+<tr>
+<td align="left">reduceByKey(func, [numTasks])</td>
+<td align="left">当在 (K, V) 对的 DStream 上调用时,返回一个新的 (K, V) 对的 DStream,其中使用给定的 reduce 函数聚合每个键的值.注意:默认情况下,这使用 Spark 的默认并行任务数(本地模式为 2,在集群模式下,该数字由配置属性决定spark.default.parallelism)进行分组.您可以传递一个可选numTasks参数来设置不同数量的任务.</td>
+</tr>
+<tr>
+<td align="left">join(otherStream, [numTasks])</td>
+<td align="left">当在 (K, V)/(K, W) 对的两个 DStream 上调用时,返回一个新的 (K, (V, W)) 对的 DStream,其中包含每个键的所有元素对.</td>
+</tr>
+<tr>
+<td align="left">cogroup(otherStream, [numTasks])</td>
+<td align="left">当在 (K, V)/(K, W) 对的 DStream 上调用时,返回一个新的 (K, Seq[V], Seq[W]) 元组的 DStream.</td>
+</tr>
+<tr>
+<td align="left">transform(func)</td>
+<td align="left">通过对源 DStream 的每个 RDD 应用 RDD-to-RDD 函数来返回一个新的 DStream.这可用于对 DStream 执行任意 RDD 操作.</td>
+</tr>
+<tr>
+<td align="left">updateStateByKey(func)</td>
+<td align="left">返回一个新的&quot;状态&quot;DStream,其中通过对键的先前状态和键的新值应用给定函数来更新每个键的状态.这可用于维护每个键的任意状态数据.</td>
+</tr>
+</tbody></table>
+<h4 id="UpdateStateByKey操作"><a href="#UpdateStateByKey操作" class="headerlink" title="UpdateStateByKey操作"></a>UpdateStateByKey操作</h4><p>该updateStateByKey操作允许您保持任意状态,同时用新信息不断更新它.<br>要使用它,您必须执行两个步骤.</p>
+<ol>
+<li>定义状态 - 状态可以是任意数据类型.</li>
+<li>定义状态更新函数 - 使用函数指定如何使用先前状态和输入流中的新值更新状态.</li>
+</ol>
+<p>在每一个批次中,Spark 都会对所有现有的键应用状态更新功能,无论它们是否有批次中的新数据.<br>如果更新函数返回None,则键值对将被删除.</p>
+<p>让我们用一个例子来说明这一点.<br>假设您想要维护在文本数据流中看到的每个单词的运行计数.<br>这里,运行计数是状态,它是一个整数.<br>我们将更新函数定义为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">def updateFunction(newValues: Seq[Int], runningCount: Option[Int]): Option[Int] &#x3D; &#123;</span><br><span class="line">    val newCount &#x3D; ...  &#x2F;&#x2F; add the new values with the previous running count to get the new count</span><br><span class="line">    Some(newCount)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">Function2&lt;List&lt;Integer&gt;, Optional&lt;Integer&gt;, Optional&lt;Integer&gt;&gt; updateFunction &#x3D;</span><br><span class="line">  (values, state) -&gt; &#123;</span><br><span class="line">    Integer newSum &#x3D; ...  &#x2F;&#x2F; add the new values with the previous running count to get the new count</span><br><span class="line">    return Optional.of(newSum);</span><br><span class="line">  &#125;;</span><br></pre></td></tr></table></figure>
+
+<p>这应用于包含单词的 DStream(例如,在前面的示例pairs中包含(word, 1)对的 DStream ).</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">val runningCounts &#x3D; pairs.updateStateByKey[Int](updateFunction _)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;java</span><br><span class="line">JavaPairDStream&lt;String, Integer&gt; runningCounts &#x3D; pairs.updateStateByKey(updateFunction);</span><br></pre></td></tr></table></figure>
+
+<p>将为每个单词调用更新函数,newValues具有 1 的序列(来自(word, 1)对)和runningCount具有先前的计数.</p>
+<p>请注意,使用updateStateByKey需要配置检查点目录,这在检查点部分中有详细讨论.</p>
+<h4 id="Transform操作"><a href="#Transform操作" class="headerlink" title="Transform操作"></a>Transform操作</h4><p>该transform操作(及其变体,如transformWith)允许在 DStream 上应用任意 RDD-to-RDD 函数.<br>它可用于应用任何未在 DStream API 中公开的 RDD 操作.<br>例如,将数据流中的每个批次与另一个数据集连接起来的功能并未直接在 DStream API 中公开.<br>但是,您可以轻松地使用它transform来做到这一点.<br>这带来了非常强大的可能性.<br>例如,可以通过将输入数据流与预先计算的垃圾邮件信息(也可能由 Spark 生成)结合起来,然后基于它进行过滤来进行实时数据清理.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">val spamInfoRDD &#x3D; ssc.sparkContext.newAPIHadoopRDD(...) &#x2F;&#x2F; RDD containing spam information</span><br><span class="line"></span><br><span class="line">val cleanedDStream &#x3D; wordCounts.transform &#123; rdd &#x3D;&gt;</span><br><span class="line">  rdd.join(spamInfoRDD).filter(...) &#x2F;&#x2F; join data stream with spam information to do data cleaning</span><br><span class="line">  ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">import org.apache.spark.streaming.api.java.*;</span><br><span class="line">&#x2F;&#x2F; RDD containing spam information</span><br><span class="line">JavaPairRDD&lt;String, Double&gt; spamInfoRDD &#x3D; jssc.sparkContext().newAPIHadoopRDD(...);</span><br><span class="line"></span><br><span class="line">JavaPairDStream&lt;String, Integer&gt; cleanedDStream &#x3D; wordCounts.transform(rdd -&gt; &#123;</span><br><span class="line">  rdd.join(spamInfoRDD).filter(...); &#x2F;&#x2F; join data stream with spam information to do data cleaning</span><br><span class="line">  ...</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>请注意,提供的函数在每个批次间隔中都会被调用.<br>这允许你做时变的 RDD 操作,即 RDD 操作/分区数/广播变量等可以在批次之间改变.</p>
+<h4 id="Window操作"><a href="#Window操作" class="headerlink" title="Window操作"></a>Window操作</h4><p>Spark Streaming 还提供窗口化计算,允许您在数据的滑动窗口上应用转换.<br>下图说明了此滑动窗口.</p>
+<img src="/images/fly1346.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>如图所示,每次窗口滑过源 DStream 时,落在窗口内的源 RDD 将被组合并操作以产生窗口化 DStream 的 RDD.<br>在这种特定情况下,操作应用于数据的最后 3 个时间单位,并按 2 个时间单位滑动.<br>由此可见,任何窗口操作都需要指定两个参数.</p>
+<ol>
+<li>window length - 窗口的持续时间(图中的 3).</li>
+<li>sliding interval - 执行窗口操作的时间间隔(图中2).</li>
+</ol>
+<p>这两个参数必须是source DStream的batch interval的倍数(图中1).</p>
+<p>让我们用一个例子来说明窗口操作.<br>比如说,您希望 通过每 10 秒生成最后 30 秒数据的字数来扩展前面的示例.<br>为此,我们必须在过去 30 秒的数据中对成对的DStream pairs(word, 1)应用reduceByKey操作.<br>这是使用reduceByKeyAndWindow操作完成的.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; Reduce last 30 seconds of data, every 10 seconds</span><br><span class="line">val windowedWordCounts &#x3D; pairs.reduceByKeyAndWindow((a:Int,b:Int) &#x3D;&gt; (a + b), Seconds(30), Seconds(10))</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">&#x2F;&#x2F; Reduce last 30 seconds of data, every 10 seconds</span><br><span class="line">JavaPairDStream&lt;String, Integer&gt; windowedWordCounts &#x3D; pairs.reduceByKeyAndWindow((i1, i2) -&gt; i1 + i2, Durations.seconds(30), Durations.seconds(10));</span><br></pre></td></tr></table></figure>
+
+<p>一些常见的窗口操作如下.<br>所有这些操作都采用上述两个参数 - windowLength和slideInterval.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Transformation</th>
+<th align="left">意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">window(windowLength, slideInterval)</td>
+<td align="left">返回一个新的 DStream,它是根据源 DStream 的窗口批次计算的.</td>
+</tr>
+<tr>
+<td align="left">countByWindow(windowLength, slideInterval)</td>
+<td align="left">返回流中元素的滑动窗口计数.</td>
+</tr>
+<tr>
+<td align="left">reduceByWindow(func, windowLength, slideInterval)</td>
+<td align="left">返回一个新的单元素流,它是通过使用func在滑动间隔内聚合流中的元素创建的.该函数应该是关联的和可交换的,以便可以正确地并行计算.</td>
+</tr>
+<tr>
+<td align="left">reduceByKeyAndWindow(func, windowLength, slideInterval, [numTasks])</td>
+<td align="left">当在 (K, V) 对的 DStream 上调用时,返回一个新的 (K, V) 对的 DStream,其中每个键的值使用给定的 reduce 函数func 在滑动窗口中的批次上聚合.注意:默认情况下,这使用 Spark 的默认并行任务数(本地模式为 2,在集群模式下,该数字由配置属性决定spark.default.parallelism)进行分组.您可以传递一个可选 numTasks参数来设置不同数量的任务.</td>
+</tr>
+<tr>
+<td align="left">reduceByKeyAndWindow(func, invFunc, windowLength, slideInterval, [numTasks])</td>
+<td align="left">上面的一个更有效的版本,reduceByKeyAndWindow()其中每个窗口的减少值是使用前一个窗口的减少值递增计算的.这是通过减少进入滑动窗口的新数据,并&quot;反向减少&quot;离开窗口的旧数据来完成的.一个例子是在窗口滑动时&quot;添加&quot;和&quot;减去&quot;键的计数.但是,它仅适用于&quot;可逆归约函数&quot;,即那些具有相应&quot;逆归约&quot;函数(作为参数invFunc)的归约函数.与中一样reduceByKeyAndWindow,reduce 任务的数量可以通过可选参数进行配置.请注意,必须启用检查点才能使用此操作.</td>
+</tr>
+<tr>
+<td align="left">countByValueAndWindow(windowLength, slideInterval, [numTasks])</td>
+<td align="left">当在 (K, V) 对的 DStream 上调用时,返回一个新的 (K, Long) 对的 DStream,其中每个键的值是它在滑动窗口中的频率.与reduceByKeyAndWindow中一样 ,reduce 任务的数量可以通过可选参数进行配置.</td>
+</tr>
+</tbody></table>
+<h4 id="Join操作"><a href="#Join操作" class="headerlink" title="Join操作"></a>Join操作</h4><p>最后,值得强调的是您可以多么轻松地在 Spark Streaming 中执行不同类型的连接.</p>
+<h5 id="流-流连接"><a href="#流-流连接" class="headerlink" title="流-流连接"></a>流-流连接</h5><p>流可以很容易地与其他流连接.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">val stream1: DStream[String, String] &#x3D; ...</span><br><span class="line">val stream2: DStream[String, String] &#x3D; ...</span><br><span class="line">val joinedStream &#x3D; stream1.join(stream2)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">JavaPairDStream&lt;String, String&gt; stream1 &#x3D; ...</span><br><span class="line">JavaPairDStream&lt;String, String&gt; stream2 &#x3D; ...</span><br><span class="line">JavaPairDStream&lt;String, Tuple2&lt;String, String&gt;&gt; joinedStream &#x3D; stream1.join(stream2);</span><br></pre></td></tr></table></figure>
+
+<p>在这里,在每个批次间隔中,由 stream1生成的 RDD将与stream2 生成的 RDD 连接.<br>你也可以做leftOuterJoin,fullOuterJoin,rightOuterJoin.<br>此外,在流的窗口上进行连接通常非常有用.<br>这也很容易.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">val windowedStream1 &#x3D; stream1.window(Seconds(20))</span><br><span class="line">val windowedStream2 &#x3D; stream2.window(Minutes(1))</span><br><span class="line">val joinedStream &#x3D; windowedStream1.join(windowedStream2)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">JavaPairDStream&lt;String, String&gt; windowedStream1 &#x3D; stream1.window(Durations.seconds(20));</span><br><span class="line">JavaPairDStream&lt;String, String&gt; windowedStream2 &#x3D; stream2.window(Durations.minutes(1));</span><br><span class="line">JavaPairDStream&lt;String, Tuple2&lt;String, String&gt;&gt; joinedStream &#x3D; windowedStream1.join(windowedStream2);</span><br></pre></td></tr></table></figure>
+
+<h5 id="流-数据集连接"><a href="#流-数据集连接" class="headerlink" title="流-数据集连接"></a>流-数据集连接</h5><p>DStream.transform这在解释操作时已经在前面显示过.<br>这是将窗口流与数据集连接起来的另一个示例.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">val dataset: RDD[String, String] &#x3D; ...</span><br><span class="line">val windowedStream &#x3D; stream.window(Seconds(20))...</span><br><span class="line">val joinedStream &#x3D; windowedStream.transform &#123; rdd &#x3D;&gt; rdd.join(dataset) &#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">JavaPairRDD&lt;String, String&gt; dataset &#x3D; ...</span><br><span class="line">JavaPairDStream&lt;String, String&gt; windowedStream &#x3D; stream.window(Durations.seconds(20));</span><br><span class="line">JavaPairDStream&lt;String, String&gt; joinedStream &#x3D; windowedStream.transform(rdd -&gt; rdd.join(dataset));</span><br></pre></td></tr></table></figure>
+
+<p>事实上,您还可以动态更改要加入的数据集.<br>提供给的函数在transform每个批次间隔进行评估,因此将使用dataset引用指向的当前数据集.</p>
+<h3 id="DStreams-的输出操作"><a href="#DStreams-的输出操作" class="headerlink" title="DStreams 的输出操作"></a>DStreams 的输出操作</h3><p>输出操作允许 DStream 的数据被推送到外部系统,如数据库或文件系统.<br>由于输出操作实际上允许外部系统使用转换后的数据,因此它们会触发所有 DStream 转换的实际执行(类似于 RDD 的操作).<br>当前,定义了以下输出操作:</p>
+<table>
+<thead>
+<tr>
+<th align="left">输出操作</th>
+<th align="left">意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">print()</td>
+<td align="left">在运行流应用程序的驱动程序节点上打印 DStream 中每批数据的前十个元素.这对于开发和调试很有用.</td>
+</tr>
+<tr>
+<td align="left">saveAsTextFiles(prefix, [suffix])</td>
+<td align="left">将此 DStream 的内容保存为文本文件.每个批次间隔的文件名是根据前缀和后缀生成的:&quot;prefix-TIME_IN_MS[.suffix]&quot;.</td>
+</tr>
+<tr>
+<td align="left">saveAsObjectFiles(prefix, [suffix])</td>
+<td align="left">将此 DStream 的内容保存为SequenceFiles序列化的 Java 对象.每个批次间隔的文件名是根据前缀和 后缀生成的:&quot;prefix-TIME_IN_MS[.suffix]&quot;.</td>
+</tr>
+<tr>
+<td align="left">saveAsHadoopFiles(prefix, [suffix])</td>
+<td align="left">将此 DStream 的内容保存为 Hadoop 文件.每个批次间隔的文件名是根据前缀和后缀生成的:&quot;prefix-TIME_IN_MS[.suffix]&quot;.</td>
+</tr>
+<tr>
+<td align="left">foreachRDD(func)</td>
+<td align="left">最通用的输出运算符,它将函数func应用于从流生成的每个 RDD.该函数应该将每个RDD中的数据推送到外部系统,例如将RDD保存到文件,或者通过网络将其写入数据库.请注意,函数func在运行流式应用程序的驱动程序进程中执行,并且通常会在其中执行 RDD 操作,这些操作将强制计算流式 RDD.</td>
+</tr>
+</tbody></table>
+<h4 id="使用-foreachRDD-的设计模式"><a href="#使用-foreachRDD-的设计模式" class="headerlink" title="使用 foreachRDD 的设计模式"></a>使用 foreachRDD 的设计模式</h4><p>dstream.foreachRDD是一个强大的原语,允许将数据发送到外部系统.<br>但是,重要的是要了解如何正确有效地使用该原语.<br>应避免的一些常见错误如下.</p>
+<p>通常将数据写入外部系统需要创建一个连接对象(例如到远程服务器的 TCP 连接)并使用它来将数据发送到远程系统.<br>为此,开发人员可能会不经意地尝试在 Spark 驱动程序中创建一个连接对象,然后尝试在 Spark worker 中使用它来将记录保存在 RDD 中.<br>例如(在 Scala 中),</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">dstream.foreachRDD &#123; rdd &#x3D;&gt;</span><br><span class="line">  val connection &#x3D; createNewConnection()  &#x2F;&#x2F; executed at the driver</span><br><span class="line">  rdd.foreach &#123; record &#x3D;&gt;</span><br><span class="line">    connection.send(record) &#x2F;&#x2F; executed at the worker</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">dstream.foreachRDD(rdd -&gt; &#123;</span><br><span class="line">  Connection connection &#x3D; createNewConnection(); &#x2F;&#x2F; executed at the driver</span><br><span class="line">  rdd.foreach(record -&gt; &#123;</span><br><span class="line">    connection.send(record); &#x2F;&#x2F; executed at the worker</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>这是不正确的,因为这需要连接对象被序列化并从驱动程序发送到工作程序.<br>这样的连接对象很少可以跨机器传输.<br>该错误可能表现为序列化错误(连接对象不可序列化)/初始化错误(连接对象需要在worker处初始化)等.<br>正确的解决方案是在worker处创建连接对象.</p>
+<p>然而,这可能会导致另一个常见错误-为每条记录创建一个新连接.例如,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">dstream.foreachRDD &#123; rdd &#x3D;&gt;</span><br><span class="line">  rdd.foreach &#123; record &#x3D;&gt;</span><br><span class="line">    val connection &#x3D; createNewConnection()</span><br><span class="line">    connection.send(record)</span><br><span class="line">    connection.close()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">dstream.foreachRDD(rdd -&gt; &#123;</span><br><span class="line">  rdd.foreach(record -&gt; &#123;</span><br><span class="line">    Connection connection &#x3D; createNewConnection();</span><br><span class="line">    connection.send(record);</span><br><span class="line">    connection.close();</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>通常,创建连接对象会产生时间和资源开销.<br>因此,为每条记录创建和销毁连接对象会产生不必要的高开销,并会显着降低系统的整体吞吐量.<br>更好的解决方案是使用 rdd.foreachPartition- 创建单个连接对象并使用该连接发送 RDD 分区中的所有记录.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">dstream.foreachRDD &#123; rdd &#x3D;&gt;</span><br><span class="line">  rdd.foreachPartition &#123; partitionOfRecords &#x3D;&gt;</span><br><span class="line">    val connection &#x3D; createNewConnection()</span><br><span class="line">    partitionOfRecords.foreach(record &#x3D;&gt; connection.send(record))</span><br><span class="line">    connection.close()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">dstream.foreachRDD(rdd -&gt; &#123;</span><br><span class="line">  rdd.foreachPartition(partitionOfRecords -&gt; &#123;</span><br><span class="line">    Connection connection &#x3D; createNewConnection();</span><br><span class="line">    while (partitionOfRecords.hasNext()) &#123;</span><br><span class="line">      connection.send(partitionOfRecords.next());</span><br><span class="line">    &#125;</span><br><span class="line">    connection.close();</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>这分摊了许多记录的连接创建开销.</p>
+<p>最后,这可以通过跨多个 RDD/批次重用连接对象来进一步优化.<br>可以维护一个静态连接对象池,当多个批次的 RDD 被推送到外部系统时可以重用,从而进一步减少开销.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">dstream.foreachRDD &#123; rdd &#x3D;&gt;</span><br><span class="line">  rdd.foreachPartition &#123; partitionOfRecords &#x3D;&gt;</span><br><span class="line">    &#x2F;&#x2F; ConnectionPool is a static, lazily initialized pool of connections</span><br><span class="line">    val connection &#x3D; ConnectionPool.getConnection()</span><br><span class="line">    partitionOfRecords.foreach(record &#x3D;&gt; connection.send(record))</span><br><span class="line">    ConnectionPool.returnConnection(connection)  &#x2F;&#x2F; return to the pool for future reuse</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">dstream.foreachRDD(rdd -&gt; &#123;</span><br><span class="line">  rdd.foreachPartition(partitionOfRecords -&gt; &#123;</span><br><span class="line">    &#x2F;&#x2F; ConnectionPool is a static, lazily initialized pool of connections</span><br><span class="line">    Connection connection &#x3D; ConnectionPool.getConnection();</span><br><span class="line">    while (partitionOfRecords.hasNext()) &#123;</span><br><span class="line">      connection.send(partitionOfRecords.next());</span><br><span class="line">    &#125;</span><br><span class="line">    ConnectionPool.returnConnection(connection); &#x2F;&#x2F; return to the pool for future reuse</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>请注意,池中的连接应该按需延迟创建,如果一段时间不使用则超时.<br>这实现了向外部系统最有效地发送数据.</p>
+<p>其他要记住的要点:</p>
+<ol>
+<li>DStream 由输出操作延迟执行,就像 RDD 由 RDD 操作延迟执行一样.<br>具体来说,DStream 输出操作中的 RDD 操作会强制处理接收到的数据.<br>因此,如果您的应用程序没有任何输出操作,或者具有输出操作,例如dstream.foreachRDD()其中没有任何 RDD 操作,则不会执行任何操作.<br>系统将简单地接收数据并将其丢弃.</li>
+<li>默认情况下,一次执行一个输出操作.<br>它们按照它们在应用程序中定义的顺序执行.</li>
+</ol>
+<h3 id="DataFrame-SQL-操作"><a href="#DataFrame-SQL-操作" class="headerlink" title="DataFrame/SQL 操作"></a>DataFrame/SQL 操作</h3><p>您可以轻松地对流数据使用DataFrames/SQL操作.<br>您必须使用 StreamingContext 正在使用的 SparkContext 创建一个 SparkSession.<br>此外,必须这样做才能在驱动程序出现故障时重新启动它.<br>这是通过创建一个延迟实例化的 SparkSession 单例实例来完成的.<br>这在以下示例中显示.<br>它修改了较早的字数统计示例,以使用 DataFrames/SQL 生成字数统计.<br>每个 RDD 都被转换为 DataFrame,注册为临时表,然后使用 SQL 进行查询.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;** DataFrame operations inside your streaming program *&#x2F;</span><br><span class="line"></span><br><span class="line">val words: DStream[String] &#x3D; ...</span><br><span class="line"></span><br><span class="line">words.foreachRDD &#123; rdd &#x3D;&gt;</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; Get the singleton instance of SparkSession</span><br><span class="line">  val spark &#x3D; SparkSession.builder.config(rdd.sparkContext.getConf).getOrCreate()</span><br><span class="line">  import spark.implicits._</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; Convert RDD[String] to DataFrame</span><br><span class="line">  val wordsDataFrame &#x3D; rdd.toDF(&quot;word&quot;)</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; Create a temporary view</span><br><span class="line">  wordsDataFrame.createOrReplaceTempView(&quot;words&quot;)</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; Do word count on DataFrame using SQL and print it</span><br><span class="line">  val wordCountsDataFrame &#x3D; </span><br><span class="line">    spark.sql(&quot;select word, count(\*) as total from words group by word&quot;)</span><br><span class="line">  wordCountsDataFrame.show()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">&#x2F;** Java Bean class for converting RDD to DataFrame *&#x2F;</span><br><span class="line">public class JavaRow implements java.io.Serializable &#123;</span><br><span class="line">  private String word;</span><br><span class="line"></span><br><span class="line">  public String getWord() &#123;</span><br><span class="line">    return word;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  public void setWord(String word) &#123;</span><br><span class="line">    this.word &#x3D; word;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">&#x2F;** DataFrame operations inside your streaming program *&#x2F;</span><br><span class="line"></span><br><span class="line">JavaDStream&lt;String&gt; words &#x3D; ... </span><br><span class="line"></span><br><span class="line">words.foreachRDD((rdd, time) -&gt; &#123;</span><br><span class="line">  &#x2F;&#x2F; Get the singleton instance of SparkSession</span><br><span class="line">  SparkSession spark &#x3D; SparkSession.builder().config(rdd.sparkContext().getConf()).getOrCreate();</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; Convert RDD[String] to RDD[case class] to DataFrame</span><br><span class="line">  JavaRDD&lt;JavaRow&gt; rowRDD &#x3D; rdd.map(word -&gt; &#123;</span><br><span class="line">    JavaRow record &#x3D; new JavaRow();</span><br><span class="line">    record.setWord(word);</span><br><span class="line">    return record;</span><br><span class="line">  &#125;);</span><br><span class="line">  DataFrame wordsDataFrame &#x3D; spark.createDataFrame(rowRDD, JavaRow.class);</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; Creates a temporary view using the DataFrame</span><br><span class="line">  wordsDataFrame.createOrReplaceTempView(&quot;words&quot;);</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; Do word count on table using SQL and print it</span><br><span class="line">  DataFrame wordCountsDataFrame &#x3D;</span><br><span class="line">    spark.sql(&quot;select word, count(*) as total from words group by word&quot;);</span><br><span class="line">  wordCountsDataFrame.show();</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>查看完整的源代码.<br><a target="_blank" rel="noopener" href="https://github.com/apache/spark/blob/v2.4.8/examples/src/main/scala/org/apache/spark/examples/streaming/SqlNetworkWordCount.scala">https://github.com/apache/spark/blob/v2.4.8/examples/src/main/scala/org/apache/spark/examples/streaming/SqlNetworkWordCount.scala</a><br><a target="_blank" rel="noopener" href="https://github.com/apache/spark/blob/v2.4.8/examples/src/main/java/org/apache/spark/examples/streaming/JavaSqlNetworkWordCount.java">https://github.com/apache/spark/blob/v2.4.8/examples/src/main/java/org/apache/spark/examples/streaming/JavaSqlNetworkWordCount.java</a></p>
+<p>您还可以对定义在来自不同线程(即,与正在运行的 StreamingContext 异步)的流数据的表上运行 SQL 查询.<br>只需确保将 StreamingContext 设置为记住足够数量的流数据,以便查询可以运行.<br>否则,不知道任何异步 SQL 查询的 StreamingContext 将在查询完成之前删除旧的流数据.<br>例如,如果你想查询最后一批,但你的查询可能需要 5 分钟才能运行,然后调用streamingContext.remember(Minutes(5))(在 Scala 中,或其他语言中的等效项).</p>
+<p>请参阅DataFrames/SQL指南以了解有关 DataFrames 的更多信息.</p>
+<h3 id="MLlib-操作"><a href="#MLlib-操作" class="headerlink" title="MLlib 操作"></a>MLlib 操作</h3><p>您还可以轻松使用MLlib提供的机器学习算法.<br>首先,流式机器学习算法(例如Streaming Linear Regression/Streaming KMeans等)可以同时从流式数据中学习并将模型应用到流式数据上.<br>除此之外,对于更大类的机器学习算法,您可以离线学习学习模型(即使用历史数据),然后在线将模型应用于流数据.<br>有关详细信息,请参阅MLlib指南.</p>
+<h3 id="缓存-持久性"><a href="#缓存-持久性" class="headerlink" title="缓存/持久性"></a>缓存/持久性</h3><p>与 RDD 类似,DStreams 也允许开发人员将流的数据持久化到内存中.<br>也就是说,persist()在 DStream 上使用该方法将自动将该 DStream 的每个 RDD 保存在内存中.<br>如果 DStream 中的数据将被多次计算(例如,对同一数据进行多次操作),这将很有用.<br>对于像reduceByWindow和reduceByKeyAndWindow这样的基于窗口的操作和像updateStateByKey的基于状态的操作,这是隐含的.<br>因此,基于窗口的操作生成的 DStream 会自动持久化在内存中,无需开发人员调用persist().</p>
+<p>对于通过网络接收数据的输入流(例如,Kafka/Flume/套接字等),默认持久化级别设置为将数据复制到两个节点以实现容错.</p>
+<p>请注意,与 RDD 不同,DStreams 的默认持久化级别将数据序列化保存在内存中.<br>这将在性能调整部分进一步讨论.<br>有关不同持久性级别的更多信息,请参阅Spark 编程指南.</p>
+<h3 id="检查点"><a href="#检查点" class="headerlink" title="检查点"></a>检查点</h3><p>流式应用程序必须 24/7 全天候运行,因此必须能够应对与应用程序逻辑无关的故障(例如,系统故障/JVM 崩溃等).<br>为了使这成为可能,Spark Streaming 需要将足够的信息检查点到容错存储系统,以便它可以从故障中恢复.<br>有两种类型的数据被检查点.</p>
+<ol>
+<li>元数据检查点- 将定义流式计算的信息保存到 HDFS 等容错存储中.<br>这用于从运行流应用程序驱动程序的节点故障中恢复(稍后详细讨论).<br>元数据包括:</li>
+</ol>
+<ul>
+<li>配置- 用于创建流应用程序的配置.</li>
+<li>DStream 操作- 定义流应用程序的 DStream 操作集.</li>
+<li>不完整的批次- 其作业已排队但尚未完成的批次.</li>
+</ul>
+<ol start="2">
+<li>数据检查点- 将生成的 RDD 保存到可靠的存储中.<br>这在一些跨多个批次组合数据的有状态转换中是必要的.<br>在这样的转换中,生成的RDDs依赖于之前batches的RDDs,这导致依赖链的长度随着时间的推移不断增加.<br>为了避免恢复时间的无限增加(与依赖链成比例),有状态转换的中间 RDD 会定期 检查点到可靠的存储(例如 HDFS)以切断依赖链.</li>
+</ol>
+<p>总而言之,元数据检查点主要用于从驱动程序故障中恢复,而数据或 RDD 检查点即使对于使用有状态转换的基本功能也是必需的.</p>
+<h4 id="何时启用检查点"><a href="#何时启用检查点" class="headerlink" title="何时启用检查点"></a>何时启用检查点</h4><p>必须为具有以下任何要求的应用程序启用检查点:</p>
+<ol>
+<li>有状态转换的使用-如果在应用程序中使用updateStateByKeyor reduceByKeyAndWindow(具有反函数),则必须提供检查点目录以允许定期 RDD 检查点.</li>
+<li>从运行应用程序的驱动程序故障中恢复- 元数据检查点用于使用进度信息进行恢复.</li>
+</ol>
+<p>请注意,没有上述状态转换的简单流应用程序可以在不启用检查点的情况下运行.<br>在这种情况下,驱动程序故障的恢复也将是部分的(一些已收到但未处理的数据可能会丢失).<br>这通常是可以接受的,许多 Spark Streaming 应用程序都以这种方式运行.<br>预计未来会改进对非 Hadoop 环境的支持.</p>
+<h4 id="如何配置检查点"><a href="#如何配置检查点" class="headerlink" title="如何配置检查点"></a>如何配置检查点</h4><p>可以通过在容错/可靠的文件系统(例如,HDFS/S3 等)中设置一个目录来启用检查点,检查点信息将保存到该目录中.<br>这是通过使用streamingContext.checkpoint(checkpointDirectory). 这将允许您使用上述有状态转换.<br>此外,如果您想让应用程序从驱动程序故障中恢复,您应该重写您的流应用程序以具有以下行为.</p>
+<p>当程序第一次启动时,它会创建一个新的 StreamingContext,设置所有的流,然后调用 start().</p>
+<p>当程序在失败后重新启动时,它会根据检查点目录中的检查点数据重新创建一个 StreamingContext.</p>
+<p>此行为通过使用变得简单StreamingContext.getOrCreate.<br>其用法如下.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; Function to create and setup a new StreamingContext</span><br><span class="line">def functionToCreateContext(): StreamingContext &#x3D; &#123;</span><br><span class="line">  val ssc &#x3D; new StreamingContext(...)   &#x2F;&#x2F; new context</span><br><span class="line">  val lines &#x3D; ssc.socketTextStream(...) &#x2F;&#x2F; create DStreams</span><br><span class="line">  ...</span><br><span class="line">  ssc.checkpoint(checkpointDirectory)   &#x2F;&#x2F; set checkpoint directory</span><br><span class="line">  ssc</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Get StreamingContext from checkpoint data or create a new one</span><br><span class="line">val context &#x3D; StreamingContext.getOrCreate(checkpointDirectory, functionToCreateContext \_)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Do additional setup on context that needs to be done,</span><br><span class="line">&#x2F;&#x2F; irrespective of whether it is being started or restarted</span><br><span class="line">context. ...</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Start the context</span><br><span class="line">context.start()</span><br><span class="line">context.awaitTermination()</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">&#x2F;&#x2F; Create a factory object that can create and setup a new JavaStreamingContext</span><br><span class="line">JavaStreamingContextFactory contextFactory &#x3D; new JavaStreamingContextFactory() &#123;</span><br><span class="line">  @Override public JavaStreamingContext create() &#123;</span><br><span class="line">    JavaStreamingContext jssc &#x3D; new JavaStreamingContext(...);  &#x2F;&#x2F; new context</span><br><span class="line">    JavaDStream&lt;String&gt; lines &#x3D; jssc.socketTextStream(...);     &#x2F;&#x2F; create DStreams</span><br><span class="line">    ...</span><br><span class="line">    jssc.checkpoint(checkpointDirectory);                       &#x2F;&#x2F; set checkpoint directory</span><br><span class="line">    return jssc;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Get JavaStreamingContext from checkpoint data or create a new one</span><br><span class="line">JavaStreamingContext context &#x3D; JavaStreamingContext.getOrCreate(checkpointDirectory, contextFactory);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Do additional setup on context that needs to be done,</span><br><span class="line">&#x2F;&#x2F; irrespective of whether it is being started or restarted</span><br><span class="line">context. ...</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Start the context</span><br><span class="line">context.start();</span><br><span class="line">context.awaitTermination();</span><br></pre></td></tr></table></figure>
+
+<p>如果checkpointDirectory存在,则将从检查点数据重新创建上下文.<br>如果目录不存在(即第一次运行),那么函数functionToCreateContext将被调用以创建一个新的上下文并设置 DStreams.<br>请参阅 Scala 示例 RecoverableNetworkWordCount.<br>此示例将网络数据的字数附加到文件中.</p>
+<p>除了使用getOrCreate一个还需要确保驱动程序进程在失败时自动重新启动.<br>这只能由用于运行应用程序的部署基础设施来完成.<br>这将在 部署部分进一步讨论.</p>
+<p>请注意,RDD 的检查点会产生保存到可靠存储的成本.<br>这可能会导致 RDD 获得检查点的那些批次的处理时间增加.<br>因此,需要仔细设置检查点的间隔.<br>在小批量(例如 1 秒)下,检查每个批次可能会显着降低操作吞吐量.<br>相反,检查点太少会导致沿袭和任务大小增加,这可能会产生不利影响.<br>对于需要 RDD 检查点的有状态转换,默认间隔是至少 10 秒的批处理间隔的倍数.<br>它可以通过使用来设置 dstream.checkpoint(checkpointInterval).<br>通常,DStream 的 5 - 10 个滑动间隔的检查点间隔是一个很好的尝试设置.</p>
+<h3 id="累加器-广播变量和检查点"><a href="#累加器-广播变量和检查点" class="headerlink" title="累加器/广播变量和检查点"></a>累加器/广播变量和检查点</h3><p>无法从 Spark Streaming 中的检查点恢复累加器和广播变量.<br>如果启用检查点并同时使用 Accumulators或Broadcast 变量,则必须为Accumulators和Broadcast 变量 创建延迟实例化的单例实例, 以便它们可以在驱动程序因故障重新启动后重新实例化.<br>这在以下示例中显示.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">object WordBlacklist &#123;</span><br><span class="line"></span><br><span class="line">  @volatile private var instance: Broadcast[Seq[String]] &#x3D; null</span><br><span class="line"></span><br><span class="line">  def getInstance(sc: SparkContext): Broadcast[Seq[String]] &#x3D; &#123;</span><br><span class="line">    if (instance &#x3D;&#x3D; null) &#123;</span><br><span class="line">      synchronized &#123;</span><br><span class="line">        if (instance &#x3D;&#x3D; null) &#123;</span><br><span class="line">          val wordBlacklist &#x3D; Seq(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;)</span><br><span class="line">          instance &#x3D; sc.broadcast(wordBlacklist)</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    instance</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">object DroppedWordsCounter &#123;</span><br><span class="line"></span><br><span class="line">  @volatile private var instance: LongAccumulator &#x3D; null</span><br><span class="line"></span><br><span class="line">  def getInstance(sc: SparkContext): LongAccumulator &#x3D; &#123;</span><br><span class="line">    if (instance &#x3D;&#x3D; null) &#123;</span><br><span class="line">      synchronized &#123;</span><br><span class="line">        if (instance &#x3D;&#x3D; null) &#123;</span><br><span class="line">          instance &#x3D; sc.longAccumulator(&quot;WordsInBlacklistCounter&quot;)</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    instance</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">wordCounts.foreachRDD &#123; (rdd: RDD[(String, Int)], time: Time) &#x3D;&gt;</span><br><span class="line">  &#x2F;&#x2F; Get or register the blacklist Broadcast</span><br><span class="line">  val blacklist &#x3D; WordBlacklist.getInstance(rdd.sparkContext)</span><br><span class="line">  &#x2F;&#x2F; Get or register the droppedWordsCounter Accumulator</span><br><span class="line">  val droppedWordsCounter &#x3D; DroppedWordsCounter.getInstance(rdd.sparkContext)</span><br><span class="line">  &#x2F;&#x2F; Use blacklist to drop words and use droppedWordsCounter to count them</span><br><span class="line">  val counts &#x3D; rdd.filter &#123; case (word, count) &#x3D;&gt;</span><br><span class="line">    if (blacklist.value.contains(word)) &#123;</span><br><span class="line">      droppedWordsCounter.add(count)</span><br><span class="line">      false</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">      true</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;.collect().mkString(&quot;[&quot;, &quot;, &quot;, &quot;]&quot;)</span><br><span class="line">  val output &#x3D; &quot;Counts at time &quot; + time + &quot; &quot; + counts</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">class JavaWordBlacklist &#123;</span><br><span class="line"></span><br><span class="line">  private static volatile Broadcast&lt;List&lt;String&gt;&gt; instance &#x3D; null;</span><br><span class="line"></span><br><span class="line">  public static Broadcast&lt;List&lt;String&gt;&gt; getInstance(JavaSparkContext jsc) &#123;</span><br><span class="line">    if (instance &#x3D;&#x3D; null) &#123;</span><br><span class="line">      synchronized (JavaWordBlacklist.class) &#123;</span><br><span class="line">        if (instance &#x3D;&#x3D; null) &#123;</span><br><span class="line">          List&lt;String&gt; wordBlacklist &#x3D; Arrays.asList(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;);</span><br><span class="line">          instance &#x3D; jsc.broadcast(wordBlacklist);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return instance;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class JavaDroppedWordsCounter &#123;</span><br><span class="line"></span><br><span class="line">  private static volatile LongAccumulator instance &#x3D; null;</span><br><span class="line"></span><br><span class="line">  public static LongAccumulator getInstance(JavaSparkContext jsc) &#123;</span><br><span class="line">    if (instance &#x3D;&#x3D; null) &#123;</span><br><span class="line">      synchronized (JavaDroppedWordsCounter.class) &#123;</span><br><span class="line">        if (instance &#x3D;&#x3D; null) &#123;</span><br><span class="line">          instance &#x3D; jsc.sc().longAccumulator(&quot;WordsInBlacklistCounter&quot;);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return instance;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">wordCounts.foreachRDD((rdd, time) -&gt; &#123;</span><br><span class="line">  &#x2F;&#x2F; Get or register the blacklist Broadcast</span><br><span class="line">  Broadcast&lt;List&lt;String&gt;&gt; blacklist &#x3D; JavaWordBlacklist.getInstance(new JavaSparkContext(rdd.context()));</span><br><span class="line">  &#x2F;&#x2F; Get or register the droppedWordsCounter Accumulator</span><br><span class="line">  LongAccumulator droppedWordsCounter &#x3D; JavaDroppedWordsCounter.getInstance(new JavaSparkContext(rdd.context()));</span><br><span class="line">  &#x2F;&#x2F; Use blacklist to drop words and use droppedWordsCounter to count them</span><br><span class="line">  String counts &#x3D; rdd.filter(wordCount -&gt; &#123;</span><br><span class="line">    if (blacklist.value().contains(wordCount._1())) &#123;</span><br><span class="line">      droppedWordsCounter.add(wordCount._2());</span><br><span class="line">      return false;</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">      return true;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;).collect().toString();</span><br><span class="line">  String output &#x3D; &quot;Counts at time &quot; + time + &quot; &quot; + counts;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>查看完整的源代码.<br><a target="_blank" rel="noopener" href="https://github.com/apache/spark/blob/v2.4.8/examples/src/main/scala/org/apache/spark/examples/streaming/RecoverableNetworkWordCount.scala">https://github.com/apache/spark/blob/v2.4.8/examples/src/main/scala/org/apache/spark/examples/streaming/RecoverableNetworkWordCount.scala</a><br><a target="_blank" rel="noopener" href="https://github.com/apache/spark/blob/v2.4.8/examples/src/main/java/org/apache/spark/examples/streaming/JavaRecoverableNetworkWordCount.java">https://github.com/apache/spark/blob/v2.4.8/examples/src/main/java/org/apache/spark/examples/streaming/JavaRecoverableNetworkWordCount.java</a></p>
+<h3 id="部署应用程序"><a href="#部署应用程序" class="headerlink" title="部署应用程序"></a>部署应用程序</h3><p>本节讨论部署 Spark Streaming 应用程序的步骤.</p>
+<h4 id="要求"><a href="#要求" class="headerlink" title="要求"></a>要求</h4><p>要运行 Spark Streaming 应用程序,您需要具备以下条件.</p>
+<ol>
+<li>带有集群管理器的集群- 这是任何 Spark 应用程序的一般要求,并在部署指南中进行了详细讨论.</li>
+<li>打包应用程序 JAR - 您必须将流应用程序编译成 JAR.<br>如果您使用spark-submit启动应用程序,那么您将不需要在 JAR 中提供 Spark/Spark Streaming.<br>但是,如果您的应用程序使用高级源(例如 Kafka/Flume),那么您必须将它们链接到的额外工件及其依赖项打包到用于部署应用程序的 JAR 中.<br>例如,使用的应用程序KafkaUtils 必须spark-streaming-kafka-0-10_2.12在应用程序 JAR 中包含它的所有传递依赖项.<br>为执行器配置足够的内存- 由于接收到的数据必须存储在内存中,因此执行器必须配置足够的内存来保存接收到的数据.<br>请注意,如果您正在进行 10 分钟的窗口操作,系统必须至少在内存中保留最后 10 分钟的数据.<br>因此,应用程序的内存需求取决于其中使用的操作.</li>
+<li>配置检查点-如果流应用程序需要它,则必须将 Hadoop API 兼容容错存储(例如 HDFS/S3 等)中的一个目录配置为检查点目录,并以检查点信息可以写入的方式编写流应用程序用于故障恢复.<br>有关详细信息,请参阅检查点部分.</li>
+<li>配置应用程序驱动程序的自动重启- 要自动从驱动程序故障中恢复,用于运行流应用程序的部署基础设施必须监视驱动程序进程并在它失败时重新启动驱动程序.<br>不同的集群管理器 有不同的工具来实现这一点.</li>
+</ol>
+<ul>
+<li>Spark Standalone - 可以提交 Spark 应用程序驱动程序以在 Spark Standalone 集群中运行(请参阅 集群部署模式),即应用程序驱动程序本身在其中一个工作节点上运行.此外,可以指示独立集群管理器监督驱动程序,并在驱动程序由于非零退出代码或由于运行驱动程序的节点故障而失败时重新启动它.有关详细信息,请参阅Spark Standalone 指南中的 集群模式和监督.</li>
+<li>YARN - Yarn 支持类似的机制来自动重启应用程序.有关详细信息,请参阅 YARN 文档.</li>
+<li>Mesos - Marathon已被用于通过 Mesos 实现这一目标.</li>
+</ul>
+<ol start="5">
+<li>配置预写日志-从 Spark 1.2 开始,我们引入了预写日志来实现强大的容错保证.<br>如果启用,从接收器接收到的所有数据都会写入配置检查点目录中的预写日志.<br>这可以防止驱动程序恢复时的数据丢失,从而确保零数据丢失(在 容错语义部分详细讨论).<br>这可以通过将配置参数 spark.streaming.receiver.writeAheadLog.enable设置为来启用true.<br>然而,这些更强的语义可能是以个体接收者的接收吞吐量为代价的.<br>这可以通过并行运行更多接收器来纠正 以增加总吞吐量.<br>此外,建议在启用预写日志时禁用 Spark 中接收到的数据的复制,因为日志已经存储在复制的存储系统中.<br>这可以通过将输入流的存储级别设置为 来完成StorageLevel.MEMORY_AND_DISK_SER.<br>在使用 S3(或任何不支持刷新的文件系统)进行预写日志时,请记住启用 spark.streaming.driver.writeAheadLog.closeFileAfterWrite和 spark.streaming.receiver.writeAheadLog.closeFileAfterWrite.<br>有关详细信息,请参阅 Spark 流配置.<br>请注意,启用 I/O 加密时,Spark 不会对写入预写日志的数据进行加密.<br>如果需要对预写日志数据进行加密,则应将其存储在本机支持加密的文件系统中.</li>
+<li>设置最大接收速率- 如果集群资源不足以让流应用程序以接收数据的速度处理数据,则可以通过以记录/秒为单位设置最大速率限制来限制接收者的速率.<br>请参阅接收器spark.streaming.receiver.maxRate和 Direct Kafka 方法的spark.streaming.kafka.maxRatePerPartition配置参数.<br>在 Spark 1.5 中,我们引入了一个称为背压的特性,无需设置此速率限制,因为 Spark Streaming 会自动计算出速率限制,并在处理条件发生变化时动态调整它们.<br>可以通过将配置参数设置spark.streaming.backpressure.enabled为true来启用此背压.</li>
+</ol>
+<h4 id="升级应用代码"><a href="#升级应用代码" class="headerlink" title="升级应用代码"></a>升级应用代码</h4><p>如果正在运行的 Spark Streaming 应用程序需要使用新的应用程序代码进行升级,那么有两种可能的机制.</p>
+<ol>
+<li>升级后的 Spark Streaming 应用程序启动并与现有应用程序并行运行.<br>一旦新的(接收与旧的相同的数据)已经预热并准备好进入黄金时段,旧的就可以被关闭.<br>请注意,这可以用于支持将数据发送到两个目的地(即较早和升级的应用程序)的数据源.</li>
+<li>现有应用程序正常关闭(请参阅 StreamingContext.stop(...) 或JavaStreamingContext.stop(...) 用于正常关闭选项),确保已接收的数据在关闭前得到完整处理.<br>然后可以启动升级后的应用程序,它将从较早应用程序停止的同一点开始处理.<br>请注意,这只能通过支持源端缓冲的输入源(如 Kafka/Flume)来完成,因为在先前的应用程序关闭且升级后的应用程序尚未启动时需要缓冲数据.<br>并且无法从较早的升级前代码的检查点信息重新启动.<br>检查点信息本质上包含序列化的 Scala/Java/Python 对象,尝试使用新的/修改过的类反序列化对象可能会导致错误.<br>在这种情况下,要么使用不同的检查点目录启动升级后的应用程序,要么删除之前的检查点目录.</li>
+</ol>
+<h3 id="监控应用程序"><a href="#监控应用程序" class="headerlink" title="监控应用程序"></a>监控应用程序</h3><p>除了 Spark 的监控功能之外,还有其他特定于 Spark Streaming 的功能.<br>当使用 StreamingContext 时, Spark Web UI会显示一个附加Streaming选项卡,显示有关正在运行的接收器(接收器是否处于活动状态/接收的记录数/接收器错误等)和已完成的批次(批处理时间/排队延迟等)的统计信息.<br>这可用于监视流应用程序的进度.</p>
+<p>Web UI 中的以下两个指标尤为重要:</p>
+<ol>
+<li>Processing Time - 处理每批数据的时间.</li>
+<li>Scheduling Delay - 批处理在队列中等待前一批处理完成的时间.</li>
+</ol>
+<p>如果批处理时间始终大于批间隔和/或排队延迟不断增加,则表明系统无法像生成批那样快速处理批,并且正在落后.<br>在这种情况下,请考虑 减少批处理时间.</p>
+<p>还可以使用 StreamingListener接口监视 Spark Streaming 程序的进度,它允许您获取接收器状态和处理时间.<br>请注意,这是一个开发人员 API,将来可能会对其进行改进(即报告更多信息).</p>
+<h2 id="性能调优"><a href="#性能调优" class="headerlink" title="性能调优"></a>性能调优</h2><p>要使集群上的 Spark Streaming 应用程序发挥最佳性能,需要进行一些调整.<br>本节介绍了一些可以调整以提高应用程序性能的参数和配置.<br>在高层次上,您需要考虑两件事:</p>
+<p>通过高效利用集群资源,减少每批数据的处理时间.<br>设置正确的批量大小,以便可以在接收数据时尽快处理数据批(即,数据处理跟上数据摄取).</p>
+<h3 id="减少批处理时间"><a href="#减少批处理时间" class="headerlink" title="减少批处理时间"></a>减少批处理时间</h3><p>在 Spark 中可以进行许多优化,以最大限度地减少每个批次的处理时间.<br>这些已在Tuning Guide中进行了详细讨论.<br>本节重点介绍一些最重要的内容.</p>
+<h4 id="数据接收的并行度"><a href="#数据接收的并行度" class="headerlink" title="数据接收的并行度"></a>数据接收的并行度</h4><p>通过网络(如 Kafka/Flume/socket 等)接收数据需要将数据反序列化并存储在 Spark 中.<br>如果数据接收成为系统的瓶颈,那么可以考虑并行化数据接收.<br>请注意,每个输入 DStream 创建一个接收单个数据流的接收器(在工作机器上运行).<br>因此,可以通过创建多个输入 DStream 并将它们配置为从源接收数据流的不同分区来实现接收多个数据流.<br>例如,接收两个主题数据的单个 Kafka 输入 DStream 可以拆分为两个 Kafka 输入流,每个输入流仅接收一个主题.<br>这将运行两个接收器,允许并行接收数据,从而提高整体吞吐量.<br>这些多个 DStream 可以联合在一起创建一个 DStream.<br>然后可以将应用于单个输入 DStream 的转换应用于统一流.<br>这是按如下方式完成的.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">val numStreams &#x3D; 5</span><br><span class="line">val kafkaStreams &#x3D; (1 to numStreams).map &#123; i &#x3D;&gt; KafkaUtils.createStream(...) &#125;</span><br><span class="line">val unifiedStream &#x3D; streamingContext.union(kafkaStreams)</span><br><span class="line">unifiedStream.print()</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">int numStreams &#x3D; 5;</span><br><span class="line">List&lt;JavaPairDStream&lt;String, String&gt;&gt; kafkaStreams &#x3D; new ArrayList&lt;&gt;(numStreams);</span><br><span class="line">for (int i &#x3D; 0; i &lt; numStreams; i++) &#123;</span><br><span class="line">  kafkaStreams.add(KafkaUtils.createStream(...));</span><br><span class="line">&#125;</span><br><span class="line">JavaPairDStream&lt;String, String&gt; unifiedStream &#x3D; streamingContext.union(kafkaStreams.get(0), kafkaStreams.subList(1, kafkaStreams.size()));</span><br><span class="line">unifiedStream.print();</span><br></pre></td></tr></table></figure>
+
+<p>另一个应该考虑的参数是接收方的块间隔,它由配置参数决定 spark.streaming.blockInterval. 对于大多数接收器,接收到的数据在存储到 Spark 的内存中之前会合并成数据块.<br>每个批次中的块数决定了将用于在类似映射的转换中处理接收到的数据的任务数.<br>每个批次每个接收器的任务数将约为(批次间隔/块间隔).<br>例如,200 毫秒的块间隔将每 2 秒批次创建 10 个任务.<br>如果任务数量太少(即少于每台机器的核心数量),那么效率将很低,因为所有可用的核心都不会被用来处理数据.<br>要增加给定批次间隔的任务数,请减少块间隔.<br>但是,块间隔的推荐最小值约为 50 毫秒,低于此值,任务启动开销可能会出现问题.</p>
+<p>使用多个输入流/接收器接收数据的另一种方法是显式地重新分区输入数据流(使用inputStream.repartition(<number of partitions>)).<br>在进一步处理之前,这会将接收到的数据批分布到集群中指定数量的机器上.</p>
+<p>直流请参考Spark Streaming + Kafka集成指南</p>
+<h4 id="数据处理中的并行度"><a href="#数据处理中的并行度" class="headerlink" title="数据处理中的并行度"></a>数据处理中的并行度</h4><p>如果在计算的任何阶段使用的并行任务数量不够多,则集群资源可能未得到充分利用.<br>例如,对于像reduceByKey and这样的分布式 reduce 操作reduceByKeyAndWindow,并行任务的默认数量由spark.default.parallelism 配置属性控制.<br>您可以将并行级别作为参数传递(请参阅 PairDStreamFunctions 文档),或设置spark.default.parallelism 配置属性以更改默认值.</p>
+<h4 id="数据序列化"><a href="#数据序列化" class="headerlink" title="数据序列化"></a>数据序列化</h4><p>可以通过调整序列化格式来减少数据序列化的开销.<br>在流式传输的情况下,有两种类型的数据被序列化.</p>
+<ol>
+<li>输入数据: 默认情况下,通过 Receivers 接收的输入数据以StorageLevel.MEMORY_AND_DISK_SER_2存储在执行程序的内存中.<br>也就是说,数据被序列化为字节以减少 GC 开销,并被复制以容忍执行程序失败.<br>此外,数据首先保存在内存中,只有当内存不足以容纳流式计算所需的所有输入数据时才会溢出到磁盘.<br>这种序列化显然有开销-接收方必须反序列化接收到的数据并使用 Spark 的序列化格式重新序列化它.</li>
+<li>Persisted RDDs generated by Streaming Operations: 流计算产生的 RDDs 可以持久化在内存中.<br>例如,窗口操作将数据保存在内存中,因为它们将被多次处理.<br>然而,与StorageLevel.MEMORY_ONLY的 Spark Core 默认值不同,流式计算生成的持久化 RDD 默认情况下使用StorageLevel.MEMORY_ONLY_SER(即序列化)持久化以最小化 GC 开销.</li>
+</ol>
+<p>在这两种情况下,使用 Kryo 序列化都可以减少 CPU 和内存开销.<br>有关详细信息,请参阅Spark 调优指南.<br>对于 Kryo,可以考虑注册自定义类,并禁用对象引用跟踪(参见配置指南中的 Kryo 相关配置).</p>
+<p>在流应用程序需要保留的数据量不大的特定情况下,将数据(两种类型)持久化为反序列化对象而不产生过多的 GC 开销可能是可行的.<br>例如,如果您使用几秒的批处理间隔并且没有窗口操作,那么您可以通过相应地显式设置存储级别来尝试禁用持久数据中的序列化.<br>这将减少由于序列化而导致的 CPU 开销,可能会在没有太多 GC 开销的情况下提高性能.</p>
+<h4 id="任务启动开销"><a href="#任务启动开销" class="headerlink" title="任务启动开销"></a>任务启动开销</h4><p>如果每秒启动的任务数量很高(例如,每秒 50 个或更多),那么将任务发送到从服务器的开销可能会很大,并且很难实现亚秒级延迟.<br>可以通过以下更改减少开销:<br>执行模式:在独立模式或粗粒度 Mesos 模式下运行 Spark 会导致比细粒度 Mesos 模式更好的任务启动时间.<br>有关详细信息,请参阅 在 Mesos 上运行指南.</p>
+<p>这些更改可能会将批处理时间减少 100 毫秒,从而使亚秒级批处理成为可能.</p>
+<h3 id="设置正确的批次间隔"><a href="#设置正确的批次间隔" class="headerlink" title="设置正确的批次间隔"></a>设置正确的批次间隔</h3><p>为了使集群上运行的 Spark Streaming 应用程序稳定,系统应该能够在接收到数据时尽可能快地处理数据.<br>换句话说,批量数据的处理速度应与生成数据的速度一样快.<br>通过监视流式 Web UI 中的处理时间,可以发现应用程序是否如此 ,其中批处理时间应小于批处理间隔.</p>
+<p>根据流式计算的性质,所使用的批处理间隔可能会对应用程序在一组固定的集群资源上可以维持的数据速率产生重大影响.<br>例如,让我们考虑一下前面的 WordCountNetwork 示例.<br>对于特定的数据速率,系统可能能够跟上每 2 秒(即,2 秒的批处理间隔)报告字数,但不是每 500 毫秒.<br>因此,需要设置批处理间隔,以便可以维持生产中的预期数据速率.</p>
+<p>为您的应用程序确定正确的批处理大小的一个好方法是使用保守的批处理间隔(例如 5-10 秒)和低数据速率对其进行测试.<br>要验证系统是否能够跟上数据速率,您可以检查每个已处理批次所经历的端到端延迟值(在 Spark 驱动程序 log4j 日志中查找&quot;总延迟&quot;,或使用 流式监听器 界面).<br>如果延迟保持与批量大小相当,则系统是稳定的.<br>否则,如果延迟不断增加,则意味着系统无法跟上,因此不稳定.<br>一旦您了解了稳定的配置,您就可以尝试提高数据速率和/或减小批量大小.<br>请注意,由于临时数据速率增加而导致的延迟暂时增加可能没有问题,只要延迟减少回一个较低的值(即小于批量大小).</p>
+<h3 id="内存调整"><a href="#内存调整" class="headerlink" title="内存调整"></a>内存调整</h3><p>调整 Spark 应用程序的内存使用和 GC 行为已在调整指南中进行了非常详细的讨论.<br>强烈建议您阅读该内容.<br>在本节中,我们将专门在 Spark Streaming 应用程序的上下文中讨论一些调优参数.</p>
+<p>Spark Streaming 应用程序所需的集群内存量在很大程度上取决于所使用的转换类型.<br>例如,如果你想对最后 10 分钟的数据使用窗口操作,那么你的集群应该有足够的内存来在内存中容纳 10 分钟的数据.<br>或者如果你想使用updateStateByKey大量的键,那么所需的内存就会很高.<br>相反,如果你想做一个简单的map-filter-store操作,那么需要的内存就会很低.</p>
+<p>通常,由于通过接收器接收到的数据存储在 StorageLevel.MEMORY_AND_DISK_SER_2 中,内存中放不下的数据会溢出到磁盘中.<br>这可能会降低流式应用程序的性能,因此建议提供流式应用程序所需的足够内存.<br>最好尝试查看小规模的内存使用情况并相应地进行估算.</p>
+<p>内存调整的另一个方面是垃圾回收.<br>对于需要低延迟的流式应用程序,JVM 垃圾收集导致的大量暂停是不可取的.</p>
+<p>有一些参数可以帮助您调整内存使用和 GC 开销:</p>
+<ol>
+<li>DStreams 的持久化级别:正如前面数据序列化部分提到的,输入数据和 RDDs 默认以序列化字节的形式持久化.<br>与反序列化持久化相比,这减少了内存使用和 GC 开销.<br>启用 Kryo 序列化可进一步减少序列化大小和内存使用量.<br>可以通过压缩(参见 Spark 配置spark.rdd.compress)进一步减少内存使用,但会占用 CPU 时间.</li>
+<li>清除旧数据:默认情况下,DStream 转换生成的所有输入数据和持久化 RDD 都会自动清除.<br>Spark Streaming 根据使用的转换决定何时清除数据.<br>例如,如果您正在使用 10 分钟的窗口操作,那么 Spark Streaming 将保留最近 10 分钟左右的数据,并主动丢弃较旧的数据.<br>通过设置,数据可以保留更长的时间(例如,交互式查询旧数据)streamingContext.remember.</li>
+<li>CMS 垃圾收集器:强烈建议使用并发标记和清除 GC,以保持与 GC 相关的暂停持续较低.<br>尽管已知并发 GC 会降低系统的整体处理吞吐量,但仍建议使用它来实现更一致的批处理时间.<code>--driver-java-options</code>确保在驱动程序(使用in spark-submit)和执行程序(使用Spark 配置 )上都设置了 CMS GC spark.executor.extraJavaOptions.</li>
+<li>其他提示:为了进一步减少 GC 开销,这里有一些更多的提示可供尝试.</li>
+</ol>
+<ul>
+<li>OFF_HEAP使用存储级别持久化 RDD .在Spark 编程指南中查看更多详细信息.</li>
+<li>使用更多具有更小堆大小的执行器.这将减少每个 JVM 堆内的 GC 压力.</li>
+</ul>
+<h3 id="要记住的要点"><a href="#要记住的要点" class="headerlink" title="要记住的要点"></a>要记住的要点</h3><p>DStream 与单个接收器相关联.<br>为了获得读取并行性,需要创建多个接收器,即多个 DStream.<br>接收器在执行器中运行.<br>它占据一个核心.<br>确保在预订接收器插槽后有足够的内核用于处理,即spark.cores.max应考虑接收器插槽.<br>接收者以循环方式分配给执行者.</p>
+<p>当从流源接收到数据时,接收方创建数据块.<br>每 blockInterval 毫秒生成一个新的数据块.<br>在 batchInterval 期间创建了 N 个数据块,其中 N = batchInterval/blockInterval.<br>这些块由当前执行器的块管理器分发给其他执行器的块管理器.<br>之后,在驱动程序上运行的网络输入跟踪器将获知块位置以进行进一步处理.</p>
+<p>为 batchInterval 期间创建的块在驱动程序上创建 RDD.<br>batchInterval 期间生成的块是 RDD 的分区.<br>每个分区都是 spark 中的一个任务.<br>blockInterval== batchinterval 将意味着创建单个分区并且可能在本地处理.</p>
+<p>块上的映射任务在具有块的执行器(接收块的执行器和复制块的另一个执行器)中处理,无论块间隔如何,除非非本地调度开始.<br>具有更大的块间隔意味着更大的块.<br>高值spark.locality.wait增加了在本地节点上处理块的机会.<br>需要在这两个参数之间找到平衡,以确保更大的块在本地处理.</p>
+<p>您可以通过调用 来定义分区数,而不是依赖 batchInterval/blockInterval inputDstream.repartition(n).<br>这将随机重新排列 RDD 中的数据以创建 n 个分区.<br>是的,为了更大的并行性.<br>尽管是以洗牌为代价的.<br>RDD 的处理由驱动程序的作业调度程序作为作业进行调度.<br>在给定的时间点,只有一个作业处于活动状态.<br>因此,如果一个作业正在执行,则其他作业将排队.</p>
+<p>如果你有两个 dstream,就会形成两个 RDD,并且会创建两个作业,一个接一个地安排.<br>为避免这种情况,您可以联合两个数据流.<br>这将确保为 dstream 的两个 RDD 形成单个 unionRDD.<br>这个 unionRDD 然后被认为是一个单一的工作.<br>但是,RDD 的分区不受影响.</p>
+<p>如果批处理时间超过 batchinterval 那么显然接收方的内存将开始填满并最终抛出异常(很可能是 BlockNotFoundException).<br>目前,没有办法暂停接收器.<br>使用 SparkConf 配置spark.streaming.receiver.maxRate,可以限制接收速率.</p>
+<h2 id="容错语义"><a href="#容错语义" class="headerlink" title="容错语义"></a>容错语义</h2><p>在本节中,我们将讨论 Spark Streaming 应用程序在发生故障时的行为.</p>
+<h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>要理解 Spark Streaming 提供的语义,让我们记住 Spark 的 RDD 的基本容错语义.</p>
+<ol>
+<li>RDD 是不可变的/确定性可重新计算的分布式数据集.<br>每个 RDD 都会记住用于创建它的容错输入数据集的确定性操作的沿袭.</li>
+<li>如果 RDD 的任何分区由于工作节点故障而丢失,则可以使用操作沿袭从原始容错数据集中重新计算该分区.</li>
+<li>假设所有的 RDD 转换都是确定性的,最终转换后的 RDD 中的数据将始终相同,而不管 Spark 集群中的故障.</li>
+</ol>
+<p>Spark 对容错文件系统(如 HDFS/S3)中的数据进行操作.<br>因此,所有从容错数据生成的 RDD 也是容错的.<br>但是,Spark Streaming 并非如此,因为大多数情况下数据是通过网络接收的(使用时除外 fileStream).<br>为了对所有生成的 RDD 实现相同的容错属性,接收到的数据在集群工作节点中的多个 Spark 执行器之间进行复制(默认复制因子为 2).<br>这导致系统中有两种数据需要在发生故障时恢复:</p>
+<ol>
+<li>接收和复制的数据-该数据在单个工作节点发生故障后仍然存在,因为它的副本存在于其他节点之一上.</li>
+<li>数据已接收但已缓冲以供复制- 由于未复制,因此恢复此数据的唯一方法是从源中再次获取它.</li>
+</ol>
+<p>此外,我们应该关注两种故障:</p>
+<ol>
+<li>工作节点故障- 任何运行执行程序的工作节点都可能发生故障,并且这些节点上的所有内存数据都将丢失.<br>如果任何接收器在故障节点上运行,那么它们的缓冲数据将丢失.</li>
+<li>驱动程序节点故障-如果运行 Spark Streaming 应用程序的驱动程序节点发生故障,那么显然 SparkContext 会丢失,并且所有执行程序及其内存数据都会丢失.</li>
+</ol>
+<p>有了这些基础知识,让我们了解 Spark Streaming 的容错语义.</p>
+<h3 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h3><p>流系统的语义通常根据系统处理每条记录的次数来捕获.<br>在所有可能的操作条件下(尽管有故障等),系统可以提供三种类型的保证</p>
+<ol>
+<li>最多一次:每条记录将被处理一次或根本不处理.</li>
+<li>至少一次:每条记录将被处理一次或多次.<br>这比最多一次强,因为它确保不会丢失任何数据.<br>但是可能会有重复.</li>
+<li>恰好一次:每条记录将被恰好处理一次 - 不会丢失任何数据,也不会多次处理任何数据.<br>这显然是三者中最强的保证.</li>
+</ol>
+<h3 id="基本语义"><a href="#基本语义" class="headerlink" title="基本语义"></a>基本语义</h3><p>在任何流处理系统中,从广义上讲,处理数据都分为三个步骤.<br>接收数据:使用接收器或其他方式从源接收数据.<br>转换数据:接收到的数据使用 DStream/RDD 转换进行转换.<br>推出数据:最终转换后的数据被推出到外部系统,如文件系统/数据库/仪表板等.</p>
+<p>如果流式应用程序必须实现端到端的恰好一次保证,那么每个步骤都必须提供恰好一次保证.<br>也就是说,每条记录必须恰好接收一次,转换一次,并推送到下游系统恰好一次.<br>让我们在 Spark Streaming 的上下文中理解这些步骤的语义.</p>
+<p>接收数据:不同的输入源提供不同的保证.<br>这将在下一节中详细讨论.</p>
+<p>转换数据:由于 RDD 提供的保证,所有接收到的数据都将只处理一次.<br>即使出现故障,只要接收到的输入数据是可访问的,最终转换后的 RDD 将始终具有相同的内容.</p>
+<p>推出数据:输出操作默认确保至少一次语义,因为它取决于输出操作的类型(幂等或不)和下游系统的语义(支持或不支持事务).<br>但是用户可以实现自己的事务机制来实现exactly-once语义.<br>本节稍后将对此进行更详细的讨论.</p>
+<h4 id="接收数据的语义"><a href="#接收数据的语义" class="headerlink" title="接收数据的语义"></a>接收数据的语义</h4><p>不同的输入源提供不同的保证,范围从at-least once到exactly once.<br>阅读更多详情.</p>
+<h5 id="带文件"><a href="#带文件" class="headerlink" title="带文件"></a>带文件</h5><p>如果所有输入数据都已经存在于像 HDFS 这样的容错文件系统中,Spark Streaming 总是可以从任何故障中恢复并处理所有数据.<br>这给出了 exactly-once语义,这意味着无论发生什么失败,所有数据都将被恰好处理一次.</p>
+<h5 id="使用基于接收器的源"><a href="#使用基于接收器的源" class="headerlink" title="使用基于接收器的源"></a>使用基于接收器的源</h5><p>对于基于接收者的输入源,容错语义取决于故障场景和接收者的类型.<br>正如我们之前讨论的,有两种类型的接收器:</p>
+<p>可靠的接收者-这些接收者仅在确保接收到的数据已被复制后才确认可靠的来源.<br>如果这样的接收器发生故障,则源将不会收到对缓冲(未复制)数据的确认.<br>因此,如果receiver重启,source会重新发送数据,不会因为失败而丢失数据.</p>
+<p>不可靠的接收器-此类接收器不发送确认,因此当它们由于工作程序或驱动程序故障而失败时可能会丢失数据.</p>
+<p>根据使用的接收器类型,我们实现了以下语义.<br>如果工作节点发生故障,则可靠的接收者不会丢失数据.<br>对于不可靠的接收器,接收但未复制的数据可能会丢失.<br>如果驱动节点发生故障,那么除了这些损失之外,所有过去接收并复制到内存中的数据都将丢失.<br>这将影响状态转换的结果.</p>
+<p>为了避免丢失过去接收到的数据,Spark 1.2 引入了预写日志,将接收到的数据保存到容错存储中.<br>启用预写日志和可靠的接收器后,数据丢失为零.<br>在语义方面,它提供了至少一次的保证.</p>
+<h5 id="使用-Kafka-直接-API"><a href="#使用-Kafka-直接-API" class="headerlink" title="使用 Kafka 直接 API"></a>使用 Kafka 直接 API</h5><p>在 Spark 1.3 中,我们引入了一个新的 Kafka Direct API,它可以确保所有的 Kafka 数据都被 Spark Streaming 恰好一次接收到.<br>除此之外,如果您实施恰好一次输出操作,则可以实现端到端的恰好一次保证.<br>Kafka Integration Guide中进一步讨论了这种方法.</p>
+<h4 id="输出操作的语义"><a href="#输出操作的语义" class="headerlink" title="输出操作的语义"></a>输出操作的语义</h4><p>输出操作(如foreachRDD)具有至少一次语义,也就是说,如果工作程序发生故障,转换后的数据可能会多次写入外部实体.<br>虽然这对于使用操作保存到文件系统是可以接受的 saveAsFiles(因为文件将简单地被相同的数据覆盖),但可能需要额外的努力来实现恰好一次语义.<br>有两种方法.</p>
+<ol>
+<li>幂等更新:多次尝试总是写入相同的数据.<br>例如,saveAsFiles始终将相同的数据写入生成的文件.</li>
+<li>事务更新:所有更新都是以事务方式进行的,因此更新仅以原子方式进行一次.<br>执行此操作的一种方法如下.</li>
+</ol>
+<p>使用批处理时间(可用foreachRDD)和 RDD 的分区索引来创建标识符.<br>此标识符唯一标识流应用程序中的 blob 数据.</p>
+<p>使用标识符以事务方式(即,以原子方式恰好一次)使用此 blob 更新外部系统.<br>也就是说,如果标识符尚未提交,则以原子方式提交分区数据和标识符.<br>否则,如果这已经提交,则跳过更新.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">dstream.foreachRDD &#123; (rdd, time) &#x3D;&gt;</span><br><span class="line">  rdd.foreachPartition &#123; partitionIterator &#x3D;&gt;</span><br><span class="line">    val partitionId &#x3D; TaskContext.get.partitionId()</span><br><span class="line">    val uniqueId &#x3D; generateUniqueId(time.milliseconds, partitionId)</span><br><span class="line">    &#x2F;&#x2F; use this uniqueId to transactionally commit the data in partitionIterator</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">dstream.foreachRDD &#123; (rdd, time) &#x3D;&gt;</span><br><span class="line">  rdd.foreachPartition &#123; partitionIterator &#x3D;&gt;</span><br><span class="line">    val partitionId &#x3D; TaskContext.get.partitionId()</span><br><span class="line">    val uniqueId &#x3D; generateUniqueId(time.milliseconds, partitionId)</span><br><span class="line">    &#x2F;&#x2F; use this uniqueId to transactionally commit the data in partitionIterator</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/spark/" rel="tag"># spark</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/11/21/spark%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%91%BD%E4%BB%A4%E5%8F%82%E6%95%B0/" rel="prev" title="spark客户端命令参数">
+                  <i class="fa fa-chevron-left"></i> spark客户端命令参数
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/11/22/spark%20rdd%E7%BC%96%E7%A8%8B%E6%8C%87%E5%8D%97/" rel="next" title="spark rdd编程指南">
+                  spark rdd编程指南 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

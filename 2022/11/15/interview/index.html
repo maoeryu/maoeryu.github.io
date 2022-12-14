@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="Java: JVM优化和多线程   数仓: mapreduce的底层原理(shuffle重点) hivesql怎么转化为mapreduce 数据倾斜怎么处理(大表join大表,大小表join,参数调优等)   hive: 数仓分层细节,数仓建模 拉链表 缓慢变化维 星型模型和雪花模型区别 数据库三范式 事实表的分类 具体场景写sql   Spark: spark的运行原理 spark数据倾斜 s">
+<meta property="og:type" content="article">
+<meta property="og:title" content="interview">
+<meta property="og:url" content="https://maoeryu.github.io/2022/11/15/interview/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="Java: JVM优化和多线程   数仓: mapreduce的底层原理(shuffle重点) hivesql怎么转化为mapreduce 数据倾斜怎么处理(大表join大表,大小表join,参数调优等)   hive: 数仓分层细节,数仓建模 拉链表 缓慢变化维 星型模型和雪花模型区别 数据库三范式 事实表的分类 具体场景写sql   Spark: spark的运行原理 spark数据倾斜 s">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1305.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1306.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1307.png">
+<meta property="article:published_time" content="2022-11-14T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-11-16T07:37:08.296Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hive">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1305.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/11/15/interview/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>interview | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#hive-hadoop"><span class="nav-number">1.</span> <span class="nav-text">hive&#x2F;hadoop</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#sql%E4%BC%98%E5%8C%96"><span class="nav-number">1.1.</span> <span class="nav-text">sql优化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive%E6%89%A7%E8%A1%8C"><span class="nav-number">1.1.1.</span> <span class="nav-text">Hive执行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive%E8%A1%A8%E4%BC%98%E5%8C%96"><span class="nav-number">1.1.2.</span> <span class="nav-text">Hive表优化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive-Job%E4%BC%98%E5%8C%96"><span class="nav-number">1.1.3.</span> <span class="nav-text">Hive Job优化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive-Map%E4%BC%98%E5%8C%96"><span class="nav-number">1.1.4.</span> <span class="nav-text">Hive Map优化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive-Shuffle%E4%BC%98%E5%8C%96"><span class="nav-number">1.1.5.</span> <span class="nav-text">Hive Shuffle优化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive-Reduce%E4%BC%98%E5%8C%96"><span class="nav-number">1.1.6.</span> <span class="nav-text">Hive Reduce优化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive%E6%9F%A5%E8%AF%A2%E6%93%8D%E4%BD%9C%E4%BC%98%E5%8C%96"><span class="nav-number">1.1.7.</span> <span class="nav-text">Hive查询操作优化</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#join%E4%BC%98%E5%8C%96"><span class="nav-number">1.1.7.1.</span> <span class="nav-text">join优化</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#Bucket-join"><span class="nav-number">1.1.7.1.1.</span> <span class="nav-text">Bucket join</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#join-%E4%BC%98%E5%8C%96%E5%89%8D"><span class="nav-number">1.1.7.1.2.</span> <span class="nav-text">join 优化前</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#join%E4%BC%98%E5%8C%96%E5%90%8E"><span class="nav-number">1.1.7.1.3.</span> <span class="nav-text">join优化后</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#group-by-%E4%BC%98%E5%8C%96"><span class="nav-number">1.1.7.2.</span> <span class="nav-text">group by 优化</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#count-distinct-%E4%BC%98%E5%8C%96"><span class="nav-number">1.1.7.3.</span> <span class="nav-text">count distinct 优化</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E5%AE%83"><span class="nav-number">1.2.</span> <span class="nav-text">其它</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#hive%E5%86%85%E9%83%A8%E8%A1%A8%E5%92%8C%E5%A4%96%E9%83%A8%E8%A1%A8%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">1.2.1.</span> <span class="nav-text">hive内部表和外部表的区别</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive%E6%9C%89%E7%B4%A2%E5%BC%95%E5%90%97"><span class="nav-number">1.2.2.</span> <span class="nav-text">Hive有索引吗</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%AF%B9hive%E8%BF%9B%E8%A1%8C%E8%B0%83%E5%BA%A6"><span class="nav-number">1.2.3.</span> <span class="nav-text">如何对hive进行调度</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ORC-Parquet%E7%AD%89%E5%88%97%E5%BC%8F%E5%AD%98%E5%82%A8%E7%9A%84%E4%BC%98%E7%82%B9"><span class="nav-number">1.2.4.</span> <span class="nav-text">ORC&#x2F;Parquet等列式存储的优点</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#ORC"><span class="nav-number">1.2.4.1.</span> <span class="nav-text">ORC</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Parquet"><span class="nav-number">1.2.4.2.</span> <span class="nav-text">Parquet</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%BB%BA%E6%A8%A1%E7%94%A8%E7%9A%84%E5%93%AA%E4%BA%9B%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.2.5.</span> <span class="nav-text">数据建模用的哪些模型</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%98%9F%E5%BD%A2%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.2.5.1.</span> <span class="nav-text">星形模式</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%9B%AA%E8%8A%B1%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.2.5.2.</span> <span class="nav-text">雪花模式</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%98%9F%E5%BA%A7%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.2.5.3.</span> <span class="nav-text">星座模式</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%AF%B9%E6%95%B0%E6%8D%AE%E4%BB%93%E5%BA%93%E5%88%86%E5%B1%82"><span class="nav-number">1.2.6.</span> <span class="nav-text">为什么要对数据仓库分层</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E8%BF%87Hive%E8%A7%A3%E6%9E%90JSON%E4%B8%B2%E5%90%97"><span class="nav-number">1.2.7.</span> <span class="nav-text">使用过Hive解析JSON串吗</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#sort-by-%E5%92%8C-order-by-%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">1.2.8.</span> <span class="nav-text">sort by 和 order by 的区别</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C%E6%80%8E%E4%B9%88%E8%A7%A3%E5%86%B3"><span class="nav-number">1.2.9.</span> <span class="nav-text">数据倾斜怎么解决</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%A9%BA%E5%80%BC%E5%BC%95%E5%8F%91%E7%9A%84%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C"><span class="nav-number">1.2.9.1.</span> <span class="nav-text">空值引发的数据倾斜</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%B8%8D%E5%90%8C%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E5%BC%95%E5%8F%91%E7%9A%84%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C"><span class="nav-number">1.2.9.2.</span> <span class="nav-text">不同数据类型引发的数据倾斜</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%B8%8D%E5%8F%AF%E6%8B%86%E5%88%86%E5%A4%A7%E6%96%87%E4%BB%B6%E5%BC%95%E5%8F%91%E7%9A%84%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C"><span class="nav-number">1.2.9.3.</span> <span class="nav-text">不可拆分大文件引发的数据倾斜</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E8%86%A8%E8%83%80%E5%BC%95%E5%8F%91%E7%9A%84%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C"><span class="nav-number">1.2.9.4.</span> <span class="nav-text">数据膨胀引发的数据倾斜</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%A1%A8%E8%BF%9E%E6%8E%A5%E6%97%B6%E5%BC%95%E5%8F%91%E7%9A%84%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C"><span class="nav-number">1.2.9.5.</span> <span class="nav-text">表连接时引发的数据倾斜</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%A1%AE%E5%AE%9E%E6%97%A0%E6%B3%95%E5%87%8F%E5%B0%91%E6%95%B0%E6%8D%AE%E9%87%8F%E5%BC%95%E5%8F%91%E7%9A%84%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C"><span class="nav-number">1.2.9.6.</span> <span class="nav-text">确实无法减少数据量引发的数据倾斜</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive-%E5%B0%8F%E6%96%87%E4%BB%B6%E8%BF%87%E5%A4%9A%E6%80%8E%E4%B9%88%E8%A7%A3%E5%86%B3"><span class="nav-number">1.2.10.</span> <span class="nav-text">Hive 小文件过多怎么解决</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive%E4%BC%98%E5%8C%96%E6%9C%89%E5%93%AA%E4%BA%9B"><span class="nav-number">1.2.11.</span> <span class="nav-text">Hive优化有哪些</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive%E7%9A%84%E4%B8%A4%E5%BC%A0%E8%A1%A8%E5%85%B3%E8%81%94-%E4%BD%BF%E7%94%A8MapReduce%E6%80%8E%E4%B9%88%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.2.12.</span> <span class="nav-text">Hive的两张表关联,使用MapReduce怎么实现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%B7%E8%B0%88%E4%B8%80%E4%B8%8BHive%E7%9A%84%E7%89%B9%E7%82%B9-Hive%E5%92%8CRDBMS%E6%9C%89%E4%BB%80%E4%B9%88%E5%BC%82%E5%90%8C"><span class="nav-number">1.2.13.</span> <span class="nav-text">请谈一下Hive的特点,Hive和RDBMS有什么异同</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%B7%E8%AF%B4%E6%98%8Ehive%E4%B8%AD-Sort-By-Order-By-Cluster-By-Distrbute-By%E5%90%84%E4%BB%A3%E8%A1%A8%E4%BB%80%E4%B9%88%E6%84%8F%E6%80%9D"><span class="nav-number">1.2.14.</span> <span class="nav-text">请说明hive中 Sort By,Order By,Cluster By,Distrbute By各代表什么意思</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%99%E5%87%BAHive%E4%B8%ADsplit-coalesce-collect-list%E5%87%BD%E6%95%B0%E7%9A%84%E7%94%A8%E6%B3%95-%E5%8F%AF%E4%B8%BE%E4%BE%8B"><span class="nav-number">1.2.15.</span> <span class="nav-text">写出Hive中split&#x2F;coalesce&#x2F;collect_list函数的用法(可举例)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive%E6%9C%89%E5%93%AA%E4%BA%9B%E6%96%B9%E5%BC%8F%E4%BF%9D%E5%AD%98%E5%85%83%E6%95%B0%E6%8D%AE-%E5%90%84%E6%9C%89%E5%93%AA%E4%BA%9B%E7%89%B9%E7%82%B9"><span class="nav-number">1.2.16.</span> <span class="nav-text">Hive有哪些方式保存元数据,各有哪些特点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive%E5%86%85%E9%83%A8%E8%A1%A8%E5%92%8C%E5%A4%96%E9%83%A8%E8%A1%A8%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">1.2.17.</span> <span class="nav-text">Hive内部表和外部表的区别</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive%E7%9A%84%E5%87%BD%E6%95%B0-UDF-UDAF-UDTF%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">1.2.18.</span> <span class="nav-text">Hive的函数:UDF&#x2F;UDAF&#x2F;UDTF的区别</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%89%80%E6%9C%89%E7%9A%84Hive%E4%BB%BB%E5%8A%A1%E9%83%BD%E4%BC%9A%E6%9C%89MapReduce%E7%9A%84%E6%89%A7%E8%A1%8C%E5%90%97"><span class="nav-number">1.2.19.</span> <span class="nav-text">所有的Hive任务都会有MapReduce的执行吗</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%B4%E8%AF%B4%E5%AF%B9Hive%E6%A1%B6%E8%A1%A8%E7%9A%84%E7%90%86%E8%A7%A3"><span class="nav-number">1.2.20.</span> <span class="nav-text">说说对Hive桶表的理解</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive%E5%BA%95%E5%B1%82%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%A4%E4%BA%92%E5%8E%9F%E7%90%86"><span class="nav-number">1.2.21.</span> <span class="nav-text">Hive底层与数据库交互原理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive%E6%9C%AC%E5%9C%B0%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.2.22.</span> <span class="nav-text">Hive本地模式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive-%E4%B8%AD%E7%9A%84%E5%8E%8B%E7%BC%A9%E6%A0%BC%E5%BC%8FTextFile-SequenceFile-RCfile-ORCfile%E5%90%84%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB"><span class="nav-number">1.2.23.</span> <span class="nav-text">Hive 中的压缩格式TextFile&#x2F;SequenceFile&#x2F;RCfile&#x2F;ORCfile各有什么区别</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#TextFile"><span class="nav-number">1.2.23.1.</span> <span class="nav-text">TextFile</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#SequenceFile"><span class="nav-number">1.2.23.2.</span> <span class="nav-text">SequenceFile</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#RCFile"><span class="nav-number">1.2.23.3.</span> <span class="nav-text">RCFile</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#ORCFile"><span class="nav-number">1.2.23.4.</span> <span class="nav-text">ORCFile</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hive%E8%A1%A8%E5%85%B3%E8%81%94%E6%9F%A5%E8%AF%A2-%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">1.2.24.</span> <span class="nav-text">Hive表关联查询,如何解决数据倾斜的问题</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%80%BE%E6%96%9C%E5%8E%9F%E5%9B%A0"><span class="nav-number">1.2.24.1.</span> <span class="nav-text">倾斜原因</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D"><span class="nav-number">1.2.24.2.</span> <span class="nav-text">如何避免</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">1.2.24.3.</span> <span class="nav-text">解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#%E5%8F%82%E6%95%B0%E8%B0%83%E8%8A%82"><span class="nav-number">1.2.24.3.1.</span> <span class="nav-text">参数调节</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#SQL-%E8%AF%AD%E5%8F%A5%E8%B0%83%E8%8A%82"><span class="nav-number">1.2.24.3.2.</span> <span class="nav-text">SQL 语句调节</span></a></li></ol></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Fetch%E6%8A%93%E5%8F%96"><span class="nav-number">1.2.25.</span> <span class="nav-text">Fetch抓取</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B0%8F%E8%A1%A8-%E5%A4%A7%E8%A1%A8Join"><span class="nav-number">1.2.26.</span> <span class="nav-text">小表&#x2F;大表Join</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%A7%E8%A1%A8Join%E5%A4%A7%E8%A1%A8"><span class="nav-number">1.2.27.</span> <span class="nav-text">大表Join大表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Group-By"><span class="nav-number">1.2.28.</span> <span class="nav-text">Group By</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Count-Distinct-%E5%8E%BB%E9%87%8D%E7%BB%9F%E8%AE%A1"><span class="nav-number">1.2.29.</span> <span class="nav-text">Count(Distinct) 去重统计</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A1%8C%E5%88%97%E8%BF%87%E6%BB%A4"><span class="nav-number">1.2.30.</span> <span class="nav-text">行列过滤</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B9%B6%E8%A1%8C%E6%89%A7%E8%A1%8C"><span class="nav-number">1.2.31.</span> <span class="nav-text">并行执行</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/11/15/interview/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          interview
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-11-15 00:00:00" itemprop="dateCreated datePublished" datetime="2022-11-15T00:00:00+08:00">2022-11-15</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-11-16 15:37:08" itemprop="dateModified" datetime="2022-11-16T15:37:08+08:00">2022-11-16</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%9D%A2%E8%AF%95/" itemprop="url" rel="index"><span itemprop="name">面试</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <ul>
+<li>Java:<ul>
+<li>JVM优化和多线程</li>
+</ul>
+</li>
+<li>数仓:<ul>
+<li>mapreduce的底层原理(shuffle重点)</li>
+<li>hivesql怎么转化为mapreduce</li>
+<li>数据倾斜怎么处理(大表join大表,大小表join,参数调优等)</li>
+</ul>
+</li>
+<li>hive:<ul>
+<li>数仓分层细节,数仓建模</li>
+<li>拉链表</li>
+<li>缓慢变化维</li>
+<li>星型模型和雪花模型区别</li>
+<li>数据库三范式</li>
+<li>事实表的分类</li>
+<li>具体场景写sql</li>
+</ul>
+</li>
+<li>Spark:<ul>
+<li>spark的运行原理</li>
+<li>spark数据倾斜</li>
+<li>spark内存溢出</li>
+<li>spark的调优</li>
+<li>spark的rdd算子细节(map,mappartition,groupbykey,reducebykey等,需要逐一梳理)</li>
+<li>sparksql(sparksql怎么解析/dataframe/dateset)</li>
+<li>spark的内存模型</li>
+<li>spark的shuffle原理,shuffle优化</li>
+</ul>
+</li>
+<li>kafka:<ul>
+<li>kafak负载均衡</li>
+<li>kafka数据一致性</li>
+<li>kafka的ack机制</li>
+<li>kafka的exact once语义</li>
+<li>kafka分区策略</li>
+<li>kafka分区的目的等</li>
+</ul>
+</li>
+<li>zk:<ul>
+<li>zk选举机制,zk用到的算法</li>
+<li>zk的数据一致性</li>
+<li>zk 节点宕机如何处理</li>
+<li>负载均衡</li>
+<li>zk一些接口</li>
+</ul>
+</li>
+<li>hbase:<ul>
+<li>读写原理</li>
+<li>rowkey设计</li>
+<li>热点问题</li>
+<li>数据版本</li>
+<li>habse的优化</li>
+</ul>
+</li>
+<li>elasticsearch:<ul>
+<li>es的读写原理</li>
+<li>es的倒排索引</li>
+<li>es的优化(重点必问)</li>
+<li>场景下的es提问</li>
+</ul>
+</li>
+</ul>
+<span id="more"></span>
+<h2 id="hive-hadoop"><a href="#hive-hadoop" class="headerlink" title="hive/hadoop"></a>hive/hadoop</h2><h3 id="sql优化"><a href="#sql优化" class="headerlink" title="sql优化"></a>sql优化</h3><p><strong><em>数据倾斜/map数设置/reduce数设置/其他</em></strong></p>
+<h4 id="Hive执行"><a href="#Hive执行" class="headerlink" title="Hive执行"></a>Hive执行</h4><ul>
+<li>HQL --&gt; Job --&gt; Map/Reduce</li>
+<li>执行计划<ul>
+<li>explain <code>[extended]</code> hql</li>
+<li>样例</li>
+<li>select col,count(1) from test2 group by col;</li>
+<li>explain select col,count(1) from test2 group by col;</li>
+</ul>
+</li>
+</ul>
+<h4 id="Hive表优化"><a href="#Hive表优化" class="headerlink" title="Hive表优化"></a>Hive表优化</h4><ul>
+<li>分区<ul>
+<li>set hive.exec.dynamic.partition=true;</li>
+<li>set hive.exec.dynamic.partition.mode=nonstrict;</li>
+<li>静态分区</li>
+<li>动态分区</li>
+</ul>
+</li>
+<li>分桶<ul>
+<li>set hive.enforce.bucketing=true;</li>
+<li>set hive.enforce.sorting=true;</li>
+</ul>
+</li>
+<li>数据<ul>
+<li>相同数据尽量聚集在一起</li>
+</ul>
+</li>
+</ul>
+<h4 id="Hive-Job优化"><a href="#Hive-Job优化" class="headerlink" title="Hive Job优化"></a>Hive Job优化</h4><ul>
+<li>并行化执行<ul>
+<li>每个查询被hive转化成多个阶段,有些阶段关联性不大,则可以并行化执行,减少执行时间</li>
+<li>set hive.exec.parallel= true;</li>
+<li>set hive.exec.parallel.thread.numbe=8;</li>
+</ul>
+</li>
+<li>本地化执行<ul>
+<li>job的输入数据大小必须小于参数:hive.exec.mode.local.auto.inputbytes.max(默认128MB)</li>
+<li>job的map数必须小于参数:hive.exec.mode.local.auto.tasks.max(默认4)</li>
+<li>job的reduce数必须为0或者1</li>
+<li>set hive.exec.mode.local.auto=true;</li>
+<li>当一个job满足如下条件才能真正使用本地模式:</li>
+</ul>
+</li>
+<li>job合并输入小文件<ul>
+<li>set hive.input.format = org.apache.hadoop.hive.ql.io.CombineHiveInputFormat</li>
+<li>合并文件数由mapred.max.split.size限制的大小决定</li>
+</ul>
+</li>
+<li>job合并输出小文件<ul>
+<li>set hive.merge.smallfiles.avgsize=256000000;当输出文件平均小于该值,启动新job合并文件</li>
+<li>set hive.merge.size.per.task=64000000;合并之后的文件大小</li>
+</ul>
+</li>
+<li>JVM重利用<ul>
+<li>set mapred.job.reuse.jvm.num.tasks=20;</li>
+<li>JVM重利用可以使得JOB长时间保留slot,直到作业结束,这在对于有较多任务和较多小文件的任务是非常有意义的,减少执行时间.当然这个值不能设置过大,因为有些作业会有reduce任务,如果reduce任务没有完成,则map任务占用的slot不能释放,其他的作业可能就需要等待.</li>
+</ul>
+</li>
+<li>压缩数据<ul>
+<li>set hive.exec.compress.output=true;</li>
+<li>set mapred.output.compreession.codec=org.apache.hadoop.io.compress.GzipCodec;</li>
+<li>set mapred.output.compression.type=BLOCK;</li>
+<li>set hive.exec.compress.intermediate=true;</li>
+<li>set hive.intermediate.compression.codec=org.apache.hadoop.io.compress.SnappyCodec;</li>
+<li>set hive.intermediate.compression.type=BLOCK;</li>
+<li>中间压缩就是处理hive查询的多个job之间的数据,对于中间压缩,最好选择一个节省cpu耗时的压缩方式</li>
+<li>hive查询最终的输出也可以压缩</li>
+</ul>
+</li>
+</ul>
+<h4 id="Hive-Map优化"><a href="#Hive-Map优化" class="headerlink" title="Hive Map优化"></a>Hive Map优化</h4><ul>
+<li>set mapred.map.tasks =10; 无效</li>
+<li>(1)默认map个数<ul>
+<li>default_num=total_size/block_size;</li>
+</ul>
+</li>
+<li>(2)期望大小<ul>
+<li>goal_num=mapred.map.tasks;</li>
+</ul>
+</li>
+<li>(3)设置处理的文件大小<ul>
+<li>split_size=max(mapred.min.split.size,block_size);</li>
+<li>split_num=total_size/split_size;</li>
+</ul>
+</li>
+<li>(4)计算的map个数<ul>
+<li>compute_map_num=min(split_num,max(default_num,goal_num))</li>
+</ul>
+</li>
+<li>经过以上的分析,在设置map个数的时候,可以简答的总结为以下几点:<ul>
+<li>增大mapred.min.split.size的值</li>
+<li>如果想增加map个数,则设置mapred.map.tasks为一个较大的值</li>
+<li>如果想减小map个数,则设置mapred.min.split.size为一个较大的值</li>
+<li>情况1:输入文件size巨大,但不是小文件</li>
+<li>情况2:输入文件数量巨大,且都是小文件,就是单个文件的size小于blockSize.这种情况通过增大mapred.min.split.size不可行,需要使用combineFileInputFormat将多个input path合并成一个InputSplit送给mapper处理,从而减少mapper的数量.</li>
+</ul>
+</li>
+<li>map端聚合<ul>
+<li>set hive.map.aggr=true;</li>
+</ul>
+</li>
+<li>推测执行<ul>
+<li>mapred.map.tasks.apeculative.execution</li>
+</ul>
+</li>
+</ul>
+<h4 id="Hive-Shuffle优化"><a href="#Hive-Shuffle优化" class="headerlink" title="Hive Shuffle优化"></a>Hive Shuffle优化</h4><ul>
+<li>Map端<ul>
+<li>io.sort.mb</li>
+<li>io.sort.spill.percent</li>
+<li>min.num.spill.for.combine</li>
+<li>io.sort.factor</li>
+<li>io.sort.record.percent</li>
+</ul>
+</li>
+<li>Reduce端<ul>
+<li>mapred.reduce.parallel.copies</li>
+<li>mapred.reduce.copy.backoff</li>
+<li>io.sort.factor</li>
+<li>mapred.job.shuffle.input.buffer.percent</li>
+<li>mapred.job.shuffle.input.buffer.percent</li>
+<li>mapred.job.shuffle.input.buffer.percent</li>
+</ul>
+</li>
+</ul>
+<h4 id="Hive-Reduce优化"><a href="#Hive-Reduce优化" class="headerlink" title="Hive Reduce优化"></a>Hive Reduce优化</h4><ul>
+<li>需要reduce操作的查询<ul>
+<li>group by,join,distribute by,cluster by...</li>
+<li>order by比较特殊,只需要一个reduce</li>
+<li>sum,count,distinct...</li>
+<li>聚合函数</li>
+<li>高级查询</li>
+</ul>
+</li>
+<li>推测执行<ul>
+<li>mapred.reduce.tasks.speculative.execution</li>
+<li>hive.mapred.reduce.tasks.speculative.execution</li>
+</ul>
+</li>
+<li>Reduce优化<ul>
+<li>numRTasks = min<code>[maxReducers,input.size/perReducer]</code></li>
+<li>maxReducers=hive.exec.reducers.max</li>
+<li>perReducer = hive.exec.reducers.bytes.per.reducer</li>
+<li>hive.exec.reducers.max 默认:999</li>
+<li>hive.exec.reducers.bytes.per.reducer 默认:1G</li>
+<li>set mapred.reduce.tasks=10;直接设置</li>
+<li>计算公式</li>
+</ul>
+</li>
+</ul>
+<h4 id="Hive查询操作优化"><a href="#Hive查询操作优化" class="headerlink" title="Hive查询操作优化"></a>Hive查询操作优化</h4><h5 id="join优化"><a href="#join优化" class="headerlink" title="join优化"></a>join优化</h5><ul>
+<li>关联操作中有一张表非常小</li>
+<li>不等值的链接操作</li>
+<li>set hive.auto.current.join=true;</li>
+<li>hive.mapjoin.smalltable.filesize默认值是25mb</li>
+<li>select <code>/*+mapjoin(A)*/</code> f.a,f.b from A t join B f on (f.a=t.a)</li>
+<li>hive.optimize.skewjoin=true;如果是Join过程出现倾斜,应该设置为true</li>
+<li>set hive.skewjoin.key=100000; 这个是join的键对应的记录条数超过这个值则会进行优化</li>
+<li>mapjoin</li>
+<li>简单总结下,mapjoin的使用场景:</li>
+</ul>
+<h6 id="Bucket-join"><a href="#Bucket-join" class="headerlink" title="Bucket join"></a>Bucket join</h6><ul>
+<li>两个表以相同方式划分桶</li>
+<li>两个表的桶个数是倍数关系</li>
+<li>crete table order(cid int,price float) clustered by(cid) into 32 buckets;</li>
+<li>crete table customer(id int,first string) clustered by(id) into 32 buckets;</li>
+<li>select price from order t join customer s on t.cid=s.id</li>
+</ul>
+<h6 id="join-优化前"><a href="#join-优化前" class="headerlink" title="join 优化前"></a>join 优化前</h6><ul>
+<li>select m.cid,u.id from order m join customer u on m.cid=u.id where m.dt=&#39;2013-12-12&#39;;</li>
+</ul>
+<h6 id="join优化后"><a href="#join优化后" class="headerlink" title="join优化后"></a>join优化后</h6><ul>
+<li>select m.cid,u.id from (select cid from order where dt=&#39;2013-12-12&#39;)m join customer u on m.cid=u.id;</li>
+</ul>
+<h5 id="group-by-优化"><a href="#group-by-优化" class="headerlink" title="group by 优化"></a>group by 优化</h5><ul>
+<li>hive.groupby.skewindata=true;如果是group by 过程出现倾斜,应该设置为true</li>
+<li>set hive.groupby.mapaggr.checkinterval=100000;--这个是group的键对应的记录条数超过这个值则会进行优化</li>
+</ul>
+<h5 id="count-distinct-优化"><a href="#count-distinct-优化" class="headerlink" title="count distinct 优化"></a>count distinct 优化</h5><ul>
+<li>优化前<ul>
+<li>select count(distinct id) from tablename</li>
+</ul>
+</li>
+<li>优化后<ul>
+<li>select count(1) from (select distinct id from tablename) tmp;</li>
+<li>select count(1) from (select id from tablename group by id) tmp;</li>
+</ul>
+</li>
+<li>优化前<ul>
+<li>select a,sum(b),count(distinct c),count(distinct d) from test group by a</li>
+</ul>
+</li>
+<li>优化后<ul>
+<li>select a,sum(b) as b,count(c) as c,count(d) as d from(select a,0 as b,c,null as d from test group by a,c union all select a,0 as b,null as c,d from test group by a,d union all select a,b,null as c,null as d from test)tmp1 group by a;</li>
+</ul>
+</li>
+</ul>
+<h3 id="其它"><a href="#其它" class="headerlink" title="其它"></a>其它</h3><h4 id="hive内部表和外部表的区别"><a href="#hive内部表和外部表的区别" class="headerlink" title="hive内部表和外部表的区别"></a>hive内部表和外部表的区别</h4><p>未被<code>external</code>修饰的是内部表,被external修饰的为外部表.</p>
+<p>区别:</p>
+<ol>
+<li>内部表数据由Hive自身管理,外部表数据由HDFS管理.</li>
+<li>内部表数据存储的位置是<code>hive.metastore.warehouse.dir</code>(默认:/user/hive/warehouse),外部表数据的存储位置由自己制定(如果没有LOCATION,Hive将在HDFS上的/user/hive/warehouse文件夹下以外部表的表名创建一个文件夹,并将属于这个表的数据存放在这里).</li>
+<li>删除内部表会直接删除元数据(metadata)及存储数据.删除外部表仅仅会删除元数据,HDFS上的文件并不会被删除.</li>
+</ol>
+<h4 id="Hive有索引吗"><a href="#Hive有索引吗" class="headerlink" title="Hive有索引吗"></a>Hive有索引吗</h4><p>Hive支持索引(3.0版本之前),但是Hive的索引与关系型数据库中的索引并不相同.<br>并且Hive索引提供的功能很有限,效率也并不高,因此Hive索引很少使用.</p>
+<p>索引适用的场景:</p>
+<ol>
+<li>适用于不更新的静态字段.以免总是重建索引数据.每次建立/更新数据后,都要重建索引以构建索引表.</li>
+</ol>
+<h4 id="如何对hive进行调度"><a href="#如何对hive进行调度" class="headerlink" title="如何对hive进行调度"></a>如何对hive进行调度</h4><p>将hive的sql定义在脚本当中.<br>使用azkaban/oozie进行任务的调度.<br>监控任务调度页面.</p>
+<h4 id="ORC-Parquet等列式存储的优点"><a href="#ORC-Parquet等列式存储的优点" class="headerlink" title="ORC/Parquet等列式存储的优点"></a>ORC/Parquet等列式存储的优点</h4><h5 id="ORC"><a href="#ORC" class="headerlink" title="ORC"></a>ORC</h5><p>ORC文件是自描述的,它的元数据使用Protocol Buffers序列化,文件中的数据尽可能的压缩以降低存储空间的消耗.<br>以二进制方式存储,不可以直接读取.<br>自解析,包含许多元数据,这些元数据都是同构ProtoBuffer进行序列化的.<br>会尽可能合并多个离散的区间尽可能的减少I/O次数.<br>在新版本的ORC中也加入了对Bloom Filter的支持,它可以进一 步提升谓词下推的效率,在Hive 1.2.0版本以后也加入了对此的支持.</p>
+<h5 id="Parquet"><a href="#Parquet" class="headerlink" title="Parquet"></a>Parquet</h5><p>Parquet支持嵌套的数据模型,类似于Protocol Buffers.<br>每一个数据模型的schema包含多个字段,每一个字段有三个属性:重复次数/数据类型/字段名.<br>Parquet中没有Map/Array这样的复杂数据结构,但是可以通过repeated和group组合来实现.<br>通过Striping/Assembly算法,parquet可以使用较少的存储空间表示复杂的嵌套格式,并且通常Repetition level和Definition level都是较小的整数值,可以通过RLE算法对其进行压缩,进一步降低存储空间.<br>Parquet文件以二进制方式存储,不可以直接读取和修改,Parquet文件是自解析的,文件中包括该文件的数据和元数据.</p>
+<h4 id="数据建模用的哪些模型"><a href="#数据建模用的哪些模型" class="headerlink" title="数据建模用的哪些模型"></a>数据建模用的哪些模型</h4><h5 id="星形模式"><a href="#星形模式" class="headerlink" title="星形模式"></a>星形模式</h5><p>星形模式(Star Schema)是最常用的维度建模方式.<br>星型模式是以事实表为中心,所有的维度表直接连接在事实表上,像星星一样.<br>星形模式的维度建模由一个事实表和一组维表成,且具有以下特点:</p>
+<ol>
+<li>维表只和事实表关联,维表之间没有关联.</li>
+<li>每个维表主键为单列,且该主键放置在事实表中,作为两边连接的外键.</li>
+<li>以事实表为核心,维表围绕核心呈星形分布.</li>
+</ol>
+<img src="/images/fly1305.png" width="400" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h5 id="雪花模式"><a href="#雪花模式" class="headerlink" title="雪花模式"></a>雪花模式</h5><p>雪花模式(Snowflake Schema)是对星形模式的扩展.<br>雪花模式的维度表可以拥有其他维度表的,虽然这种模型相比星型更规范一些,但是由于这种模型不太容易理解,维护成本比较高,而且性能方面需要关联多层维表,性能比星型模型要低.</p>
+<img src="/images/fly1306.png" width="400" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h5 id="星座模式"><a href="#星座模式" class="headerlink" title="星座模式"></a>星座模式</h5><p>星座模式是星型模式延伸而来,星型模式是基于一张事实表的,而星座模式是基于多张事实表的,而且共享维度信息.<br>前面介绍的两种维度建模方法都是多维表对应单事实表,但在很多时候维度空间内的事实表不止一个,而一个维表也可能被多个事实表用到.<br>在业务发展后期,绝大部分维度建模都采用的是星座模式.</p>
+<img src="/images/fly1307.png" width="400" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="为什么要对数据仓库分层"><a href="#为什么要对数据仓库分层" class="headerlink" title="为什么要对数据仓库分层"></a>为什么要对数据仓库分层</h4><p>用空间换时间,通过大量的预处理来提升应用系统的用户体验(效率),因此数据仓库会存在大量冗余的数据.<br>如果不分层的话,如果源业务系统的业务规则发生变化将会影响整个数据清洗过程,工作量巨大.</p>
+<p>通过数据分层管理可以简化数据清洗的过程,因为把原来一步的工作分到了多个步骤去完成,相当于把一个复杂的工作拆成了多个简单的工作,把一个大的黑盒变成了一个白盒,每一层的处理逻辑都相对简单和容易理解,这样我们比较容易保证每一个步骤的正确性,当数据发生错误的时候,往往我们只需要局部调整某个步骤即可.</p>
+<h4 id="使用过Hive解析JSON串吗"><a href="#使用过Hive解析JSON串吗" class="headerlink" title="使用过Hive解析JSON串吗"></a>使用过Hive解析JSON串吗</h4><p>Hive处理json数据总体来说有两个方向的路走:</p>
+<ol>
+<li>将json以字符串的方式整个入Hive表,然后通过使用UDF函数解析已经导入到hive中的数据,比如使用LATERAL VIEW json_tuple的方法,获取所需要的列名.</li>
+<li>在导入之前将json拆成各个字段,导入Hive表的数据是已经解析过的.<br>这将需要使用第三方的SerDe.</li>
+</ol>
+<h4 id="sort-by-和-order-by-的区别"><a href="#sort-by-和-order-by-的区别" class="headerlink" title="sort by 和 order by 的区别"></a>sort by 和 order by 的区别</h4><p>order by 会对输入做全局排序,因此只有一个reducer(多个reducer无法保证全局有序)只有一个reducer,会导致当输入规模较大时,需要较长的计算时间.</p>
+<p>sort by不是全局排序,其在数据进入reducer前完成排序.<br>因此,如果用sort by进行排序,并且设置<code>mapred.reduce.tasks &gt; 1</code>, 则sort by只保证每个reducer的输出有序,不保证全局有序.</p>
+<h4 id="数据倾斜怎么解决"><a href="#数据倾斜怎么解决" class="headerlink" title="数据倾斜怎么解决"></a>数据倾斜怎么解决</h4><h5 id="空值引发的数据倾斜"><a href="#空值引发的数据倾斜" class="headerlink" title="空值引发的数据倾斜"></a>空值引发的数据倾斜</h5><p>第一种:可以直接不让null值参与join操作,即不让null值有shuffle阶段</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">from</span> log a</span><br><span class="line"> <span class="keyword">join</span> users b</span><br><span class="line"> <span class="keyword">on</span> a.user_id <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">null</span> <span class="keyword">and</span> a.user_id <span class="operator">=</span> b.user_id</span><br><span class="line"><span class="keyword">union</span> <span class="keyword">all</span></span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> log a</span><br><span class="line"><span class="keyword">where</span> a.user_id <span class="keyword">is</span> <span class="keyword">null</span>;</span><br></pre></td></tr></table></figure>
+
+<p>第二种:因为null值参与shuffle时的hash结果是一样的,那么我们可以给null值随机赋值,这样它们的hash结果就不一样,就会进到不同的reduce中:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> log a</span><br><span class="line"> <span class="keyword">left</span> <span class="keyword">join</span> users b <span class="keyword">on</span> <span class="keyword">case</span></span><br><span class="line"> <span class="keyword">when</span> a.user_id <span class="keyword">is</span> <span class="keyword">null</span> <span class="keyword">then</span> concat(<span class="string">&#x27;hive_&#x27;</span>, rand())</span><br><span class="line"> <span class="keyword">else</span> a.user_id</span><br><span class="line"> <span class="keyword">end</span> <span class="operator">=</span> b.user_id;</span><br></pre></td></tr></table></figure>
+
+<h5 id="不同数据类型引发的数据倾斜"><a href="#不同数据类型引发的数据倾斜" class="headerlink" title="不同数据类型引发的数据倾斜"></a>不同数据类型引发的数据倾斜</h5><p>如果key字段既有string类型也有int类型,默认的hash就都会按int类型来分配,那我们直接把int类型都转为string就好了,这样key字段都为string,hash时就按照string类型分配了:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> users a</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> logs b <span class="keyword">on</span> a.user_id <span class="operator">=</span> <span class="built_in">cast</span>(b.user_id <span class="keyword">as</span> string);</span><br></pre></td></tr></table></figure>
+
+<h5 id="不可拆分大文件引发的数据倾斜"><a href="#不可拆分大文件引发的数据倾斜" class="headerlink" title="不可拆分大文件引发的数据倾斜"></a>不可拆分大文件引发的数据倾斜</h5><p>这种数据倾斜问题没有什么好的解决方案,只能将使用GZIP压缩等不支持文件分割的文件转为bzip和zip等支持文件分割的压缩方式.<br>所以,我们在对文件进行压缩时,为避免因不可拆分大文件而引发数据读取的倾斜,在数据压缩的时候可以采用bzip2和Zip等支持文件分割的压缩算法.</p>
+<h5 id="数据膨胀引发的数据倾斜"><a href="#数据膨胀引发的数据倾斜" class="headerlink" title="数据膨胀引发的数据倾斜"></a>数据膨胀引发的数据倾斜</h5><p>在Hive中可以通过参数 <code>hive.new.job.grouping.set.cardinality</code> 配置的方式自动控制作业的拆解,该参数默认值是30.<br>表示针对grouping sets/rollups/cubes这类多维聚合的操作,如果最后拆解的键组合大于该值,会启用新的任务去处理大于该值之外的组合.<br>如果在处理数据时,某个分组聚合的列有较大的倾斜,可以适当调小该值.</p>
+<h5 id="表连接时引发的数据倾斜"><a href="#表连接时引发的数据倾斜" class="headerlink" title="表连接时引发的数据倾斜"></a>表连接时引发的数据倾斜</h5><p>通常做法是将倾斜的数据存到分布式缓存中,分发到各个Map任务所在节点.<br>在Map阶段完成join操作,即MapJoin,这避免了 Shuffle,从而避免了数据倾斜.</p>
+<h5 id="确实无法减少数据量引发的数据倾斜"><a href="#确实无法减少数据量引发的数据倾斜" class="headerlink" title="确实无法减少数据量引发的数据倾斜"></a>确实无法减少数据量引发的数据倾斜</h5><p>这类问题最直接的方式就是调整reduce所执行的内存大小.<br>调整reduce的内存大小使用<code>mapreduce.reduce.memory.mb</code>这个配置.</p>
+<h4 id="Hive-小文件过多怎么解决"><a href="#Hive-小文件过多怎么解决" class="headerlink" title="Hive 小文件过多怎么解决"></a>Hive 小文件过多怎么解决</h4><p>使用 hive 自带的 concatenate 命令,自动合并小文件<br>调整参数减少Map数量/减少Reduce的数量<br>使用hadoop的archive将小文件归档</p>
+<h4 id="Hive优化有哪些"><a href="#Hive优化有哪些" class="headerlink" title="Hive优化有哪些"></a>Hive优化有哪些</h4><p>数据存储及压缩<br>通过调参优化<br>有效地减小数据集将大表拆分成子表.结合使用外部表和分区表<br>SQL优化</p>
+<h4 id="Hive的两张表关联-使用MapReduce怎么实现"><a href="#Hive的两张表关联-使用MapReduce怎么实现" class="headerlink" title="Hive的两张表关联,使用MapReduce怎么实现"></a>Hive的两张表关联,使用MapReduce怎么实现</h4><p>如果其中有一张表为小表,直接使用map端join的方式(map端加载小表)进行聚合.</p>
+<p>如果两张都是大表,那么采用联合key,联合key的第一个组成部分是join on中的公共字段,第二部分是一个flag,0代表表A,1代表表B,由此让Reduce区分客户信息和订单信息.<br>在Mapper中同时处理两张表的信息,将join on公共字段相同的数据划分到同一个分区中,进而传递到一个Reduce中,然后在Reduce中实现聚合.</p>
+<h4 id="请谈一下Hive的特点-Hive和RDBMS有什么异同"><a href="#请谈一下Hive的特点-Hive和RDBMS有什么异同" class="headerlink" title="请谈一下Hive的特点,Hive和RDBMS有什么异同"></a>请谈一下Hive的特点,Hive和RDBMS有什么异同</h4><p>hive是基于Hadoop的一个数据仓库工具,可以将结构化的数据文件映射为一张数据库表,并提供完整的sql查询功能,可以将sql语句转换为MapReduce任务进行运行.<br>其优点是学习成本低,可以通过类SQL语句快速实现简单的MapReduce统计,不必开发专门的MapReduce应用,十分适合数据仓库的统计分析,但是Hive不支持实时查询.</p>
+<h4 id="请说明hive中-Sort-By-Order-By-Cluster-By-Distrbute-By各代表什么意思"><a href="#请说明hive中-Sort-By-Order-By-Cluster-By-Distrbute-By各代表什么意思" class="headerlink" title="请说明hive中 Sort By,Order By,Cluster By,Distrbute By各代表什么意思"></a>请说明hive中 Sort By,Order By,Cluster By,Distrbute By各代表什么意思</h4><p>Order by:会对输入做全局排序,因此只有一个reducer(多个reducer无法保证全局有序).<br>只有一个reducer,会导致当输入规模较大时,需要较长的计算时间.</p>
+<p>Sort by:不是全局排序,其在数据进入reducer前完成排序.<br>Distribute by:按照指定的字段对数据进行划分输出到不同的reduce中.<br>Cluster by:除了具有 distribute by 的功能外还兼具 sort by 的功能.</p>
+<h4 id="写出Hive中split-coalesce-collect-list函数的用法-可举例"><a href="#写出Hive中split-coalesce-collect-list函数的用法-可举例" class="headerlink" title="写出Hive中split/coalesce/collect_list函数的用法(可举例)"></a>写出Hive中split/coalesce/collect_list函数的用法(可举例)</h4><p>split将字符串转化为数组,即:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">split(&#39;a,b,c,d&#39; , &#39;,&#39;) &#x3D;&#x3D;&gt; [&quot;a&quot;,&quot;b&quot;,&quot;c&quot;,&quot;d&quot;].</span><br></pre></td></tr></table></figure>
+
+<p>coalesce(T v1, T v2, …) 返回参数中的第一个非空值.<br>如果所有值都为 NULL,那么返回NULL.</p>
+<p>collect_list列出该字段所有的值,不去重.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select collect_list(id) from table.</span><br></pre></td></tr></table></figure>
+
+<h4 id="Hive有哪些方式保存元数据-各有哪些特点"><a href="#Hive有哪些方式保存元数据-各有哪些特点" class="headerlink" title="Hive有哪些方式保存元数据,各有哪些特点"></a>Hive有哪些方式保存元数据,各有哪些特点</h4><p>Hive支持三种不同的元存储服务器,分别为:内嵌式元存储服务器/本地元存储服务器/远程元存储服务器,每种存储方式使用不同的配置参数.</p>
+<p>内嵌式元存储主要用于单元测试,在该模式下每次只有一个进程可以连接到元存储,Derby是内嵌式元存储的默认数据库.<br>在本地模式下,每个Hive客户端都会打开到数据存储的连接并在该连接上请求SQL查询.</p>
+<p>在远程模式下,所有的Hive客户端都将打开一个到元数据服务器的连接,该服务器依次查询元数据,元数据服务器和客户端之间使用Thrift协议通信.</p>
+<h4 id="Hive内部表和外部表的区别"><a href="#Hive内部表和外部表的区别" class="headerlink" title="Hive内部表和外部表的区别"></a>Hive内部表和外部表的区别</h4><p>创建表时:<br>创建内部表时,会将数据移动到数据仓库指向的路径.<br>若创建外部表,仅记录数据所在的路径,不对数据的位置做任何改变.</p>
+<p>删除表时:<br>在删除表的时候,内部表的元数据和数据会被一起删除,而外部表只删除元数据,不删除数据.<br>这样外部表相对来说更加安全些,数据组织也更加灵活,方便共享源数据.</p>
+<h4 id="Hive的函数-UDF-UDAF-UDTF的区别"><a href="#Hive的函数-UDF-UDAF-UDTF的区别" class="headerlink" title="Hive的函数:UDF/UDAF/UDTF的区别"></a>Hive的函数:UDF/UDAF/UDTF的区别</h4><p>UDF:单行进入,单行输出<br>UDAF:多行进入,单行输出<br>UDTF:单行输入,多行输出</p>
+<h4 id="所有的Hive任务都会有MapReduce的执行吗"><a href="#所有的Hive任务都会有MapReduce的执行吗" class="headerlink" title="所有的Hive任务都会有MapReduce的执行吗"></a>所有的Hive任务都会有MapReduce的执行吗</h4><p>不是,从Hive0.10.0版本开始,对于简单的不需要聚合的类似SELECT from LIMIT n语句,不需要起MapReduce job,直接通过Fetch task获取数据.</p>
+<h4 id="说说对Hive桶表的理解"><a href="#说说对Hive桶表的理解" class="headerlink" title="说说对Hive桶表的理解"></a>说说对Hive桶表的理解</h4><p>桶表是对数据某个字段进行哈希取值,然后放到不同文件中存储.</p>
+<p>数据加载到桶表时,会对字段取hash值,然后与桶的数量取模.<br>把数据放到对应的文件中.<br>物理上,每个桶就是表(或分区)目录里的一个文件,一个作业产生的桶(输出文件)和reduce任务个数相同.</p>
+<p>桶表专门用于抽样查询,是很专业性的,不是日常用来存储数据的表,需要抽样查询时,才创建和使用桶表.</p>
+<h4 id="Hive底层与数据库交互原理"><a href="#Hive底层与数据库交互原理" class="headerlink" title="Hive底层与数据库交互原理"></a>Hive底层与数据库交互原理</h4><p>Hive 的查询功能是由 HDFS 和 MapReduce结合起来实现的,对于大规模数据查询还是不建议在 hive 中,因为过大数据量会造成查询十分缓慢.<br>Hive 与 MySQL的关系:只是借用 MySQL来存储 hive 中的表的元数据信息,称为 metastore(元数据信息).</p>
+<h4 id="Hive本地模式"><a href="#Hive本地模式" class="headerlink" title="Hive本地模式"></a>Hive本地模式</h4><p>大多数的Hadoop Job是需要Hadoop提供的完整的可扩展性来处理大数据集的.<br>不过,有时Hive的输入数据量是非常小的.<br>在这种情况下,为查询触发执行任务时消耗可能会比实际job的执行时间要多的多.<br>对于大多数这种情况,Hive可以通过本地模式在单台机器上处理所有的任务.<br>对于小数据集,执行时间可以明显被缩短.</p>
+<p>用户可以通过设置<code>hive.exec.mode.local.auto</code>的值为true,来让Hive在适当的时候自动启动这个优化.</p>
+<h4 id="Hive-中的压缩格式TextFile-SequenceFile-RCfile-ORCfile各有什么区别"><a href="#Hive-中的压缩格式TextFile-SequenceFile-RCfile-ORCfile各有什么区别" class="headerlink" title="Hive 中的压缩格式TextFile/SequenceFile/RCfile/ORCfile各有什么区别"></a>Hive 中的压缩格式TextFile/SequenceFile/RCfile/ORCfile各有什么区别</h4><h5 id="TextFile"><a href="#TextFile" class="headerlink" title="TextFile"></a>TextFile</h5><p>默认格式,存储方式为行存储,数据不做压缩,磁盘开销大,数据解析开销大.<br>可结合Gzip/Bzip2使用(系统自动检查,执行查询时自动解压),但使用这种方式,压缩后的文件不支持split,Hive不会对数据进行切分,从而无法对数据进行并行操作.<br>并且在反序列化过程中,必须逐个字符判断是不是分隔符和行结束符,因此反序列化开销会比SequenceFile高几十倍.</p>
+<h5 id="SequenceFile"><a href="#SequenceFile" class="headerlink" title="SequenceFile"></a>SequenceFile</h5><p>SequenceFile是Hadoop API提供的一种二进制文件支持,存储方式为行存储,其具有使用方便/可分割/可压缩的特点.<br>SequenceFile支持三种压缩选择:NONE/RECORD/BLOCK.<br>Record压缩率低,一般建议使用BLOCK压缩.</p>
+<p>优势是文件和hadoop api中的MapFile是相互兼容的.</p>
+<h5 id="RCFile"><a href="#RCFile" class="headerlink" title="RCFile"></a>RCFile</h5><p>存储方式:数据按行分块,每块按列存储.<br>结合了行存储和列存储的优点:<br>首先,RCFile 保证同一行的数据位于同一节点,因此元组重构的开销很低.<br>其次,像列存储一样,RCFile 能够利用列维度的数据压缩,并且能跳过不必要的列读取.</p>
+<h5 id="ORCFile"><a href="#ORCFile" class="headerlink" title="ORCFile"></a>ORCFile</h5><p>存储方式:数据按行分块,每块按照列存储.<br>压缩快/快速列存取.<br>效率比rcfile高,是rcfile的改良版本.</p>
+<blockquote>
+<p>小结:<br>相比TEXTFILE和SEQUENCEFILE,RCFILE由于列式存储方式,数据加载时性能消耗较大,但是具有较好的压缩比和查询响应.<br>数据仓库的特点是一次写入/多次读取,因此,整体来看,RCFILE相比其余两种格式具有较明显的优势.</p>
+</blockquote>
+<h4 id="Hive表关联查询-如何解决数据倾斜的问题"><a href="#Hive表关联查询-如何解决数据倾斜的问题" class="headerlink" title="Hive表关联查询,如何解决数据倾斜的问题"></a>Hive表关联查询,如何解决数据倾斜的问题</h4><h5 id="倾斜原因"><a href="#倾斜原因" class="headerlink" title="倾斜原因"></a>倾斜原因</h5><p>map输出数据按key Hash的分配到reduce中,由于key分布不均匀/业务数据本身的特/建表时考虑不周/等原因造成的reduce上的数据量差异过大.</p>
+<ol>
+<li>key分布不均匀</li>
+<li>业务数据本身的特性</li>
+<li>建表时考虑不周</li>
+<li>某些SQL语句本身就有数据倾斜</li>
+</ol>
+<h5 id="如何避免"><a href="#如何避免" class="headerlink" title="如何避免"></a>如何避免</h5><p>对于key为空产生的数据倾斜,可以对其赋予一个随机值.</p>
+<h5 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h5><h6 id="参数调节"><a href="#参数调节" class="headerlink" title="参数调节"></a>参数调节</h6><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hive.map.aggr <span class="operator">=</span> <span class="literal">true</span>;</span><br><span class="line">hive.groupby.skewindata <span class="operator">=</span> <span class="literal">true</span>;</span><br></pre></td></tr></table></figure>
+
+<p>有数据倾斜的时候进行负载均衡,当选项设定位true,生成的查询计划会有两个MR Job.<br>第一个MR Job中,Map的输出结果集合会随机分布到Reduce中,每个Reduce做部分聚合操作,并输出结果,这样处理的结果是相同的Group By Key有可能被分发到不同的Reduce中,从而达到负载均衡的目的.<br>第二个MR Job再根据预处理的数据结果按照Group By Key 分布到 Reduce 中(这个过程可以保证相同的 Group By Key 被分布到同一个Reduce中),最后完成最终的聚合操作.</p>
+<h6 id="SQL-语句调节"><a href="#SQL-语句调节" class="headerlink" title="SQL 语句调节"></a>SQL 语句调节</h6><ol>
+<li>选用join key分布最均匀的表作为驱动表.<br>做好列裁剪和filter操作,以达到两表做join 的时候,数据量相对变小的效果.</li>
+<li>大小表Join:使用map join让小的维度表(1000 条以下的记录条数)先进内存.<br>在map端完成reduce.</li>
+<li>大表Join大表:把空值的key变成一个字符串加上随机数,把倾斜的数据分到不同的reduce上,由于null 值关联不上,处理后并不影响最终结果.</li>
+<li>count distinct大量相同特殊值:count distinct 时,将值为空的情况单独处理,如果是计算count distinct,可以不用处理,直接过滤,在最后结果中加1.<br>如果还有其他计算,需要进行group by,可以先将值为空的记录单独处理,再和其他计算结果进行union.</li>
+</ol>
+<h4 id="Fetch抓取"><a href="#Fetch抓取" class="headerlink" title="Fetch抓取"></a>Fetch抓取</h4><p>Fetch抓取是指,Hive中对某些情况的查询可以不必使用MapReduce计算.<br>例如:<code>SELECT * FROM employees;</code>在这种情况下,Hive可以简单地读取employee对应的存储目录下的文件,然后输出查询结果到控制台.</p>
+<p>在hive-default.xml.template文件中<code>hive.fetch.task.conversion</code>默认是more,老版本hive默认是minimal,该属性修改为more以后,在全局查找/字段查找/limit查找等都不走mapreduce.</p>
+<h4 id="小表-大表Join"><a href="#小表-大表Join" class="headerlink" title="小表/大表Join"></a>小表/大表Join</h4><p>将key相对分散,并且数据量小的表放在join的左边,这样可以有效减少内存溢出错误发生的几率.<br>再进一步,可以使用Group让小的维度表(1000条以下的记录条数)先进内存.<br>在map端完成reduce.</p>
+<p>实际测试发现:新版的hive已经对小表JOIN大表和大表JOIN小表进行了优化.<br>小表放在左边和右边已经没有明显区别.</p>
+<h4 id="大表Join大表"><a href="#大表Join大表" class="headerlink" title="大表Join大表"></a>大表Join大表</h4><ol>
+<li>空KEY过滤<br>有时join超时是因为某些key对应的数据太多,而相同key对应的数据都会发送到相同的reducer上,从而导致内存不够.<br>此时我们应该仔细分析这些异常的key,很多情况下,这些key对应的数据是异常数据,我们需要在SQL语句中进行过滤.<br>例如key对应的字段为空.</li>
+<li>空key转换<br>有时虽然某个key为空对应的数据很多,但是相应的数据不是异常数据,必须要包含在join的结果中,此时我们可以表a中key为空的字段赋一个随机的值,使得数据随机均匀地分不到不同的reducer上.</li>
+</ol>
+<h4 id="Group-By"><a href="#Group-By" class="headerlink" title="Group By"></a>Group By</h4><p>默认情况下,Map阶段同一Key数据分发给一个reduce,当一个key数据过大时就倾斜了.</p>
+<p>并不是所有的聚合操作都需要在Reduce端完成,很多聚合操作都可以先在Map端进行部分聚合,最后在Reduce端得出最终结果.<br>开启Map端聚合参数设置.</p>
+<ul>
+<li>是否在Map端进行聚合,默认为True,<code>hive.map.aggr = true;</code></li>
+<li>在Map端进行聚合操作的条目数目,<code>hive.groupby.mapaggr.checkinterval = 100000;</code></li>
+<li>有数据倾斜的时候进行负载均衡(默认是false),<code>hive.groupby.skewindata = true;</code></li>
+</ul>
+<p>当选项设定为 true,生成的查询计划会有两个MR Job.<br>第一个MR Job中,Map的输出结果会随机分布到Reduce中,每个Reduce做部分聚合操作,并输出结果,这样处理的结果是相同的Group By Key有可能被分发到不同的Reduce中,从而达到负载均衡的目的.</p>
+<p>第二个MR Job再根据预处理的数据结果按照Group By Key分布到Reduce中(这个过程可以保证相同的Group By Key被分布到同一个Reduce中),最后完成最终的聚合操作.</p>
+<h4 id="Count-Distinct-去重统计"><a href="#Count-Distinct-去重统计" class="headerlink" title="Count(Distinct) 去重统计"></a>Count(Distinct) 去重统计</h4><p>数据量小的时候无所谓,数据量大的情况下,由于COUNT DISTINCT操作需要用一个Reduce Task来完成,这一个Reduce需要处理的数据量太大,就会导致整个Job很难完成,一般COUNT DISTINCT使用先GROUP BY再COUNT的方式替换.</p>
+<p>尽量避免笛卡尔积,join的时候不加on条件,或者无效的on条件,Hive只能使用1个reducer来完成笛卡尔积.</p>
+<h4 id="行列过滤"><a href="#行列过滤" class="headerlink" title="行列过滤"></a>行列过滤</h4><p>列处理:在SELECT中,只拿需要的列,如果有,尽量使用分区过滤,少用SELECT *.<br>行处理:在分区剪裁中,当使用外关联时,如果将副表的过滤条件写在Where后面,那么就会先全表关联,之后再过滤.</p>
+<h4 id="并行执行"><a href="#并行执行" class="headerlink" title="并行执行"></a>并行执行</h4><p>Hive会将一个查询转化成一个或者多个阶段.<br>这样的阶段可以是MapReduce阶段/抽样阶段/合并阶段/limit阶段.<br>或者Hive执行过程中可能需要的其他阶段.<br>默认情况下,Hive一次只会执行一个阶段.<br>不过,某个特定的job可能包含众多的阶段,而这些阶段可能并非完全互相依赖的,也就是说有些阶段是可以并行执行的,这样可能使得整个job的执行时间缩短.<br>不过,如果有更多的阶段可以并行执行,那么job可能就越快完成.</p>
+<p>通过设置参数<code>hive.exec.parallel</code>值为true,就可以开启并发执行.<br>不过,在共享集群中,需要注意下,如果job中并行阶段增多,那么集群利用率就会增加.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hive/" rel="tag"># hive</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/11/14/hive%E4%BC%98%E5%8C%96/" rel="prev" title="hive优化">
+                  <i class="fa fa-chevron-left"></i> hive优化
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/11/16/spark%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/" rel="next" title="spark内存模型">
+                  spark内存模型 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

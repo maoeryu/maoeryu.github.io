@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="写入流程客户端流程解析1)用户提交put请求后,HBase客户端会将put请求添加到本地buffer中,符合一定条件就会通过AsyncProcess异步批量提交.HBase默认设置autoflush&#x3D;true,表示put请求直接会提交给服务器进行处理.用户可以设置autoflush&#x3D;false,这样的话put请求会首先放到本地buffer,等到本地buffer大小超过一定阈值(默认为2M,可以通过">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hbase数据读写流程">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/02/hbase%E6%95%B0%E6%8D%AE%E8%AF%BB%E5%86%99%E6%B5%81%E7%A8%8B/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="写入流程客户端流程解析1)用户提交put请求后,HBase客户端会将put请求添加到本地buffer中,符合一定条件就会通过AsyncProcess异步批量提交.HBase默认设置autoflush&#x3D;true,表示put请求直接会提交给服务器进行处理.用户可以设置autoflush&#x3D;false,这样的话put请求会首先放到本地buffer,等到本地buffer大小超过一定阈值(默认为2M,可以通过">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbwrite1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbwrite2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbwrite3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbwrite4.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbwrite5.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbwrite6.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbwrite7.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbwrite8.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbwrite9.png">
+<meta property="article:published_time" content="2022-08-01T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-06T06:29:44.145Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hbase">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/hbwrite1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/02/hbase%E6%95%B0%E6%8D%AE%E8%AF%BB%E5%86%99%E6%B5%81%E7%A8%8B/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hbase数据读写流程 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text">写入流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.</span> <span class="nav-text">客户端流程解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%AB%AF%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90"><span class="nav-number">1.2.</span> <span class="nav-text">服务器端流程解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#WAL%E6%9C%BA%E5%88%B6%E8%A7%A3%E6%9E%90"><span class="nav-number">1.3.</span> <span class="nav-text">WAL机制解析</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%BB%E5%8F%96%E6%B5%81%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">读取流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Client-Server%E4%BA%A4%E4%BA%92%E9%80%BB%E8%BE%91"><span class="nav-number">2.1.</span> <span class="nav-text">Client-Server交互逻辑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9E%84%E5%BB%BAscanner%E4%BD%93%E7%B3%BB-%E7%BB%84%E5%BB%BA%E6%96%BD%E5%B7%A5%E9%98%9F"><span class="nav-number">2.2.</span> <span class="nav-text">构建scanner体系(组建施工队)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#scan%E6%9F%A5%E8%AF%A2-%E5%B1%82%E5%B1%82%E5%BB%BA%E6%A5%BC"><span class="nav-number">2.3.</span> <span class="nav-text">scan查询(层层建楼)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#scan%E8%AF%A6%E8%A7%A3"><span class="nav-number">2.4.</span> <span class="nav-text">scan详解</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/02/hbase%E6%95%B0%E6%8D%AE%E8%AF%BB%E5%86%99%E6%B5%81%E7%A8%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hbase数据读写流程
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-02 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-02T00:00:00+08:00">2022-08-02</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-06 14:29:44" itemprop="dateModified" datetime="2022-09-06T14:29:44+08:00">2022-09-06</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="写入流程"><a href="#写入流程" class="headerlink" title="写入流程"></a>写入流程</h2><h3 id="客户端流程解析"><a href="#客户端流程解析" class="headerlink" title="客户端流程解析"></a>客户端流程解析</h3><p>1)用户提交put请求后,HBase客户端会将put请求添加到本地buffer中,符合一定条件就会通过AsyncProcess异步批量提交.<br>HBase默认设置autoflush=true,表示put请求直接会提交给服务器进行处理.<br>用户可以设置autoflush=false,这样的话put请求会首先放到本地buffer,等到本地buffer大小超过一定阈值(默认为2M,可以通过配置文件配置)之后才会提交.<br>很显然,后者采用group commit机制提交请求,可以极大地提升写入性能,但是因为没有保护机制,如果客户端崩溃的话会导致提交的请求丢失.</p>
+<p>2)在提交之前,HBase会在元数据表.meta.中根据rowkey找到它们归属的region server,这个定位的过程是通过HConnection的locateRegion方法获得的.<br>如果是批量请求的话还会把这些rowkey按照HRegionLocation分组,每个分组可以对应一次RPC请求.</p>
+<p>3)HBase会为每个HRegionLocation构造一个远程RPC请求MultiServerCallable<code>&lt;Row&gt;</code>,然后通过rpcCallerFactory.<code>&lt;MultiResponse&gt;</code> newCaller()执行调用,忽略掉失败重新提交和错误处理,客户端的提交操作到此结束.</p>
+<span id="more"></span>
+<h3 id="服务器端流程解析"><a href="#服务器端流程解析" class="headerlink" title="服务器端流程解析"></a>服务器端流程解析</h3><p>服务器端RegionServer接收到客户端的写入请求后,首先会反序列化为Put对象,然后执行各种检查操作,比如检查region是否是只读/memstore大小是否超过blockingMemstoreSize等.<br>检查完成之后,就会执行如下核心操作:</p>
+<img src="/images/hbwrite1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>1)获取行锁/Region更新共享锁<br>HBase中使用行锁保证对同一行数据的更新都是互斥操作,用以保证更新的原子性,要么更新成功,要么失败.</p>
+<p>2)开始写事务<br>获取write number,用于实现MVCC,实现数据的非锁定读,在保证读写一致性的前提下提高读取性能.</p>
+<p>3)写缓存memstore<br>HBase中每列族都会对应一个store,用来存储该列数据.<br>每个store都会有个写缓存memstore,用于缓存写入数据.<br>HBase并不会直接将数据落盘,而是先写入缓存,等缓存满足一定大小之后再一起落盘.</p>
+<p>4)Append HLog<br>HBase使用WAL机制保证数据可靠性,即首先写日志再写缓存,即使发生宕机,也可以通过恢复HLog还原出原始数据.<br>该步骤就是将数据构造为WALEdit对象,然后顺序写入HLog中,此时不需要执行sync操作.<br>0.98版本采用了新的写线程模式实现HLog日志的写入,可以使得整个数据更新性能得到极大提升.</p>
+<p>5)释放行锁以及共享锁</p>
+<p>6)Sync HLog<br>HLog真正sync到HDFS,在释放行锁之后执行sync操作是为了尽量减少持锁时间,提升写性能.<br>如果Sync失败,执行回滚操作将memstore中已经写入的数据移除.</p>
+<p>7)结束写事务<br>此时该线程的更新操作才会对其他读请求可见,更新才实际生效.</p>
+<p>8)flush memstore<br>当写缓存满64M之后,会启动flush线程将数据刷新到硬盘.</p>
+<h3 id="WAL机制解析"><a href="#WAL机制解析" class="headerlink" title="WAL机制解析"></a>WAL机制解析</h3><p>WAL(Write-Ahead Logging)是一种高效的日志算法,几乎是所有非内存数据库提升写性能的不二法门,基本原理是在数据写入之前首先顺序写入日志,然后再写入缓存,等到缓存写满之后统一落盘.<br>之所以能够提升写性能,是因为WAL将一次随机写转化为了一次顺序写加一次内存写.<br>提升写性能的同时,WAL可以保证数据的可靠性,即在任何情况下数据不丢失.<br>假如一次写入完成之后发生了宕机,即使所有缓存中的数据丢失,也可以通过恢复日志还原出丢失的数据.</p>
+<h2 id="读取流程"><a href="#读取流程" class="headerlink" title="读取流程"></a>读取流程</h2><h3 id="Client-Server交互逻辑"><a href="#Client-Server交互逻辑" class="headerlink" title="Client-Server交互逻辑"></a>Client-Server交互逻辑</h3><img src="/images/hbwrite2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>1)客户端首先会根据配置文件中zookeeper地址连接zookeeper,并读取<code>/&lt;hbase-rootdir&gt;/meta-region-server</code>节点信息,该节点信息存储HBase元数据(hbase:meta)表所在的RegionServer地址以及访问端口等信息.<br>用户可以通过zookeeper命令(get <code>/&lt;hbase-rootdir&gt;/meta-region-server</code>)查看该节点信息.</p>
+<p>2)根据hbase:meta所在RegionServer的访问信息,客户端会将该元数据表加载到本地并进行缓存.<br>然后在表中确定待检索rowkey所在的RegionServer信息.</p>
+<p>3)根据数据所在RegionServer的访问信息,客户端会向该RegionServer发送真正的数据读取请求.<br>服务器端接收到该请求之后需要进行复杂的处理.</p>
+<p>通过上述对客户端以及HBase系统的交互分析,可以基本明确两点:<br>1)客户端只需要配置zookeeper的访问地址以及根目录,就可以进行正常的读写请求,不需要配置集群的RegionServer地址列表.<br>2)客户端会将<code>hbase:meta</code>元数据表缓存在本地,因此上述步骤中前两步只会在客户端第一次请求的时候发生,之后所有请求都直接从缓存中加载元数据.<br>如果集群发生某些变化导致hbase:meta元数据更改,客户端再根据本地元数据表请求的时候就会发生异常,此时客户端需要重新加载一份最新的元数据表到本地.</p>
+<p>RegionServer接收到客户端的get/scan请求之后,先后做了两件事情:<br>构建scanner体系(实际上就是做一些scan前的准备工作),在此体系基础上一行一行检索.</p>
+<h3 id="构建scanner体系-组建施工队"><a href="#构建scanner体系-组建施工队" class="headerlink" title="构建scanner体系(组建施工队)"></a>构建scanner体系(组建施工队)</h3><p>scanner体系的核心在于三层scanner:RegionScanner/StoreScanner以及StoreFileScanner;<br>三者是层级的关系,一个RegionScanner由多个StoreScanner构成,一张表由多个列族组成,就有多少个StoreScanner负责该列族的数据扫描.<br>一个StoreScanner又是由多个StoreFileScanner组成.<br>每个Store的数据由内存中的MemStore和磁盘上的StoreFile文件组成,相对应的,StoreScanner对象会雇佣一个MemStoreScanner和N个StoreFileScanner来进行实际的数据读取,每个StoreFile文件对应一个StoreFileScanner.<br>StoreFileScanner和MemstoreScanner是整个scan的最终执行者.</p>
+<p>对应于建楼项目,<br>一栋楼通常由好几个单元楼构成(每个单元楼对应于一个Store),<br>每个单元楼会请一个监工(StoreScanner)负责该单元楼的建造.<br>而监工一般不做具体的事情,他负责招募很多工人(StoreFileScanner),这些工人才是建楼的主体.下图是整个构建流程图,</p>
+<img src="/images/hbwrite3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>1)RegionScanner会根据列族构建StoreScanner,有多少列族就构建多少StoreScanner,用于负责该列族的数据检索.</p>
+<p>1.1)构建StoreFileScanner<br>每个StoreScanner会为当前该Store中每个HFile构造一个StoreFileScanner,用于实际执行对应文件的检索.<br>同时会为对应Memstore构造一个MemstoreScanner,用于执行该Store中Memstore的数据检索.<br>该步骤对应于监工在人才市场招募建楼所需的各种类型工匠.</p>
+<p>1.2)过滤淘汰StoreFileScanner<br>根据Time Range以及RowKey Range对StoreFileScanner以及MemstoreScanner进行过滤,淘汰肯定不存在待检索结果的Scanner.<br>上图中StoreFile3因为检查RowKeyRange不存在待检索Rowkey所以被淘汰.<br>该步骤针对具体的建楼方案,裁撤掉部分不需要的工匠,比如这栋楼不需要地暖安装,对应的工匠就可以撤掉.</p>
+<p>1.3)Seek rowkey<br>所有StoreFileScanner开始做准备工作,在负责的HFile中定位到满足条件的起始Row.<br>工匠也开始准备自己的建造工具,建造材料,找到自己的工作地点,等待一声命下.<br>就像所有重要项目的准备工作都很核心一样,Seek过程(此处略过Lazy Seek优化)也是一个很核心的步骤,它主要包含下面三步:</p>
+<p>定位Block Offset:在Blockcache中读取该HFile的索引树结构,根据索引树检索对应RowKey所在的Block Offset和Block Size.<br>Load Block:根据BlockOffset首先在BlockCache中查找Data Block,如果不在缓存,再在HFile中加载.<br>Seek Key:在Data Block内部通过二分查找的方式定位具体的RowKey.</p>
+<p>1.4)StoreFileScanner合并构建最小堆<br>将该Store中所有StoreFileScanner和MemstoreScanner合并形成一个heap(最小堆),所谓heap是一个优先级队列,队列中元素是所有scanner,排序规则按照scanner seek到的keyvalue大小由小到大进行排序.<br>这里需要重点关注三个问题,首先为什么这些Scanner需要由小到大排序,其次keyvalue是什么样的结构,最后,keyvalue谁大谁小是如何确定的.</p>
+<blockquote>
+<p>为什么这些Scanner需要由小到大排序?</p>
+</blockquote>
+<p>最直接的解释是scan的结果需要由小到大输出给用户,当然,这并不全面,最合理的解释是只有由小到大排序才能使得scan效率最高.<br>举个简单的例子,HBase支持数据多版本,假设用户只想获取最新版本,那只需要将这些数据由最新到最旧进行排序,然后取队首元素返回就可以.<br>那么,如果不排序,就只能遍历所有元素,查看符不符合用户查询条件.这就是排队的意义.</p>
+<p>工匠们也需要排序,先做地板的排前面,做墙体的次之,最后是做门窗户的.<br>做墙体的内部还需要再排序,做内墙的排前面,做外墙的排后面,这样,假如设计师临时决定不做外墙的话,就可以直接跳过外墙部分工作.<br>很显然,如果不排序的话,是没办法临时做决定的,因为这部分工作已经可能做掉了.</p>
+<blockquote>
+<p>HBase中KeyValue是什么样的结构?</p>
+</blockquote>
+<p>HBase中KeyValue并不是简单的KV数据对,而是一个具有复杂元素的结构体,其中Key由RowKey,ColumnFamily,Qualifier ,TimeStamp,KeyType等多部分组成,Value是一个简单的二进制数据.<br>Key中元素KeyType表示该KeyValue的类型,取值分别为Put/Delete/Delete Column/Delete Family等.<br>KeyValue可以表示为如下图所示:</p>
+<img src="/images/hbwrite4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>了解了KeyValue的逻辑结构后,我们不妨再进一步从原理的角度想想HBase的开发者们为什么如此对其设计.<br>这个就得从HBase所支持的数据操作说起了,HBase支持四种主要的数据操作,分别是Get/Scan/Put/Delete,<br>其中Get和Scan代表数据查询,Put操作代表数据插入或更新(如果Put的RowKey不存在则为插入操作/否则为更新操作).<br>特别需要注意的是HBase中更新操作并不是直接覆盖修改原数据,而是生成新的数据,新数据和原数据具有不同的版本(时间戳).<br>Delete操作执行数据删除,和数据更新操作相同,HBase执行数据删除并不会马上将数据从数据库中永久删除,而只是生成一条删除记录,最后在系统执行文件合并的时候再统一删除.</p>
+<p>HBase中更新删除操作并不直接操作原数据,而是生成一个新纪录,那问题来了,如何知道一条记录到底是插入操作还是更新操作亦或是删除操作呢?<br>这正是KeyType和Timestamp的用武之地.<br>上文中提到KeyType取值为分别为Put/Delete/Delete Column/Delete Family四种,如果KeyType取值为Put,表示该条记录为插入或者更新操作,而无论是插入或者更新,都可以使用版本号(Timestamp)对记录进行选择.<br>如果KeyType为Delete,表示该条记录为整行删除操作.<br>相应的KeyType为Delete Column和Delete Family分别表示删除某行某列以及某行某列族操作.</p>
+<blockquote>
+<p>不同KeyValue之间如何进行大小比较?</p>
+</blockquote>
+<p>上文提到KeyValue中Key由RowKey,ColumnFamily,Qualifier ,TimeStamp,KeyType等5部分组成,HBase设定Key大小首先比较RowKey,RowKey越小Key就越小.<br>RowKey如果相同就看CF,CF越小Key越小.<br>CF如果相同看Qualifier,Qualifier越小Key越小.<br>Qualifier如果相同再看Timestamp,Timestamp越大表示时间越新,对应的Key越小.<br>如果Timestamp还相同,就看KeyType,KeyType按照DeleteFamily -&gt; DeleteColumn -&gt; Delete -&gt; Put 顺序依次对应的Key越来越大.</p>
+<p>2)StoreScanner合并构建最小堆<br>上文讨论的是一个监工如何构建自己的工匠师团队以及工匠师如何做准备工作/排序工作.<br>实际上,监工也需要进行排序,比如一单元的监工排前面,二单元的监工排之后...<br>StoreScanner一样,列族小的StoreScanner排前面,列族大的StoreScanner排后面.</p>
+<h3 id="scan查询-层层建楼"><a href="#scan查询-层层建楼" class="headerlink" title="scan查询(层层建楼)"></a>scan查询(层层建楼)</h3><p>构建Scanner体系是为了更好地执行scan查询,就像组建工匠师团队就是为了盖房子一样.<br>scan查询总是一行一行查询的,先查第一行的所有数据,再查第二行的所有数据,但每一行的查询流程却没有什么本质区别.<br>盖房子也一样,无论是盖8层还是盖18层,都需要一层一层往上盖,而且每一层的盖法并没有什么区别.<br>所以实际上我们只需要关注其中一行数据是如何查询的就可以.</p>
+<p>对于一行数据的查询,又可以分解为多个列族的查询,比如RowKey=row1的一行数据查询,首先查询列族1上该行的数据集合,再查询列族2里该行的数据集合.<br>同样是盖第一层房子,先盖一单元的一层,再改二单元的一层,盖完之后才算一层盖完,接着开始盖第二层.<br>所以我们也只需要关注某一行某个列族的数据是如何查询的就可以.</p>
+<p>还记得Scanner体系构建的最终结果是一个由StoreFileScanner和MemstoreScanner组成的heap(最小堆)么,这里就派上用场了.<br>下图是一张表的逻辑视图,该表有两个列族cf1和cf2(我们只关注cf1),cf1只有一个列name,表中有5行数据,其中每个cell基本都有多个版本.<br>cf1的数据假如实际存储在三个区域,memstore中有r2和r4的最新数据,hfile1中是最早的数据.<br>现在需要查询RowKey=r2的数据,按照上文的理论对应的Scanner指向就如图所示:</p>
+<img src="/images/hbwrite5.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>这三个Scanner组成的heap为<code>&lt;MemstoreScanner,StoreFileScanner2, StoreFileScanner1&gt;</code>,Scanner由小到大排列.<br>查询的时候首先pop出heap的堆顶元素,即MemstoreScanner,得到keyvalue = r2:cf1:name:v3:name23的数据,拿到这个keyvalue之后,需要进行如下判定:</p>
+<p>1)检查该KeyValue的KeyType是否是Deleted/DeletedCol等,如果是就直接忽略该列所有其他版本,跳到下列(列族).<br>2)检查该KeyValue的Timestamp是否在用户设定的Timestamp Range范围,如果不在该范围,忽略.<br>3)检查该KeyValue是否满足用户设置的各种filter过滤器,如果不满足,忽略.<br>4)检查该KeyValue是否满足用户查询中设定的版本数,比如用户只查询最新版本,则忽略该cell的其他版本,反正如果用户查询所有版本,则还需要查询该cell的其他版本.</p>
+<p>现在假设用户查询所有版本而且该keyvalue检查通过,此时当前的堆顶元素需要执行next方法去检索下一个值,并重新组织最小堆.<br>即图中MemstoreScanner将会指向r4,重新组织最小堆之后最小堆将会变为<code>&lt;StoreFileScanner2, StoreFileScanner1, MemstoreScanner&gt;</code>,堆顶元素变为StoreFileScanner2,得到keyvalue＝r2:cf1:name:v2:name22,进行一系列判定,再next,再重新组织最小堆.</p>
+<p>不断重复这个过程,直至一行数据全部被检索得到,继续下一行.</p>
+<h3 id="scan详解"><a href="#scan详解" class="headerlink" title="scan详解"></a>scan详解</h3><blockquote>
+<p>Memstore在flush的时候会不会将Blockcache中的数据update?<br>如果不update的话不就会产生脏读,读到以前的老数据?</p>
+</blockquote>
+<img src="/images/hbwrite6.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>常说HBase数据读取要读Memstore/HFile和Blockcache,为什么上面Scanner只有StoreFileScanner和MemstoreScanner两种?没有BlockcacheScanner?</p>
+</blockquote>
+<p>HBase中数据仅仅独立地存在于Memstore和StoreFile中,Blockcache中的数据只是StoreFile中的部分数据(热点数据),即所有存在于Blockcache的数据必然存在于StoreFile中.<br>因此MemstoreScanner和StoreFileScanner就可以覆盖到所有数据.<br>实际读取时StoreFileScanner通过索引定位到待查找key所在的block之后,首先检查该block是否存在于Blockcache中,如果存在直接取出,如果不存在再到对应的StoreFile中读取.</p>
+<blockquote>
+<p>数据更新操作先将数据写入Memstore,再落盘.<br>落盘之后需不需要更新Blockcache中对应的kv?如果不更新,会不会读到脏数据?</p>
+</blockquote>
+<p>不需要更新Blockcache中对应的kv,而且不会读到脏数据.<br>数据写入Memstore落盘会形成新的文件,和Blockcache里面的数据是相互独立的,以多版本的方式存在.</p>
+<blockquote>
+<p>读取流程中如何使用BloomFilter(简称BF)对StoreFile进行过滤?</p>
+</blockquote>
+<p>过滤StoreFile发生在上图中第三步,过滤手段主要有三种:根据KeyRange过滤/根据TimeRange过滤/根据BF过滤.<br>下面分别进行介绍:</p>
+<p>1)根据KeyRange过滤<br>因为StoreFile是中所有KV数据都是有序排列的,所以如果待检索row范围<code>[startrow,stoprow]</code>与文件起始key范围<code>[firstkey,lastkey]</code>没有交集,比如stoprow <code>&lt; firstkey 或者 startrow &gt;</code> lastkey,就可以过滤掉该StoreFile.</p>
+<p>2)根据TimeRange过滤<br>StoreFile中元数据有一个关于该File的TimeRange属性<code>[minimumTimestamp, maxmumTimestamp]</code>,因此待检索的TimeRange如果与该文件时间范围没有交集,就可以过滤掉该StoreFile.<br>另外,如果该文件所有数据已经过期,也可以过滤淘汰.</p>
+<p>3)根据BF过滤<br>BF在几乎所有的LSM模型存储领域都会用到,可说是标配,比如HBase/Kudu/RocksDB等等,用法也是如出一辙,和HBase一样,主要用来读取数据时过滤部分文件.</p>
+<blockquote>
+<p>HBase中如何利用BF对StoreFile进行过滤</p>
+</blockquote>
+<p>首先把BF数据加载到内存,然后使用hash函数对待检索row进行hash,根据hash后的结果在BF数据中进行寻址查看即可确定是否存在该HFile.</p>
+<p>BF数据实际上是和用户KV数据一样存储在HFile中的,官方文档中HFile(v2)组织结构图如下,</p>
+<img src="/images/hbwrite7.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>HFile组织结构中关于BF有两个非常重要的结构:Bloom Block与Bloom Index.<br>Bloom Block主要存储BF的实际数据,可能这会大家要问为什么Bloom Block要分布在整个HFile?分布的具体位置如何确定?<br>其实很简单,HBase在写数据的时候就会根据row生成对应的BF信息并写到一个Block中,随着用户数据的不断写入,这个BF Block就会不断增大,当增大到一定阈值之后系统就会重新生成一个新Block,旧Block就会顺序加载到Data Block之后.<br>这里隐含了一个关键的信息,随着单个文件的增大,BF信息会逐渐变的很大,并不适合一次性全部加载到内存,更适合的使用方式是使用哪块加载哪块.</p>
+<p>这些Bloom Block分散在HFile中的各个角落,就会带来一个问题:如何有效快速定位到这些BF Block?<br>这就是Bloom Index的核心作用,与Data Index相同,Bloom Index也是一颗B+树,Bloom Index Block结构如下图所示:</p>
+<img src="/images/hbwrite8.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>上图需要重点关注Bloom Block的Block Key:Block中第一个原始KV的RowKey.<br>这样给定一个待检索的 rowkey,就可以很容易地通过Bloom Index定位到具体的Bloom Block,将Block加载到内存进行过滤.<br>通常情况下,热点Bloom Block会常驻内存的.</p>
+<p>再回到出发的地方,我们说在实际scan之前就要使用BF对StoreFile进行过滤,那仔细想下,到底用哪个rowkey过滤?实际实现中系统使用scan的startrow作为过滤条件进行过滤,这是不是有问题?举个简单的例子,假设小明检索的数据为<code>[row1, row4]</code>,如果此文件不包含row1,而包含row2,这样在scan前你利用row1就把该文件淘汰掉了,row2这条数据怎么办?不是会被遗漏?</p>
+<p>这里系统实现有个隐藏点,scan之前使用BF进行过滤只针对get查询以及scan单条数据的场景,scan多条数据并不会执行实际的BF过滤,而是在实际seek到新一行的时候才会启用BF根据新一行rowkey对所有StoreFile过滤.</p>
+<blockquote>
+<p>最小堆中弹出cell之后如何对该cell进行检查过滤,确保满足用户设置条件?<br>检查过滤之后是继续弹出下一个cell,还是跳过部分cell重新seek到下一列或者下一行?</p>
+</blockquote>
+<p>scan之所以复杂,很大程度上是因为scan可以设置的条件非常之多,下面所示代码为比较常规的一些设置:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Scan scan = <span class="keyword">new</span> Scan();</span><br><span class="line">scan.withStartRow(startRow) <span class="comment">//设置检索起始row</span></span><br><span class="line">.withStopRow(stopRow) <span class="comment">//设置检索结束row</span></span><br><span class="line">.setFamilyMap(Map&lt;<span class="keyword">byte</span>[], Set&lt;<span class="keyword">byte</span>[]&gt; familyMap&gt;) <span class="comment">//设置检索的列族和对应列族下的列集合</span></span><br><span class="line">.setTimeRange(minStamp, maxStamp) <span class="comment">// 设置检索TimeRange</span></span><br><span class="line">.setMaxVersions(maxVersions) <span class="comment">//设置检索的最大版本号</span></span><br><span class="line">.setFilter(filter) <span class="comment">//设置检索过滤器</span></span><br></pre></td></tr></table></figure>
+
+<p>在整个Scan流程的第6步,将堆顶kv元素出堆进行检查,实际上主要检查两个方面,<br>其一是非用户条件检查,比如kv是否已经过期(列族设置TTL)/kv是否已经被删除,这些检查和用户设置查询条件没有任何关系.<br>其二就是检查该kv是否满足用户设置的这些查询条件.<br>核心代码主要参考ScanQueryMatcher.match(cell)方法.</p>
+<p>堆顶元素kv检查之后的返回值(MatchCode),它会告诉scanner是继续seek下一个cell,还是直接跳过部分cell直接seek到下一列(对应INCLUDE_AND_SEEK_NEXT_COL或SEEK_NEXT_COL),抑或是直接seek到下一行(对应INCLUDE_AND_SEEK_NEXT_ROW或SEEK_NEXT_ROW).<br>还是举一个简单的例子:</p>
+<img src="/images/hbwrite9.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>上图是待查表,含有一个列族cf,列族下有四个列<code>[c1, c2, c3, c4]</code>,列族设置MaxVersions为2,即允许最多存在2个版本.<br>现在简单构造一个查询语句如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Scan scan = <span class="keyword">new</span> Scan(r1, r4); <span class="comment">// 表示检索范围为[r1, r4]</span></span><br><span class="line">scan.setFamilyMap(Map&lt;cf, Set&lt;c1,c2&gt;&gt;) <span class="comment">//仅检索列族cf下的c1列和c2列</span></span><br><span class="line">.setMaxVersions(<span class="number">1</span>) <span class="comment">//设置检索的最大版本号为1</span></span><br></pre></td></tr></table></figure>
+
+<p>下面分别模拟直接跳过部分纪录seek到下一列(INCLUDE_AND_SEEK_NEXT_COL)的场景以及跳过部分列直接seek到下一行(INCLUDE_AND_SEEK_NEXT_ROW)的场景:</p>
+<p>1)假设当前检索r1行,堆顶元素为cf:c1下的kv1(版本为v1),按照设置条件中检索的最大版本号为1,其他条件都满足的情况下就可以直接跳过kv2直接seek到下一列－c2列.<br>这种场景下就会返回INCLUDE_AND_SEEK_NEXT_COL.</p>
+<p>2)假设当前检索r1行,堆顶元素为cf:c2下的kv3(仅有1个版本),满足设置的版本条件,系统检测到c2是检索的最后一列之后(c3/c4并不需要检索),就会返回指示－略过c3/c4直接seek到下一行.<br>这种场景下就会返回INCLUDE_AND_SEEK_NEXT_ROW.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hbase/" rel="tag"># hbase</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/02/hbase%E8%A1%8C%E9%94%81%E4%B8%8E%E5%A4%9A%E7%89%88%E6%9C%AC%E5%B9%B6%E5%8F%91%E6%8E%A7%E5%88%B6%20(mvcc)/" rel="prev" title="hbase行锁与多版本并发控制(mvcc)">
+                  <i class="fa fa-chevron-left"></i> hbase行锁与多版本并发控制(mvcc)
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/02/hbase%E5%AE%A2%E6%88%B7%E7%AB%AF%E9%87%8D%E8%AF%95-%E8%B6%85%E6%97%B6%E6%9C%BA%E5%88%B6/" rel="next" title="hbase客户端重试-超时机制">
+                  hbase客户端重试-超时机制 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

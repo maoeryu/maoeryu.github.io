@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="背景每个文件均按块存储,每个块的元数据存储在NameNode的内存中,因此HDFS存储小文件会非常低效.因为大量的小文件会耗尽NameNode中的大部分内存. 但注意,存储小文件所需要的磁盘容量和数据块的大小无关.每个块的大小可以通过配置参数(dfs.blocksize)来规定,默认的大小128M.例如,一个1MB的文件设置为128MB的块存储,实际使用的是1MB的磁盘空间,而不是128MB.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hadoop小文件处理">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/26/hadoop%E5%B0%8F%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="背景每个文件均按块存储,每个块的元数据存储在NameNode的内存中,因此HDFS存储小文件会非常低效.因为大量的小文件会耗尽NameNode中的大部分内存. 但注意,存储小文件所需要的磁盘容量和数据块的大小无关.每个块的大小可以通过配置参数(dfs.blocksize)来规定,默认的大小128M.例如,一个1MB的文件设置为128MB的块存储,实际使用的是1MB的磁盘空间,而不是128MB.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/hblock1.jpg">
+<meta property="og:image" content="https://maoeryu.github.io/images/hblock2.jpg">
+<meta property="og:image" content="https://maoeryu.github.io/images/hblock3.jpg">
+<meta property="og:image" content="https://maoeryu.github.io/images/hblock4.jpg">
+<meta property="og:image" content="https://maoeryu.github.io/images/hblock5.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hblock6.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hblock7.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl97.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl98.png">
+<meta property="article:published_time" content="2022-08-25T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-06T09:05:23.979Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hadoop">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/hblock1.jpg">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/26/hadoop%E5%B0%8F%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hadoop小文件处理 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%8F%E6%96%87%E4%BB%B6%E6%98%AF%E5%A6%82%E4%BD%95%E4%BA%A7%E7%94%9F%E7%9A%84"><span class="nav-number">1.1.</span> <span class="nav-text">小文件是如何产生的</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E5%9D%97%E5%A4%A7%E5%B0%8F%E8%AE%BE%E7%BD%AE"><span class="nav-number">1.2.</span> <span class="nav-text">文件块大小设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HDFS%E5%88%86%E5%9D%97%E7%9B%AE%E7%9A%84"><span class="nav-number">1.3.</span> <span class="nav-text">HDFS分块目的</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E6%96%B9%E6%A1%88"><span class="nav-number">2.</span> <span class="nav-text">处理方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#archive"><span class="nav-number">2.1.</span> <span class="nav-text">archive</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Sequence-file"><span class="nav-number">2.2.</span> <span class="nav-text">Sequence file</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CombineFileInputFormat"><span class="nav-number">2.3.</span> <span class="nav-text">CombineFileInputFormat</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%90%AFJVM%E9%87%8D%E7%94%A8"><span class="nav-number">2.4.</span> <span class="nav-text">开启JVM重用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%88%E5%B9%B6%E6%9C%AC%E5%9C%B0%E7%9A%84%E5%B0%8F%E6%96%87%E4%BB%B6-appendToFile"><span class="nav-number">2.5.</span> <span class="nav-text">合并本地的小文件(appendToFile)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%88%E5%B9%B6HDFS%E7%9A%84%E5%B0%8F%E6%96%87%E4%BB%B6-getmerge"><span class="nav-number">2.6.</span> <span class="nav-text">合并HDFS的小文件(getmerge)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#FileCrusher"><span class="nav-number">2.7.</span> <span class="nav-text">FileCrusher</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%A4%BA%E4%BE%8B"><span class="nav-number">3.</span> <span class="nav-text">操作示例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#archive-1"><span class="nav-number">3.1.</span> <span class="nav-text">archive</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#appendToFile"><span class="nav-number">3.2.</span> <span class="nav-text">appendToFile</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#getmerge"><span class="nav-number">3.3.</span> <span class="nav-text">getmerge</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%92%88%E5%AF%B9Hive%E8%A1%A8%E5%B0%8F%E6%96%87%E4%BB%B6%E6%95%B0%E5%90%88%E5%B9%B6%E5%A4%84%E7%90%86-CombineFileInputFormat"><span class="nav-number">3.4.</span> <span class="nav-text">针对Hive表小文件数合并处理(CombineFileInputFormat)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BE%93%E5%85%A5%E9%98%B6%E6%AE%B5%E5%90%88%E5%B9%B6"><span class="nav-number">3.4.1.</span> <span class="nav-text">输入阶段合并</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BE%93%E5%87%BA%E9%98%B6%E6%AE%B5%E5%90%88%E5%B9%B6"><span class="nav-number">3.4.2.</span> <span class="nav-text">输出阶段合并</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#hive%E5%B0%8F%E6%96%87%E4%BB%B6"><span class="nav-number">4.</span> <span class="nav-text">hive小文件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#archive-unarchive"><span class="nav-number">4.1.</span> <span class="nav-text">archive&#x2F;unarchive</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#distribute-by"><span class="nav-number">4.2.</span> <span class="nav-text">distribute by</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%88%E5%B9%B6%E5%88%86%E5%8C%BA"><span class="nav-number">4.3.</span> <span class="nav-text">合并分区</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9D%9E%E5%88%86%E5%8C%BA%E8%A1%A8"><span class="nav-number">4.3.1.</span> <span class="nav-text">非分区表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E5%8C%BA%E8%A1%A8"><span class="nav-number">4.3.2.</span> <span class="nav-text">分区表</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#repartition-coalesce"><span class="nav-number">4.4.</span> <span class="nav-text">repartition&#x2F;coalesce</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%9F%E8%AE%A1Hive%E8%A1%A8%E7%9A%84%E5%88%86%E5%8C%BA%E6%95%B0-%E5%B0%8F%E6%96%87%E4%BB%B6%E6%95%B0%E9%87%8F-%E8%A1%A8%E5%A4%A7%E5%B0%8F"><span class="nav-number">4.5.</span> <span class="nav-text">统计Hive表的分区数&#x2F;小文件数量&#x2F;表大小</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/26/hadoop%E5%B0%8F%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hadoop小文件处理
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-26 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-26T00:00:00+08:00">2022-08-26</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-06 17:05:23" itemprop="dateModified" datetime="2022-09-06T17:05:23+08:00">2022-09-06</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>每个文件均按块存储,每个块的元数据存储在NameNode的内存中,因此HDFS存储小文件会非常低效.<br>因为大量的小文件会耗尽NameNode中的大部分内存.</p>
+<p>但注意,存储小文件所需要的磁盘容量和数据块的大小无关.<br>每个块的大小可以通过配置参数(dfs.blocksize)来规定,默认的大小128M.<br>例如,一个1MB的文件设置为128MB的块存储,实际使用的是1MB的磁盘空间,而不是128MB.</p>
+<span id="more"></span>
+
+<blockquote>
+<p>100个1k文件块和100个128m的文件块,占用NN内存大小一样.</p>
+</blockquote>
+<p>小文件一般是指明显小于Hadoop的block size的文件.<br>Hadoop的block size一般是64MB,128MB或者256MB,现在一般趋向于设置的越来越大.<br>假定如果文件大小小于block size的75%,则定义为小文件.<br>但小文件不仅是指文件比较小,如果Hadoop集群中的大量文件略大于block size,同样也会存在小文件问题.<br>比如,假设block size是128MB,但加载到Hadoop的所有文件都是136MB,就会存在大量8MB的block.</p>
+<h3 id="小文件是如何产生的"><a href="#小文件是如何产生的" class="headerlink" title="小文件是如何产生的"></a>小文件是如何产生的</h3><ol>
+<li>动态分区插入数据,产生大量的小文件,从而导致 map 数量剧增.</li>
+<li>reduce 数量越多,小文件也越多,reduce 的个数和输出文件个数一致.</li>
+<li>数据源本身就是大量的小文件.</li>
+</ol>
+<h3 id="文件块大小设置"><a href="#文件块大小设置" class="headerlink" title="文件块大小设置"></a>文件块大小设置</h3><p>同样对于如何设置每个文件块的大小,官方给出了这样的建议:</p>
+<img src="/images/hblock1.jpg" width="400" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>所以对于块大小的设置既不能太大,也不能太小.<br>太大会使得传输时间加长,程序在处理这块数据时会变得非常慢.<br>如果文件块的大小太小的话会增加每一个块的寻址时间.<br>所以文件块的大小设置取决于磁盘的传输速率.</p>
+<h3 id="HDFS分块目的"><a href="#HDFS分块目的" class="headerlink" title="HDFS分块目的"></a>HDFS分块目的</h3><p>HDFS中分块可以减少后续中MapReduce程序执行时等待文件的读取时间,HDFS支持大文件存储.<br>如果文件过大(10G不分块),在读取时处理数据时就会大量的将时间耗费在读取文件中,分块可以配合MapReduce程序的切片操作,减少程序的等待时间.</p>
+<h2 id="处理方案"><a href="#处理方案" class="headerlink" title="处理方案"></a>处理方案</h2><img src="/images/hblock2.jpg" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>HDFS中文件上传会经常有小文件的问题,每个块大小会有150字节的大小的元数据存储namenode中,如果过多的小文件,每个小文件都没有到达设定的块大小,都会有对应的150字节的元数据,这对namenode资源浪费很严重,同时对数据处理也会增加读取时间.<br>对于小文件问题,Hadoop本身也提供了几个解决方案,分别为:</p>
+<ol>
+<li>Hadoop Archive</li>
+<li>Sequence file</li>
+<li>CombineFileInputFormat</li>
+</ol>
+<h3 id="archive"><a href="#archive" class="headerlink" title="archive"></a>archive</h3><p>Hadoop Archive(HAR) 是一个高效地将小文件放入HDFS块中的文件存档工具,它能够将多个小文件打包成一个HAR文件,这样在减少namenode内存使用的同时,仍然允许对文件进行透明的访问,类似于Linux上的TAR文件.</p>
+<img src="/images/hblock3.jpg" width="400" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>对某个目录<code>/foo/bar</code>下的所有小文件存档成<code>/outputdir/foo.har</code>:</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hadoop archive -archiveName foo.har -p &#x2F;foo&#x2F;bar &#x2F;outputdir</span><br></pre></td></tr></table></figure>
+
+<p>当然,也可以指定HAR的大小(使用-Dhar.block.size).</p>
+<p>HAR是在Hadoop file system之上的一个文件系统,因此所有fs shell命令对HAR文件均可用,只不过是文件路径格式不一样.<br>HAR的访问路径可以是以下两种格式:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># scheme-hostname格式为hdfs-域名:端口,如果没有提供scheme-hostname,它会使用默认的文件系统.</span><br><span class="line">这种情况下URI是这种形式:</span><br><span class="line">har:&#x2F;&#x2F;scheme-hostname:port&#x2F;archivepath&#x2F;fileinarchive</span><br><span class="line"></span><br><span class="line">har:&#x2F;&#x2F;&#x2F;archivepath&#x2F;fileinarchive</span><br></pre></td></tr></table></figure>
+
+<p>可以这样查看HAR文件存档中的文件:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hdfs dfs -ls har:&#x2F;&#x2F;&#x2F;user&#x2F;zoo&#x2F;foo.har</span><br></pre></td></tr></table></figure>
+
+<p>输出:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">har:&#x2F;&#x2F;&#x2F;user&#x2F;zoo&#x2F;foo.har&#x2F;hadoop&#x2F;dir1</span><br><span class="line">har:&#x2F;&#x2F;&#x2F;user&#x2F;zoo&#x2F;foo.har&#x2F;hadoop&#x2F;dir2</span><br></pre></td></tr></table></figure>
+
+<p>使用HAR时需要注意两点:</p>
+<ol>
+<li>对小文件进行存档后,<strong>原文件并不会自动被删除</strong>,需要用户自己删除.</li>
+<li>创建HAR文件的过程实际上是在运行一个mapreduce作业,因而需要有一个hadoop集群运行此命令.</li>
+</ol>
+<p>此外,HAR还有一些缺陷:</p>
+<ol>
+<li>一旦创建,Archives便不可改变.<br>要增加或移除里面的文件,必须重新创建归档文件.</li>
+<li>要归档的文件名中不能有空格,否则会抛出异常,可以将空格用其他符号替换(使用-Dhar.space.replacement.enable=true 和-Dhar.space.replacement参数).</li>
+<li>不支持修改</li>
+</ol>
+<h3 id="Sequence-file"><a href="#Sequence-file" class="headerlink" title="Sequence file"></a>Sequence file</h3><p>Sequence file由一系列的二进制key/value组成,如果为key小文件名,value为文件内容,则可以将大批小文件合并成一个大文件.<br>Hadoop-0.21.0中提供了SequenceFile,包括Writer,Reader和SequenceFileSorter类进行写,读和排序操作.</p>
+<img src="/images/hblock4.jpg" width="400" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p><strong>和 HAR 不同的是,这种方式还支持压缩</strong>.<br>该方案对于小文件的存取都比较自由,不限制用户和文件的多少,但是 SequenceFile 文件不能追加写入,适用于一次性写入大量小文件的操作.<br>也是不支持修改的.</p>
+<h3 id="CombineFileInputFormat"><a href="#CombineFileInputFormat" class="headerlink" title="CombineFileInputFormat"></a>CombineFileInputFormat</h3><p>CombineFileInputFormat是一种新的inputformat,用于将多个文件合并成一个单独的split,<strong>在map和reduce处理之前组合小文件</strong>.</p>
+<h3 id="开启JVM重用"><a href="#开启JVM重用" class="headerlink" title="开启JVM重用"></a>开启JVM重用</h3><p>有小文件场景时开启JVM重用.<br>如果没有产生小文件,不要开启JVM重用,因为会一直占用使用到的task卡槽,直到任务完成才释放.</p>
+<p>JVM重用可以使得JVM实例在同一个job中重新使用N次,N的值可以在Hadoop的mapred-site.xml文件中进行配置.<br>通常在10-20之间.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">  &lt;name&gt;mapreduce.job.jvm.numtasks&lt;&#x2F;name&gt;</span><br><span class="line">  &lt;value&gt;10&lt;&#x2F;value&gt;</span><br><span class="line">  &lt;description&gt;How many tasks to run per jvm,if set to -1 ,there is  no limit&lt;&#x2F;description&gt;</span><br><span class="line">&lt;&#x2F;property&gt; </span><br></pre></td></tr></table></figure>
+
+<h3 id="合并本地的小文件-appendToFile"><a href="#合并本地的小文件-appendToFile" class="headerlink" title="合并本地的小文件(appendToFile)"></a>合并本地的小文件(appendToFile)</h3><p>将本地的多个小文件,合并上传到 HDFS,可以通过 HDFS 客户端的 <strong>appendToFile</strong> 命令对小文件进行合并.</p>
+<h3 id="合并HDFS的小文件-getmerge"><a href="#合并HDFS的小文件-getmerge" class="headerlink" title="合并HDFS的小文件(getmerge)"></a>合并HDFS的小文件(getmerge)</h3><p>可以通过 HDFS 客户端的 <strong>getmerge</strong> 命令,将很多小文件合并成一个大文件,然后下载到本地.</p>
+<h3 id="FileCrusher"><a href="#FileCrusher" class="headerlink" title="FileCrusher"></a>FileCrusher</h3><p><a target="_blank" rel="noopener" href="https://github.com/edwardcapriolo/filecrush/">https://github.com/edwardcapriolo/filecrush/</a></p>
+<p>使用Hive来压缩表中小文件的一个缺点是,如果表中既包含小文件又包含大文件,则必须将这些大小文件一起处理然后重新写入磁盘.<br>没有办法只处理表中的小文件,而保持大文件不变.</p>
+<p>FileCrusher使用MapReduce作业来合并一个或多个目录中的小文件,而不会动大文件.<br>它支持以下文件格式的表:<br>TEXTFILE<br>SEQUENCEFILE<br>AVRO<br>PARQUET</p>
+<p>它还可以压缩合并后的文件,不管这些文件以前是否被压缩,从而减少占用的存储空间.<br>默认情况下FileCrusher使用Snappy压缩输出数据.</p>
+<p>FileCrusher不依赖于Hive,而且处理数据时不会以Hive表为单位,它直接工作在HDFS数据之上.<br>一般需要将需要合并的目录信息以及存储的文件格式作为输入参数传递给它.</p>
+<p>为了简化使用FileCrusher压缩Hive表,我们创建了一个&quot;包装脚本&quot;(wrapper script)来将Hive表的相关参数正确解析后传递给FileCrusher.</p>
+<p><code>crush_partition.sh</code>脚本将表名(也可以是分区)作为参数,并执行以下任务:</p>
+<ol>
+<li>在合并之前收集有关表/分区的统计信息</li>
+<li>计算传递给FileCrusher所需的信息</li>
+<li>使用必要参数执行FileCrusher</li>
+<li>在Impala中刷新表元数据,以便Impala可以查看合并后的文件</li>
+<li>合并后搜集统计信息</li>
+<li>提供合并前和合并后的摘要信息,并列出原始文件备份的目录位置</li>
+</ol>
+<p>脚本的方法如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">crush_partition.sh &lt;db_name&gt; &lt;table_name&gt; &lt;partition_spec&gt; [compression] [threshold] [max_reduces] </span><br></pre></td></tr></table></figure>
+
+<p>具体参数解释如下:<br><code>db_name</code> - (必须)表所存储的数据库名</p>
+<p><code>table_name</code> -(必须)需要合并的表名</p>
+<p><code>partition_spec</code> -(必须)需要合并的分区参数,有效值为:</p>
+<ol>
+<li>&quot;all&quot; – 合并非分区表,或者合并分区表的所有分区内的文件</li>
+<li>指定分区参数,参数必须用引号引起来,例如:<br>&quot;year=2010,state=&#39;CA&#39;&quot;<br>&quot;pt_date=&#39;2016-01-01&#39;&quot;</li>
+</ol>
+<p><code>compression</code> -(可选,默认Snappy)合并后的文件写入的压缩格式,有效值为:snappy, none (for no compression), gzip, bzip2 and deflate.</p>
+<p><code>threshold</code> -(可选,默认0.5)符合文件合并条件的相对于HDFS block size的百分比阈值,必须是 (0, 1] 范围内的值.<br>默认的0.5的意思是小于或等于HDFS block size的文件会被合并,大于50%的则会保持不变.</p>
+<p><code>max_reduces</code> -(可选,默认200)FileCrusher会被分配的最大reduce数,这个限制是为了避免在合并非常大的表时分配太多任务而占用太多资源.<br>所以我们可以使用这个参数来平衡合并文件的速度以及它在Hadoop集群上造成的开销.</p>
+<p>当FileCrusher运行时,它会将符合压缩条件的文件合并压缩为更大的文件,然后使用合并后的文件替换原始的小文件.<br>合并后的文件格式为:<br>&quot;crushed_file-<timestamp>-<some_numbers>&quot;</p>
+<p>原始文件不会被删除,它们会被移动的备份目录,备份目录的路径会在作业执行完毕后打印到终端.<br>原始文件的绝对路径在备份目录中保持不变,因此,如果需要回滚,则很容易找出你想要拷贝回去的目录地址.<br>例如,如果原始小文件的目录为:<br>/user/hive/warehouse/prod.db/user_transactions/000000_1<br>/user/hive/warehouse/prod.db/user_transactions/000000_2</p>
+<p>合并后会成为一个文件:<br>/user/hive/warehouse/prod.db/user_transactions/crushed_file-20161118102300-0-0</p>
+<p>原始文件我们会移动到备份目录,而且它之前的原始路径我们依旧会保留:<br>/user/admin/filecrush_backup/user/hive/warehouse/prod.db/user_transactions/000000_1<br>/user/admin/filecrush_backup/user/hive/warehouse/prod.db/user_transactions/000000_2</p>
+<h2 id="操作示例"><a href="#操作示例" class="headerlink" title="操作示例"></a>操作示例</h2><h3 id="archive-1"><a href="#archive-1" class="headerlink" title="archive"></a>archive</h3><p>在本地准备2个小文件.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">cat &gt;user1.txt&lt;&lt;EOF</span><br><span class="line">1,tom,male,16</span><br><span class="line">2,jerry,male,10</span><br><span class="line">EOF</span><br><span class="line"></span><br><span class="line">cat &gt;user2.txt&lt;&lt;EOF</span><br><span class="line">101,jack,male,19</span><br><span class="line">102,rose,female,18</span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
+
+<p>将文件put上hdfs.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hdfs dfs -mkdir -p &#x2F;foo&#x2F;bar</span><br><span class="line">hdfs dfs -put user*.txt &#x2F;foo&#x2F;bar&#x2F;</span><br></pre></td></tr></table></figure>
+
+<p>进行合并.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">hadoop archive -archiveName 归档名称 -p 父目录 [-r &lt;复制因子&gt;] 原路径(可以多个) 目的路径</span><br><span class="line"># 合并&#x2F;foo&#x2F;bar目录下的文件,输出到&#x2F;outputdir</span><br><span class="line">hadoop archive -archiveName user.har -p &#x2F;foo&#x2F;bar &#x2F;outputdir</span><br><span class="line"></span><br><span class="line"># 执行该命令后,原输入文件不会被删除,需要手动删除</span><br><span class="line">hdfs dfs -rm -r &#x2F;foo&#x2F;bar&#x2F;user*.txt</span><br></pre></td></tr></table></figure>
+
+<img src="/images/hblock5.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/hblock6.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>查看har文件.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># 查看har合并文件</span><br><span class="line">hdfs dfs -ls &#x2F;outputdir&#x2F;user.har</span><br><span class="line">hdfs dfs -ls &#x2F;&#x2F;&#x2F;outputdir&#x2F;user.har</span><br><span class="line">hdfs dfs -ls hdfs:&#x2F;&#x2F;xxx:8082&#x2F;outputdir&#x2F;user.har</span><br><span class="line"></span><br><span class="line"># 查看har里的文件</span><br><span class="line">hdfs dfs -ls har:&#x2F;outputdir&#x2F;user.har</span><br><span class="line">hdfs dfs -ls har:&#x2F;&#x2F;&#x2F;outputdir&#x2F;user.har</span><br><span class="line">hdfs dfs -ls har:&#x2F;&#x2F;xxx:8082&#x2F;outputdir&#x2F;user.har</span><br></pre></td></tr></table></figure>
+
+<img src="/images/hblock7.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>解压har文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># 按顺序解压存档(串行),会在解压的目录下保留har文件</span><br><span class="line">hdfs dfs -cp har:&#x2F;&#x2F;&#x2F;outputdir&#x2F;user.har &#x2F;outputdir&#x2F;newdir</span><br><span class="line"># 查看</span><br><span class="line">hdfs dfs -ls &#x2F;outputdir&#x2F;newdir</span><br><span class="line"></span><br><span class="line"># 要并行解压存档,请使用DistCp,会提交MR任务进行并行解压</span><br><span class="line">hadoop distcp har:&#x2F;&#x2F;&#x2F;outputdir&#x2F;user.har  &#x2F;outputdir&#x2F;newdir2</span><br><span class="line"># 查看</span><br><span class="line">hdfs dfs -ls &#x2F;outputdir&#x2F;newdir2</span><br></pre></td></tr></table></figure>
+
+<p>Archive注意事项:</p>
+<ol>
+<li>Hadoop archives是特殊的档案格式,扩展名是*.har.</li>
+<li>创建archives本质是运行一个Map/Reduce任务,所以应该在Hadoop集群运行创建档案的命令.</li>
+<li>创建archive文件要消耗和原文件一样多的硬盘空间.</li>
+<li>archive文件不支持压缩.</li>
+<li>archive文件一旦创建就无法改变,要修改的话,需要创建新的archive文件.</li>
+<li>当创建archive时,源文件不会被更改或删除.</li>
+</ol>
+<h3 id="appendToFile"><a href="#appendToFile" class="headerlink" title="appendToFile"></a>appendToFile</h3><p>在本地准备2个小文件:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">cat &gt;user1.txt&lt;&lt;EOF</span><br><span class="line">1,tom,male,16</span><br><span class="line">2,jerry,male,10</span><br><span class="line">EOF</span><br><span class="line"></span><br><span class="line">cat &gt;user2.txt&lt;&lt;EOF</span><br><span class="line">101,jack,male,19</span><br><span class="line">102,rose,female,18</span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 合并方式</span><br><span class="line">hdfs dfs -appendToFile user1.txt user2.txt &#x2F;test&#x2F;upload&#x2F;merged_user.txt</span><br><span class="line"></span><br><span class="line"># 查看</span><br><span class="line">hdfs dfs -cat &#x2F;test&#x2F;upload&#x2F;merged_user.txt</span><br></pre></td></tr></table></figure>
+
+<h3 id="getmerge"><a href="#getmerge" class="headerlink" title="getmerge"></a>getmerge</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># 先上传小文件到 HDFS</span><br><span class="line">hdfs dfs -put user1.txt user2.txt &#x2F;test&#x2F;upload</span><br><span class="line"># 下载,同时合并</span><br><span class="line">hdfs dfs -getmerge &#x2F;test&#x2F;upload&#x2F;user*.txt .&#x2F;merged_user.txt</span><br></pre></td></tr></table></figure>
+
+<h3 id="针对Hive表小文件数合并处理-CombineFileInputFormat"><a href="#针对Hive表小文件数合并处理-CombineFileInputFormat" class="headerlink" title="针对Hive表小文件数合并处理(CombineFileInputFormat)"></a>针对Hive表小文件数合并处理(CombineFileInputFormat)</h3><h4 id="输入阶段合并"><a href="#输入阶段合并" class="headerlink" title="输入阶段合并"></a>输入阶段合并</h4><p>需要更改Hive的输入文件格式即参hive.input.format,默认值是<code>org.apache.hadoop.hive.ql.io.HiveInputFormat</code>我们改成<code>org.apache.hadoop.hive.ql.io.CombineHiveInputFormat</code>.</p>
+<p>这样比起上面对mapper数的调整,会多出两个参数是mapred.min.split.size.per.node和mapred.min.split.size.per.rack,含义是单节点和单机架上的最小split大小.<br>如果发现有split大小小于这两个值(默认都是100MB),则会进行合并.<br>具体逻辑可以参看Hive源码中的对应类.</p>
+<h4 id="输出阶段合并"><a href="#输出阶段合并" class="headerlink" title="输出阶段合并"></a>输出阶段合并</h4><p>直接将<code>hive.merge.mapfiles</code>和<code>hive.merge.mapredfiles</code>都设为true即可.<br>前者表示将map-only任务的输出合并.<br>后者表示将map-reduce任务的输出合并,Hive会额外启动一个mr作业将输出的小文件合并成大文件.</p>
+<p>另外,<code>hive.merge.size.per.task</code>可以指定每个task输出后合并文件大小的期望值,<code>hive.merge.size.smallfiles.avgsize</code>可以指定所有输出文件大小的均值阈值,默认值都是1GB.<br>如果平均大小不足的话,就会另外启动一个任务来进行合并.</p>
+<h2 id="hive小文件"><a href="#hive小文件" class="headerlink" title="hive小文件"></a>hive小文件</h2><p>使用PARQUET格式创建表,并确保在向其写入数据时启用数据压缩.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"># Hive</span><br><span class="line"></span><br><span class="line"># Create table</span><br><span class="line">CREATE TABLE db_name.table_name (</span><br><span class="line">...</span><br><span class="line">)</span><br><span class="line">STORED AS PARQUET</span><br><span class="line">LOCATION &#39;&#x2F;path&#x2F;to&#x2F;table&#39;;</span><br><span class="line"></span><br><span class="line"># Create table as select</span><br><span class="line">SET parquet.compression&#x3D;snappy; </span><br><span class="line"></span><br><span class="line">CREATE TABLE db_name.table_name</span><br><span class="line">STORED AS PARQUET</span><br><span class="line">AS SELECT ...;</span><br><span class="line"></span><br><span class="line"># Insert into&#x2F;overwrite table</span><br><span class="line">SET parquet.compression&#x3D;snappy; </span><br><span class="line"></span><br><span class="line">INSERT INTO TABLE db_name.table_name</span><br><span class="line">SELECT ...;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"># Impala</span><br><span class="line"></span><br><span class="line"># Create table</span><br><span class="line">CREATE TABLE db_name.table_name (</span><br><span class="line">...</span><br><span class="line">)</span><br><span class="line">STORED AS PARQUET</span><br><span class="line">LOCATION &#39;&#x2F;path&#x2F;to&#x2F;table&#39;;</span><br><span class="line"></span><br><span class="line"># Create table as select</span><br><span class="line">SET compression_codec&#x3D;snappy; </span><br><span class="line"></span><br><span class="line">CREATE TABLE db_name.table_name</span><br><span class="line">STORED AS PARQUET</span><br><span class="line">AS SELECT ...;</span><br><span class="line"></span><br><span class="line"># Insert into&#x2F;overwrite table</span><br><span class="line">SET compression_codec&#x3D;snappy; </span><br><span class="line"></span><br><span class="line">INSERT INTO TABLE db_name.table_name</span><br><span class="line">SELECT ...;</span><br></pre></td></tr></table></figure>
+
+<h3 id="archive-unarchive"><a href="#archive-unarchive" class="headerlink" title="archive/unarchive"></a>archive/unarchive</h3><p>只会减少文件数,不会压缩.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">set hive.archive.enabled&#x3D;true;</span><br><span class="line">set hive.archive.har.parentdir.settable&#x3D;true;</span><br><span class="line">set har.partfile.size&#x3D;1099511627776;</span><br><span class="line">alter table testdb archive partition (dt&#x3D;&#39;20210222&#39;);</span><br><span class="line">alter table testdb unarchive partition (dt&#x3D;&#39;20210222&#39;);</span><br></pre></td></tr></table></figure>
+
+<h3 id="distribute-by"><a href="#distribute-by" class="headerlink" title="distribute by"></a>distribute by</h3><p>少用动态分区,如果场景下必须使用时,那么记得在SQL语句最后添加上distribute by.</p>
+<p>假设现在有20个分区,我们可以将dt(分区键)相同的数据放到同一个Reduce处理,这样最多也就产生20个文件.<br>dt相同的数据放到同一个Reduce可以使用DISTRIBUTE BY dt实现,所以修改之后的SQL如下:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">table</span> temp.wlb_tmp_smallfile <span class="keyword">partition</span>(dt)</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> process_table</span><br><span class="line">DISTRIBUTE <span class="keyword">BY</span> dt;</span><br></pre></td></tr></table></figure>
+
+<p>这20个分区目录下每个都只有一个文件.<br>能不能将数据均匀的分配呢?<br>我们可以使用<code>DISTRIBUTE BY rand()</code>控制在map端如何拆分数据给reduce端的.<br>hive会根据distribute by后面列,对应reduce的个数进行分发,默认采用的是hash算法.<br>rand()方法会生成一个0~1之间的随机数<code>[rand(int param)返回一个固定的数值]</code>,通过随机数进行数据的划分.<br>因为每次都随机的,所以每个reducer上的数据会很均匀.<br>将数据随机分配给Reduce,这样可以使得每个Reduce处理的数据大体一致.</p>
+<p>主要设置参数:可以根据集群情况而修改,可以作为hive-site.xml的默认配置参数.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">#动态评估判断是否需要压缩以及压缩文件的最佳数量</span><br><span class="line"></span><br><span class="line">-- 在 map only 的任务结束时合并小文件</span><br><span class="line">set hive.merge.mapfiles &#x3D; true;</span><br><span class="line">-- 在 MapReduce 的任务结束时合并小文件</span><br><span class="line">set hive.merge.mapredfiles &#x3D; true;</span><br><span class="line">-- 作业结束时合并文件的大小 </span><br><span class="line">set hive.merge.size.per.task &#x3D; 256000000;</span><br><span class="line">-- 每个Map最大输入大小(这个值决定了合并后文件的数量) </span><br><span class="line">set mapred.max.split.size&#x3D;256000000;   </span><br><span class="line">-- 每个reducer的大小, 默认是1G,输入文件如果是10G,那么就会起10个reducer.</span><br><span class="line">set hive.exec.reducers.bytes.per.reducer&#x3D;1073741824;</span><br><span class="line"></span><br><span class="line">set hive.input.format&#x3D;org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;</span><br></pre></td></tr></table></figure>
+
+<p>添加了如上的hive参数以及分区表的最后加上 distribute by rand()这样运行后的结果,每个文件都比 <code>hive.merge.size.per.task</code>:256M大(最后一个文件除外).</p>
+<p>如果想要具体最后落地生成多少个文件数,使用 <code>distribute by cast( rand * N as int)</code> 这里的N是指具体最后落地生成多少个文件数,那么最终就是每个分区目录下生成7个文件大小基本一致的文件.<br>修改的SQL如下,</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> overwrite <span class="keyword">table</span> temp.wlb_smallfile <span class="keyword">partition</span>(dt)</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> process_table</span><br><span class="line">distribute <span class="keyword">by</span> <span class="built_in">cast</span>(rand()<span class="operator">*</span><span class="number">7</span> <span class="keyword">as</span> <span class="type">int</span>);</span><br></pre></td></tr></table></figure>
+
+<p>如果Hive查询是Map-Only的,则下述参数将不起作用.<br>在这种情况下,我们可以在SQL语句后添加<code>SORT BY 1</code>以实现查询语句必须执行reduce.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">#强制文件合并</span><br><span class="line"></span><br><span class="line"># Limit the maximum number of reducers</span><br><span class="line">SET hive.exec.reducers.max &#x3D; &lt;number&gt;;</span><br><span class="line"></span><br><span class="line"># Set a fixed number of reducers</span><br><span class="line">SET mapreduce.job.reduces &#x3D; &lt;number&gt;;</span><br></pre></td></tr></table></figure>
+
+<h3 id="合并分区"><a href="#合并分区" class="headerlink" title="合并分区"></a>合并分区</h3><p>合并已有的Hive表中的小文件.<br>这个方法其实就是使用Hive作业从一个表或分区中读取数据然后重新覆盖写入到相同的路径下.<br>必须为合并文件的Hive作业指定一些参数,以控制写入HDFS的文件的数量和大小.</p>
+<h4 id="非分区表"><a href="#非分区表" class="headerlink" title="非分区表"></a>非分区表</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">SET hive.merge.mapfiles &#x3D; true;</span><br><span class="line">SET hive.merge.mapredfiles &#x3D; true;</span><br><span class="line">SET hive.merge.size.per.task &#x3D; 256000000;</span><br><span class="line">SET hive.merge.smallfiles.avgsize &#x3D; 134217728;</span><br><span class="line"></span><br><span class="line">SET hive.exec.compress.output &#x3D; true;</span><br><span class="line">SET parquet.compression &#x3D; snappy; </span><br><span class="line"></span><br><span class="line">INSERT OVERWRITE TABLE db_name.table_name</span><br><span class="line">SELECT *</span><br><span class="line">FROM db_name.table_name;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">SET mapreduce.job.reduces &#x3D; &lt;table_size_MB&#x2F;256&gt;;</span><br><span class="line"></span><br><span class="line">SET hive.exec.compress.output &#x3D; true;</span><br><span class="line">SET parquet.compression &#x3D; snappy;</span><br><span class="line"></span><br><span class="line">INSERT OVERWRITE TABLE db_name.table_name</span><br><span class="line">SELECT *</span><br><span class="line">FROM db_name.table_name</span><br><span class="line">SORT BY 1;</span><br></pre></td></tr></table></figure>
+
+<h4 id="分区表"><a href="#分区表" class="headerlink" title="分区表"></a>分区表</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">SET mapreduce.job.reduces &#x3D; &lt;table_size_MB&#x2F;256&gt;;</span><br><span class="line"></span><br><span class="line">SET hive.exec.compress.output &#x3D; true;</span><br><span class="line">SET parquet.compression &#x3D; snappy;</span><br><span class="line"></span><br><span class="line">INSERT OVERWRITE TABLE db_name.table_name</span><br><span class="line">PARTITION (part_col &#x3D; &#39;&lt;part_value&gt;&#39;)</span><br><span class="line">SELECT col1, col2, ..., coln</span><br><span class="line">FROM db_name.table_name</span><br><span class="line">WHERE part_col &#x3D; &#39;&lt;part_value&gt;&#39;</span><br><span class="line">SORT BY 1;</span><br></pre></td></tr></table></figure>
+
+<p>合并一个范围内的表分区的小文件.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">SET hive.merge.mapfiles &#x3D; true;</span><br><span class="line">SET hive.merge.mapredfiles &#x3D; true;</span><br><span class="line">SET hive.merge.size.per.task &#x3D; 256000000;</span><br><span class="line">SET hive.merge.smallfiles.avgsize &#x3D; 134217728;</span><br><span class="line"></span><br><span class="line">SET hive.exec.compress.output &#x3D; true;</span><br><span class="line">SET parquet.compression &#x3D; snappy;</span><br><span class="line"></span><br><span class="line">SET hive.exec.dynamic.partition.mode &#x3D; nonstrict;</span><br><span class="line">SET hive.exec.dynamic.partition &#x3D; true;</span><br><span class="line"></span><br><span class="line">INSERT OVERWRITE TABLE db_name.table_name</span><br><span class="line">PARTITION (part_col)</span><br><span class="line">SELECT col1, col2, ..., coln, part_col</span><br><span class="line">FROM db_name.table_name</span><br><span class="line">WHERE part_col BETWEEN &#39;&lt;part_value1&gt;&#39; AND &#39;&lt;part_value2&gt;&#39;;</span><br></pre></td></tr></table></figure>
+
+<h3 id="repartition-coalesce"><a href="#repartition-coalesce" class="headerlink" title="repartition/coalesce"></a>repartition/coalesce</h3><p>对于已有的可以使用动态分区重刷数据,或者使用Spark程序重新读取小文件的table得到DataFrame,然后再重新写入,如果Spark的版本&gt;=2.4那么推荐使用 Repartition/Coalesce Hint.</p>
+<p>在使用SparkSql进行项目开发的过程,往往会碰到一个比较头疼的问题,由于SparkSql的默认并行度是200,当sql中包含有join/group by相关的shuffle操作时,会产生很多小文件.<br>太多的小文件对后续使用该表进行计算时会启动很多不必要的maptask,任务耗时高.<br>因此,需要对小文件问题进行优化.</p>
+<p>在Dataset/Dataframe中有repartition/coalesce算子减少输出文件个数,但用户往不喜欢编写和部署Scala/Java/Python代码的repartition(n)和coalese(n),在Spark 2.4.0版本后很优雅地解决了这个问题,可以下SparkSql中添加以下Hive风格的合并和分区提示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">--提示名称不区分大小写</span><br><span class="line">INSERT ... SELECT &#x2F;*+REPARTITION(n)*&#x2F; ...</span><br><span class="line">INSERT ... SELECT &#x2F;*+COALESCE(n)*&#x2F; ...</span><br></pre></td></tr></table></figure>
+
+<p>Coalesce Hint减少了分区数,它仅合并分区,因此最大程度地减少了数据移动,但须注意内存不足容易OOM.<br>Repartition Hint可以增加或减少分区数量,它执行数据的完全shuffle,并确保数据平均分配.</p>
+<p>repartition增加了一个新的stage,因此它不会影响现有阶段的并行性.<br>相反,coalesce会影响现有阶段的并行性,因为它不会添加新stage.<br>该写法还支持多个插入查询和命名子查询.</p>
+<blockquote>
+<p>两者区别</p>
+</blockquote>
+<p><code>coalesce</code><br>一般有使用到Spark进行完业务处理后,为了避免小文件问题,对RDD/DataFrame进行分区的缩减,避免写入HDFS有大量的小文件问题,从而给HDFS的NameNode内存造成大的压力,而调用coalesce,实则源码调用的是case class Repartition shuffle参数为false的,默认是不走shuffle的.</p>
+<ol>
+<li><p>假设当前spark作业的提交参数是num-executor 10,executor-core 2,那么就会有20个Task同时并行,如果对最后结果DataFrame进行coalesce操作缩减为(10),最后也就只会生成10个文件,也表示只会运行10个task,就会有大量executor空跑,cpu core空转的情况.</p>
+</li>
+<li><p>而且coalesce的分区缩减是全在内存里进行处理,如果当前处理的数据量过大,这样很容易就导致程序OOM异常.</p>
+</li>
+<li><p>如果 coalesce 前的分区数小于 后预想得到的分区数,coalesce就不会起作用,也不会进行shuffle,因为父RDD和子RDD是窄依赖.</p>
+</li>
+</ol>
+<p><code>repartition</code><br>上游数据分区数据分布不均匀,才会对RDD/DataFrame等数据集进行重分区,将数据重新分配均匀.</p>
+<p>假设原来有N个分区,现在repartition(M)的参数传为M,<br>而 N &lt; M ,则会根据HashPartitioner (key的hashCode % M)进行数据的重新划分.</p>
+<p>而 N  远大于 M ,那么还是建议走repartition,这样所有的executor都会运作起来,效率更高,如果还是走coalesce,假定参数是1,那么即使原本申请了10个executor,那么最后执行的也只会有1个executor.</p>
+<h3 id="统计Hive表的分区数-小文件数量-表大小"><a href="#统计Hive表的分区数-小文件数量-表大小" class="headerlink" title="统计Hive表的分区数/小文件数量/表大小"></a>统计Hive表的分区数/小文件数量/表大小</h3><p>1)查询hive元数据库<br>将查询出的数据导出为table_date.txt.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> CONCAT(a.owner,<span class="string">&#x27;#&#x27;</span>,b.name,<span class="string">&#x27;#&#x27;</span>,a.tbl_name,<span class="string">&#x27;#&#x27;</span>,replace(c.location,<span class="string">&#x27;hdfs://xxx/&#x27;</span>,<span class="string">&#x27;/&#x27;</span>)) tab_str </span><br><span class="line"><span class="keyword">FROM</span> </span><br><span class="line">TBLS a,DBS b,SDS c </span><br><span class="line"><span class="keyword">WHERE</span> </span><br><span class="line">a.db_id<span class="operator">=</span>b.db_id <span class="keyword">and</span> a.sd_id<span class="operator">=</span>c.sd_id <span class="keyword">and</span> c.location <span class="keyword">like</span> <span class="string">&#x27;hdfs:%&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/flgl97.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>2)获取数据<br>如果数据量庞大可以把数据拆分为多个文件,同时执行多个脚本处理.<br>可使用nohup后台执行,防止中断.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> line <span class="keyword">in</span> $(grep -vE <span class="string">&quot;^#|^$&quot;</span> table_date.txt)</span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">  tabpath=$(<span class="built_in">echo</span> <span class="variable">$&#123;line&#125;</span>|awk -F<span class="string">&quot;#&quot;</span> <span class="string">&#x27;&#123;print $NF&#125;&#x27;</span>)</span><br><span class="line">  tabstat=$(hdfs dfs -count  <span class="string">&quot;<span class="variable">$&#123;tabpath&#125;</span>&quot;</span> 2&gt;/dev/null|awk <span class="string">&#x27;BEGIN&#123;OFS=&quot;#&quot;&#125;&#123;print $1,$2,$3&#125;&#x27;</span>)</span><br><span class="line">  <span class="built_in">echo</span> <span class="string">&quot;<span class="variable">$&#123;line&#125;</span>#<span class="variable">$&#123;tabstat&#125;</span>&quot;</span> &gt;&gt; Htab_Data.txt </span><br><span class="line"><span class="keyword">done</span></span><br></pre></td></tr></table></figure>
+
+<p>3)导入excel<br>将数据拉到本地,导入excel,以#分隔.<br>可以对表格进行小文件数量,或者表大小排序.<br>如果需对表大小进行单位展示,可以对表大小列进行除1024等于KB,再除1024等于MB.</p>
+<img src="/images/flgl98.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hadoop/" rel="tag"># hadoop</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/23/flink%20question/" rel="prev" title="flink question">
+                  <i class="fa fa-chevron-left"></i> flink question
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/26/flink%20try/" rel="next" title="flink try">
+                  flink try <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

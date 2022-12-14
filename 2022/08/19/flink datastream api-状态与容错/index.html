@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="Flink 中的 DataStream 程序是对数据流(例如过滤&#x2F;更新状态&#x2F;定义窗口&#x2F;聚合)进行转换的常规程序.数据流的起始是从各种源(例如消息队列&#x2F;套接字流&#x2F;文件)创建的.结果通过 sink 返回,例如可以将数据写入文件或标准输出(例如命令行终端).Flink 程序可以在各种上下文中运行,可以独立运行,也可以嵌入到其它程序中.任务执行可以运行在本地 JVM 中,也可以运行在多台机器的集群上.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="flink datastream api-状态与容错">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/19/flink%20datastream%20api-%E7%8A%B6%E6%80%81%E4%B8%8E%E5%AE%B9%E9%94%99/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="Flink 中的 DataStream 程序是对数据流(例如过滤&#x2F;更新状态&#x2F;定义窗口&#x2F;聚合)进行转换的常规程序.数据流的起始是从各种源(例如消息队列&#x2F;套接字流&#x2F;文件)创建的.结果通过 sink 返回,例如可以将数据写入文件或标准输出(例如命令行终端).Flink 程序可以在各种上下文中运行,可以独立运行,也可以嵌入到其它程序中.任务执行可以运行在本地 JVM 中,也可以运行在多台机器的集群上.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl73.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl74.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl75.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl76.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl77.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl78.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl79.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl80.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl81.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl82.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl83.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl84.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl85.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl86.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl87.png">
+<meta property="article:published_time" content="2022-08-18T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-12-02T06:12:00.837Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="flink">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/flgl73.svg">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/19/flink%20datastream%20api-%E7%8A%B6%E6%80%81%E4%B8%8E%E5%AE%B9%E9%94%99/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>flink datastream api-状态与容错 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8A%B6%E6%80%81API"><span class="nav-number">1.</span> <span class="nav-text">状态API</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E7%8A%B6%E6%80%81"><span class="nav-number">1.1.</span> <span class="nav-text">使用状态</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Keyed-DataStream"><span class="nav-number">1.1.1.</span> <span class="nav-text">Keyed DataStream</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-Keyed-State"><span class="nav-number">1.1.2.</span> <span class="nav-text">使用 Keyed State</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8A%B6%E6%80%81%E6%9C%89%E6%95%88%E6%9C%9F-TTL"><span class="nav-number">1.1.2.1.</span> <span class="nav-text">状态有效期 (TTL)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%87%E6%9C%9F%E6%95%B0%E6%8D%AE%E7%9A%84%E6%B8%85%E7%90%86"><span class="nav-number">1.1.2.2.</span> <span class="nav-text">过期数据的清理</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%85%A8%E9%87%8F%E5%BF%AB%E7%85%A7%E6%97%B6%E8%BF%9B%E8%A1%8C%E6%B8%85%E7%90%86"><span class="nav-number">1.1.2.2.1.</span> <span class="nav-text">全量快照时进行清理</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE%E6%B8%85%E7%90%86"><span class="nav-number">1.1.2.2.2.</span> <span class="nav-text">增量数据清理</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%9C%A8-RocksDB-%E5%8E%8B%E7%BC%A9%E6%97%B6%E6%B8%85%E7%90%86"><span class="nav-number">1.1.2.2.3.</span> <span class="nav-text">在 RocksDB 压缩时清理</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#DataStream-%E7%8A%B6%E6%80%81%E7%9B%B8%E5%85%B3%E7%9A%84-Scala-API"><span class="nav-number">1.1.2.3.</span> <span class="nav-text">DataStream 状态相关的 Scala API</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%97%E5%AD%90%E7%8A%B6%E6%80%81-Operator-State"><span class="nav-number">1.1.3.</span> <span class="nav-text">算子状态 (Operator State)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%BF%E6%92%AD%E7%8A%B6%E6%80%81-Broadcast-State"><span class="nav-number">1.1.4.</span> <span class="nav-text">广播状态 (Broadcast State)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-Operator-State"><span class="nav-number">1.1.5.</span> <span class="nav-text">使用 Operator State</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#CheckpointedFunction"><span class="nav-number">1.1.5.1.</span> <span class="nav-text">CheckpointedFunction</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B8%A6%E7%8A%B6%E6%80%81%E7%9A%84-Source-Function"><span class="nav-number">1.1.5.2.</span> <span class="nav-text">带状态的 Source Function</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Broadcast-State-%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.2.</span> <span class="nav-text">Broadcast State 模式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%90%E4%BE%9B%E7%9A%84API"><span class="nav-number">1.2.1.</span> <span class="nav-text">提供的API</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#BroadcastProcessFunction-KeyedBroadcastProcessFunction"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">BroadcastProcessFunction&#x2F;KeyedBroadcastProcessFunction</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E8%A6%81%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="nav-number">1.2.2.</span> <span class="nav-text">重要注意事项</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Checkpointing"><span class="nav-number">1.3.</span> <span class="nav-text">Checkpointing</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E6%8F%90%E6%9D%A1%E4%BB%B6"><span class="nav-number">1.3.1.</span> <span class="nav-text">前提条件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%90%AF%E4%B8%8E%E9%85%8D%E7%BD%AE-Checkpoint"><span class="nav-number">1.3.2.</span> <span class="nav-text">开启与配置 Checkpoint</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E7%9A%84%E9%85%8D%E7%BD%AE%E9%80%89%E9%A1%B9"><span class="nav-number">1.3.2.1.</span> <span class="nav-text">相关的配置选项</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%89%E6%8B%A9%E4%B8%80%E4%B8%AA-State-Backend"><span class="nav-number">1.3.3.</span> <span class="nav-text">选择一个 State Backend</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%AD%E4%BB%A3%E4%BD%9C%E4%B8%9A%E4%B8%AD%E7%9A%84%E7%8A%B6%E6%80%81%E5%92%8Ccheckpoint"><span class="nav-number">1.3.4.</span> <span class="nav-text">迭代作业中的状态和checkpoint</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%83%A8%E5%88%86%E4%BB%BB%E5%8A%A1%E7%BB%93%E6%9D%9F%E5%90%8E%E7%9A%84Checkpoint"><span class="nav-number">1.3.5.</span> <span class="nav-text">部分任务结束后的Checkpoint</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%B9-operator-state-%E7%9A%84%E5%BD%B1%E5%93%8D"><span class="nav-number">1.3.5.1.</span> <span class="nav-text">对 operator state 的影响</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E7%BB%93%E6%9D%9F%E5%89%8D%E7%AD%89%E5%BE%85%E6%9C%80%E5%90%8E%E4%B8%80%E6%AC%A1-Checkpoint"><span class="nav-number">1.3.5.2.</span> <span class="nav-text">任务结束前等待最后一次 Checkpoint</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Queryable-State"><span class="nav-number">1.4.</span> <span class="nav-text">Queryable State</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84"><span class="nav-number">1.4.1.</span> <span class="nav-text">架构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BF%80%E6%B4%BB-Queryable-State"><span class="nav-number">1.4.2.</span> <span class="nav-text">激活 Queryable State</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%86state%E8%AE%BE%E7%BD%AE%E4%B8%BA%E5%8F%AF%E6%9F%A5%E8%AF%A2%E7%9A%84"><span class="nav-number">1.4.3.</span> <span class="nav-text">将state设置为可查询的</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Queryable-State-Stream"><span class="nav-number">1.4.3.1.</span> <span class="nav-text">Queryable State Stream</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Managed-Keyed-State"><span class="nav-number">1.4.3.2.</span> <span class="nav-text">Managed Keyed State</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2state"><span class="nav-number">1.4.4.</span> <span class="nav-text">查询state</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-number">1.4.4.1.</span> <span class="nav-text">示例</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Configuration"><span class="nav-number">1.4.5.</span> <span class="nav-text">Configuration</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#State-Server"><span class="nav-number">1.4.5.1.</span> <span class="nav-text">State Server</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Proxy"><span class="nav-number">1.4.5.2.</span> <span class="nav-text">Proxy</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%99%90%E5%88%B6"><span class="nav-number">1.4.5.3.</span> <span class="nav-text">限制</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#State-Backends"><span class="nav-number">1.5.</span> <span class="nav-text">State Backends</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E4%BB%A5%E5%8F%8A%E5%BA%8F%E5%88%97%E5%8C%96"><span class="nav-number">1.6.</span> <span class="nav-text">数据类型以及序列化</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8A%B6%E6%80%81%E8%BF%90%E7%BB%B4"><span class="nav-number">2.</span> <span class="nav-text">状态运维</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Checkpoints"><span class="nav-number">2.1.</span> <span class="nav-text">Checkpoints</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">2.1.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%9D%E7%95%99-Checkpoint"><span class="nav-number">2.1.2.</span> <span class="nav-text">保留 Checkpoint</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-number">2.1.2.1.</span> <span class="nav-text">目录结构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%8E%E4%BF%9D%E7%95%99%E7%9A%84-checkpoint-%E4%B8%AD%E6%81%A2%E5%A4%8D%E7%8A%B6%E6%80%81"><span class="nav-number">2.1.2.2.</span> <span class="nav-text">从保留的 checkpoint 中恢复状态</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Checkpointing-under-backpressure"><span class="nav-number">2.2.</span> <span class="nav-text">Checkpointing under backpressure</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%93%E5%86%B2%E5%8C%BA-Debloating"><span class="nav-number">2.2.1.</span> <span class="nav-text">缓冲区 Debloating</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9D%9E%E5%AF%B9%E9%BD%90-Checkpoints"><span class="nav-number">2.2.2.</span> <span class="nav-text">非对齐 Checkpoints</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%B9%E9%BD%90-Checkpoint-%E7%9A%84%E8%B6%85%E6%97%B6"><span class="nav-number">2.2.2.1.</span> <span class="nav-text">对齐 Checkpoint 的超时</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%99%90%E5%88%B6-1"><span class="nav-number">2.2.3.</span> <span class="nav-text">限制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91-Checkpoint"><span class="nav-number">2.2.3.1.</span> <span class="nav-text">并发 Checkpoint</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%8E-Watermark-%E7%9A%84%E7%9B%B8%E4%BA%92%E5%BD%B1%E5%93%8D"><span class="nav-number">2.2.3.2.</span> <span class="nav-text">与 Watermark 的相互影响</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%8E%E9%95%BF%E6%97%B6%E9%97%B4%E8%BF%90%E8%A1%8C%E7%9A%84%E8%AE%B0%E5%BD%95%E5%A4%84%E7%90%86%E7%9B%B8%E4%BA%92%E4%BD%9C%E7%94%A8"><span class="nav-number">2.2.3.3.</span> <span class="nav-text">与长时间运行的记录处理相互作用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9F%90%E4%BA%9B%E6%95%B0%E6%8D%AE%E5%88%86%E5%B8%83%E6%A8%A1%E5%BC%8F%E6%B2%A1%E6%9C%89%E6%A3%80%E6%9F%A5%E7%82%B9"><span class="nav-number">2.2.3.4.</span> <span class="nav-text">某些数据分布模式没有检查点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%82%B9%E5%AF%B9%E7%82%B9%E8%BF%9E%E6%8E%A5"><span class="nav-number">2.2.3.5.</span> <span class="nav-text">点对点连接</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B9%BF%E6%92%AD-Connections"><span class="nav-number">2.2.3.6.</span> <span class="nav-text">广播 Connections</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%85%E9%9A%9C%E6%8E%92%E9%99%A4"><span class="nav-number">2.2.4.</span> <span class="nav-text">故障排除</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8D%9F%E5%9D%8F%E7%9A%84%E9%A3%9E%E8%A1%8C%E6%95%B0%E6%8D%AE"><span class="nav-number">2.2.4.1.</span> <span class="nav-text">损坏的飞行数据</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Savepoints"><span class="nav-number">2.3.</span> <span class="nav-text">Savepoints</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF-Savepoint"><span class="nav-number">2.3.1.</span> <span class="nav-text">什么是 Savepoint</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E9%85%8D%E7%AE%97%E5%AD%90-ID"><span class="nav-number">2.3.2.</span> <span class="nav-text">分配算子 ID</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Savepoint-%E7%8A%B6%E6%80%81"><span class="nav-number">2.3.2.1.</span> <span class="nav-text">Savepoint 状态</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%97%E5%AD%90"><span class="nav-number">2.3.3.</span> <span class="nav-text">算子</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A7%A6%E5%8F%91-Savepoint"><span class="nav-number">2.3.3.1.</span> <span class="nav-text">触发 Savepoint</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Savepoint-%E6%A0%BC%E5%BC%8F"><span class="nav-number">2.3.3.1.1.</span> <span class="nav-text">Savepoint 格式</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%A7%A6%E5%8F%91-Savepoint-1"><span class="nav-number">2.3.3.1.2.</span> <span class="nav-text">触发 Savepoint</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-YARN-%E8%A7%A6%E5%8F%91-Savepoint"><span class="nav-number">2.3.3.1.3.</span> <span class="nav-text">使用 YARN 触发 Savepoint</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-Savepoint-%E5%81%9C%E6%AD%A2%E4%BD%9C%E4%B8%9A"><span class="nav-number">2.3.3.1.4.</span> <span class="nav-text">使用 Savepoint 停止作业</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%8E-Savepoint-%E6%81%A2%E5%A4%8D"><span class="nav-number">2.3.3.2.</span> <span class="nav-text">从 Savepoint 恢复</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%B7%B3%E8%BF%87%E6%97%A0%E6%B3%95%E6%98%A0%E5%B0%84%E7%9A%84%E7%8A%B6%E6%80%81%E6%81%A2%E5%A4%8D"><span class="nav-number">2.3.3.2.1.</span> <span class="nav-text">跳过无法映射的状态恢复</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Restore-%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.3.3.2.2.</span> <span class="nav-text">Restore 模式</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%A0%E9%99%A4-Savepoint"><span class="nav-number">2.3.3.3.</span> <span class="nav-text">删除 Savepoint</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">2.3.3.4.</span> <span class="nav-text">配置</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#F-A-Q"><span class="nav-number">2.3.4.</span> <span class="nav-text">F.A.Q</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5%E7%82%B9%E4%B8%8E%E4%BF%9D%E5%AD%98%E7%82%B9"><span class="nav-number">2.4.</span> <span class="nav-text">检查点与保存点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0-1"><span class="nav-number">2.4.1.</span> <span class="nav-text">概述</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#State-Backends-1"><span class="nav-number">2.5.</span> <span class="nav-text">State Backends</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%AF%E7%94%A8%E7%9A%84-State-Backends"><span class="nav-number">2.5.1.</span> <span class="nav-text">可用的 State Backends</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#HashMapStateBackend"><span class="nav-number">2.5.1.1.</span> <span class="nav-text">HashMapStateBackend</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#EmbeddedRocksDBStateBackend"><span class="nav-number">2.5.1.2.</span> <span class="nav-text">EmbeddedRocksDBStateBackend</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%89%E6%8B%A9%E5%90%88%E9%80%82%E7%9A%84-State-Backend"><span class="nav-number">2.5.2.</span> <span class="nav-text">选择合适的 State Backend</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE-State-Backend"><span class="nav-number">2.5.3.</span> <span class="nav-text">设置 State Backend</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E6%AF%8F%E4%B8%AA-Job-%E7%9A%84-State-Backend"><span class="nav-number">2.5.3.1.</span> <span class="nav-text">设置每个 Job 的 State Backend</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E9%BB%98%E8%AE%A4%E7%9A%84-%E5%85%A8%E5%B1%80%E7%9A%84-State-Backend"><span class="nav-number">2.5.3.2.</span> <span class="nav-text">设置默认的(全局的) State Backend</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RocksDB-State-Backend-%E8%BF%9B%E9%98%B6"><span class="nav-number">2.5.4.</span> <span class="nav-text">RocksDB State Backend 进阶</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A2%9E%E9%87%8F%E5%BF%AB%E7%85%A7"><span class="nav-number">2.5.4.1.</span> <span class="nav-text">增量快照</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-number">2.5.4.2.</span> <span class="nav-text">内存管理</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#RocksDB-%E4%BD%BF%E7%94%A8%E6%89%98%E7%AE%A1%E5%86%85%E5%AD%98"><span class="nav-number">2.5.4.2.1.</span> <span class="nav-text">RocksDB 使用托管内存</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AE%A1%E6%97%B6%E5%99%A8-%E5%86%85%E5%AD%98-vs-RocksDB"><span class="nav-number">2.5.4.3.</span> <span class="nav-text">计时器(内存 vs. RocksDB)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%80%E5%90%AF-RocksDB-%E5%8E%9F%E7%94%9F%E7%9B%91%E6%8E%A7%E6%8C%87%E6%A0%87"><span class="nav-number">2.5.4.4.</span> <span class="nav-text">开启 RocksDB 原生监控指标</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%97%E6%97%8F-ColumnFamily-%E7%BA%A7%E5%88%AB%E7%9A%84%E9%A2%84%E5%AE%9A%E4%B9%89%E9%80%89%E9%A1%B9"><span class="nav-number">2.5.4.4.1.</span> <span class="nav-text">列族(ColumnFamily)级别的预定义选项</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BB%8E-flink-conf-yaml-%E4%B8%AD%E8%AF%BB%E5%8F%96%E5%88%97%E6%97%8F%E9%80%89%E9%A1%B9"><span class="nav-number">2.5.4.4.2.</span> <span class="nav-text">从 flink-conf.yaml 中读取列族选项</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%80%9A%E8%BF%87-RocksDBOptionsFactory-%E9%85%8D%E7%BD%AE-RocksDB-%E9%80%89%E9%A1%B9"><span class="nav-number">2.5.4.4.3.</span> <span class="nav-text">通过 RocksDBOptionsFactory 配置 RocksDB 选项</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%90%AF-Changelog"><span class="nav-number">2.5.5.</span> <span class="nav-text">开启 Changelog</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%8B%E7%BB%8D"><span class="nav-number">2.5.5.1.</span> <span class="nav-text">介绍</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%89%E8%A3%85"><span class="nav-number">2.5.5.2.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.5.5.3.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%9B%91%E6%8E%A7"><span class="nav-number">2.5.5.4.</span> <span class="nav-text">监控</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8D%87%E7%BA%A7%E7%8E%B0%E6%9C%89%E4%BD%9C%E4%B8%9A"><span class="nav-number">2.5.5.5.</span> <span class="nav-text">升级现有作业</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%BC%80%E5%90%AF-Changelog-1"><span class="nav-number">2.5.5.5.1.</span> <span class="nav-text">开启 Changelog</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%85%B3%E9%97%AD-Changelog"><span class="nav-number">2.5.5.5.2.</span> <span class="nav-text">关闭 Changelog</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%99%90%E5%88%B6-2"><span class="nav-number">2.5.5.6.</span> <span class="nav-text">限制</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E6%97%A7%E7%89%88%E6%9C%AC%E8%BF%81%E7%A7%BB"><span class="nav-number">2.5.6.</span> <span class="nav-text">自旧版本迁移</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#MemoryStateBackend"><span class="nav-number">2.5.6.1.</span> <span class="nav-text">MemoryStateBackend</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#flink-conf-yaml-%E9%85%8D%E7%BD%AE"><span class="nav-number">2.5.6.1.1.</span> <span class="nav-text">flink-conf.yaml 配置</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E9%85%8D%E7%BD%AE"><span class="nav-number">2.5.6.1.2.</span> <span class="nav-text">代码配置</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FsStateBackend"><span class="nav-number">2.5.6.2.</span> <span class="nav-text">FsStateBackend</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#flink-conf-yaml-%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.5.6.2.1.</span> <span class="nav-text">flink-conf.yaml 配置</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.5.6.2.2.</span> <span class="nav-text">代码配置</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#RocksDBStateBackend"><span class="nav-number">2.5.6.3.</span> <span class="nav-text">RocksDBStateBackend</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#flink-conf-yaml-%E9%85%8D%E7%BD%AE-2"><span class="nav-number">2.5.6.3.1.</span> <span class="nav-text">flink-conf.yaml 配置</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E9%85%8D%E7%BD%AE-2"><span class="nav-number">2.5.6.3.2.</span> <span class="nav-text">代码配置</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%A7%E7%8A%B6%E6%80%81%E4%B8%8E-Checkpoint-%E8%B0%83%E4%BC%98"><span class="nav-number">2.6.</span> <span class="nav-text">大状态与 Checkpoint 调优</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0-2"><span class="nav-number">2.6.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%91%E6%8E%A7%E7%8A%B6%E6%80%81%E5%92%8C%E6%A3%80%E6%9F%A5%E7%82%B9"><span class="nav-number">2.6.2.</span> <span class="nav-text">监控状态和检查点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E6%95%B4%E6%A3%80%E6%9F%A5%E7%82%B9"><span class="nav-number">2.6.3.</span> <span class="nav-text">调整检查点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E6%95%B4-RocksDB"><span class="nav-number">2.6.4.</span> <span class="nav-text">调整 RocksDB</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A2%9E%E9%87%8F%E6%A3%80%E6%9F%A5%E7%82%B9"><span class="nav-number">2.6.4.1.</span> <span class="nav-text">增量检查点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#RocksDB-%E6%88%96-JVM-%E5%A0%86%E4%B8%AD%E7%9A%84-%E8%AE%A1%E6%97%B6%E5%99%A8"><span class="nav-number">2.6.4.2.</span> <span class="nav-text">RocksDB 或 JVM 堆中的 计时器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%B0%83%E6%95%B4-RocksDB-%E5%86%85%E5%AD%98"><span class="nav-number">2.6.4.3.</span> <span class="nav-text">调整 RocksDB 内存</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%B9%E9%87%8F%E8%A7%84%E5%88%92"><span class="nav-number">2.6.5.</span> <span class="nav-text">容量规划</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%8B%E7%BC%A9"><span class="nav-number">2.6.6.</span> <span class="nav-text">压缩</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E6%9C%AC%E5%9C%B0%E6%81%A2%E5%A4%8D"><span class="nav-number">2.6.7.</span> <span class="nav-text">任务本地恢复</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8A%A8%E6%9C%BA"><span class="nav-number">2.6.7.1.</span> <span class="nav-text">动机</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E6%B3%95"><span class="nav-number">2.6.7.2.</span> <span class="nav-text">方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81-%E5%88%86%E5%B8%83%E5%BC%8F%E5%AD%98%E5%82%A8-%E5%92%8C%E6%AC%A1%E8%A6%81-%E4%BB%BB%E5%8A%A1%E6%9C%AC%E5%9C%B0-%E7%8A%B6%E6%80%81%E5%BF%AB%E7%85%A7%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">2.6.7.3.</span> <span class="nav-text">主要(分布式存储)和次要(任务本地)状态快照的关系</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E4%BB%BB%E5%8A%A1%E6%9C%AC%E5%9C%B0%E6%81%A2%E5%A4%8D"><span class="nav-number">2.6.7.4.</span> <span class="nav-text">配置任务本地恢复</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%8D%E5%90%8C%E7%8A%B6%E6%80%81%E5%90%8E%E7%AB%AF%E7%9A%84%E4%BB%BB%E5%8A%A1%E6%9C%AC%E5%9C%B0%E6%81%A2%E5%A4%8D%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BF%A1%E6%81%AF"><span class="nav-number">2.6.7.5.</span> <span class="nav-text">不同状态后端的任务本地恢复的详细信息</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E9%85%8D%E4%BF%9D%E7%95%99%E8%B0%83%E5%BA%A6"><span class="nav-number">2.6.7.6.</span> <span class="nav-text">分配保留调度</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Task-%E6%95%85%E9%9A%9C%E6%81%A2%E5%A4%8D"><span class="nav-number">2.7.</span> <span class="nav-text">Task 故障恢复</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Restart-Strategies"><span class="nav-number">2.7.1.</span> <span class="nav-text">Restart Strategies</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Fixed-Delay-Restart-Strategy-%E5%9B%BA%E5%AE%9A%E5%BB%B6%E8%BF%9F%E9%87%8D%E5%90%AF%E7%AD%96%E7%95%A5"><span class="nav-number">2.7.1.1.</span> <span class="nav-text">Fixed Delay Restart Strategy(固定延迟重启策略)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Failure-Rate-Restart-Strategy-%E6%95%85%E9%9A%9C%E7%8E%87%E9%87%8D%E5%90%AF%E7%AD%96%E7%95%A5"><span class="nav-number">2.7.1.2.</span> <span class="nav-text">Failure Rate Restart Strategy(故障率重启策略)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#No-Restart-Strategy-%E6%97%A0%E9%87%8D%E5%90%AF%E7%AD%96%E7%95%A5"><span class="nav-number">2.7.1.3.</span> <span class="nav-text">No Restart Strategy(无重启策略)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Fallback-Restart-Strategy-%E5%90%8E%E5%A4%87%E9%87%8D%E5%90%AF%E7%AD%96%E7%95%A5"><span class="nav-number">2.7.1.4.</span> <span class="nav-text">Fallback Restart Strategy(后备重启策略)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Failover-Strategies-%E6%95%85%E9%9A%9C%E8%BD%AC%E7%A7%BB%E7%AD%96%E7%95%A5"><span class="nav-number">2.7.2.</span> <span class="nav-text">Failover Strategies(故障转移策略)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Restart-All-Failover-Strategy-%E9%87%8D%E5%90%AF%E6%89%80%E6%9C%89%E6%95%85%E9%9A%9C%E8%BD%AC%E7%A7%BB%E7%AD%96%E7%95%A5"><span class="nav-number">2.7.2.1.</span> <span class="nav-text">Restart All Failover Strategy(重启所有故障转移策略)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Restart-Pipelined-Region-Failover-Strategy-%E9%87%8D%E5%90%AF%E6%B5%81%E6%B0%B4%E7%BA%BF%E5%8C%BA%E5%9F%9F%E6%95%85%E9%9A%9C%E8%BD%AC%E7%A7%BB%E7%AD%96%E7%95%A5"><span class="nav-number">2.7.3.</span> <span class="nav-text">Restart Pipelined Region Failover Strategy(重启流水线区域故障转移策略)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%91%E6%8E%A7-Checkpoint"><span class="nav-number">2.8.</span> <span class="nav-text">监控 Checkpoint</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%A7%88-Overview-%E9%80%89%E9%A1%B9%E5%8D%A1"><span class="nav-number">2.8.1.</span> <span class="nav-text">概览(Overview)选项卡</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%86%E5%8F%B2%E8%AE%B0%E5%BD%95-History-%E9%80%89%E9%A1%B9%E5%8D%A1"><span class="nav-number">2.8.2.</span> <span class="nav-text">历史记录(History)选项卡</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8E%86%E5%8F%B2%E8%AE%B0%E5%BD%95%E6%95%B0%E9%87%8F%E9%85%8D%E7%BD%AE"><span class="nav-number">2.8.2.1.</span> <span class="nav-text">历史记录数量配置</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%91%98%E8%A6%81%E4%BF%A1%E6%81%AF-Summary-%E9%80%89%E9%A1%B9%E5%8D%A1"><span class="nav-number">2.8.3.</span> <span class="nav-text">摘要信息(Summary)选项卡</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E4%BF%A1%E6%81%AF-Configuration-%E9%80%89%E9%A1%B9%E5%8D%A1"><span class="nav-number">2.8.4.</span> <span class="nav-text">配置信息(Configuration)选项卡</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Checkpoint-%E8%AF%A6%E7%BB%86%E4%BF%A1%E6%81%AF"><span class="nav-number">2.8.5.</span> <span class="nav-text">Checkpoint 详细信息</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%91%E6%8E%A7%E5%8F%8D%E5%8E%8B"><span class="nav-number">2.9.</span> <span class="nav-text">监控反压</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%8D%E5%8E%8B"><span class="nav-number">2.9.1.</span> <span class="nav-text">反压</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Task-%E6%80%A7%E8%83%BD%E6%8C%87%E6%A0%87"><span class="nav-number">2.9.2.</span> <span class="nav-text">Task 性能指标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B-1"><span class="nav-number">2.9.3.</span> <span class="nav-text">示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%8D%E5%8E%8B%E7%8A%B6%E6%80%81"><span class="nav-number">2.9.4.</span> <span class="nav-text">反压状态</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/19/flink%20datastream%20api-%E7%8A%B6%E6%80%81%E4%B8%8E%E5%AE%B9%E9%94%99/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          flink datastream api-状态与容错
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-19 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-19T00:00:00+08:00">2022-08-19</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-12-02 14:12:00" itemprop="dateModified" datetime="2022-12-02T14:12:00+08:00">2022-12-02</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>Flink 中的 DataStream 程序是对数据流(例如过滤/更新状态/定义窗口/聚合)进行转换的常规程序.<br>数据流的起始是从各种源(例如消息队列/套接字流/文件)创建的.<br>结果通过 sink 返回,例如可以将数据写入文件或标准输出(例如命令行终端).<br>Flink 程序可以在各种上下文中运行,可以独立运行,也可以嵌入到其它程序中.<br>任务执行可以运行在本地 JVM 中,也可以运行在多台机器的集群上.</p>
+<span id="more"></span>
+<h1 id="状态API"><a href="#状态API" class="headerlink" title="状态API"></a>状态API</h1><h2 id="使用状态"><a href="#使用状态" class="headerlink" title="使用状态"></a>使用状态</h2><h3 id="Keyed-DataStream"><a href="#Keyed-DataStream" class="headerlink" title="Keyed DataStream"></a>Keyed DataStream</h3><p>如果你希望使用 keyed state,首先需要为DataStream指定 key(主键).<br>这个主键用于状态分区(也会给数据流中的记录本身分区).<br>你可以使用 DataStream 中 Java/Scala API 的 keyBy(KeySelector) 或者是 Python API 的 key_by(KeySelector) 来指定 key.<br>它将生成 KeyedStream,接下来允许使用 keyed state 操作.</p>
+<p>Key selector 函数接收单条记录作为输入,返回这条记录的 key.<br>该 key 可以为任何类型,但是它的计算产生方式必须是具备确定性的.</p>
+<p>Flink 的数据模型不基于 key-value 对,因此实际上将数据集在物理上封装成 key 和 value 是没有必要的.<br>Key 是&quot;虚拟&quot;的.<br>它们定义为基于实际数据的函数,用以操纵分组算子.</p>
+<p>下面的例子展示了 key selector 函数.<br>它仅返回了对象当中的字段.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; some ordinary POJO</span><br><span class="line">public class WC &#123;</span><br><span class="line">  public String word;</span><br><span class="line">  public int count;</span><br><span class="line"></span><br><span class="line">  public String getWord() &#123; return word; &#125;</span><br><span class="line">&#125;</span><br><span class="line">DataStream&lt;WC&gt; words &#x3D; &#x2F;&#x2F; [...]</span><br><span class="line">KeyedStream&lt;WC&gt; keyed &#x3D; words</span><br><span class="line">  .keyBy(WC::getWord);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Tuple Keys 和 Expression Keys</p>
+</blockquote>
+<p>Flink 也有两种不同定义 key 的方式:<br>Java/Scala API(Python API 仍未支持) 的 Tuple key(通过字段索引指定的 key)和 Expression key(通过字段名称指定的 key).<br>借此你可以通过 tuple 字段索引,或者是选取对象字段的表达式来指定 key.<br>如今我们不建议这样使用,但你可以参考 DataStream 的 Javadoc 来了解它们.<br>使用 KeySelector 函数显然是更好的.<br>以几乎可以忽略的额外开销为代价,结合 Java Lambda 表达式,我们可以更方便得使用KeySelector.</p>
+<h3 id="使用-Keyed-State"><a href="#使用-Keyed-State" class="headerlink" title="使用 Keyed State"></a>使用 Keyed State</h3><p>keyed state 接口提供不同类型状态的访问接口,这些状态都作用于当前输入数据的 key 下.<br>换句话说,这些状态仅可在 KeyedStream 上使用,在Java/Scala API上可以通过 stream.keyBy(...) 得到 KeyedStream,在Python API上可以通过 stream.key_by(...) 得到 KeyedStream.</p>
+<p>接下来,我们会介绍不同类型的状态,然后介绍如何使用他们.<br>所有支持的状态类型如下所示:</p>
+<p><code>ValueState&lt;T&gt;</code><br>保存一个可以更新和检索的值(如上所述,每个值都对应到当前的输入数据的 key,因此算子接收到的每个 key 都可能对应一个值).<br>这个值可以通过 update(T) 进行更新,通过 T value() 进行检索.</p>
+<p><code>ListState&lt;T&gt;</code><br>保存一个元素的列表.<br>可以往这个列表中追加数据,并在当前的列表上进行检索.<br>可以通过 add(T) 或者 <code>addAll(List&lt;T&gt;)</code> 进行添加元素,通过 <code>Iterable&lt;T&gt; get()</code> 获得整个列表.<br>还可以通过 <code>update(List&lt;T&gt;)</code> 覆盖当前的列表.</p>
+<p><code>ReducingState&lt;T&gt;</code><br>保存一个单值,表示添加到状态的所有值的聚合.<br>接口与 ListState 类似,但使用 add(T) 增加元素,会使用提供的 ReduceFunction 进行聚合.</p>
+<p><code>AggregatingState&lt;IN, OUT&gt;</code><br>保留一个单值,表示添加到状态的所有值的聚合.<br>和 ReducingState 相反的是, 聚合类型可能与 添加到状态的元素的类型不同.<br>接口与 ListState 类似,但使用 add(IN) 添加的元素会用指定的 AggregateFunction 进行聚合.</p>
+<p><code>MapState&lt;UK, UV&gt;</code><br>维护了一个映射列表.<br>你可以添加键值对到状态中,也可以获得反映当前所有映射的迭代器.<br>使用 put(UK,UV) 或者 <code>putAll(Map&lt;UK,UV&gt;)</code> 添加映射.<br>使用 get(UK) 检索特定 key.<br>使用 entries(),keys() 和 values() 分别检索映射/键和值的可迭代视图.<br>你还可以通过 isEmpty() 来判断是否包含任何键值对.</p>
+<p>所有类型的状态还有一个<code>clear()</code> 方法,清除当前 key 下的状态数据,也就是当前输入元素的 key.</p>
+<p>请牢记,这些状态对象仅用于与状态交互.<br>状态本身不一定存储在内存中,还可能在磁盘或其他位置.<br>另外需要牢记的是从状态中获取的值取决于输入元素所代表的 key.<br>因此,在不同 key 上调用同一个接口,可能得到不同的值.</p>
+<p>你必须创建一个 StateDescriptor,才能得到对应的状态句柄.<br>这保存了状态名称(正如我们稍后将看到的,你可以创建多个状态,并且它们必须具有唯一的名称以便可以引用它们), 状态所持有值的类型,并且可能包含用户指定的函数,例如ReduceFunction.<br>根据不同的状态类型,可以创建ValueStateDescriptor,ListStateDescriptor, AggregatingStateDescriptor, ReducingStateDescriptor 或 MapStateDescriptor.</p>
+<p>状态通过 RuntimeContext 进行访问,因此只能在 rich functions 中使用.<br>RichFunction 中 RuntimeContext 提供如下方法:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ValueState&lt;T&gt; getState(ValueStateDescriptor&lt;T&gt;)</span><br><span class="line">ListState&lt;T&gt; getListState(ListStateDescriptor&lt;T&gt;)</span><br><span class="line">MapState&lt;UK, UV&gt; getMapState(MapStateDescriptor&lt;UK, UV&gt;)</span><br><span class="line">AggregatingState&lt;IN, OUT&gt; getAggregatingState(AggregatingStateDescriptor&lt;IN, ACC, OUT&gt;)</span><br><span class="line">ReducingState&lt;T&gt; getReducingState(ReducingStateDescriptor&lt;T&gt;)</span><br></pre></td></tr></table></figure>
+
+<p>下面是一个 FlatMapFunction 的例子,展示了如何将这些部分组合起来:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line">public class CountWindowAverage extends RichFlatMapFunction&lt;Tuple2&lt;Long, Long&gt;, Tuple2&lt;Long, Long&gt;&gt; &#123;</span><br><span class="line"></span><br><span class="line">    &#x2F;**</span><br><span class="line">     * The ValueState handle. The first field is the count, the second field a running sum.</span><br><span class="line">     *&#x2F;</span><br><span class="line">    private transient ValueState&lt;Tuple2&lt;Long, Long&gt;&gt; sum;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void flatMap(Tuple2&lt;Long, Long&gt; input, Collector&lt;Tuple2&lt;Long, Long&gt;&gt; out) throws Exception &#123;</span><br><span class="line"></span><br><span class="line">        &#x2F;&#x2F; access the state value</span><br><span class="line">        Tuple2&lt;Long, Long&gt; currentSum &#x3D; sum.value();</span><br><span class="line"></span><br><span class="line">        &#x2F;&#x2F; update the count</span><br><span class="line">        currentSum.f0 +&#x3D; 1;</span><br><span class="line"></span><br><span class="line">        &#x2F;&#x2F; add the second field of the input value</span><br><span class="line">        currentSum.f1 +&#x3D; input.f1;</span><br><span class="line"></span><br><span class="line">        &#x2F;&#x2F; update the state</span><br><span class="line">        sum.update(currentSum);</span><br><span class="line"></span><br><span class="line">        &#x2F;&#x2F; if the count reaches 2, emit the average and clear the state</span><br><span class="line">        if (currentSum.f0 &gt;&#x3D; 2) &#123;</span><br><span class="line">            out.collect(new Tuple2&lt;&gt;(input.f0, currentSum.f1 &#x2F; currentSum.f0));</span><br><span class="line">            sum.clear();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void open(Configuration config) &#123;</span><br><span class="line">        ValueStateDescriptor&lt;Tuple2&lt;Long, Long&gt;&gt; descriptor &#x3D;</span><br><span class="line">                new ValueStateDescriptor&lt;&gt;(</span><br><span class="line">                        &quot;average&quot;, &#x2F;&#x2F; the state name</span><br><span class="line">                        TypeInformation.of(new TypeHint&lt;Tuple2&lt;Long, Long&gt;&gt;() &#123;&#125;), &#x2F;&#x2F; type information</span><br><span class="line">                        Tuple2.of(0L, 0L)); &#x2F;&#x2F; default value of the state, if nothing was set</span><br><span class="line">        sum &#x3D; getRuntimeContext().getState(descriptor);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; this can be used in a streaming program like this (assuming we have a StreamExecutionEnvironment env)</span><br><span class="line">env.fromElements(Tuple2.of(1L, 3L), Tuple2.of(1L, 5L), Tuple2.of(1L, 7L), Tuple2.of(1L, 4L), Tuple2.of(1L, 2L))</span><br><span class="line">        .keyBy(value -&gt; value.f0)</span><br><span class="line">        .flatMap(new CountWindowAverage())</span><br><span class="line">        .print();</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; the printed output will be (1,4) and (1,5)</span><br></pre></td></tr></table></figure>
+
+<p>这个例子实现了一个简单的计数窗口.<br>我们把元组的第一个元素当作 key(在示例中都 key 都是 &quot;1&quot;).<br>该函数将出现的次数以及总和存储在 &quot;ValueState&quot; 中.<br>一旦出现次数达到 2,则将平均值发送到下游,并清除状态重新开始.<br>请注意,我们会为每个不同的 key(元组中第一个元素)保存一个单独的值.</p>
+<h4 id="状态有效期-TTL"><a href="#状态有效期-TTL" class="headerlink" title="状态有效期 (TTL)"></a>状态有效期 (TTL)</h4><p>任何类型的 keyed state 都可以有 有效期 (TTL).<br>如果配置了 TTL 且状态值已过期,则会尽最大可能清除对应的值.</p>
+<p>所有状态类型都支持单元素的 TTL.<br>这意味着列表元素和映射元素将独立到期.</p>
+<p>在使用状态 TTL 前,需要先构建一个StateTtlConfig 配置对象.<br>然后把配置传递到 state descriptor 中启用 TTL 功能:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.flink.api.common.state.StateTtlConfig;</span><br><span class="line">import org.apache.flink.api.common.state.ValueStateDescriptor;</span><br><span class="line">import org.apache.flink.api.common.time.Time;</span><br><span class="line"></span><br><span class="line">StateTtlConfig ttlConfig &#x3D; StateTtlConfig</span><br><span class="line">    .newBuilder(Time.seconds(1))</span><br><span class="line">    .setUpdateType(StateTtlConfig.UpdateType.OnCreateAndWrite)</span><br><span class="line">    .setStateVisibility(StateTtlConfig.StateVisibility.NeverReturnExpired)</span><br><span class="line">    .build();</span><br><span class="line">    </span><br><span class="line">ValueStateDescriptor&lt;String&gt; stateDescriptor &#x3D; new ValueStateDescriptor&lt;&gt;(&quot;text state&quot;, String.class);</span><br><span class="line">stateDescriptor.enableTimeToLive(ttlConfig);</span><br></pre></td></tr></table></figure>
+
+<p>TTL 配置有以下几个选项:newBuilder 的第一个参数表示数据的有效期,是必选项.<br>TTL 的更新策略(默认是 OnCreateAndWrite):</p>
+<ol>
+<li>StateTtlConfig.UpdateType.OnCreateAndWrite:仅在创建和写入时更新</li>
+<li>StateTtlConfig.UpdateType.OnReadAndWrite:读取时也更新</li>
+</ol>
+<p>数据在过期但还未被清理时的可见性配置如下(默认为 NeverReturnExpired):</p>
+<ol>
+<li>StateTtlConfig.StateVisibility.NeverReturnExpired:不返回过期数据</li>
+<li>StateTtlConfig.StateVisibility.ReturnExpiredIfNotCleanedUp:会返回过期但未清理的数据</li>
+</ol>
+<p>NeverReturnExpired 情况下,过期数据就像不存在一样,不管是否被物理删除.<br>这对于不能访问过期数据的场景下非常有用,比如敏感数据.<br>ReturnExpiredIfNotCleanedUp 在数据被物理删除前都会返回.</p>
+<blockquote>
+<p>注意</p>
+</blockquote>
+<p>1)状态上次的修改时间会和数据一起保存在 state backend 中,因此开启该特性会增加状态数据的存储.<br>Heap state backend 会额外存储一个包括用户状态以及时间戳的 Java 对象,<br>RocksDB state backend 会在每个状态值(list 或者 map 的每个元素)序列化后增加 8 个字节.</p>
+<p>2)暂时只支持基于 processing time 的 TTL.<br>3)尝试从 checkpoint/savepoint 进行恢复时,TTL 的状态(是否开启)必须和之前保持一致,否则会遇到 &quot;StateMigrationException&quot;.<br>4)TTL 的配置并不会保存在 checkpoint/savepoint 中,仅对当前 Job 有效.<br>5)当前开启 TTL 的 map state 仅在用户值序列化器支持 null 的情况下,才支持用户值为 null.<br>如果用户值序列化器不支持 null, 可以用 NullableSerializer 包装一层.</p>
+<p>6)启用 TTL 配置后,StateDescriptor 中的 defaultValue(已被标记 deprecated)将会失效.<br>这个设计的目的是为了确保语义更加清晰,在此基础上,用户需要手动管理那些实际值为 null 或已过期的状态默认值.</p>
+<h4 id="过期数据的清理"><a href="#过期数据的清理" class="headerlink" title="过期数据的清理"></a>过期数据的清理</h4><p>默认情况下,过期数据会在读取的时候被删除,例如 ValueState#value,同时会有后台线程定期清理(如果 StateBackend 支持的话).<br>可以通过 StateTtlConfig 配置关闭后台清理:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.flink.api.common.state.StateTtlConfig;</span><br><span class="line"></span><br><span class="line">StateTtlConfig ttlConfig &#x3D; StateTtlConfig</span><br><span class="line">    .newBuilder(Time.seconds(1))</span><br><span class="line">    .disableCleanupInBackground()</span><br><span class="line">    .build();</span><br></pre></td></tr></table></figure>
+
+<p>可以按照如下所示配置更细粒度的后台清理策略.<br>当前的实现中 HeapStateBackend 依赖增量数据清理,RocksDBStateBackend 利用压缩过滤器进行后台清理.</p>
+<h5 id="全量快照时进行清理"><a href="#全量快照时进行清理" class="headerlink" title="全量快照时进行清理"></a>全量快照时进行清理</h5><p>另外,你可以启用全量快照时进行清理的策略,这可以减少整个快照的大小.<br>当前实现中不会清理本地的状态,但从上次快照恢复时,不会恢复那些已经删除的过期数据.<br>该策略可以通过 StateTtlConfig 配置进行配置:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.flink.api.common.state.StateTtlConfig;</span><br><span class="line">import org.apache.flink.api.common.time.Time;</span><br><span class="line"></span><br><span class="line">StateTtlConfig ttlConfig &#x3D; StateTtlConfig</span><br><span class="line">    .newBuilder(Time.seconds(1))</span><br><span class="line">    .cleanupFullSnapshot()</span><br><span class="line">    .build();</span><br></pre></td></tr></table></figure>
+
+<p>这种策略在 RocksDBStateBackend 的增量 checkpoint 模式下无效.</p>
+<p>注意:这种清理方式可以在任何时候通过 StateTtlConfig 启用或者关闭,比如在从 savepoint 恢复时.</p>
+<h5 id="增量数据清理"><a href="#增量数据清理" class="headerlink" title="增量数据清理"></a>增量数据清理</h5><p>另外可以选择增量式清理状态数据,在状态访问或/和处理时进行.<br>如果某个状态开启了该清理策略,则会在存储后端保留一个所有状态的惰性全局迭代器.<br>每次触发增量清理时,从迭代器中选择已经过期的数进行清理.</p>
+<p>该特性可以通过 StateTtlConfig 进行配置:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.flink.api.common.state.StateTtlConfig;</span><br><span class="line"> StateTtlConfig ttlConfig &#x3D; StateTtlConfig</span><br><span class="line">    .newBuilder(Time.seconds(1))</span><br><span class="line">    .cleanupIncrementally(10, true)</span><br><span class="line">    .build();</span><br></pre></td></tr></table></figure>
+
+<p>该策略有两个参数.<br>第一个是每次清理时检查状态的条目数,在每个状态访问时触发.<br>第二个参数表示是否在处理每条记录时触发清理.<br>Heap backend 默认会检查 5 条状态,并且关闭在每条记录时触发清理.</p>
+<p>注意:<br>1)如果没有 state 访问,也没有处理数据,则不会清理过期数据.<br>2)增量清理会增加数据处理的耗时.<br>3)现在仅 Heap state backend 支持增量清除机制.在 RocksDB state backend 上启用该特性无效.<br>4)如果 Heap state backend 使用同步快照方式,则会保存一份所有 key 的拷贝,从而防止并发修改问题,因此会增加内存的使用.但异步快照则没有这个问题.<br>5)对已有的作业,这个清理方式可以在任何时候通过 StateTtlConfig 启用或禁用该特性,比如从 savepoint 重启后.</p>
+<h5 id="在-RocksDB-压缩时清理"><a href="#在-RocksDB-压缩时清理" class="headerlink" title="在 RocksDB 压缩时清理"></a>在 RocksDB 压缩时清理</h5><p>如果使用 RocksDB state backend,则会启用 Flink 为 RocksDB 定制的压缩过滤器.<br>RocksDB 会周期性的对数据进行合并压缩从而减少存储空间.<br>Flink 提供的 RocksDB 压缩过滤器会在压缩时过滤掉已经过期的状态数据.</p>
+<p>该特性可以通过 StateTtlConfig 进行配置:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.flink.api.common.state.StateTtlConfig;</span><br><span class="line"></span><br><span class="line">StateTtlConfig ttlConfig &#x3D; StateTtlConfig</span><br><span class="line">    .newBuilder(Time.seconds(1))</span><br><span class="line">    .cleanupInRocksdbCompactFilter(1000)</span><br><span class="line">    .build();</span><br></pre></td></tr></table></figure>
+
+<p>Flink 处理一定条数的状态数据后,会使用当前时间戳来检测 RocksDB 中的状态是否已经过期, 你可以通过 <code>StateTtlConfig.newBuilder(...).cleanupInRocksdbCompactFilter(long queryTimeAfterNumEntries)</code> 方法指定处理状态的条数.<br>时间戳更新的越频繁,状态的清理越及时,但由于压缩会有调用 JNI 的开销,因此会影响整体的压缩性能.<br>RocksDB backend 的默认后台清理策略会每处理 1000 条数据进行一次.</p>
+<p>你还可以通过配置开启 RocksDB 过滤器的 debug 日志:<br><code>log4j.logger.org.rocksdb.FlinkCompactionFilter=DEBUG</code></p>
+<p>注意:<br>1)压缩时调用 TTL 过滤器会降低速度.<br>TTL 过滤器需要解析上次访问的时间戳,并对每个将参与压缩的状态进行是否过期检查.<br>对于集合型状态类型(比如 list 和 map),会对集合中每个元素进行检查.</p>
+<p>2)对于元素序列化后长度不固定的列表状态,TTL 过滤器需要在每次 JNI 调用过程中,额外调用 Flink 的 java 序列化器, 从而确定下一个未过期数据的位置.</p>
+<p>3)对已有的作业,这个清理方式可以在任何时候通过 StateTtlConfig 启用或禁用该特性,比如从 savepoint 重启后.</p>
+<h4 id="DataStream-状态相关的-Scala-API"><a href="#DataStream-状态相关的-Scala-API" class="headerlink" title="DataStream 状态相关的 Scala API"></a>DataStream 状态相关的 Scala API</h4><h3 id="算子状态-Operator-State"><a href="#算子状态-Operator-State" class="headerlink" title="算子状态 (Operator State)"></a>算子状态 (Operator State)</h3><p>算子状态(或者非 keyed 状态)是绑定到一个并行算子实例的状态.<br>Kafka Connector 是 Flink 中使用算子状态一个很具有启发性的例子.<br>Kafka consumer 每个并行实例维护了 topic partitions 和偏移量的 map 作为它的算子状态.</p>
+<p>当并行度改变的时候,算子状态支持将状态重新分发给各并行算子实例.<br>处理重分发过程有多种不同的方案.</p>
+<p>在典型的有状态 Flink 应用中你无需使用算子状态.<br>它大都作为一种特殊类型的状态使用.<br>用于实现 source/sink,以及无法对 state 进行分区而没有主键的这类场景中.</p>
+<h3 id="广播状态-Broadcast-State"><a href="#广播状态-Broadcast-State" class="headerlink" title="广播状态 (Broadcast State)"></a>广播状态 (Broadcast State)</h3><p>广播状态是一种特殊的算子状态.<br>引入它的目的在于支持一个流中的元素需要广播到所有下游任务的使用情形.<br>在这些任务中广播状态用于保持所有子任务状态相同.<br>该状态接下来可在第二个处理记录的数据流中访问.<br>可以设想包含了一系列用于处理其他流中元素规则的低吞吐量数据流,这个例子自然而然地运用了广播状态.<br>考虑到上述这类使用情形,广播状态和其他算子状态的不同之处在于:</p>
+<ol>
+<li>它具有 map 格式.</li>
+<li>它仅在一些特殊的算子中可用.这些算子的输入为一个广播数据流和非广播数据流.</li>
+<li>这类算子可以拥有不同命名的多个广播状态.</li>
+</ol>
+<h3 id="使用-Operator-State"><a href="#使用-Operator-State" class="headerlink" title="使用 Operator State"></a>使用 Operator State</h3><p>用户可以通过实现 CheckpointedFunction 接口来使用 operator state.</p>
+<h4 id="CheckpointedFunction"><a href="#CheckpointedFunction" class="headerlink" title="CheckpointedFunction"></a>CheckpointedFunction</h4><p>CheckpointedFunction 接口提供了访问 non-keyed state 的方法,需要实现如下两个方法:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">void snapshotState(FunctionSnapshotContext context) throws Exception;</span><br><span class="line">void initializeState(FunctionInitializationContext context) throws Exception;</span><br></pre></td></tr></table></figure>
+
+<p>进行 checkpoint 时会调用 snapshotState().<br>用户自定义函数初始化时会调用 initializeState(),初始化包括第一次自定义函数初始化和从之前的 checkpoint 恢复.<br>因此 initializeState() 不仅是定义不同状态类型初始化的地方,也需要包括状态恢复的逻辑.</p>
+<p>当前 operator state 以 list 的形式存在.<br>这些状态是一个 可序列化 对象的集合 List,彼此独立,方便在改变并发后进行状态的重新分派.<br>换句话说,这些对象是重新分配 non-keyed state 的最细粒度.<br>根据状态的不同访问方式,有如下几种重新分配的模式:</p>
+<ol>
+<li><p>Even-split redistribution<br>每个算子都保存一个列表形式的状态集合,整个状态由所有的列表拼接而成.<br>当作业恢复或重新分配的时候,整个状态会按照算子的并发度进行均匀分配.<br>比如说,算子 A 的并发读为 1,包含两个元素 element1 和 element2,当并发读增加为 2 时,element1 会被分到并发 0 上,element2 则会被分到并发 1 上.</p>
+</li>
+<li><p>Union redistribution<br>每个算子保存一个列表形式的状态集合.<br>整个状态由所有的列表拼接而成.<br>当作业恢复或重新分配时,每个算子都将获得所有的状态数据.</p>
+</li>
+</ol>
+<p>下面的例子中的 SinkFunction 在 CheckpointedFunction 中进行数据缓存,然后统一发送到下游,这个例子演示了列表状态数据的 event-split redistribution.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">public class BufferingSink</span><br><span class="line">        implements SinkFunction&lt;Tuple2&lt;String, Integer&gt;&gt;,</span><br><span class="line">                   CheckpointedFunction &#123;</span><br><span class="line"></span><br><span class="line">    private final int threshold;</span><br><span class="line"></span><br><span class="line">    private transient ListState&lt;Tuple2&lt;String, Integer&gt;&gt; checkpointedState;</span><br><span class="line"></span><br><span class="line">    private List&lt;Tuple2&lt;String, Integer&gt;&gt; bufferedElements;</span><br><span class="line"></span><br><span class="line">    public BufferingSink(int threshold) &#123;</span><br><span class="line">        this.threshold &#x3D; threshold;</span><br><span class="line">        this.bufferedElements &#x3D; new ArrayList&lt;&gt;();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void invoke(Tuple2&lt;String, Integer&gt; value, Context contex) throws Exception &#123;</span><br><span class="line">        bufferedElements.add(value);</span><br><span class="line">        if (bufferedElements.size() &gt;&#x3D; threshold) &#123;</span><br><span class="line">            for (Tuple2&lt;String, Integer&gt; element: bufferedElements) &#123;</span><br><span class="line">                &#x2F;&#x2F; send it to the sink</span><br><span class="line">            &#125;</span><br><span class="line">            bufferedElements.clear();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void snapshotState(FunctionSnapshotContext context) throws Exception &#123;</span><br><span class="line">        checkpointedState.clear();</span><br><span class="line">        for (Tuple2&lt;String, Integer&gt; element : bufferedElements) &#123;</span><br><span class="line">            checkpointedState.add(element);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void initializeState(FunctionInitializationContext context) throws Exception &#123;</span><br><span class="line">        ListStateDescriptor&lt;Tuple2&lt;String, Integer&gt;&gt; descriptor &#x3D;</span><br><span class="line">            new ListStateDescriptor&lt;&gt;(</span><br><span class="line">                &quot;buffered-elements&quot;,</span><br><span class="line">                TypeInformation.of(new TypeHint&lt;Tuple2&lt;String, Integer&gt;&gt;() &#123;&#125;));</span><br><span class="line"></span><br><span class="line">        checkpointedState &#x3D; context.getOperatorStateStore().getListState(descriptor);</span><br><span class="line"></span><br><span class="line">        if (context.isRestored()) &#123;</span><br><span class="line">            for (Tuple2&lt;String, Integer&gt; element : checkpointedState.get()) &#123;</span><br><span class="line">                bufferedElements.add(element);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>initializeState 方法接收一个 FunctionInitializationContext 参数,会用来初始化 non-keyed state 的 &quot;容器&quot;.<br>这些容器是一个 ListState 用于在 checkpoint 时保存 non-keyed state 对象.</p>
+<p>注意这些状态是如何初始化的,和 keyed state 类似,StateDescriptor 会包括状态名字/以及状态类型相关信息.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">ListStateDescriptor&lt;Tuple2&lt;String, Integer&gt;&gt; descriptor &#x3D;</span><br><span class="line">    new ListStateDescriptor&lt;&gt;(</span><br><span class="line">        &quot;buffered-elements&quot;,</span><br><span class="line">        TypeInformation.of(new TypeHint&lt;Tuple2&lt;String, Integer&gt;&gt;() &#123;&#125;));</span><br><span class="line"></span><br><span class="line">checkpointedState &#x3D; context.getOperatorStateStore().getListState(descriptor);</span><br></pre></td></tr></table></figure>
+
+<p>调用不同的获取状态对象的接口,会使用不同的状态分配算法.<br>比如 getUnionListState(descriptor) 会使用 union redistribution 算法, 而 getListState(descriptor) 则简单的使用 even-split redistribution 算法.</p>
+<p>当初始化好状态对象后,我们通过 isRestored() 方法判断是否从之前的故障中恢复回来,如果该方法返回 true 则表示从故障中进行恢复,会执行接下来的恢复逻辑.</p>
+<p>正如代码所示,BufferingSink 中初始化时,恢复回来的 ListState 的所有元素会添加到一个局部变量中,供下次 snapshotState() 时使用.<br>然后清空 ListState,再把当前局部变量中的所有元素写入到 checkpoint 中.</p>
+<p>另外,我们同样可以在 initializeState() 方法中使用 FunctionInitializationContext 初始化 keyed state.</p>
+<h4 id="带状态的-Source-Function"><a href="#带状态的-Source-Function" class="headerlink" title="带状态的 Source Function"></a>带状态的 Source Function</h4><p>带状态的数据源比其他的算子需要注意更多东西.<br>为了保证更新状态以及输出的原子性(用于支持 exactly-once 语义),用户需要在发送数据前获取数据源的全局锁.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">public static class CounterSource</span><br><span class="line">        extends RichParallelSourceFunction&lt;Long&gt;</span><br><span class="line">        implements CheckpointedFunction &#123;</span><br><span class="line"></span><br><span class="line">    &#x2F;**  current offset for exactly once semantics *&#x2F;</span><br><span class="line">    private Long offset &#x3D; 0L;</span><br><span class="line"></span><br><span class="line">    &#x2F;** flag for job cancellation *&#x2F;</span><br><span class="line">    private volatile boolean isRunning &#x3D; true;</span><br><span class="line">    </span><br><span class="line">    &#x2F;** 存储 state 的变量. *&#x2F;</span><br><span class="line">    private ListState&lt;Long&gt; state;</span><br><span class="line">     </span><br><span class="line">    @Override</span><br><span class="line">    public void run(SourceContext&lt;Long&gt; ctx) &#123;</span><br><span class="line">        final Object lock &#x3D; ctx.getCheckpointLock();</span><br><span class="line"></span><br><span class="line">        while (isRunning) &#123;</span><br><span class="line">            &#x2F;&#x2F; output and state update are atomic</span><br><span class="line">            synchronized (lock) &#123;</span><br><span class="line">                ctx.collect(offset);</span><br><span class="line">                offset +&#x3D; 1;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void cancel() &#123;</span><br><span class="line">        isRunning &#x3D; false;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void initializeState(FunctionInitializationContext context) throws Exception &#123;</span><br><span class="line">        state &#x3D; context.getOperatorStateStore().getListState(new ListStateDescriptor&lt;&gt;(</span><br><span class="line">            &quot;state&quot;,</span><br><span class="line">            LongSerializer.INSTANCE));</span><br><span class="line">            </span><br><span class="line">        &#x2F;&#x2F; 从我们已保存的状态中恢复 offset 到内存中,在进行任务恢复的时候也会调用此初始化状态的方法</span><br><span class="line">        for (Long l : state.get()) &#123;</span><br><span class="line">            offset &#x3D; l;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void snapshotState(FunctionSnapshotContext context) throws Exception &#123;</span><br><span class="line">        state.clear();</span><br><span class="line">        state.add(offset);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>希望订阅 checkpoint 成功消息的算子,可以参考 org.apache.flink.api.common.state.CheckpointListener 接口.</p>
+<h2 id="Broadcast-State-模式"><a href="#Broadcast-State-模式" class="headerlink" title="Broadcast State 模式"></a>Broadcast State 模式</h2><h3 id="提供的API"><a href="#提供的API" class="headerlink" title="提供的API"></a>提供的API</h3><p>在这里我们使用一个例子来展现 broadcast state 提供的接口.<br>假设存在一个序列,序列中的元素是具有不同颜色与形状的图形,我们希望在序列里相同颜色的图形中寻找满足一定顺序模式的图形对(比如在红色的图形里,有一个长方形跟着一个三角形).<br>同时,我们希望寻找的模式也会随着时间而改变.</p>
+<p>在这个例子中,我们定义两个流,一个流包含图形(Item),具有颜色和形状两个属性.<br>另一个流包含特定的规则(Rule),代表希望寻找的模式.</p>
+<p>在图形流中,我们需要首先使用颜色将流进行进行分区(keyBy),这能确保相同颜色的图形会流转到相同的物理机上.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; 将图形使用颜色进行划分</span><br><span class="line">KeyedStream&lt;Item, Color&gt; colorPartitionedStream &#x3D; itemStream</span><br><span class="line">                        .keyBy(new KeySelector&lt;Item, Color&gt;()&#123;...&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>对于规则流,它应该被广播到所有的下游 task 中,下游 task 应当存储这些规则并根据它寻找满足规则的图形对.<br>下面这段代码会完成:<br>1)将规则广播给所有下游 task.<br>2)使用 MapStateDescriptor 来描述并创建 broadcast state 在下游的存储结构.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; 一个 map descriptor,它描述了用于存储规则名称与规则本身的 map 存储结构</span><br><span class="line">MapStateDescriptor&lt;String, Rule&gt; ruleStateDescriptor &#x3D; new MapStateDescriptor&lt;&gt;(</span><br><span class="line">      &quot;RulesBroadcastState&quot;,</span><br><span class="line">      BasicTypeInfo.STRING_TYPE_INFO,</span><br><span class="line">      TypeInformation.of(new TypeHint&lt;Rule&gt;() &#123;&#125;));</span><br><span class="line">    </span><br><span class="line">&#x2F;&#x2F; 广播流,广播规则并且创建 broadcast state</span><br><span class="line">BroadcastStream&lt;Rule&gt; ruleBroadcastStream &#x3D; ruleStream</span><br><span class="line">                        .broadcast(ruleStateDescriptor);</span><br></pre></td></tr></table></figure>
+
+<p>最终,为了使用规则来筛选图形序列,我们需要:</p>
+<ol>
+<li>将两个流关联起来</li>
+<li>完成我们的模式识别逻辑</li>
+</ol>
+<p>为了关联一个非广播流(keyed 或者 non-keyed)与一个广播流(BroadcastStream),我们可以调用非广播流的方法 connect(),并将 BroadcastStream 当做参数传入.</p>
+<p>这个方法的返回参数是 BroadcastConnectedStream,具有类型方法 process(),传入一个特殊的 CoProcessFunction 来书写我们的模式识别逻辑.<br>具体传入 process() 的是哪个类型取决于非广播流的类型:</p>
+<ol>
+<li>如果流是一个 keyed 流,那就是 KeyedBroadcastProcessFunction 类型.</li>
+<li>如果流是一个 non-keyed 流,那就是 BroadcastProcessFunction 类型.</li>
+</ol>
+<p>在我们的例子中,图形流是一个 keyed stream,所以我们书写的代码如下:<br>connect() 方法需要由非广播流来进行调用,BroadcastStream 作为参数传入.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">DataStream&lt;String&gt; output &#x3D; colorPartitionedStream</span><br><span class="line">                 .connect(ruleBroadcastStream)</span><br><span class="line">                 .process(</span><br><span class="line"> </span><br><span class="line"> &#x2F;&#x2F; KeyedBroadcastProcessFunction 中的类型参数表示:</span><br><span class="line"></span><br><span class="line"> &#x2F;&#x2F;   1. key stream 中的 key 类型</span><br><span class="line"> &#x2F;&#x2F;   2. 非广播流中的元素类型</span><br><span class="line"> &#x2F;&#x2F;   3. 广播流中的元素类型</span><br><span class="line"> &#x2F;&#x2F;   4. 结果的类型,在这里是 string</span><br><span class="line"> </span><br><span class="line"> new KeyedBroadcastProcessFunction&lt;Color, Item, Rule, String&gt;() &#123;</span><br><span class="line">     &#x2F;&#x2F; 模式匹配逻辑</span><br><span class="line"> &#125;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h4 id="BroadcastProcessFunction-KeyedBroadcastProcessFunction"><a href="#BroadcastProcessFunction-KeyedBroadcastProcessFunction" class="headerlink" title="BroadcastProcessFunction/KeyedBroadcastProcessFunction"></a>BroadcastProcessFunction/KeyedBroadcastProcessFunction</h4><p>在传入的 BroadcastProcessFunction 或 KeyedBroadcastProcessFunction 中,我们需要实现两个方法.<br>processBroadcastElement() 方法负责处理广播流中的元素,processElement() 负责处理非广播流中的元素.<br>两个子类型定义如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public abstract class BroadcastProcessFunction&lt;IN1, IN2, OUT&gt; extends BaseBroadcastProcessFunction &#123;</span><br><span class="line">    public abstract void processElement(IN1 value, ReadOnlyContext ctx, Collector&lt;OUT&gt; out) throws Exception;</span><br><span class="line">    public abstract void processBroadcastElement(IN2 value, Context ctx, Collector&lt;OUT&gt; out) throws Exception;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public abstract class KeyedBroadcastProcessFunction&lt;KS, IN1, IN2, OUT&gt; &#123;</span><br><span class="line">    public abstract void processElement(IN1 value, ReadOnlyContext ctx, Collector&lt;OUT&gt; out) throws Exception;</span><br><span class="line">    public abstract void processBroadcastElement(IN2 value, Context ctx, Collector&lt;OUT&gt; out) throws Exception;</span><br><span class="line">    public void onTimer(long timestamp, OnTimerContext ctx, Collector&lt;OUT&gt; out) throws Exception;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>需要注意的是 processBroadcastElement() 负责处理广播流的元素,而 processElement() 负责处理另一个流的元素.<br>两个方法的第二个参数(Context)不同,均有以下方法:</p>
+<ol>
+<li>得到广播流的存储状态: ctx.getBroadcastState(MapStateDescriptor<code>&lt;K, V&gt;</code> stateDescriptor)</li>
+<li>查询元素的时间戳: ctx.timestamp()</li>
+<li>查询目前的Watermark: ctx.currentWatermark()</li>
+<li>目前的处理时间(processing time): ctx.currentProcessingTime()</li>
+<li>产生旁路输出: ctx.output(OutputTag<code>&lt;X&gt;</code> outputTag, X value)</li>
+</ol>
+<p>在 getBroadcastState() 方法中传入的 stateDescriptor 应该与调用 .broadcast(ruleStateDescriptor) 的参数相同.</p>
+<p>这两个方法的区别在于对 broadcast state 的访问权限不同.<br>在处理广播流元素这端,是具有读写权限的,而对于处理非广播流元素这端是只读的.<br>这样做的原因是,Flink 中是不存在跨 task 通讯的.<br>所以为了保证 broadcast state 在所有的并发实例中是一致的,我们在处理广播流元素的时候给予写权限,在所有的 task 中均可以看到这些元素,并且要求对这些元素处理是一致的, 那么最终所有 task 得到的 broadcast state 是一致的.</p>
+<blockquote>
+<p>processBroadcastElement() 的实现必须在所有的并发实例中具有确定性的结果.</p>
+</blockquote>
+<p>同时,KeyedBroadcastProcessFunction 在 Keyed Stream 上工作,所以它提供了一些 BroadcastProcessFunction 没有的功能:</p>
+<ol>
+<li><p>processElement() 的参数 ReadOnlyContext 提供了方法能够访问 Flink 的定时器服务,可以注册事件定时器(event-time timer)或者处理时间的定时器(processing-time timer).<br>当定时器触发时,会调用 onTimer() 方法, 提供了 OnTimerContext,它具有 ReadOnlyContext 的全部功能,并且提供:<br>查询当前触发的是一个事件还是处理时间的定时器.<br>查询定时器关联的key.</p>
+</li>
+<li><p>processBroadcastElement() 方法中的参数 Context 会提供方法 applyToKeyedState(StateDescriptor<code>&lt;S, VS&gt;</code> stateDescriptor, KeyedStateFunction<code>&lt;KS, S&gt;</code> function).<br>这个方法使用一个 KeyedStateFunction 能够对 stateDescriptor 对应的 state 中所有 key 的存储状态进行某些操作.</p>
+</li>
+</ol>
+<blockquote>
+<p>注册一个定时器只能在 KeyedBroadcastProcessFunction 的 processElement() 方法中进行.<br>在 processBroadcastElement() 方法中不能注册定时器,因为广播的元素中并没有关联的 key.</p>
+</blockquote>
+<p>回到我们当前的例子中,KeyedBroadcastProcessFunction 应该实现如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line">new KeyedBroadcastProcessFunction&lt;Color, Item, Rule, String&gt;() &#123;</span><br><span class="line"></span><br><span class="line">    &#x2F;&#x2F; 存储部分匹配的结果,即匹配了一个元素,正在等待第二个元素</span><br><span class="line">    &#x2F;&#x2F; 我们用一个数组来存储,因为同时可能有很多第一个元素正在等待</span><br><span class="line">    private final MapStateDescriptor&lt;String, List&lt;Item&gt;&gt; mapStateDesc &#x3D;</span><br><span class="line">        new MapStateDescriptor&lt;&gt;(</span><br><span class="line">            &quot;items&quot;,</span><br><span class="line">            BasicTypeInfo.STRING_TYPE_INFO,</span><br><span class="line">            new ListTypeInfo&lt;&gt;(Item.class));</span><br><span class="line"></span><br><span class="line">    &#x2F;&#x2F; 与之前的 ruleStateDescriptor 相同</span><br><span class="line">    private final MapStateDescriptor&lt;String, Rule&gt; ruleStateDescriptor &#x3D; </span><br><span class="line">        new MapStateDescriptor&lt;&gt;(</span><br><span class="line">            &quot;RulesBroadcastState&quot;,</span><br><span class="line">            BasicTypeInfo.STRING_TYPE_INFO,</span><br><span class="line">            TypeInformation.of(new TypeHint&lt;Rule&gt;() &#123;&#125;));</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void processBroadcastElement(Rule value,</span><br><span class="line">                                        Context ctx,</span><br><span class="line">                                        Collector&lt;String&gt; out) throws Exception &#123;</span><br><span class="line">        ctx.getBroadcastState(ruleStateDescriptor).put(value.name, value);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void processElement(Item value,</span><br><span class="line">                               ReadOnlyContext ctx,</span><br><span class="line">                               Collector&lt;String&gt; out) throws Exception &#123;</span><br><span class="line"></span><br><span class="line">        final MapState&lt;String, List&lt;Item&gt;&gt; state &#x3D; getRuntimeContext().getMapState(mapStateDesc);</span><br><span class="line">        final Shape shape &#x3D; value.getShape();</span><br><span class="line">    </span><br><span class="line">        for (Map.Entry&lt;String, Rule&gt; entry :</span><br><span class="line">                ctx.getBroadcastState(ruleStateDescriptor).immutableEntries()) &#123;</span><br><span class="line">            final String ruleName &#x3D; entry.getKey();</span><br><span class="line">            final Rule rule &#x3D; entry.getValue();</span><br><span class="line">    </span><br><span class="line">            List&lt;Item&gt; stored &#x3D; state.get(ruleName);</span><br><span class="line">            if (stored &#x3D;&#x3D; null) &#123;</span><br><span class="line">                stored &#x3D; new ArrayList&lt;&gt;();</span><br><span class="line">            &#125;</span><br><span class="line">    </span><br><span class="line">            if (shape &#x3D;&#x3D; rule.second &amp;&amp; !stored.isEmpty()) &#123;</span><br><span class="line">                for (Item i : stored) &#123;</span><br><span class="line">                    out.collect(&quot;MATCH: &quot; + i + &quot; - &quot; + value);</span><br><span class="line">                &#125;</span><br><span class="line">                stored.clear();</span><br><span class="line">            &#125;</span><br><span class="line">    </span><br><span class="line">            &#x2F;&#x2F; 不需要额外的 else&#123;&#125; 段来考虑 rule.first &#x3D;&#x3D; rule.second 的情况</span><br><span class="line">            if (shape.equals(rule.first)) &#123;</span><br><span class="line">                stored.add(value);</span><br><span class="line">            &#125;</span><br><span class="line">    </span><br><span class="line">            if (stored.isEmpty()) &#123;</span><br><span class="line">                state.remove(ruleName);</span><br><span class="line">            &#125; else &#123;</span><br><span class="line">                state.put(ruleName, stored);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="重要注意事项"><a href="#重要注意事项" class="headerlink" title="重要注意事项"></a>重要注意事项</h3><p>这里有一些 broadcast state 的重要注意事项,在使用它时需要时刻清楚:</p>
+<ol>
+<li>没有跨 task 通讯<br>如上所述,这就是为什么只有在 (Keyed)-BroadcastProcessFunction 中处理广播流元素的方法里可以更改 broadcast state 的内容.<br>同时,用户需要保证所有 task 对于 broadcast state 的处理方式是一致的,否则会造成不同 task 读取 broadcast state 时内容不一致的情况,最终导致结果不一致.</li>
+</ol>
+<ol start="2">
+<li><p>broadcast state 在不同的 task 的事件顺序可能是不同的<br>虽然广播流中元素的过程能够保证所有的下游 task 全部能够收到,但在不同 task 中元素的到达顺序可能不同.<br>所以 broadcast state 的更新不能依赖于流中元素到达的顺序.</p>
+</li>
+<li><p>所有的 task 均会对 broadcast state 进行 checkpoint<br>虽然所有 task 中的 broadcast state 是一致的,但当 checkpoint 来临时所有 task 均会对 broadcast state 做 checkpoint.<br>这个设计是为了防止在作业恢复后读文件造成的文件热点.<br>当然这种方式会造成 checkpoint 一定程度的写放大,放大倍数为 p(=并行度).<br>Flink 会保证在恢复状态/改变并发的时候数据没有重复且没有缺失.<br>在作业恢复时,如果与之前具有相同或更小的并发度,所有的 task 读取之前已经 checkpoint 过的 state.<br>在增大并发的情况下,task 会读取本身的 state,多出来的并发(p_new - p_old)会使用轮询调度算法读取之前 task 的 state.</p>
+</li>
+<li><p>不使用 RocksDB state backend<br>broadcast state 在运行时保存在内存中,需要保证内存充足.<br>这一特性同样适用于所有其他 Operator State.</p>
+</li>
+</ol>
+<h2 id="Checkpointing"><a href="#Checkpointing" class="headerlink" title="Checkpointing"></a>Checkpointing</h2><p>Flink 中的每个方法或算子都能够是有状态的.<br>状态化的方法在处理单个 元素/事件 的时候存储数据,让状态成为使各个类型的算子更加精细的重要部分.<br>为了让状态容错,Flink 需要为状态添加 checkpoint(检查点).<br>Checkpoint 使得 Flink 能够恢复状态和在流中的位置,从而向应用提供和无故障执行时一样的语义.</p>
+<h3 id="前提条件"><a href="#前提条件" class="headerlink" title="前提条件"></a>前提条件</h3><p>Flink 的 checkpoint 机制会和持久化存储进行交互,读写流与状态.<br>一般需要:</p>
+<ol>
+<li>一个能够回放一段时间内数据的持久化数据源,例如持久化消息队列(例如 Apache Kafka/RabbitMQ/ Amazon Kinesis/ Google PubSub 等)或文件系统(例如 HDFS/ S3/ GFS/ NFS/ Ceph 等).</li>
+<li>存放状态的持久化存储,通常为分布式文件系统(比如 HDFS/ S3/ GFS/ NFS/ Ceph 等).</li>
+</ol>
+<h3 id="开启与配置-Checkpoint"><a href="#开启与配置-Checkpoint" class="headerlink" title="开启与配置 Checkpoint"></a>开启与配置 Checkpoint</h3><p>默认情况下 checkpoint 是禁用的.<br>通过调用 StreamExecutionEnvironment 的 enableCheckpointing(n) 来启用 checkpoint,里面的 n 是进行 checkpoint 的间隔,单位毫秒.</p>
+<p>Checkpoint 其他的属性包括:</p>
+<ol>
+<li><p>精确一次(exactly-once)对比至少一次(at-least-once)<br>你可以选择向 enableCheckpointing(long interval, CheckpointingMode mode) 方法中传入一个模式来选择使用两种保证等级中的哪一种.<br>对于大多数应用来说,精确一次是较好的选择.<br>至少一次可能与某些延迟超低(始终只有几毫秒)的应用的关联较大.</p>
+</li>
+<li><p>checkpoint 超时<br>如果 checkpoint 执行的时间超过了该配置的阈值,还在进行中的 checkpoint 操作就会被抛弃.</p>
+</li>
+<li><p>checkpoints 之间的最小时间<br>该属性定义在 checkpoint 之间需要多久的时间,以确保流应用在 checkpoint 之间有足够的进展.<br>如果值设置为了 5000, 无论 checkpoint 持续时间与间隔是多久,在前一个 checkpoint 完成时的至少五秒后会才开始下一个 checkpoint.<br>往往使用&quot;checkpoints 之间的最小时间&quot;来配置应用会比 checkpoint 间隔容易很多,因为&quot;checkpoints 之间的最小时间&quot;在 checkpoint 的执行时间超过平均值时不会受到影响(例如如果目标的存储系统忽然变得很慢).<br>注意这个值也意味着并发 checkpoint 的数目是一.</p>
+</li>
+<li><p>checkpoint 可容忍连续失败次数<br>该属性定义可容忍多少次连续的 checkpoint 失败.<br>超过这个阈值之后会触发作业错误 fail over.<br>默认次数为&quot;0&quot;,这意味着不容忍 checkpoint 失败,作业将在第一次 checkpoint 失败时fail over.</p>
+</li>
+<li><p>并发 checkpoint 的数目<br>默认情况下,在上一个 checkpoint 未完成(失败或者成功)的情况下,系统不会触发另一个 checkpoint.<br>这确保了拓扑不会在 checkpoint 上花费太多时间,从而影响正常的处理流程.<br>不过允许多个 checkpoint 并行进行是可行的,对于有确定的处理延迟(例如某方法所调用比较耗时的外部服务),但是仍然想进行频繁的 checkpoint 去最小化故障后重跑的 pipelines 来说,是有意义的.<br>该选项不能和 &quot;checkpoints 间的最小时间&quot;同时使用.</p>
+</li>
+<li><p>externalized checkpoints<br>你可以配置周期存储 checkpoint 到外部系统中.<br>Externalized checkpoints 将他们的元数据写到持久化存储上并且在 job 失败的时候不会被自动删除.<br>这种方式下,如果你的 job 失败,你将会有一个现有的 checkpoint 去恢复.</p>
+</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 每 1000ms 开始一次 checkpoint</span><br><span class="line">env.enableCheckpointing(1000);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 高级选项:</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 设置模式为精确一次 (这是默认值)</span><br><span class="line">env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 确认 checkpoints 之间的时间会进行 500 ms</span><br><span class="line">env.getCheckpointConfig().setMinPauseBetweenCheckpoints(500);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Checkpoint 必须在一分钟内完成,否则就会被抛弃</span><br><span class="line">env.getCheckpointConfig().setCheckpointTimeout(60000);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 允许两个连续的 checkpoint 错误</span><br><span class="line">env.getCheckpointConfig().setTolerableCheckpointFailureNumber(2);</span><br><span class="line">        </span><br><span class="line">&#x2F;&#x2F; 同一时间只允许一个 checkpoint 进行</span><br><span class="line">env.getCheckpointConfig().setMaxConcurrentCheckpoints(1);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 使用 externalized checkpoints,这样 checkpoint 在作业取消后仍就会被保留</span><br><span class="line">env.getCheckpointConfig().setExternalizedCheckpointCleanup(</span><br><span class="line">        ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 开启实验性的 unaligned checkpoints</span><br><span class="line">env.getCheckpointConfig().enableUnalignedCheckpoints();</span><br></pre></td></tr></table></figure>
+
+<h4 id="相关的配置选项"><a href="#相关的配置选项" class="headerlink" title="相关的配置选项"></a>相关的配置选项</h4><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>state.backend.incremental</td>
+<td>如果可能,选择状态后端是否应创建增量检查点.对于增量检查点,仅存储与前一个检查点的差异,而不是完整的检查点状态.启用后,Web UI 中显示的状态大小或从 REST API 获取的状态大小仅表示增量检查点大小,而不是完整检查点大小.一些状态后端可能不支持增量检查点并忽略此选项.默认FALSE(Boolean)</td>
+</tr>
+<tr>
+<td>state.backend.local-recovery</td>
+<td>此选项为此状态后端配置本地恢复.默认情况下,本地恢复处于禁用状态.本地恢复目前仅涵盖键控状态后端.目前,MemoryStateBackend 不支持本地恢复并忽略此选项.默认FALSE(Boolean)</td>
+</tr>
+<tr>
+<td>state.checkpoint-storage</td>
+<td>用于检查点状态的检查点存储实现.可以通过它们的快捷方式名称或通过 a 的类名来指定实现CheckpointStorageFactory.如果指定了工厂,则通过其零参数构造函数对其进行实例化,并CheckpointStorageFactory#createFromConfig(ReadableConfig, ClassLoader)调用其方法.公认的快捷方式名称是&quot;jobmanager&quot;和&quot;filesystem&quot;.默认未配置(String)</td>
+</tr>
+<tr>
+<td>state.checkpoints.dir</td>
+<td>Flink 支持的文件系统中用于存储检查点的数据文件和元数据的默认目录.存储路径必须可以从所有参与的进程/节点(即所有 TaskManager 和 JobManager)访问.默认未配置(String)</td>
+</tr>
+<tr>
+<td>state.checkpoints.num-retained</td>
+<td>要保留的已完成检查点的最大数量.默认1(Integer)</td>
+</tr>
+<tr>
+<td>state.savepoints.dir</td>
+<td>保存点的默认目录.由将保存点写入文件系统的状态后端(HashMapStateBackend/EmbeddedRocksDBStateBackend)使用.默认未配置(String)</td>
+</tr>
+<tr>
+<td>state.storage.fs.memory-threshold</td>
+<td>状态数据文件的最小大小.所有小于该值的状态块都内联存储在根检查点元数据文件中.此配置的最大内存阈值为 1MB.默认20 kb(MemorySize)</td>
+</tr>
+<tr>
+<td>state.storage.fs.write-buffer-size</td>
+<td>写入文件系统的检查点流的写入缓冲区的默认大小.实际的写入缓冲区大小被确定为此选项和选项&#39;state.storage.fs.memory-threshold&#39;的值的最大值.默认4096(Integer)</td>
+</tr>
+<tr>
+<td>taskmanager.state.local.root-dirs</td>
+<td>config 参数定义用于存储基于文件的状态以进行本地恢复的根目录.本地恢复目前仅涵盖键控状态后端.目前,MemoryStateBackend 不支持本地恢复并忽略此选项.如果未配置,它将默认为 <code>&lt;WORKING_DIR&gt;</code>/localState.<code>&lt;WORKING_DIR&gt;</code> 可以通过配置<code>process.taskmanager.working-dir</code>.默认未配置(String)</td>
+</tr>
+</tbody></table>
+<h3 id="选择一个-State-Backend"><a href="#选择一个-State-Backend" class="headerlink" title="选择一个 State Backend"></a>选择一个 State Backend</h3><p>Flink 的 checkpointing 机制 会将 timer 以及 stateful 的 operator 进行快照,然后存储下来, 包括连接器(connectors),窗口(windows)以及任何用户自定义的状态.<br>Checkpoint 存储在哪里取决于所配置的 State Backend(比如 JobManager memory/ file system/ database).</p>
+<p>默认情况下,状态是保持在 TaskManagers 的内存中,checkpoint 保存在 JobManager 的内存中.<br>为了合适地持久化大体量状态, Flink 支持各种各样的途径去存储 checkpoint 状态到其他的 state backends 上.<br>通过 StreamExecutionEnvironment.setStateBackend(...) 来配置所选的 state backends.</p>
+<h3 id="迭代作业中的状态和checkpoint"><a href="#迭代作业中的状态和checkpoint" class="headerlink" title="迭代作业中的状态和checkpoint"></a>迭代作业中的状态和checkpoint</h3><p>Flink 现在为没有迭代(iterations)的作业提供一致性的处理保证.<br>在迭代作业上开启 checkpoint 会导致异常.<br>为了在迭代程序中强制进行 checkpoint,用户需要在开启 checkpoint 时设置一个特殊的标志:<br><code>env.enableCheckpointing(interval, CheckpointingMode.EXACTLY_ONCE, force = true)</code>.</p>
+<h3 id="部分任务结束后的Checkpoint"><a href="#部分任务结束后的Checkpoint" class="headerlink" title="部分任务结束后的Checkpoint"></a>部分任务结束后的Checkpoint</h3><p>从版本 1.14 开始 Flink 支持在部分任务结束后继续进行Checkpoint.<br>如果一部分数据源是有限数据集,那么就可以出现这种情况.<br>从版本 1.15 开始,这一特性被默认打开.<br>如果想要关闭这一功能,可以执行:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Configuration config &#x3D; new Configuration();</span><br><span class="line">config.set(ExecutionCheckpointingOptions.ENABLE_CHECKPOINTS_AFTER_TASKS_FINISH, false);</span><br><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment(config);</span><br></pre></td></tr></table></figure>
+
+<p>在这种情况下,结束的任务不会参与 Checkpoint 的过程.<br>在实现自定义的算子或者 UDF (用户自定义函数)时需要考虑这一点.</p>
+<p>为了支持部分任务结束后的 Checkpoint 操作,我们调整了 任务的生命周期 并且引入了 StreamOperator#finish 方法.<br>在这一方法中,用户需要写出所有缓冲区中的数据.<br>在 finish 方法调用后的 checkpoint 中,这一任务一定不能再有缓冲区中的数据,因为在 finish() 后没有办法来输出这些数据.<br>在大部分情况下,finish() 后这一任务的状态为空,唯一的例外是如果其中某些算子中包含外部系统事务的句柄(例如为了实现恰好一次语义), 在这种情况下,在 finish() 后进行的 checkpoint 操作应该保留这些句柄,并且在结束 checkpoint(即任务退出前所等待的 checkpoint)时提交.<br>一个可以参考的例子是满足恰好一次语义的 sink 接口与 TwoPhaseCommitSinkFunction.</p>
+<h4 id="对-operator-state-的影响"><a href="#对-operator-state-的影响" class="headerlink" title="对 operator state 的影响"></a>对 operator state 的影响</h4><p>在部分 Task 结束后的checkpoint中,Flink 对 UnionListState 进行了特殊的处理.<br>UnionListState 一般用于实现对外部系统读取位置的一个全局视图(例如,用于记录所有 Kafka 分区的读取偏移).<br>如果我们在算子的某个并发调用 close() 方法后丢弃它的状态,我们就会丢失它所分配的分区的偏移量信息.<br>为了解决这一问题,对于使用 UnionListState 的算子我们只允许在它的并发都在运行或都已结束的时候才能进行 checkpoint 操作.</p>
+<p>ListState 一般不会用于类似的场景,但是用户仍然需要注意在调用 close() 方法后进行的 checkpoint 会丢弃算子的状态并且 这些状态在算子重启后不可用.</p>
+<p>任何支持并发修改操作的算子也可以支持部分并发实例结束后的恢复操作.<br>从这种类型的快照中恢复等价于将算子的并发改为正在运行的并发实例数.</p>
+<h4 id="任务结束前等待最后一次-Checkpoint"><a href="#任务结束前等待最后一次-Checkpoint" class="headerlink" title="任务结束前等待最后一次 Checkpoint"></a>任务结束前等待最后一次 Checkpoint</h4><p>为了保证使用两阶段提交的算子可以提交所有的数据,任务会在所有算子都调用 finish() 方法后等待下一次 checkpoint 成功后退出.<br>需要注意的是,这一行为可能会延长任务运行的时间,如果 checkpoint 周期比较大,这一延迟会非常明显.<br>极端情况下,如果 checkpoint 的周期被设置为 Long.MAX_VALUE,那么任务永远不会结束,因为下一次 checkpoint 不会进行.</p>
+<h2 id="Queryable-State"><a href="#Queryable-State" class="headerlink" title="Queryable State"></a>Queryable State</h2><p>目前 querable state 的客户端 API 还在不断演进,不保证现有接口的稳定性.<br>在后续的 Flink 版本中有可能发生 API 变化.</p>
+<p>简而言之, 这个特性将 Flink 的 managed keyed (partitioned) state (参考 Working with State) 暴露给外部,从而用户可以在 Flink 外部查询作业 state.<br>在某些场景中,Queryable State 消除了对外部系统的分布式操作以及事务的需求,比如 KV 存储系统,而这些外部系统往往会成为瓶颈.<br>除此之外,这个特性对于调试作业非常有用.</p>
+<p>注意: 进行查询时,state 会在并发线程中被访问,但 state 不会进行同步和拷贝.<br>这种设计是为了避免同步和拷贝带来的作业延时.<br>对于使用 Java 堆内存的 state backend, 比如 MemoryStateBackend 或者 FsStateBackend,它们获取状态时不会进行拷贝,而是直接引用状态对象,所以对状态的 read-modify-write 是不安全的,并且可能会因为并发修改导致查询失败.<br>但 RocksDBStateBackend 是安全的,不会遇到上述问题.</p>
+<h3 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h3><p>在展示如何使用 Queryable State 之前,先简单描述一下该特性的组成部分,主要包括以下三部分:</p>
+<ol>
+<li>QueryableStateClient,默认运行在 Flink 集群外部,负责提交用户的查询请求.</li>
+<li>QueryableStateClientProxy,运行在每个 TaskManager 上(即 Flink 集群内部),负责接收客户端的查询请求,从所负责的 Task Manager 获取请求的 state,并返回给客户端.</li>
+<li>QueryableStateServer, 运行在 TaskManager 上,负责服务本地存储的 state.</li>
+</ol>
+<p>客户端连接到一个代理,并发送请求获取特定 k 对应的 state.<br>如 Working with State 所述,keyed state 按照 Key Groups 进行划分,每个 TaskManager 会分配其中的一些 key groups.<br>代理会询问 JobManager 以找到 k 所属 key group 的 TaskManager.<br>根据返回的结果, 代理将会向运行在 TaskManager 上的 QueryableStateServer 查询 k 对应的 state, 并将结果返回给客户端.</p>
+<h3 id="激活-Queryable-State"><a href="#激活-Queryable-State" class="headerlink" title="激活 Queryable State"></a>激活 Queryable State</h3><p>为了在 Flink 集群上使用 queryable state,需要进行以下操作:</p>
+<ol>
+<li>将 flink-queryable-state-runtime-1.15.1.jar 从 Flink distribution 的 opt/ 目录拷贝到 lib/ 目录.</li>
+<li>将参数 queryable-state.enable 设置为 true.</li>
+</ol>
+<p>为了验证集群的 queryable state 已经被激活,可以检查任意 task manager 的日志中是否包含 &quot;Started the Queryable State Proxy Server @ ...&quot;.</p>
+<h3 id="将state设置为可查询的"><a href="#将state设置为可查询的" class="headerlink" title="将state设置为可查询的"></a>将state设置为可查询的</h3><p>激活集群的 queryable state 功能后,还要将 state 设置为可查询的才能对外可见,可以通过以下两种方式进行设置:</p>
+<ol>
+<li>创建 QueryableStateStream,它会作为一个 sink,并将输入数据转化为 queryable state.</li>
+<li>通过 stateDescriptor.setQueryable(String queryableStateName) 将 state 描述符所表示的 keyed state 设置成可查询的.</li>
+</ol>
+<h4 id="Queryable-State-Stream"><a href="#Queryable-State-Stream" class="headerlink" title="Queryable State Stream"></a>Queryable State Stream</h4><p>在 KeyedStream 上调用 .asQueryableState(stateName, stateDescriptor) 将会返回一个 QueryableStateStream, 它会将流数据转化为 queryable state.<br>对应不同的 state 类型,asQueryableState() 有以下一些方法变体:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; ValueState</span><br><span class="line">QueryableStateStream asQueryableState(</span><br><span class="line">    String queryableStateName,</span><br><span class="line">    ValueStateDescriptor stateDescriptor)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Shortcut for explicit ValueStateDescriptor variant</span><br><span class="line">QueryableStateStream asQueryableState(String queryableStateName)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; ReducingState</span><br><span class="line">QueryableStateStream asQueryableState(</span><br><span class="line">    String queryableStateName,</span><br><span class="line">    ReducingStateDescriptor stateDescriptor)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意: 没有可查询的 ListState sink,因为这种情况下 list 会不断增长,并且可能不会被清理,最终会消耗大量的内存.</p>
+</blockquote>
+<p>返回的 QueryableStateStream 可以被视作一个sink,而且不能再被进一步转换.<br>在内部实现上,一个 QueryableStateStream 被转换成一个 operator,使用输入的数据来更新 queryable state.<br>state 如何更新是由 asQueryableState 提供的 StateDescriptor 来决定的.<br>在下面的代码中, keyed stream 的所有数据将会通过 ValueState.update(value) 来更新状态:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">stream.keyBy(value -&gt; value.f0).asQueryableState(&quot;query-name&quot;);</span><br></pre></td></tr></table></figure>
+
+<p>这个行为类似于 Scala API 中的 flatMapWithState.</p>
+<h4 id="Managed-Keyed-State"><a href="#Managed-Keyed-State" class="headerlink" title="Managed Keyed State"></a>Managed Keyed State</h4><p>operator 中的 Managed keyed state (参考 Using Managed Keyed State) 可以通过 StateDescriptor.setQueryable(String queryableStateName) 将 state descriptor 设置成可查询的,从而使 state 可查询,如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ValueStateDescriptor&lt;Tuple2&lt;Long, Long&gt;&gt; descriptor &#x3D;</span><br><span class="line">        new ValueStateDescriptor&lt;&gt;(</span><br><span class="line">                &quot;average&quot;, &#x2F;&#x2F; the state name</span><br><span class="line">                TypeInformation.of(new TypeHint&lt;Tuple2&lt;Long, Long&gt;&gt;() &#123;&#125;)); &#x2F;&#x2F; type information</span><br><span class="line">descriptor.setQueryable(&quot;query-name&quot;); &#x2F;&#x2F; queryable state name</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意: 参数 queryableStateName 可以任意选取,并且只被用来进行查询,它可以和 state 的名称不同.</p>
+</blockquote>
+<p>这种方式不会限制 state 类型,即任意的 ValueState/ReduceState/ListState/MapState/AggregatingState 以及已弃用的 FoldingState 均可作为 queryable state.</p>
+<h3 id="查询state"><a href="#查询state" class="headerlink" title="查询state"></a>查询state</h3><p>目前为止,你已经激活了集群的 queryable state 功能,并且将一些 state 设置成了可查询的,接下来将会展示如何进行查询.</p>
+<p>为了进行查询,可以使用辅助类 QueryableStateClient,这个类位于 flink-queryable-state-client 的 jar 中,在项目的 pom.xml 需要显示添加对 flink-queryable-state-client 和 flink-core 的依赖, 如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">  &lt;groupId&gt;org.apache.flink&lt;&#x2F;groupId&gt;</span><br><span class="line">  &lt;artifactId&gt;flink-core&lt;&#x2F;artifactId&gt;</span><br><span class="line">  &lt;version&gt;1.15.1&lt;&#x2F;version&gt;</span><br><span class="line">&lt;&#x2F;dependency&gt;</span><br><span class="line">&lt;dependency&gt;</span><br><span class="line">  &lt;groupId&gt;org.apache.flink&lt;&#x2F;groupId&gt;</span><br><span class="line">  &lt;artifactId&gt;flink-queryable-state-client-java&lt;&#x2F;artifactId&gt;</span><br><span class="line">  &lt;version&gt;1.15.1&lt;&#x2F;version&gt;</span><br><span class="line">&lt;&#x2F;dependency&gt;</span><br></pre></td></tr></table></figure>
+
+<p>QueryableStateClient 将提交你的请求到内部代理,代理会处理请求并返回结果.<br>客户端的初始化只需要提供一个有效的 TaskManager 主机名 (每个 task manager 上都运行着一个 queryable state 代理),以及代理监听的端口号.</p>
+<p>QueryableStateClient client = new QueryableStateClient(tmHostname, proxyPort);<br>客户端就绪后,为了查询类型为 K 的 key,以及类型为 V 的state,可以使用如下方法:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">CompletableFuture&lt;S&gt; getKvState(</span><br><span class="line">    JobID jobId,</span><br><span class="line">    String queryableStateName,</span><br><span class="line">    K key,</span><br><span class="line">    TypeInformation&lt;K&gt; keyTypeInfo,</span><br><span class="line">    StateDescriptor&lt;S, V&gt; stateDescriptor)</span><br></pre></td></tr></table></figure>
+
+<p>该方法会返回一个最终将包含 state 的 queryable state 实例,该实例可通过 JobID 和 queryableStateName 识别.<br>在方法参数中,key 用来指定所要查询的状态所属的 key.<br>keyTypeInfo 告诉 Flink 如何对 key 进行序列化和反序列化.<br>stateDescriptor 包含了所请求 state 的必要信息,即 state 类型(Value,Reduce 等等), 以及如何对其进行序列化和反序列.</p>
+<p>细心的读者会注意到返回的 future 包含类型为 S 的值,即一个存储实际值的 State 对象.<br>它可以是Flink支持的任何类型的 state:<br>ValueState/ReduceState/ ListState/MapState/AggregatingState 以及弃用的 FoldingState.</p>
+<blockquote>
+<p>注意:<br>这些 state 对象不允许对其中的 state 进行修改.<br>你可以通过 valueState.get() 获取实际的 state, 或者通过 mapState.entries() 遍历所有 <code>&lt;K, V&gt;</code>,但是不能修改它们.<br>举例来说,对返回的 list state 调用 add() 方法将会导致 UnsupportedOperationException.</p>
+</blockquote>
+<blockquote>
+<p>注意:<br>客户端是异步的,并且可能被多个线程共享.<br>客户端不再使用后需要通过 QueryableStateClient.shutdown() 来终止,从而释放资源.</p>
+</blockquote>
+<h4 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h4><p>下面的例子扩展自 CountWindowAverage (参考 Using Managed Keyed State), 将其中的 state 设置成可查询的,并展示了如何进行查询:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">public class CountWindowAverage extends RichFlatMapFunction&lt;Tuple2&lt;Long, Long&gt;, Tuple2&lt;Long, Long&gt;&gt; &#123;</span><br><span class="line"></span><br><span class="line">    private transient ValueState&lt;Tuple2&lt;Long, Long&gt;&gt; sum; &#x2F;&#x2F; a tuple containing the count and the sum</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void flatMap(Tuple2&lt;Long, Long&gt; input, Collector&lt;Tuple2&lt;Long, Long&gt;&gt; out) throws Exception &#123;</span><br><span class="line">        Tuple2&lt;Long, Long&gt; currentSum &#x3D; sum.value();</span><br><span class="line">        currentSum.f0 +&#x3D; 1;</span><br><span class="line">        currentSum.f1 +&#x3D; input.f1;</span><br><span class="line">        sum.update(currentSum);</span><br><span class="line"></span><br><span class="line">        if (currentSum.f0 &gt;&#x3D; 2) &#123;</span><br><span class="line">            out.collect(new Tuple2&lt;&gt;(input.f0, currentSum.f1 &#x2F; currentSum.f0));</span><br><span class="line">            sum.clear();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void open(Configuration config) &#123;</span><br><span class="line">        ValueStateDescriptor&lt;Tuple2&lt;Long, Long&gt;&gt; descriptor &#x3D;</span><br><span class="line">                new ValueStateDescriptor&lt;&gt;(</span><br><span class="line">                        &quot;average&quot;, &#x2F;&#x2F; the state name</span><br><span class="line">                        TypeInformation.of(new TypeHint&lt;Tuple2&lt;Long, Long&gt;&gt;() &#123;&#125;)); &#x2F;&#x2F; type information</span><br><span class="line">        descriptor.setQueryable(&quot;query-name&quot;);</span><br><span class="line">        sum &#x3D; getRuntimeContext().getState(descriptor);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面的代码作为作业运行后,可以获取作业的 ID,然后可以通过下面的方式查询任何 key 下的 state.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">QueryableStateClient client &#x3D; new QueryableStateClient(tmHostname, proxyPort);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; the state descriptor of the state to be fetched.</span><br><span class="line">ValueStateDescriptor&lt;Tuple2&lt;Long, Long&gt;&gt; descriptor &#x3D;</span><br><span class="line">        new ValueStateDescriptor&lt;&gt;(</span><br><span class="line">          &quot;average&quot;,</span><br><span class="line">          TypeInformation.of(new TypeHint&lt;Tuple2&lt;Long, Long&gt;&gt;() &#123;&#125;));</span><br><span class="line"></span><br><span class="line">CompletableFuture&lt;ValueState&lt;Tuple2&lt;Long, Long&gt;&gt;&gt; resultFuture &#x3D;</span><br><span class="line">        client.getKvState(jobId, &quot;query-name&quot;, key, BasicTypeInfo.LONG_TYPE_INFO, descriptor);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; now handle the returned value</span><br><span class="line">resultFuture.thenAccept(response -&gt; &#123;</span><br><span class="line">        try &#123;</span><br><span class="line">            Tuple2&lt;Long, Long&gt; res &#x3D; response.get();</span><br><span class="line">        &#125; catch (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<h3 id="Configuration"><a href="#Configuration" class="headerlink" title="Configuration"></a>Configuration</h3><p>下面的配置会影响 queryable state 服务器端和客户端的行为,它们定义在 QueryableStateOptions.</p>
+<h4 id="State-Server"><a href="#State-Server" class="headerlink" title="State Server"></a>State Server</h4><p>queryable-state.server.ports<br>服务器端口范围,如果同一台机器上运行了多个 task manager,可以避免端口冲突.<br>指定的可以是一个具体的端口号,如 &quot;9123&quot;, 可以是一个端口范围,如 &quot;50100-50200&quot;,或者可以是端口范围以及端口号的组合,如 &quot;50100-50200,50300-50400,51234&quot;.<br>默认端口号是 9067.</p>
+<p>queryable-state.server.network-threads<br>服务器端 network (event loop) thread 的数量,用来接收查询请求 (如果设置为0,则线程数为 slot 数).</p>
+<p>queryable-state.server.query-threads<br>服务器端处理查询请求的线程数 (如果设置为0,则线程数为 slot 数).</p>
+<h4 id="Proxy"><a href="#Proxy" class="headerlink" title="Proxy"></a>Proxy</h4><p>queryable-state.proxy.ports<br>代理的服务端口范围.<br>如果同一台机器上运行了多个 task manager,可以避免端口冲突.<br>指定的可以是一个具体的端口号,如 &quot;9123&quot;, 可以是一个端口范围,如&quot;50100-50200&quot;,或者可以是端口范围以及端口号的组合,如 &quot;50100-50200,50300-50400,51234&quot;.<br>默认端口号是 9069.</p>
+<p>queryable-state.proxy.network-threads<br>代理上 network (event loop) thread 的数量,用来接收查询请求 (如果设置为0,则线程数为 slot 数).</p>
+<p>queryable-state.proxy.query-threads<br>代理上处理查询请求的线程数 (如果设置为0,则线程数为 slot 数).</p>
+<h4 id="限制"><a href="#限制" class="headerlink" title="限制"></a>限制</h4><p>queryable state 的生命周期受限于作业的生命周期,比如 tasks 在启动时注册可查询状态,并在退出时注销.<br>在后续版本中,希望能够将其解耦 从而允许 task 结束后依然能够查询 state,并且通过 state 备份来加速恢复.</p>
+<p>目前是通过 tell 来通知可用的 KvState.<br>将来会使用 asks 和 acknowledgements 来提升稳定性.</p>
+<p>服务器端和客户端会记录请求的统计信息.<br>因为统计信息目前不会暴露给外部,所以这个功能默认没有开启.<br>如果将来支持通过 Metrics 系统发布这些数据,将开启统计功能.</p>
+<h2 id="State-Backends"><a href="#State-Backends" class="headerlink" title="State Backends"></a>State Backends</h2><p>Flink 提供了多种 state backends,它用于指定状态的存储方式和位置.</p>
+<p>状态可以位于 Java 的堆或堆外内存.<br>取决于你的 state backend,Flink 也可以自己管理应用程序的状态.<br>为了让应用程序可以维护非常大的状态,Flink 可以自己管理内存(如果有必要可以溢写到磁盘).<br>默认情况下,所有 Flink Job 会使用配置文件 flink-conf.yaml 中指定的 state backend.</p>
+<p>但是,配置文件中指定的默认 state backend 会被 Job 中指定的 state backend 覆盖,如下所示.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">env.setStateBackend(...);</span><br></pre></td></tr></table></figure>
+
+<h2 id="数据类型以及序列化"><a href="#数据类型以及序列化" class="headerlink" title="数据类型以及序列化"></a>数据类型以及序列化</h2><h1 id="状态运维"><a href="#状态运维" class="headerlink" title="状态运维"></a>状态运维</h1><h2 id="Checkpoints"><a href="#Checkpoints" class="headerlink" title="Checkpoints"></a>Checkpoints</h2><h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>Checkpoint 使 Flink 的状态具有良好的容错性,通过 checkpoint 机制,Flink 可以对作业的状态和计算位置进行恢复.</p>
+<h3 id="保留-Checkpoint"><a href="#保留-Checkpoint" class="headerlink" title="保留 Checkpoint"></a>保留 Checkpoint</h3><p>Checkpoint 在默认的情况下仅用于恢复失败的作业,并不保留,当程序取消时 checkpoint 就会被删除.<br>当然,你可以通过配置来保留 checkpoint,这些被保留的 checkpoint 在作业失败或取消时不会被清除.<br>这样,你就可以使用该 checkpoint 来恢复失败的作业.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CheckpointConfig config &#x3D; env.getCheckpointConfig();</span><br><span class="line">config.setExternalizedCheckpointCleanup(ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);</span><br></pre></td></tr></table></figure>
+
+<p>ExternalizedCheckpointCleanup 配置项定义了当作业取消时,对作业 checkpoint 的操作:</p>
+<ol>
+<li><p>ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION:<br>当作业取消时,保留作业的 checkpoint.<br>注意,这种情况下,需要手动清除该作业保留的 checkpoint.</p>
+</li>
+<li><p>ExternalizedCheckpointCleanup.DELETE_ON_CANCELLATION:<br>当作业取消时,删除作业的 checkpoint.<br>仅当作业失败时,作业的 checkpoint 才会被保留.</p>
+</li>
+</ol>
+<h4 id="目录结构"><a href="#目录结构" class="headerlink" title="目录结构"></a>目录结构</h4><p>与 savepoints 相似,checkpoint 由元数据文件/数据文件(与 state backend 相关)组成.<br>可通过配置文件中 &quot;state.checkpoints.dir&quot; 配置项来指定元数据文件和数据文件的存储路径,另外也可以在代码中针对单个作业特别指定该配置项.</p>
+<p>当前的 checkpoint 目录结构(由 FLINK-8531 引入)如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;user-defined-checkpoint-dir</span><br><span class="line">  &#x2F;&#123;job-id&#125;</span><br><span class="line">      |</span><br><span class="line">      + --shared&#x2F;</span><br><span class="line">      + --taskowned&#x2F;</span><br><span class="line">      + --chk-1&#x2F;</span><br><span class="line">      + --chk-2&#x2F;</span><br><span class="line">      + --chk-3&#x2F;</span><br><span class="line">      ...        </span><br></pre></td></tr></table></figure>
+
+<p>其中 SHARED 目录保存了可能被多个 checkpoint 引用的文件,TASKOWNED 保存了不会被 JobManager 删除的文件,EXCLUSIVE 则保存那些仅被单个 checkpoint 引用的文件.</p>
+<p>#通过配置文件全局配置<br>state.checkpoints.dir: hdfs:///checkpoints/</p>
+<p>#创建 state backend 对单个作业进行配置<br>env.setStateBackend(new RocksDBStateBackend(&quot;hdfs:///checkpoints-data/&quot;));</p>
+<h4 id="从保留的-checkpoint-中恢复状态"><a href="#从保留的-checkpoint-中恢复状态" class="headerlink" title="从保留的 checkpoint 中恢复状态"></a>从保留的 checkpoint 中恢复状态</h4><p>与 savepoint 一样,作业可以从 checkpoint 的元数据文件恢复运行(savepoint恢复指南).<br>注意,如果元数据文件中信息不充分,那么 jobmanager 就需要使用相关的数据文件来恢复作业(参考目录结构).</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin&#x2F;flink run -s :checkpointMetaDataPath [:runArgs]</span><br></pre></td></tr></table></figure>
+
+<h2 id="Checkpointing-under-backpressure"><a href="#Checkpointing-under-backpressure" class="headerlink" title="Checkpointing under backpressure"></a>Checkpointing under backpressure</h2><p>通常情况下,对齐 Checkpoint 的时长主要受 Checkpointing 过程中的同步和异步两个部分的影响.<br>然而,当 Flink 作业正运行在严重的背压下时,Checkpoint 端到端延迟的主要影响因子将会是传递 Checkpoint Barrier 到 所有的算子/子任务的时间.<br>这在 checkpointing process) 的概述中有说明原因.<br>并且可以通过高 alignment time and start delay metrics 观察到.<br>当这种情况发生并成为一个问题时,有三种方法可以解决这个问题:</p>
+<ol>
+<li>消除背压源头,通过优化 Flink 作业,通过调整 Flink 或 JVM 参数,抑或是通过扩容.</li>
+<li>减少 Flink 作业中缓冲在 In-flight 数据的数据量.</li>
+<li>启用非对齐 Checkpoints.这些选项并不是互斥的,可以组合在一起.</li>
+</ol>
+<h3 id="缓冲区-Debloating"><a href="#缓冲区-Debloating" class="headerlink" title="缓冲区 Debloating"></a>缓冲区 Debloating</h3><p>Flink 1.14 引入了一个新的工具,用于自动控制在 Flink 算子/子任务之间缓冲的 In-flight 数据的数据量.<br>缓冲区 Debloating 机 制可以通过将属性taskmanager.network.memory.buffer-debloat.enabled设置为true来启用.</p>
+<p>此特性对对齐和非对齐 Checkpoint 都生效,并且在这两种情况下都能缩短 Checkpointing 的时间,不过 Debloating 的效果对于 对齐 Checkpoint 最明显.<br>当在非对齐 Checkpoint 情况下使用缓冲区 Debloating 时,额外的好处是 Checkpoint 大小会更小,并且恢复时间更快 (需要保存 和恢复的 In-flight 数据更少).</p>
+<h3 id="非对齐-Checkpoints"><a href="#非对齐-Checkpoints" class="headerlink" title="非对齐 Checkpoints"></a>非对齐 Checkpoints</h3><p>从Flink 1.11开始,Checkpoint 可以是非对齐的.<br>Unaligned checkpoints 包含 In-flight 数据(例如,存储在缓冲区中的数据)作为 Checkpoint State的一部分,允许 Checkpoint Barrier 跨越这些缓冲区.<br>因此, Checkpoint 时长变得与当前吞吐量无关,因为 Checkpoint Barrier 实际上已经不再嵌入到数据流当中.</p>
+<p>如果您的 Checkpointing 由于背压导致周期非常的长,您应该使用非对齐 Checkpoint.<br>这样,Checkpointing 时间基本上就与 端到端延迟无关.<br>请注意,非对齐 Checkpointing 会增加状态存储的 I/O,因此当状态存储的 I/O 是 整个 Checkpointing 过程当中真 正的瓶颈时,您不应当使用非对齐 Checkpointing.</p>
+<p>为了启用非对齐 Checkpoint,您可以:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 启用非对齐 Checkpoint</span><br><span class="line">env.getCheckpointConfig().enableUnalignedCheckpoints();</span><br></pre></td></tr></table></figure>
+
+<p>或者在 flink-conf.yml 配置文件中增加配置:<br>execution.checkpointing.unaligned: true</p>
+<h4 id="对齐-Checkpoint-的超时"><a href="#对齐-Checkpoint-的超时" class="headerlink" title="对齐 Checkpoint 的超时"></a>对齐 Checkpoint 的超时</h4><p>在启用非对齐 Checkpoint 后,你依然可以通过编程的方式指定对齐 Checkpoint 的超时:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">env.getCheckpointConfig().setAlignedCheckpointTimeout(Duration.ofSeconds(30));</span><br></pre></td></tr></table></figure>
+
+<p>或是在 flink-conf.yml 配置文件中配置:<br>execution.checkpointing.aligned-checkpoint-timeout: 30 s</p>
+<p>在启动时,每个 Checkpoint 仍将作为对齐 Checkpoint 开始,但是如果全局 Checkpoint 开始的时间和某个子任务上 Checkpoint 开始的时间相差超过了对齐 Checkpoint 的超时时间,那么 Checkpoint 将会作为非对齐 Checkpoint 处理.</p>
+<h3 id="限制-1"><a href="#限制-1" class="headerlink" title="限制"></a>限制</h3><h4 id="并发-Checkpoint"><a href="#并发-Checkpoint" class="headerlink" title="并发 Checkpoint"></a>并发 Checkpoint</h4><p>Flink 当前并不支持并发的非对齐 Checkpoint.<br>然而,由于更可预测的和更短的 Checkpointing 时长,可能也根本就不需要并发的 Checkpoint.<br>此外,Savepoint 也不能与非对齐 Checkpoint 同时发生,因此它们将会花费稍长的时间.</p>
+<h4 id="与-Watermark-的相互影响"><a href="#与-Watermark-的相互影响" class="headerlink" title="与 Watermark 的相互影响"></a>与 Watermark 的相互影响</h4><p>非对齐 Checkpoint 在恢复的过程中改变了关于 Watermark 的一个隐式保证.<br>目前,Flink 确保了 Watermark 作为恢复的第一步, 而不是将最近的 Watermark 存放在 Operator 中,以方便扩缩容.<br>在非对齐 Checkpoint 中,这意味着当恢复时,** Flink 会在恢复 In-flight 数据后再生成 Watermark .<br>如果您的 Pipeline 中使用了对每条记录都应用最新的 Watermark 的算子将会相对于 使用对齐 Checkpoint产生不同的结果.<br>如果您的 Operator 依赖于最新的 Watermark 始终可用,解决办法是将 Watermark 存放在 OperatorState 中.<br>在这种情况下,Watermark 应该使用单键 group 存放在 UnionState 以方便扩缩容.</p>
+<h4 id="与长时间运行的记录处理相互作用"><a href="#与长时间运行的记录处理相互作用" class="headerlink" title="与长时间运行的记录处理相互作用"></a>与长时间运行的记录处理相互作用</h4><p>尽管未对齐的检查点屏障能够超过队列中的所有其他记录.<br>如果当前记录需要大量时间来处理,则此屏障的处理仍然可能会延迟.<br>这种情况可能在同时触发多个计时器时发生,例如在窗口操作中.<br>当系统在处理单个输入记录时被阻塞等待多个网络缓冲区可用性时,可能会出现第二个问题场景.<br>Flink 不能中断对单个输入记录的处理,未对齐的检查点必须等待当前处理的记录被完全处理.<br>这可能会在两种情况下导致问题.<br>由于不适合单个网络缓冲区或 flatMap 操作的大型记录的序列化,这会为一个输入记录生成许多输出记录.<br>在这种情况下,背压会阻塞未对齐的检查点,直到处理单个输入记录所需的所有网络缓冲区都可用.<br>当单个记录的处理需要一段时间时,它也可能发生在任何其他情况下.<br>因此,检查点的时间可能比预期的要长,也可能会有所不同.</p>
+<h4 id="某些数据分布模式没有检查点"><a href="#某些数据分布模式没有检查点" class="headerlink" title="某些数据分布模式没有检查点"></a>某些数据分布模式没有检查点</h4><p>有一部分包含属性的的连接无法与 Channel 中的数据一样保存在 Checkpoint 中.<br>为了保留这些特性并且确保没有状态冲突或非预期的行为,非对齐 Checkpoint 对于这些类型的连接是禁用的.<br>所有其他的交换仍然执行非对齐 Checkpoint.</p>
+<h4 id="点对点连接"><a href="#点对点连接" class="headerlink" title="点对点连接"></a>点对点连接</h4><p>我们目前没有任何对于点对点连接中有关数据有序性的强保证.<br>然而,由于数据已经被以前置的 Source 或是 KeyBy 相同的方式隐式 组织,一些用户会依靠这种特性在提供的有序性保证的同时将计算敏感型的任务划分为更小的块.</p>
+<p>只要并行度不变,非对齐 Checkpoint(UC) 将会保留这些特性.<br>但是如果加上UC的伸缩容,这些特性将会被改变.</p>
+<p>针对如下任务</p>
+<img src="/images/flgl73.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>如果我们想将并行度从 p=2 扩容到 p=3,那么需要根据 KeyGroup 将 KeyBy 的 Channel 中的数据突然的划分到3个 Channel 中去.<br>这 很容易做到,通过使用 Operator 的 KeyGroup 范围和确定记录属于某个 Key(group) 的方法(不管实际使用的是什么方法).<br>对于 Forward 的 Channel,我们根本没有 KeyContext.<br>Forward Channel 里也没有任何记录被分配了任何 KeyGroup.<br>也无法计算它,因为无法保证 Key仍然存在.</p>
+<h4 id="广播-Connections"><a href="#广播-Connections" class="headerlink" title="广播 Connections"></a>广播 Connections</h4><p>广播 Connection 带来了另一个问题.<br>无法保证所有 Channel 中的记录都以相同的速率被消费.<br>这可能导致某些 Task 已经应用了与 特定广播事件对应的状态变更,而其他任务则没有,如图所示.</p>
+<img src="/images/flgl74.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>广播分区通常用于实现广播状态,它应该跨所有 Operator 都相同.<br>Flink 实现广播状态,通过仅 Checkpointing 有状态算子的 SubTask 0 中状态的单份副本.<br>在恢复时,我们将该份副本发往所有的 Operator.<br>因此,可能会发生以下情况:某个算子将很快从它的 Checkpointed Channel 消费数据并将修改应有于记录来获得状态.</p>
+<h3 id="故障排除"><a href="#故障排除" class="headerlink" title="故障排除"></a>故障排除</h3><h4 id="损坏的飞行数据"><a href="#损坏的飞行数据" class="headerlink" title="损坏的飞行数据"></a>损坏的飞行数据</h4><p>以下描述的操作是最后采取的手段,因为它们将会导致数据的丢失.<br>为了防止 In-flight 数据损坏,或者由于其他原因导致作业应该在没有 In-flight 数据的情况下恢复,可以使用 recover-without-channel-state.checkpoint-id 属性.该属性需要指定一个 Checkpoint Id,对它来说 In-flight 中的数据将会被忽略.除非已经持久化的 In-flight 数据内部的损坏导致无 法恢复的情况,否则不要设置该属性.只有在重新部署作业后该属性才会生效,这就意味着只有启用 externalized checkpoint<br>时,此操作才有意义.</p>
+<h2 id="Savepoints"><a href="#Savepoints" class="headerlink" title="Savepoints"></a>Savepoints</h2><h3 id="什么是-Savepoint"><a href="#什么是-Savepoint" class="headerlink" title="什么是 Savepoint"></a>什么是 Savepoint</h3><p>Savepoint 是依据 Flink checkpointing 机制所创建的流作业执行状态的一致镜像.<br>你可以使用 Savepoint 进行 Flink 作业的停止与重启/fork 或者更新.<br>Savepoint 由两部分组成:稳定存储(列入 HDFS,S3,...) 上包含二进制文件的目录(通常很大),和元数据文件(相对较小).<br>稳定存储上的文件表示作业执行状态的数据镜像.<br>Savepoint 的元数据文件以(相对路径)的形式包含(主要)指向作为 Savepoint 一部分的稳定存储上的所有文件的指针.</p>
+<p>注意: 为了允许程序和 Flink 版本之间的升级,请务必查看以下有关分配算子 ID 的部分 .</p>
+<h3 id="分配算子-ID"><a href="#分配算子-ID" class="headerlink" title="分配算子 ID"></a>分配算子 ID</h3><p>强烈建议你按照本节所述调整你的程序,以便将来能够升级你的程序.<br>主要通过 uid(String) 方法手动指定算子 ID .<br>这些 ID 将用于恢复每个算子的状态.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">DataStream&lt;String&gt; stream &#x3D; env.</span><br><span class="line"> &#x2F;&#x2F; Stateful source (e.g. Kafka) with ID</span><br><span class="line"> .addSource(new StatefulSource())</span><br><span class="line"> .uid(&quot;source-id&quot;) &#x2F;&#x2F; ID for the source operator</span><br><span class="line"> .shuffle()</span><br><span class="line"> &#x2F;&#x2F; Stateful mapper with ID</span><br><span class="line"> .map(new StatefulMapper())</span><br><span class="line"> .uid(&quot;mapper-id&quot;) &#x2F;&#x2F; ID for the mapper</span><br><span class="line"> &#x2F;&#x2F; Stateless printing sink</span><br><span class="line"> .print(); &#x2F;&#x2F; Auto-generated ID</span><br></pre></td></tr></table></figure>
+
+<p>如果不手动指定 ID ,则会自动生成 ID .<br>只要这些 ID 不变,就可以从 Savepoint 自动恢复.<br>生成的 ID 取决于程序的结构,并且对程序更改很敏感.<br>因此,强烈建议手动分配这些 ID .</p>
+<h4 id="Savepoint-状态"><a href="#Savepoint-状态" class="headerlink" title="Savepoint 状态"></a>Savepoint 状态</h4><p>你可以将 Savepoint 想象为每个有状态的算子保存一个映射&quot;算子 ID -&gt;状态&quot;:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Operator ID | State</span><br><span class="line">------------+------------------------</span><br><span class="line">source-id   | State of StatefulSource</span><br><span class="line">mapper-id   | State of StatefulMapper</span><br></pre></td></tr></table></figure>
+
+<p>在上面的示例中,print sink 是无状态的,因此不是 Savepoint 状态的一部分.<br>默认情况下,我们尝试将 Savepoint 的每个条目映射回新程序.</p>
+<h3 id="算子"><a href="#算子" class="headerlink" title="算子"></a>算子</h3><p>你可以使用命令行客户端来触发 Savepoint,触发 Savepoint 并取消作业,从 Savepoint 恢复,以及删除 Savepoint.<br>从 Flink 1.2.0 开始,还可以使用 webui 从 Savepoint 恢复.</p>
+<h4 id="触发-Savepoint"><a href="#触发-Savepoint" class="headerlink" title="触发 Savepoint"></a>触发 Savepoint</h4><p>当触发 Savepoint 时,将创建一个新的 Savepoint 目录,其中存储数据和元数据.<br>可以通过配置默认目标目录或使用触发器命令指定自定义目标目录(参见:targetDirectory参数来控制该目录的位置).</p>
+<p>注意: 目标目录必须是 JobManager(s) 和 TaskManager(s) 都可以访问的位置,例如分布式文件系统(或者对象存储系统)上的位置.<br>以 FsStateBackend 或 RocksDBStateBackend 为例:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># Savepoint 目标目录</span><br><span class="line">&#x2F;savepoint&#x2F;</span><br><span class="line"></span><br><span class="line"># Savepoint 目录</span><br><span class="line">&#x2F;savepoint&#x2F;savepoint-:shortjobid-:savepointid&#x2F;</span><br><span class="line"></span><br><span class="line"># Savepoint 文件包含 Checkpoint元数据</span><br><span class="line">&#x2F;savepoint&#x2F;savepoint-:shortjobid-:savepointid&#x2F;_metadata</span><br><span class="line"></span><br><span class="line"># Savepoint 状态</span><br><span class="line">&#x2F;savepoint&#x2F;savepoint-:shortjobid-:savepointid&#x2F;...</span><br></pre></td></tr></table></figure>
+
+<p>从 1.11.0 开始,你可以通过移动(拷贝)savepoint 目录到任意地方,然后再进行恢复.</p>
+<p>在如下两种情况中不支持 savepoint 目录的移动:<br>1)如果启用了 entropy injection :这种情况下,savepoint 目录不包含所有的数据文件,因为注入的路径会分散在各个路径中.<br>由于缺乏一个共同的根目录,因此 savepoint 将包含绝对路径,从而导致无法支持 savepoint 目录的迁移.<br>2)作业包含了 task-owned state(比如 GenericWriteAhreadLog sink).</p>
+<p>和 savepoint 不同,checkpoint 不支持任意移动文件,因为 checkpoint 可能包含一些文件的绝对路径.</p>
+<p>如果你使用 MemoryStateBackend 的话,metadata 和 savepoint 的数据都会保存在 <code>_metadata</code> 文件中,因此不要因为没看到目录下没有数据文件而困惑.</p>
+<p>注意: 不建议移动或删除正在运行作业的最后一个 Savepoint ,因为这可能会干扰故障恢复.<br>因此,Savepoint 对精确一次的接收器有副作用,为了确保精确一次的语义,如果在最后一个 Savepoint 之后没有 Checkpoint ,那么将使用 Savepoint 进行恢复.</p>
+<h5 id="Savepoint-格式"><a href="#Savepoint-格式" class="headerlink" title="Savepoint 格式"></a>Savepoint 格式</h5><p>你可以在 savepoint 的两种二进制格式之间进行选择:</p>
+<ol>
+<li><p>标准格式 - 一种在所有 state backends 间统一的格式,允许你使用一种状态后端创建 savepoint 后,使用另一种状态后端恢复这个 savepoint.<br>这是最稳定的格式,旨在与之前的版本/模式/修改等保持最大兼容性.</p>
+</li>
+<li><p>原生格式 - 标准格式的缺点是它的创建和恢复速度通常很慢.<br>原生格式以特定于使用的状态后端的格式创建快照(例如 RocksDB 的 SST 文件).</p>
+</li>
+</ol>
+<p>以原生格式创建 savepoint 的能力在 Flink 1.15 中引入,在那之前 savepoint 都是以标准格式创建的.</p>
+<h5 id="触发-Savepoint-1"><a href="#触发-Savepoint-1" class="headerlink" title="触发 Savepoint"></a>触发 Savepoint</h5><p><code>bin/flink savepoint :jobId [:targetDirectory]</code></p>
+<p>这将触发 ID 为 :jobId 的作业的 Savepoint,并返回创建的 Savepoint 路径.<br>你需要此路径来恢复和删除 Savepoint .<br>你也可以指定创建 Savepoint 的格式.<br>如果没有指定,会采用标准格式创建 Savepoint.</p>
+<p><code>bin/flink savepoint --type [native/canonical] :jobId [:targetDirectory]</code></p>
+<h5 id="使用-YARN-触发-Savepoint"><a href="#使用-YARN-触发-Savepoint" class="headerlink" title="使用 YARN 触发 Savepoint"></a>使用 YARN 触发 Savepoint</h5><p><code>bin/flink savepoint :jobId [:targetDirectory] -yid :yarnAppId</code></p>
+<p>这将触发 ID 为 :jobId 和 YARN 应用程序 ID :yarnAppId 的作业的 Savepoint,并返回创建的 Savepoint 的路径.</p>
+<h5 id="使用-Savepoint-停止作业"><a href="#使用-Savepoint-停止作业" class="headerlink" title="使用 Savepoint 停止作业"></a>使用 Savepoint 停止作业</h5><p><code>bin/flink stop --type [native/canonical] --savepointPath [:targetDirectory] :jobId</code></p>
+<p>这将自动触发 ID 为 :jobid 的作业的 Savepoint,并停止该作业.<br>此外,你可以指定一个目标文件系统目录来存储 Savepoint .<br>该目录需要能被 JobManager(s) 和 TaskManager(s) 访问.<br>你也可以指定创建 Savepoint 的格式.<br>如果没有指定,会采用标准格式创建 Savepoint.</p>
+<h4 id="从-Savepoint-恢复"><a href="#从-Savepoint-恢复" class="headerlink" title="从 Savepoint 恢复"></a>从 Savepoint 恢复</h4><p><code>bin/flink run -s :savepointPath [:runArgs]</code></p>
+<p>这将提交作业并指定要从中恢复的 Savepoint .<br>你可以给出 Savepoint 目录或 <code>_metadata</code> 文件的路径.</p>
+<h5 id="跳过无法映射的状态恢复"><a href="#跳过无法映射的状态恢复" class="headerlink" title="跳过无法映射的状态恢复"></a>跳过无法映射的状态恢复</h5><p>默认情况下,resume 操作将尝试将 Savepoint 的所有状态映射回你要还原的程序.<br>如果删除了运算符,则可以通过 --allowNonRestoredState(short:-n)选项跳过无法映射到新程序的状态:</p>
+<h5 id="Restore-模式"><a href="#Restore-模式" class="headerlink" title="Restore 模式"></a>Restore 模式</h5><p>Restore 模式 决定了在 restore 之后谁拥有Savepoint 或者 externalized checkpoint的文件的所有权.<br>在这种语境下 Savepoint 和 externalized checkpoint 的行为相似.<br>这里我们将它们都称为&quot;快照&quot;,除非另有明确说明.</p>
+<p>如前所述,restore 模式决定了谁来接管我们从中恢复的快照文件的所有权.<br>快照可被用户或者 Flink 自身拥有.<br>如果快照归用户所有,Flink 不会删除其中的文件,而且 Flink 不能依赖该快照中文件的存在,因为它可能在 Flink 的控制之外被删除.</p>
+<p>每种 restore 模式都有特定的用途.<br>尽管如此,我们仍然认为默认的 NO_CLAIM 模式在大多数情况下是一个很好的折中方案,因为它在提供明确的所有权归属的同时只给恢复后第一个 checkpoint 带来较小的代价.</p>
+<p>你可以通过如下方式指定 restore 模式:</p>
+<p><code>bin/flink run -s :savepointPath -restoreMode :mode -n [:runArgs]</code></p>
+<blockquote>
+<p>NO_CLAIM (默认的)</p>
+</blockquote>
+<p>在 NO_CLAIM 模式下,Flink 不会接管快照的所有权.<br>它会将快照的文件置于用户的控制之中,并且永远不会删除其中的任何文件.<br>该模式下可以从同一个快照上启动多个作业.</p>
+<p>为保证 Flink 不会依赖于该快照的任何文件,它会强制第一个(成功的) checkpoint 为全量 checkpoint 而不是增量的.<br>这仅对state.backend: rocksdb 有影响,因为其他 backend 总是创建全量 checkpoint.</p>
+<p>一旦第一个全量的 checkpoint 完成后,所有后续的 checkpoint 会照常创建.<br>所以,一旦一个 checkpoint 成功制作,就可以删除原快照.<br>在此之前不能删除原快照,因为没有任何完成的 checkpoint,Flink 会在故障时尝试从初始的快照恢复.</p>
+<img src="/images/flgl75.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>CLAIM</p>
+</blockquote>
+<p>另一个可选的模式是 CLAIM 模式.<br>该模式下 Flink 将声称拥有快照的所有权,并且本质上将其作为 checkpoint 对待:控制其生命周期并且可能会在其永远不会被用于恢复的时候删除它.<br>因此,手动删除快照和从同一个快照上启动两个作业都是不安全的.<br>Flink 会保持配置数量的 checkpoint.</p>
+<img src="/images/flgl76.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>注意:<br>Retained checkpoints 被存储在 <code>&lt;checkpoint_dir&gt;/&lt;job_id&gt;/chk-&lt;x&gt;</code> 这样的目录中.<br>Flink 不会接管 <code>&lt;checkpoint_dir&gt;/&lt;job_id&gt;</code> 目录的所有权,而只会接管 chk-<x> 的所有权.<br>Flink 不会删除旧作业的目录.</p>
+<p>Native 格式支持增量的 RocksDB savepoints.<br>对于这些 savepoints,Flink 将所有 SST 存储在 savepoints 目录中.<br>这意味着这些 savepoints 是自包含和目录可移动的.<br>然而,在 CLAIM 模式下恢复时,后续的 checkpoints 可能会复用一些 SST 文件,这反过来会阻止在 savepoints 被清理时删除 savepoints 目录.<br>Flink 之后运行期间可能会删除复用的SST 文件,但不会删除 savepoints 目录.<br>因此,如果在 CLAIM 模式下恢复,Flink 可能会留下一个空的 savepoints 目录.</p>
+<blockquote>
+<p>LEGACY</p>
+</blockquote>
+<p>Legacy 模式是 Flink 在 1.15 之前的工作方式.<br>该模式下 Flink 永远不会删除初始恢复的 checkpoint.<br>同时,用户也不清楚是否可以删除它.<br>导致该的问题原因是, Flink 会在用来恢复的 checkpoint 之上创建增量的 checkpoint,因此后续的 checkpoint 都有可能会依赖于用于恢复的那个 checkpoint.<br>总而言之,恢复的 checkpoint 的所有权没有明确的界定.</p>
+<img src="/images/flgl77.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="删除-Savepoint"><a href="#删除-Savepoint" class="headerlink" title="删除 Savepoint"></a>删除 Savepoint</h4><p><code>bin/flink savepoint -d :savepointPath</code></p>
+<p>这将删除存储在 :savepointPath 中的 Savepoint.</p>
+<p>请注意,还可以通过常规文件系统操作手动删除 Savepoint ,而不会影响其他 Savepoint 或 Checkpoint(请记住,每个 Savepoint 都是自包含的).<br>在 Flink 1.2 之前,使用上面的 Savepoint 命令执行是一个更乏味的任务.</p>
+<h4 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h4><p>你可以通过 state.savepoints.dir 配置 savepoint 的默认目录.<br>触发 savepoint 时,将使用此目录来存储 savepoint.<br>你可以通过使用触发器命令指定自定义目标目录来覆盖缺省值(请参阅:targetDirectory参数).</p>
+<p>#默认 Savepoint 目标目录<br>state.savepoints.dir: hdfs:///flink/savepoints</p>
+<p>如果既未配置缺省值也未指定自定义目标目录,则触发 Savepoint 将失败.<br>注意: 目标目录必须是 JobManager(s) 和 TaskManager(s) 可访问的位置,例如,分布式文件系统上的位置.</p>
+<h3 id="F-A-Q"><a href="#F-A-Q" class="headerlink" title="F.A.Q"></a>F.A.Q</h3><blockquote>
+<p>我应该为我作业中的所有算子分配 ID 吗?</p>
+</blockquote>
+<p>根据经验,是的.<br>严格来说,仅通过 uid 方法给有状态算子分配 ID 就足够了.<br>Savepoint 仅包含这些有状态算子的状态,无状态算子不是 Savepoint 的一部分.</p>
+<p>在实践中,建议给所有算子分配 ID,因为 Flink 的一些内置算子(如 Window 算子)也是有状态的,而内置算子是否有状态并不很明显.<br>如果你完全确定算子是无状态的,则可以跳过 uid 方法.</p>
+<blockquote>
+<p>如果我在作业中添加一个需要状态的新算子,会发生什么？</p>
+</blockquote>
+<p>当你向作业添加新算子时,它将在没有任何状态的情况下进行初始化.<br>Savepoint 包含每个有状态算子的状态.<br>无状态算子根本不是 Savepoint 的一部分.<br>新算子的行为类似于无状态算子.</p>
+<blockquote>
+<p>如果从作业中删除有状态的算子会发生什么?</p>
+</blockquote>
+<p>默认情况下,从 Savepoint 恢复时将尝试将所有状态分配给新作业.<br>如果有状态算子被删除,则无法从 Savepoint 恢复.<br>你可以通过使用 run 命令设置 --allowNonRestoredState (简称:-n )来允许删除有状态算子:<br><code>bin/flink run -s :savepointPath -n [:runArgs]</code></p>
+<blockquote>
+<p>如果我在作业中重新排序有状态算子,会发生什么?</p>
+</blockquote>
+<p>如果给这些算子分配了 ID,它们将像往常一样恢复.<br>如果没有分配 ID ,则有状态操作符自动生成的 ID 很可能在重新排序后发生更改.<br>这将导致你无法从以前的 Savepoint 恢复.</p>
+<blockquote>
+<p>如果我添加/删除或重新排序作业中没有状态的算子,会发生什么?</p>
+</blockquote>
+<p>如果将 ID 分配给有状态操作符,则无状态操作符不会影响 Savepoint 恢复.<br>如果没有分配 ID ,则有状态操作符自动生成的 ID 很可能在重新排序后发生更改.<br>这将导致你无法从以前的Savepoint 恢复.</p>
+<blockquote>
+<p>当我在恢复时改变程序的并行度时会发生什么?</p>
+</blockquote>
+<p>如果 Savepoint 是用 Flink &gt;= 1.2.0 触发的,并且没有使用像 Checkpointed 这样的不推荐的状态API,那么你可以简单地从 Savepoint 恢复程序并指定新的并行度.</p>
+<p>如果你正在从 Flink &lt; 1.2.0 触发的 Savepoint 恢复,或者使用现在已经废弃的 api,那么你首先必须将作业和 Savepoint 迁移到 Flink &gt;= 1.2.0,然后才能更改并行度.<br>参见升级作业和Flink版本指南.</p>
+<blockquote>
+<p>我可以将 savepoint 文件移动到稳定存储上吗?</p>
+</blockquote>
+<p>这个问题的快速答案目前是&quot;是&quot;,从 Flink 1.11.0 版本开始,savepoint 是自包含的,你可以按需迁移 savepoint 文件后进行恢复.</p>
+<h2 id="检查点与保存点"><a href="#检查点与保存点" class="headerlink" title="检查点与保存点"></a>检查点与保存点</h2><h3 id="概述-1"><a href="#概述-1" class="headerlink" title="概述"></a>概述</h3><p>从概念上讲,Flink 的保存点与检查点的不同 之处类似于备份与传统数据库系统中的恢复日志的不同.</p>
+<p>检查点的主要目的是在意外作业失败的情况下提供恢复机制.<br>检查点的生命周期由Flink 管理,即检查点由 Flink 创建/拥有和发布 - 无需用户交互.<br>因为检查点经常被触发,并且依赖于故障恢复,所以检查点实现的两个主要设计目标是 i) 创建的轻量级和 ii) 尽可能快地恢复.<br>针对这些目标的优化可以利用某些属性,例如,作业代码在执行尝试之间不会改变.</p>
+<ol>
+<li>如果应用程序被用户终止,检查点会被自动删除(除非检查点被明确配置为保留).</li>
+<li>检查点以状态后端特定(本机)数据格式存储(根据特定后端可能是增量的).</li>
+</ol>
+<p>尽管保存点是在内部使用与检查点相同的机制创建的,但它们在概念上有所不同,并且生成和恢复的成本可能会更高一些.<br>他们的设计更侧重于可移植性和操作灵活性,尤其是在工作变化方面.<br>保存点的用例用于计划的手动操作.<br>例如,这可能是您的 Flink 版本的更新/更改您的作业图等等.</p>
+<ol>
+<li><p>保存点仅由用户创建/拥有和删除.<br>这意味着,Flink 在作业终止后和恢复后都不会删除保存点.</p>
+</li>
+<li><p>保存点以状态后端独立(规范)格式存储(注意:从 Flink 1.15 开始,保存点也可以以后端特定的本机格式存储,这种格式创建和恢复速度更快,但有一些限制.</p>
+</li>
+</ol>
+<h2 id="State-Backends-1"><a href="#State-Backends-1" class="headerlink" title="State Backends"></a>State Backends</h2><p>用 Data Stream API 编写的程序通常以各种形式保存状态:</p>
+<ol>
+<li>在 Window 触发之前要么收集元素/要么聚合</li>
+<li>转换函数可以使用 key/value 格式的状态接口来存储状态</li>
+<li>转换函数可以实现 CheckpointedFunction 接口,使其本地变量具有容错能力</li>
+</ol>
+<p>在启动 CheckPoint 机制时,状态会随着 CheckPoint 而持久化,以防止数据丢失/保障恢复时的一致性.<br>状态内部的存储格式/状态在 CheckPoint 时如何持久化以及持久化在哪里均取决于选择的 State Backend.</p>
+<h3 id="可用的-State-Backends"><a href="#可用的-State-Backends" class="headerlink" title="可用的 State Backends"></a>可用的 State Backends</h3><p>Flink 内置了以下这些开箱即用的 state backends :</p>
+<ol>
+<li>HashMapStateBackend</li>
+<li>EmbeddedRocksDBStateBackend</li>
+</ol>
+<p>如果不设置,默认使用 HashMapStateBackend.</p>
+<h4 id="HashMapStateBackend"><a href="#HashMapStateBackend" class="headerlink" title="HashMapStateBackend"></a>HashMapStateBackend</h4><p>在 HashMapStateBackend 内部,数据以 Java 对象的形式存储在堆中.<br>Key/value 形式的状态和窗口算子会持有一个 hash table,其中存储着状态值/触发器.</p>
+<p>HashMapStateBackend 的适用场景:</p>
+<ol>
+<li>有较大 state,较长 window 和较大 key/value 状态的 Job.</li>
+<li>所有的高可用场景.</li>
+</ol>
+<p>建议同时将 managed memory 设为0,以保证将最大限度的内存分配给 JVM 上的用户代码.<br>与 EmbeddedRocksDBStateBackend 不同的是,由于 HashMapStateBackend 将数据以对象形式存储在堆中,因此重用这些对象数据是不安全的.</p>
+<h4 id="EmbeddedRocksDBStateBackend"><a href="#EmbeddedRocksDBStateBackend" class="headerlink" title="EmbeddedRocksDBStateBackend"></a>EmbeddedRocksDBStateBackend</h4><p>EmbeddedRocksDBStateBackend 将正在运行中的状态数据保存在 RocksDB 数据库中,RocksDB 数据库默认将数据存储在 TaskManager 的数据目录.<br>不同于 HashMapStateBackend 中的 java 对象,数据被以序列化字节数组的方式存储,这种方式由序列化器决定,因此 key 之间的比较是以字节序的形式进行而不是使用 Java 的 hashCode 或 equals() 方法.</p>
+<p>EmbeddedRocksDBStateBackend 会使用异步的方式生成 snapshots.<br>EmbeddedRocksDBStateBackend 的局限:<br>由于 RocksDB 的 JNI API 构建在 <code>byte[]</code> 数据结构之上, 所以每个 key 和 value 最大支持 2^31 字节.<br>RocksDB 合并操作的状态(例如:ListState)累积数据量大小可以超过 2^31 字节,但是会在下一次获取数据时失败.<br>这是当前 RocksDB JNI 的限制.</p>
+<p>EmbeddedRocksDBStateBackend 的适用场景:</p>
+<ol>
+<li>状态非常大/窗口非常长/key/value 状态非常大的 Job.</li>
+<li>所有高可用的场景.</li>
+</ol>
+<p>注意,你可以保留的状态大小仅受磁盘空间的限制.<br>与状态存储在内存中的 HashMapStateBackend 相比,EmbeddedRocksDBStateBackend 允许存储非常大的状态.<br>然而,这也意味着使用 EmbeddedRocksDBStateBackend 将会使应用程序的最大吞吐量降低.<br>所有的读写都必须序列化/反序列化操作,这个比基于堆内存的 state backend 的效率要低很多.<br>同时因为存在这些序列化/反序列化操作,重用放入 EmbeddedRocksDBStateBackend 的对象是安全的.</p>
+<p>EmbeddedRocksDBStateBackend 是目前唯一支持增量 CheckPoint 的 State Backend (见 这里).</p>
+<p>可以使用一些 RocksDB 的本地指标(metrics),但默认是关闭的.<br>你能在 这里 找到关于 RocksDB 本地指标的文档.</p>
+<p>每个 slot 中的 RocksDB instance 的内存大小是有限制的,详情请见 这里.</p>
+<h3 id="选择合适的-State-Backend"><a href="#选择合适的-State-Backend" class="headerlink" title="选择合适的 State Backend"></a>选择合适的 State Backend</h3><p>在选择 HashMapStateBackend 和 RocksDB 的时候,其实就是在性能与可扩展性之间权衡.<br>HashMapStateBackend 是非常快的,因为每个状态的读取和算子对于 objects 的更新都是在 Java 的 heap 上.<br>但是状态的大小受限于集群中可用的内存.<br>另一方面,RocksDB 可以根据可用的 disk 空间扩展,并且只有它支持增量 snapshot.<br>然而,每个状态的读取和更新都需要(反)序列化,而且在 disk 上进行读操作的性能可能要比基于内存的 state backend 慢一个数量级.</p>
+<p>在 Flink 1.13 版本中我们统一了 savepoints 的二进制格式.<br>这意味着你可以生成 savepoint 并且之后使用另一种 state backend 读取它.<br>从 1.13 版本开始,所有的 state backends 都会生成一种普适的格式.<br>因此,如果想切换 state backend 的话,那么最好先升级你的 Flink 版本,在新版本中生成 savepoint,在这之后你才可以使用一个不同的 state backend 来读取并恢复它.</p>
+<h3 id="设置-State-Backend"><a href="#设置-State-Backend" class="headerlink" title="设置 State Backend"></a>设置 State Backend</h3><p>如果没有明确指定,将使用 jobmanager 做为默认的 state backend.<br>你能在 flink-conf.yaml 中为所有 Job 设置其他默认的 State Backend.<br>每一个 Job 的 state backend 配置会覆盖默认的 state backend 配置,如下所示:</p>
+<h4 id="设置每个-Job-的-State-Backend"><a href="#设置每个-Job-的-State-Backend" class="headerlink" title="设置每个 Job 的 State Backend"></a>设置每个 Job 的 State Backend</h4><p>StreamExecutionEnvironment 可以对每个 Job 的 State Backend 进行设置,如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">env.setStateBackend(new HashMapStateBackend());</span><br></pre></td></tr></table></figure>
+
+<p>如果你想在 IDE 中使用 EmbeddedRocksDBStateBackend,或者需要在作业中通过编程方式动态配置它,必须添加以下依赖到 Flink 项目中.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">  &lt;groupId&gt;org.apache.flink&lt;&#x2F;groupId&gt;</span><br><span class="line">  &lt;artifactId&gt;flink-statebackend-rocksdb&lt;&#x2F;artifactId&gt;</span><br><span class="line">  &lt;version&gt;1.15.1&lt;&#x2F;version&gt;</span><br><span class="line">  &lt;scope&gt;provided&lt;&#x2F;scope&gt;</span><br><span class="line">&lt;&#x2F;dependency&gt;</span><br></pre></td></tr></table></figure>
+<p>注意: 由于 RocksDB 是 Flink 默认分发包的一部分,所以如果你没在代码中使用 RocksDB,则不需要添加此依赖.<br>而且可以在 flink-conf.yaml 文件中通过 state.backend 配置 State Backend,以及更多的 checkpointing 和 RocksDB 特定的 参数.</p>
+<h4 id="设置默认的-全局的-State-Backend"><a href="#设置默认的-全局的-State-Backend" class="headerlink" title="设置默认的(全局的) State Backend"></a>设置默认的(全局的) State Backend</h4><p>在 flink-conf.yaml 可以通过键 state.backend 设置默认的 State Backend.</p>
+<p>可选值包括 jobmanager (HashMapStateBackend), rocksdb (EmbeddedRocksDBStateBackend), 或使用实现了 state backend 工厂 StateBackendFactory 的类的全限定类名, 例如: EmbeddedRocksDBStateBackend 对应为 org.apache.flink.contrib.streaming.state.EmbeddedRocksDBStateBackendFactory.</p>
+<p><code>state.checkpoints.dir</code> 选项指定了所有 State Backend 写 CheckPoint 数据和写元数据文件的目录.<br>你能在 这里 找到关于 CheckPoint 目录结构的详细信息.</p>
+<p>配置文件的部分示例如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 用于存储 operator state 快照的 State Backend</span><br><span class="line">state.backend: filesystem</span><br><span class="line"></span><br><span class="line"># 存储快照的目录</span><br><span class="line">state.checkpoints.dir: hdfs:&#x2F;&#x2F;namenode:40010&#x2F;flink&#x2F;checkpoints</span><br></pre></td></tr></table></figure>
+
+<h3 id="RocksDB-State-Backend-进阶"><a href="#RocksDB-State-Backend-进阶" class="headerlink" title="RocksDB State Backend 进阶"></a>RocksDB State Backend 进阶</h3><h4 id="增量快照"><a href="#增量快照" class="headerlink" title="增量快照"></a>增量快照</h4><p>RocksDB 支持增量快照.<br>不同于产生一个包含所有数据的全量备份,增量快照中只包含自上一次快照完成之后被修改的记录,因此可以显著减少快照完成的耗时.</p>
+<p>一个增量快照是基于(通常多个)前序快照构建的.<br>由于 RocksDB 内部存在 compaction 机制对 sst 文件进行合并,Flink 的增量快照也会定期重新设立起点(rebase),因此增量链条不会一直增长,旧快照包含的文件也会逐渐过期并被自动清理.</p>
+<p>和基于全量快照的恢复时间相比,如果网络带宽是瓶颈,那么基于增量快照恢复可能会消耗更多时间,因为增量快照包含的 sst 文件之间可能存在数据重叠导致需要下载的数据量变大.<br>而当 CPU 或者 IO 是瓶颈的时候,基于增量快照恢复会更快,因为从增量快照恢复不需要解析 Flink 的统一快照格式来重建本地的 RocksDB 数据表,而是可以直接基于 sst 文件加载.</p>
+<p>虽然状态数据量很大时我们推荐使用增量快照,但这并不是默认的快照机制,您需要通过下述配置手动开启该功能:</p>
+<p>在 flink-conf.yaml 中设置:state.backend.incremental: true 或者<br>在代码中按照右侧方式配置(来覆盖默认配置):EmbeddedRocksDBStateBackend backend = new EmbeddedRocksDBStateBackend(true);<br>需要注意的是,一旦启用了增量快照,网页上展示的 Checkpointed Data Size 只代表增量上传的数据量,而不是一次快照的完整数据量.</p>
+<h4 id="内存管理"><a href="#内存管理" class="headerlink" title="内存管理"></a>内存管理</h4><p>Flink 致力于控制整个进程的内存消耗,以确保 Flink 任务管理器(TaskManager)有良好的内存使用,从而既不会在容器(Docker/Kubernetes, Yarn等)环境中由于内存超用被杀掉,也不会因为内存利用率过低导致不必要的数据落盘或是缓存命中率下降,致使性能下降.</p>
+<p>为了达到上述目标,Flink 默认将 RocksDB 的可用内存配置为任务管理器的单槽(per-slot)托管内存量.<br>这将为大多数应用程序提供良好的开箱即用体验,即大多数应用程序不需要调整 RocksDB 配置,简单的增加 Flink 的托管内存即可改善内存相关性能问题.</p>
+<p>当然,您也可以选择不使用 Flink 自带的内存管理,而是手动为 RocksDB 的每个列族(ColumnFamily)分配内存(每个算子的每个 state 都对应一个列族).<br>这为专业用户提供了对 RocksDB 进行更细粒度控制的途径,但同时也意味着用户需要自行保证总内存消耗不会超过(尤其是容器)环境的限制.<br>请参阅 large state tuning 了解有关大状态数据性能调优的一些指导原则.</p>
+<h5 id="RocksDB-使用托管内存"><a href="#RocksDB-使用托管内存" class="headerlink" title="RocksDB 使用托管内存"></a>RocksDB 使用托管内存</h5><p>这个功能默认打开,并且可以通过 state.backend.rocksdb.memory.managed 配置项控制.</p>
+<p>Flink 并不直接控制 RocksDB 的 native 内存分配,而是通过配置 RocksDB 来确保其使用的内存正好与 Flink 的托管内存预算相同.<br>这是在任务槽(per-slot)级别上完成的(托管内存以任务槽为粒度计算).</p>
+<p>为了设置 RocksDB 实例的总内存使用量,Flink 对同一个任务槽上的所有 RocksDB 实例使用共享的 cache 以及 write buffer manager.<br>共享 cache 将对 RocksDB 中内存消耗的三个主要来源(块缓存/索引和bloom过滤器/MemTables)设置上限.</p>
+<p>Flink还提供了两个参数来控制写路径(MemTable)和读路径(索引及过滤器,读缓存)之间的内存分配.<br>当您看到 RocksDB 由于缺少写缓冲内存(频繁刷新)或读缓存未命中而性能不佳时,可以使用这些参数调整读写间的内存分配.</p>
+<ol>
+<li>state.backend.rocksdb.memory.write-buffer-ratio,默认值 0.5,即 50% 的给定内存会分配给写缓冲区使用.</li>
+<li>state.backend.rocksdb.memory.high-prio-pool-ratio,默认值 0.1,即 10% 的 block cache 内存会优先分配给索引及过滤器.<br>我们强烈建议不要将此值设置为零,以防止索引和过滤器被频繁踢出缓存而导致性能问题.<br>此外,我们默认将L0级的过滤器和索引将被固定到缓存中以提高性能,更多详细信息请参阅 RocksDB 文档.</li>
+</ol>
+<p>注意 上述机制开启时将覆盖用户在 PredefinedOptions 和 RocksDBOptionsFactory 中对 block cache 和 write buffer 进行的配置.</p>
+<p>注意 仅面向专业用户:若要手动控制内存,可以将 state.backend.rocksdb.memory.managed 设置为 false,并通过 ColumnFamilyOptions 配置 RocksDB.<br>或者可以复用上述 cache/write-buffer-manager 机制,但将内存大小设置为与 Flink 的托管内存大小无关的固定大小(通过 state.backend.rocksdb.memory.fixed-per-slot 选项).<br>注意在这两种情况下,用户都需要确保在 JVM 之外有足够的内存可供 RocksDB 使用.</p>
+<h4 id="计时器-内存-vs-RocksDB"><a href="#计时器-内存-vs-RocksDB" class="headerlink" title="计时器(内存 vs. RocksDB)"></a>计时器(内存 vs. RocksDB)</h4><p>计时器(Timer)用于安排稍后的操作(基于事件时间或处理时间),例如触发窗口或回调 ProcessFunction.</p>
+<p>当选择 RocksDB 作为 State Backend 时,默认情况下计时器也存储在 RocksDB 中.<br>这是一种健壮且可扩展的方式,允许应用程序使用很多个计时器.<br>另一方面,在 RocksDB 中维护计时器会有一定的成本,因此 Flink 也提供了将计时器存储在 JVM 堆上而使用 RocksDB 存储其他状态的选项.<br>当计时器数量较少时,基于堆的计时器可以有更好的性能.</p>
+<p>您可以通过将 state.backend.rocksdb.timer-service.factory 配置项设置为 heap(而不是默认的 rocksdb)来将计时器存储在堆上.</p>
+<p>注意 在 RocksDB state backend 中使用基于堆的计时器的组合当前不支持计时器状态的异步快照.<br>其他状态(如 keyed state)可以被异步快照.</p>
+<h4 id="开启-RocksDB-原生监控指标"><a href="#开启-RocksDB-原生监控指标" class="headerlink" title="开启 RocksDB 原生监控指标"></a>开启 RocksDB 原生监控指标</h4><p>您可以选择使用 Flink 的监控指标系统来汇报 RocksDB 的原生指标,并且可以选择性的指定特定指标进行汇报.<br>请参阅 configuration docs 了解更多详情.</p>
+<p>注意: 启用 RocksDB 的原生指标可能会对应用程序的性能产生负面影响.</p>
+<h5 id="列族-ColumnFamily-级别的预定义选项"><a href="#列族-ColumnFamily-级别的预定义选项" class="headerlink" title="列族(ColumnFamily)级别的预定义选项"></a>列族(ColumnFamily)级别的预定义选项</h5><p>注意 在引入 RocksDB 使用托管内存 功能后,此机制应限于在专家调优或故障处理中使用.</p>
+<p>使用预定义选项,用户可以在每个 RocksDB 列族上应用一些预定义的配置,例如配置内存使用/线程/Compaction 设置等.<br>目前每个算子的每个状态都在 RocksDB 中有专门的一个列族存储.</p>
+<p>有两种方法可以选择要应用的预定义选项:</p>
+<ol>
+<li>通过 state.backend.rocksdb.predefined-options 配置项将选项名称设置进 flink-conf.yaml .</li>
+<li>通过程序设置:EmbeddedRocksDBStateBackend.setPredefinedOptions(PredefinedOptions.SPINNING_DISK_OPTIMIZED_HIGH_MEM) .</li>
+</ol>
+<p>该选项的默认值是 DEFAULT ,对应 PredefinedOptions.DEFAULT .</p>
+<h5 id="从-flink-conf-yaml-中读取列族选项"><a href="#从-flink-conf-yaml-中读取列族选项" class="headerlink" title="从 flink-conf.yaml 中读取列族选项"></a>从 flink-conf.yaml 中读取列族选项</h5><p>RocksDB State Backend 会将 这里定义 的所有配置项全部加载.<br>因此您可以简单的通过关闭 RocksDB 使用托管内存的功能并将需要的设置选项加入配置文件来配置底层的列族选项.</p>
+<h5 id="通过-RocksDBOptionsFactory-配置-RocksDB-选项"><a href="#通过-RocksDBOptionsFactory-配置-RocksDB-选项" class="headerlink" title="通过 RocksDBOptionsFactory 配置 RocksDB 选项"></a>通过 RocksDBOptionsFactory 配置 RocksDB 选项</h5><p>注意 在引入 RocksDB 使用托管内存 功能后,此机制应限于在专家调优或故障处理中使用.</p>
+<p>您也可以通过配置一个 RocksDBOptionsFactory 来手动控制 RocksDB 的选项.<br>此机制使您可以对列族的设置进行细粒度控制,例如内存使用/线程/Compaction 设置等.<br>目前每个算子的每个状态都在 RocksDB 中有专门的一个列族存储.</p>
+<p>有两种方法可以将 RocksDBOptionsFactory 传递给 RocksDB State Backend:</p>
+<ol>
+<li>通过 state.backend.rocksdb.options-factory 选项将工厂实现类的名称设置到flink-conf.yaml .</li>
+<li>通过程序设置,例如 EmbeddedRocksDBStateBackend.setRocksDBOptions(new MyOptionsFactory()); .</li>
+</ol>
+<p>注意 通过程序设置的 RocksDBOptionsFactory 将覆盖 flink-conf.yaml 配置文件的设置,且 RocksDBOptionsFactory 设置的优先级高于预定义选项(PredefinedOptions).</p>
+<p>注意 RocksDB是一个本地库,它直接从进程分配内存, 而不是从JVM分配内存.<br>分配给 RocksDB 的任何内存都必须被考虑在内,通常需要将这部分内存从任务管理器(TaskManager)的JVM堆中减去.<br>不这样做可能会导致JVM进程由于分配的内存超过申请值而被 YARN 等资源管理框架终止.</p>
+<p>下面是自定义 ConfigurableRocksDBOptionsFactory 的一个示例 (开发完成后,请将您的实现类全名设置到 state.backend.rocksdb.options-factory).</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">public class MyOptionsFactory implements ConfigurableRocksDBOptionsFactory &#123;</span><br><span class="line">  public static final ConfigOption&lt;Integer&gt; BLOCK_RESTART_INTERVAL &#x3D; ConfigOptions</span><br><span class="line">          .key(&quot;my.custom.rocksdb.block.restart-interval&quot;)</span><br><span class="line">          .intType()</span><br><span class="line">          .defaultValue(16)</span><br><span class="line">          .withDescription(</span><br><span class="line">                  &quot; Block restart interval. RocksDB has default block restart interval as 16. &quot;);</span><br><span class="line"></span><br><span class="line">  private int blockRestartInterval &#x3D; BLOCK_RESTART_INTERVAL.defaultValue();</span><br><span class="line"></span><br><span class="line">  @Override</span><br><span class="line">  public DBOptions createDBOptions(DBOptions currentOptions,</span><br><span class="line">                                   Collection&lt;AutoCloseable&gt; handlesToClose) &#123;</span><br><span class="line">      return currentOptions</span><br><span class="line">              .setIncreaseParallelism(4)</span><br><span class="line">              .setUseFsync(false);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  @Override</span><br><span class="line">  public ColumnFamilyOptions createColumnOptions(ColumnFamilyOptions currentOptions,</span><br><span class="line">                                                 Collection&lt;AutoCloseable&gt; handlesToClose) &#123;</span><br><span class="line">      return currentOptions.setTableFormatConfig(</span><br><span class="line">              new BlockBasedTableConfig()</span><br><span class="line">                      .setBlockRestartInterval(blockRestartInterval));</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  @Override</span><br><span class="line">  public RocksDBOptionsFactory configure(ReadableConfig configuration) &#123;</span><br><span class="line">      this.blockRestartInterval &#x3D; configuration.get(BLOCK_RESTART_INTERVAL);</span><br><span class="line">      return this;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="开启-Changelog"><a href="#开启-Changelog" class="headerlink" title="开启 Changelog"></a>开启 Changelog</h3><p>该功能处于实验状态.<br>开启 Changelog 可能会给您的应用带来性能损失.</p>
+<h4 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h4><p>Changelog 是一项旨在减少 checkpointing 时间的功能,因此也可以减少 exactly-once 模式下的端到端延迟.<br>一般情况下 checkpoint 的持续时间受如下因素影响:</p>
+<ol>
+<li>Barrier 到达和对齐时间,可以通过 Unaligned checkpoints 和 Buffer debloating 解决.</li>
+<li>快照制作时间(所谓同步阶段), 可以通过异步快照解决(如上文所述).</li>
+<li>快照上传时间(异步阶段).</li>
+</ol>
+<p>可以用增量 checkpoints 来减少上传时间.<br>但是,大多数支持增量checkpoint的状态后端会定期执行合并类型的操作,这会导致除了新的变更之外还要重新上传旧状态.<br>在大规模部署中,每次 checkpoint 中至少有一个 task 上传大量数据的可能性往往非常高.</p>
+<p>开启 Changelog 功能之后,Flink 会不断上传状态变更并形成 changelog.<br>创建 checkpoint 时,只有 changelog 中的相关部分需要上传.<br>而配置的状态后端则会定期在后台进行快照,快照成功上传后,相关的changelog 将会被截断.</p>
+<p>基于此,异步阶段的持续时间减少(另外因为不需要将数据刷新到磁盘,同步阶段持续时间也减少了),特别是长尾延迟得到了改善.<br>但是,资源使用会变得更高:</p>
+<ol>
+<li>将会在 DFS 上创建更多文件</li>
+<li>将可能在 DFS 上残留更多文件(这将在 FLINK-25511 和 FLINK-25512 之后的新版本中被解决)</li>
+<li>将使用更多的 IO 带宽用来上传状态变更</li>
+<li>将使用更多 CPU 资源来序列化状态变更</li>
+<li>Task Managers 将会使用更多内存来缓存状态变更</li>
+</ol>
+<p>另一项需要考虑的事情是恢复时间.<br>取决于 state.backend.changelog.periodic-materialize.interval 的设置,changelog 可能会变得冗长,因此重放会花费更多时间.<br>即使这样,恢复时间加上 checkpoint 持续时间仍然可能低于不开启 changelog 功能的时间,从而在故障恢复的情况下也能提供更低的端到端延迟.<br>当然,取决于上述时间的实际比例,有效恢复时间也有可能会增加.</p>
+<h4 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h4><p>标准的 Flink 发行版包含 Changelog 所需要的 JAR包.<br>请确保添加所需的文件系统插件.</p>
+<h4 id="配置-1"><a href="#配置-1" class="headerlink" title="配置"></a>配置</h4><p>这是 YAML 中的示例配置:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">state.backend.changelog.enabled: true</span><br><span class="line">state.backend.changelog.storage: filesystem 当前只支持 filesystem 和 memory(仅供测试用)</span><br><span class="line">dstl.dfs.base-path: s3:&#x2F;&#x2F;&lt;bucket-name&gt; 类似于 state.checkpoints.dir</span><br></pre></td></tr></table></figure>
+
+<p>请将如下配置保持默认值 (参见限制):</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">execution.checkpointing.max-concurrent-checkpoints: 1</span><br><span class="line">state.backend.local-recovery: false</span><br></pre></td></tr></table></figure>
+
+<p>有关其他配置选项,请参阅配置部分.<br>也可以通过编程方式为每个作业开启或关闭 Changelog:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">env.enableChangelogStateBackend(true);</span><br></pre></td></tr></table></figure>
+
+<h4 id="监控"><a href="#监控" class="headerlink" title="监控"></a>监控</h4><p>如果 task 因写状态变更而被反压,他将在 UI 中被显示为忙碌(红色).</p>
+<h4 id="升级现有作业"><a href="#升级现有作业" class="headerlink" title="升级现有作业"></a>升级现有作业</h4><h5 id="开启-Changelog-1"><a href="#开启-Changelog-1" class="headerlink" title="开启 Changelog"></a>开启 Changelog</h5><p>仅支持从标准格式的 savepoint 恢复:</p>
+<ol>
+<li>给定一个没有开启 Changelog 的作业</li>
+<li>创建一个 savepoint (默认为标准格式)</li>
+<li>更改配置(开启 Changelog)</li>
+<li>从创建的 snapshot 恢复</li>
+</ol>
+<h5 id="关闭-Changelog"><a href="#关闭-Changelog" class="headerlink" title="关闭 Changelog"></a>关闭 Changelog</h5><p>仅支持从 savepoints 恢复.<br>从 checkpoints 恢复计划在未来版本中支持.<br>当前不支持状态迁移(包括改变 TTL).</p>
+<h4 id="限制-2"><a href="#限制-2" class="headerlink" title="限制"></a>限制</h4><p>最多同时创建一个 checkpoint<br>本地恢复暂不支持<br>到 Flink 1.15 为止, 只有 filesystem changelog 实现可用<br>尚不支持状态迁移(包括修改 TTL)<br>尚不支持 NO_CLAIM 模式</p>
+<h3 id="自旧版本迁移"><a href="#自旧版本迁移" class="headerlink" title="自旧版本迁移"></a>自旧版本迁移</h3><p>从 Flink 1.13 版本开始,社区改进了 state backend 的公开类,进而帮助用户更好理解本地状态存储和 checkpoint 存储的区分.<br>这个变化并不会影响 state backend 和 checkpointing 过程的运行时实现和机制,仅仅是为了更好地传达设计意图.<br>用户可以将现有作业迁移到新的 API,同时不会损失原有 state.</p>
+<h4 id="MemoryStateBackend"><a href="#MemoryStateBackend" class="headerlink" title="MemoryStateBackend"></a>MemoryStateBackend</h4><p>旧版本的 MemoryStateBackend 等价于使用 HashMapStateBackend 和 JobManagerCheckpointStorage.</p>
+<h5 id="flink-conf-yaml-配置"><a href="#flink-conf-yaml-配置" class="headerlink" title="flink-conf.yaml 配置"></a>flink-conf.yaml 配置</h5><p>state.backend: hashmap</p>
+<p>#Optional, Flink will automatically default to JobManagerCheckpointStorage<br>#when no checkpoint directory is specified.<br>state.checkpoint-storage: jobmanager</p>
+<h5 id="代码配置"><a href="#代码配置" class="headerlink" title="代码配置"></a>代码配置</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">env.setStateBackend(new HashMapStateBackend());</span><br><span class="line">env.getCheckpointConfig().setCheckpointStorage(new JobManagerCheckpointStorage());</span><br></pre></td></tr></table></figure>
+
+<h4 id="FsStateBackend"><a href="#FsStateBackend" class="headerlink" title="FsStateBackend"></a>FsStateBackend</h4><p>旧版本的 FsStateBackend 等价于使用 HashMapStateBackend 和 FileSystemCheckpointStorage.</p>
+<h5 id="flink-conf-yaml-配置-1"><a href="#flink-conf-yaml-配置-1" class="headerlink" title="flink-conf.yaml 配置"></a>flink-conf.yaml 配置</h5><p>state.backend: hashmap<br>state.checkpoints.dir: file:///checkpoint-dir/</p>
+<p>#Optional, Flink will automatically default to FileSystemCheckpointStorage<br>#when a checkpoint directory is specified.<br>state.checkpoint-storage: filesystem</p>
+<h5 id="代码配置-1"><a href="#代码配置-1" class="headerlink" title="代码配置"></a>代码配置</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">env.setStateBackend(new HashMapStateBackend());</span><br><span class="line">env.getCheckpointConfig().setCheckpointStorage(&quot;file:&#x2F;&#x2F;&#x2F;checkpoint-dir&quot;);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Advanced FsStateBackend configurations, such as write buffer size</span><br><span class="line">&#x2F;&#x2F; can be set by manually instantiating a FileSystemCheckpointStorage object.</span><br><span class="line">env.getCheckpointConfig().setCheckpointStorage(new FileSystemCheckpointStorage(&quot;file:&#x2F;&#x2F;&#x2F;checkpoint-dir&quot;));</span><br></pre></td></tr></table></figure>
+
+<h4 id="RocksDBStateBackend"><a href="#RocksDBStateBackend" class="headerlink" title="RocksDBStateBackend"></a>RocksDBStateBackend</h4><p>旧版本的 RocksDBStateBackend 等价于使用 EmbeddedRocksDBStateBackend 和 FileSystemCheckpointStorage.</p>
+<h5 id="flink-conf-yaml-配置-2"><a href="#flink-conf-yaml-配置-2" class="headerlink" title="flink-conf.yaml 配置"></a>flink-conf.yaml 配置</h5><p>state.backend: rocksdb<br>state.checkpoints.dir: file:///checkpoint-dir/</p>
+<p>#Optional, Flink will automatically default to FileSystemCheckpointStorage<br>#when a checkpoint directory is specified.<br>state.checkpoint-storage: filesystem</p>
+<h5 id="代码配置-2"><a href="#代码配置-2" class="headerlink" title="代码配置"></a>代码配置</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">env.setStateBackend(new EmbeddedRocksDBStateBackend());</span><br><span class="line">env.getCheckpointConfig().setCheckpointStorage(&quot;file:&#x2F;&#x2F;&#x2F;checkpoint-dir&quot;);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; If you manually passed FsStateBackend into the RocksDBStateBackend constructor</span><br><span class="line">&#x2F;&#x2F; to specify advanced checkpointing configurations such as write buffer size,</span><br><span class="line">&#x2F;&#x2F; you can achieve the same results by using manually instantiating a FileSystemCheckpointStorage object.</span><br><span class="line">env.getCheckpointConfig().setCheckpointStorage(new FileSystemCheckpointStorage(&quot;file:&#x2F;&#x2F;&#x2F;checkpoint-dir&quot;));</span><br></pre></td></tr></table></figure>
+
+<h2 id="大状态与-Checkpoint-调优"><a href="#大状态与-Checkpoint-调优" class="headerlink" title="大状态与 Checkpoint 调优"></a>大状态与 Checkpoint 调优</h2><p>本页提供了如何配置和调整使用大状态的应用程序的指南.</p>
+<h3 id="概述-2"><a href="#概述-2" class="headerlink" title="概述"></a>概述</h3><p>Flink 应用要想大规模可靠运行,必须满足两个条件:<br>应用程序需要能够可靠地采取检查点<br>故障后资源需要足够赶上输入数据流</p>
+<p>第一部分讨论如何大规模获得性能良好的检查点.<br>最后一部分解释了一些关于规划要使用多少资源的最佳实践.</p>
+<h3 id="监控状态和检查点"><a href="#监控状态和检查点" class="headerlink" title="监控状态和检查点"></a>监控状态和检查点</h3><p>监控检查点行为的最简单方法是通过 UI 的检查点部分.<br>检查点监控的文档显示了如何访问可用的检查点指标.</p>
+<p>扩大检查点时特别感兴趣的两个数字(都通过任务级别指标 和Web 界面公开)是:</p>
+<p>Operator 收到第一个 Checkpoint Barrier 的时间 当触发 Checkpoint 的时间一直很高时,这意味着Checkpoint Barrier需要很长时间才能从源头到达 Operator.<br>这通常表明系统在恒定背压下运行.</p>
+<p>对齐持续时间,定义为接收第一个和最后一个检查点屏障之间的时间.<br>在未对齐的exactly-once检查点和at-least-once检查点期间,子任务正在处理来自上游子任务的所有数据,没有任何中断.<br>然而,对于对齐exactly-once的检查点,已经收到检查点屏障的通道被阻止发送进一步的数据,直到所有剩余的通道赶上并接收它们的检查点屏障(对齐时间).</p>
+<p>理想情况下,这两个值都应该很低 - 较高的数量意味着检查点障碍缓慢地通过作业图,由于一些背压(没有足够的资源来处理传入的记录).<br>这也可以通过增加处理记录的端到端延迟来观察.<br>请注意,在存在瞬时背压/数据倾斜或网络问题的情况下,这些数字有时会很高.</p>
+<p>未对齐的检查点可用于加快检查点障碍的传播时间.<br>但是请注意,这并不能解决导致背压的根本问题(并且端到端记录延迟将仍然很高).</p>
+<h3 id="调整检查点"><a href="#调整检查点" class="headerlink" title="调整检查点"></a>调整检查点</h3><p>应用程序可以配置的定期触发检查点.<br>当检查点的完成时间超过检查点间隔时,在进行中的检查点完成之前不会触发下一个检查点.<br>默认情况下,一旦正在进行的检查点完成,将立即触发下一个检查点.</p>
+<p>当检查点最终经常花费比基本间隔更长的时间(例如,因为状态增长大于计划,或者存储检查点的存储暂时很慢),系统会不断地获取检查点(一旦完成,新的检查点就会立即启动) . 这可能意味着过多的资源一直被检查点所占用,而操作员的进展太少.<br>此行为对使用异步检查点状态的流式应用程序的影响较小,但仍可能对整体应用程序性能产生影响.</p>
+<p>为了防止这种情况,应用程序可以定义检查点之间的最小持续时间:<br>StreamExecutionEnvironment.getCheckpointConfig().setMinPauseBetweenCheckpoints(milliseconds)</p>
+<p>这个持续时间是最近一个检查点结束和下一个检查点开始之间必须经过的最小时间间隔.<br>下图说明了这如何影响检查点.</p>
+<img src="/images/flgl78.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>注意:可以(通过CheckpointConfig)配置应用程序以允许同时进行多个检查点.<br>对于 Flink 中状态较大的应用程序,这通常会将过多的资源绑定到检查点中.<br>当手动触发保存点时,它可能与正在进行的检查点同时进行.</p>
+<h3 id="调整-RocksDB"><a href="#调整-RocksDB" class="headerlink" title="调整 RocksDB"></a>调整 RocksDB</h3><p>许多大型 Flink 流应用程序的状态存储主力是RocksDB 状态后端.<br>后端的扩展性远远超出了主内存,并且可靠地存储了大的键控状态.</p>
+<p>RocksDB 的性能可能因配置而异,本节概述了一些使用 RocksDB 状态后端调优作业的最佳实践.</p>
+<h4 id="增量检查点"><a href="#增量检查点" class="headerlink" title="增量检查点"></a>增量检查点</h4><p>在减少检查点花费的时间方面,激活增量检查点应该是首要考虑因素之一.<br>与完整检查点相比,增量检查点可以显着减少检查点时间,因为增量检查点仅记录与先前完成的检查点相比的更改,而不是生成状态后端的完整/自包含备份.</p>
+<p>有关更多背景信息,请参阅RocksDB 中的增量检查点.</p>
+<h4 id="RocksDB-或-JVM-堆中的-计时器"><a href="#RocksDB-或-JVM-堆中的-计时器" class="headerlink" title="RocksDB 或 JVM 堆中的 计时器"></a>RocksDB 或 JVM 堆中的 计时器</h4><p>计时器默认存储在 RocksDB 中,这是更健壮和可扩展的选择.</p>
+<p>当性能调整作业只有几个计时器(没有窗口,不使用 ProcessFunction 中的计时器)时,将这些计时器放在堆上可以提高性能.<br>请谨慎使用此功能,因为基于堆的计时器可能会增加检查点时间,并且自然无法扩展到内存之外.</p>
+<p>有关如何配置基于堆的计时器的详细信息,请参阅本节.</p>
+<h4 id="调整-RocksDB-内存"><a href="#调整-RocksDB-内存" class="headerlink" title="调整 RocksDB 内存"></a>调整 RocksDB 内存</h4><p>RocksDB 状态后端的性能很大程度上取决于它可用的内存量.<br>为了提高性能,增加内存会很有帮助,或者调整内存的功能.</p>
+<p>默认情况下,RocksDB State Backend 使用 Flink 为 RocksDBs 缓冲区和缓存管理的内存预算(state.backend.rocksdb.memory.managed: true).<br>有关该机制如何工作的背景信息,请参阅RocksDB 内存管理.</p>
+<p>要调整与内存相关的性能问题,以下步骤可能会有所帮助:</p>
+<ol>
+<li><p>尝试提高性能的第一步应该是增加托管内存的数量.<br>这通常会大大改善这种情况,而不会增加调整低级 RocksDB 选项的复杂性.<br>特别是对于大型容器/进程大小,大部分总内存通常可以流向 RocksDB,除非应用程序逻辑本身需要大量 JVM 堆.<br>默认托管内存分数(0.4)是保守的,并且在使用具有多 GB 进程大小的 TaskManager 时通常可以增加.</p>
+</li>
+<li><p>RocksDB 中写入缓冲区的数量取决于应用程序中的状态数量(管道中所有操作符的状态).<br>每个状态对应一个 ColumnFamily,它需要自己的写缓冲区.<br>因此,具有许多状态的应用程序通常需要更多内存才能获得相同的性能.</p>
+</li>
+<li><p>您可以尝试通过设置state.backend.rocksdb.memory.managed: false. 特别是针对基线进行测试(假设没有或优雅的容器内存限制)或测试与早期版本的 Flink 相比的回归,这可能很有用.<br>与托管内存设置(恒定内存池)相比,不使用托管内存意味着 RocksDB 分配的内存与应用程序中的状态数量成正比(内存占用量随着应用程序的变化而变化).<br>根据经验,非托管模式的上限约为&quot;140MB * num-states-across-all-tasks * num-slots&quot;(除非应用了 ColumnFamily 选项).<br>计时器也算作状态.</p>
+</li>
+<li><p>如果您的应用程序有许多状态并且您看到频繁的 MemTable 刷新(写入端瓶颈),但您无法提供更多内存,您可以增加写入缓冲区的内存比率 ( state.backend.rocksdb.memory.write-buffer-ratio).<br>有关详细信息,请参阅RocksDB 内存管理.</p>
+</li>
+<li><p>一个高级选项(专家模式)可以减少具有许多状态的设置中的 MemTable 刷新次数,是通过以下方式调整 RocksDB 的 ColumnFamily 选项(竞技场块大小/最大后台刷新线程等)RocksDBOptionsFactory:</p>
+</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">public class MyOptionsFactory implements ConfigurableRocksDBOptionsFactory &#123;</span><br><span class="line"></span><br><span class="line">  @Override</span><br><span class="line">  public DBOptions createDBOptions(DBOptions currentOptions, Collection&lt;AutoCloseable&gt; handlesToClose) &#123;</span><br><span class="line">      &#x2F;&#x2F; increase the max background flush threads when we have many states in one operator,</span><br><span class="line">      &#x2F;&#x2F; which means we would have many column families in one DB instance.</span><br><span class="line">      return currentOptions.setMaxBackgroundFlushes(4);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  @Override</span><br><span class="line">  public ColumnFamilyOptions createColumnOptions(</span><br><span class="line">      ColumnFamilyOptions currentOptions, Collection&lt;AutoCloseable&gt; handlesToClose) &#123;</span><br><span class="line">      &#x2F;&#x2F; decrease the arena block size from default 8MB to 1MB. </span><br><span class="line">      return currentOptions.setArenaBlockSize(1024 * 1024);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  @Override</span><br><span class="line">  public OptionsFactory configure(ReadableConfig configuration) &#123;</span><br><span class="line">      return this;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="容量规划"><a href="#容量规划" class="headerlink" title="容量规划"></a>容量规划</h3><p>本节讨论如何确定 Flink 作业应该使用多少资源才能可靠运行.<br>容量规划的基本经验法则是:</p>
+<p>正常运行应有足够的能力,不会在恒定背压下运行.<br>有关如何检查应用程序是否在背压下运行的详细信息,请参阅背压监控.</p>
+<p>在无故障时间内无背压运行程序所需的资源之上提供一些额外资源.<br>需要这些资源来&quot;赶上&quot;在应用程序恢复期间积累的输入数据.<br>这应该是多少取决于恢复操作通常需要多长时间(这取决于需要在故障转移时加载到新 TaskManager 中的状态大小)以及场景需要故障恢复的速度.</p>
+<p>重要提示:应该在激活检查点的情况下建立基线,因为检查点会占用一些资源(例如网络带宽).</p>
+<p>临时背压通常是可以的,并且在负载峰值期间/追赶阶段或外部系统(写入接收器中)出现临时减速期间执行流控制的重要部分.</p>
+<p>某些操作(如大窗口)会导致其下游操作员的负载激增:在窗口的情况下,下游操作员可能在构建窗口时几乎无事可做,而在发出窗口时有负载可做.<br>下游并行性的规划需要考虑到窗口发出多少以及需要以多快的速度处理这种峰值.</p>
+<p>重要:为了允许以后添加资源,请确保将数据流程序的最大并行度设置为合理的数字.<br>最大并行度定义了在重新缩放程序时(通过保存点)可以设置程序并行度的高度.</p>
+<p>Flink 的内部簿记以 max-parallelism-many key groups的粒度跟踪并行状态.<br>Flink 的设计力求使最大并行度具有非常高的值变得高效,即使以低并行度执行程序也是如此.</p>
+<h3 id="压缩"><a href="#压缩" class="headerlink" title="压缩"></a>压缩</h3><p>Flink 为所有检查点和保存点提供可选的压缩(默认:关闭).<br>目前,压缩始终使用snappy 压缩算法(版本 1.1.4),但我们计划在未来支持自定义压缩算法.<br>压缩作用于键控状态的键组的粒度,即每个键组可以单独解压缩,这对于重新缩放很重要.</p>
+<p>可以通过以下方式激活压缩ExecutionConfig:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ExecutionConfig executionConfig &#x3D; new ExecutionConfig();</span><br><span class="line">executionConfig.setUseSnapshotCompression(true);</span><br></pre></td></tr></table></figure>
+
+<p>注意压缩选项对增量快照没有影响,因为它们使用的是 RocksDB 的内部格式,该格式始终使用开箱即用的 snappy 压缩.</p>
+<h3 id="任务本地恢复"><a href="#任务本地恢复" class="headerlink" title="任务本地恢复"></a>任务本地恢复</h3><h4 id="动机"><a href="#动机" class="headerlink" title="动机"></a>动机</h4><p>在 Flink 的检查点中,每个任务都会生成其状态的快照,然后将其写入分布式存储.<br>每个任务通过发送描述状态在分布式存储中的位置的句柄来向作业管理器确认状态的成功写入.<br>作业管理器反过来收集所有任务的句柄并将它们捆绑到一个检查点对象中.</p>
+<p>在恢复的情况下,作业管理器打开最新的检查点对象并将句柄发送回相应的任务,然后可以从分布式存储中恢复它们的状态.<br>使用分布式存储来存储状态有两个重要的优势.<br>首先,存储是容错的,其次,分布式存储中的所有状态都可以被所有节点访问,并且可以很容易地重新分配(例如用于重新缩放).</p>
+<p>但是,使用远程分布式存储也有一个很大的缺点:所有任务都必须通过网络从远程位置读取它们的状态.<br>在很多情况下,recovery 可以将失败的任务重新调度到与上次运行时相同的任务管理器(当然也有机器故障等例外),但我们仍然需要读取远程状态.<br>这可能导致大型状态的恢复时间很长,即使单台机器上只有一个小故障.</p>
+<h4 id="方法"><a href="#方法" class="headerlink" title="方法"></a>方法</h4><p>任务本地状态恢复正是针对这个恢复时间长的问题,其主要思想如下:对于每个检查点,每个任务不仅将任务状态写入分布式存储,而且还保留一份状态快照的二级副本.<br>任务本地的存储(例如在本地磁盘或内存中).<br>请注意,快照的主存储仍然必须是分布式存储,因为本地存储在节点故障下无法确保持久性,并且也不提供其他节点重新分配状态的访问权限,因此此功能仍然需要主副本.</p>
+<p>但是,对于每个可以重新调度到先前位置进行恢复的任务,我们可以从辅助的本地副本恢复状态,并避免远程读取状态的成本.<br>鉴于许多故障不是节点故障,并且节点故障通常一次只影响一个或很少的节点,因此在恢复过程中,大多数任务很可能可以返回到它们以前的位置并发现它们的本地状态完好无损.<br>这就是使本地恢复有效地减少恢复时间的原因.</p>
+<p>请注意,根据所选的状态后端和检查点策略,创建和存储辅助本地状态副本的每个检查点可能会产生一些额外费用.<br>例如,在大多数情况下,实现将简单地将分布式存储的写入复制到本地文件.</p>
+<img src="/images/flgl79.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="主要-分布式存储-和次要-任务本地-状态快照的关系"><a href="#主要-分布式存储-和次要-任务本地-状态快照的关系" class="headerlink" title="主要(分布式存储)和次要(任务本地)状态快照的关系"></a>主要(分布式存储)和次要(任务本地)状态快照的关系</h4><p>任务本地状态始终被视为辅助副本,检查点状态的基本事实是分布式存储中的主副本.<br>这对检查点和恢复期间的本地状态问题有影响:</p>
+<p>对于检查点,主副本必须成功,并且生成辅助本地副本的失败不会使检查点失败.<br>如果无法创建主副本,即使已成功创建辅助副本,检查点也会失败.</p>
+<p>只有主副本由作业管理器确认和管理,辅助副本由任务管理器拥有,并且它们的生命周期可以独立于它们的主副本.<br>例如,可以保留 3 个最新检查点的历史记录作为主副本,并且只保留最新检查点的任务本地状态.</p>
+<p>对于恢复,如果匹配的辅助副本可用,Flink 将始终首先尝试从任务本地状态恢复.<br>如果在从副本恢复过程中出现任何问题,Flink 会透明地重试从主副本恢复任务.<br>仅当主副本和(可选)辅助副本失败时,恢复才会失败.<br>在这种情况下,根据配置,Flink 仍可能回退到旧的检查点.</p>
+<p>任务本地副本可能仅包含完整任务状态的一部分(例如,写入一个本地文件时出现异常).<br>在这种情况下,Flink 会首先尝试在本地恢复本地部分,非本地状态从主副本恢复.<br>主状态必须始终是完整的,并且是任务本地状态的超集.</p>
+<p>任务本地状态可以具有与主状态不同的格式,它们不需要字节相同.<br>例如,任务本地状态甚至可能是由堆对象组成的内存中,而不是存储在任何文件中.</p>
+<p>如果任务管理器丢失,则其所有任务的本地状态都会丢失.</p>
+<h4 id="配置任务本地恢复"><a href="#配置任务本地恢复" class="headerlink" title="配置任务本地恢复"></a>配置任务本地恢复</h4><p>任务本地恢复默认是关闭的,可以通过 Flink 的配置state.backend.local-recovery使用CheckpointingOptions.LOCAL_RECOVERY. 此设置的值可以是true以启用或false(默认)以禁用本地恢复.</p>
+<p>请注意,未对齐的检查点当前不支持任务本地恢复.</p>
+<h4 id="不同状态后端的任务本地恢复的详细信息"><a href="#不同状态后端的任务本地恢复的详细信息" class="headerlink" title="不同状态后端的任务本地恢复的详细信息"></a>不同状态后端的任务本地恢复的详细信息</h4><p>限制:目前,任务本地恢复仅涵盖键控状态后端.<br>键控状态通常是该状态的最大部分.<br>在不久的将来,我们还将介绍操作员状态和计时器.</p>
+<p>以下状态后端可以支持任务本地恢复.</p>
+<p>FsStateBackend:键控状态支持任务本地恢复.<br>该实现会将状态复制到本地文件.<br>这会引入额外的写入成本并占用本地磁盘空间.<br>将来,我们可能还会提供一种将任务本地状态保存在内存中的实现.</p>
+<p>RocksDBStateBackend:支持键控状态的任务本地恢复.<br>对于完整的检查点,状态被复制到本地文件.<br>这会引入额外的写入成本并占用本地磁盘空间.<br>对于增量快照,本地状态基于 RocksDB 的原生检查点机制.<br>这种机制也被用作创建主副本的第一步,这意味着在这种情况下,创建辅助副本不会引入额外的成本.<br>我们只是保留本地检查点目录,而不是在上传到分布式存储后将其删除.<br>此本地副本可以与 RocksDB 的工作目录共享活动文件(通过硬链接),因此对于活动文件,增量快照的任务本地恢复也不会消耗额外的磁盘空间.<br>使用硬链接还意味着 RocksDB 目录必须与所有可用于存储本地状态的配置本地恢复目录位于同一物理设备上,否则建立硬链接可能会失败(参见 FLINK-10954).</p>
+<h4 id="分配保留调度"><a href="#分配保留调度" class="headerlink" title="分配保留调度"></a>分配保留调度</h4><p>任务本地恢复假设在故障下保留分配的任务调度,其工作原理如下.<br>每个任务都会记住其先前的分配并请求完全相同的插槽以重新启动恢复.<br>如果此槽不可用,任务将向资源管理器请求一个新的新槽.<br>这样,如果任务管理器不再可用,则无法返回其先前位置的任务将不会将其他正在恢复的任务赶出其先前的插槽.<br>我们的推理是,只有当任务管理器不再可用时,前一个插槽才会消失,在这种情况下,一些任务无论如何都必须请求一个新的插槽.<br>使用我们的调度策略,我们让最大数量的任务有机会从它们的本地状态中恢复,并避免任务从彼此之间窃取之前的插槽的级联效应.</p>
+<h2 id="Task-故障恢复"><a href="#Task-故障恢复" class="headerlink" title="Task 故障恢复"></a>Task 故障恢复</h2><p>当 Task 发生故障时,Flink 需要重启出错的 Task 以及其他受到影响的 Task ,以使得作业恢复到正常执行状态.</p>
+<p>Flink 通过重启策略和故障恢复策略来控制 Task 重启:<br>重启策略决定是否可以重启以及重启的间隔.<br>故障恢复策略决定哪些 Task 需要重启.</p>
+<h3 id="Restart-Strategies"><a href="#Restart-Strategies" class="headerlink" title="Restart Strategies"></a>Restart Strategies</h3><p>Flink 作业如果没有定义重启策略,则会遵循集群启动时加载的默认重启策略.<br>如果提交作业时设置了重启策略,该策略将覆盖掉集群的默认策略.</p>
+<p>通过 Flink 的配置文件 flink-conf.yaml 来设置默认的重启策略.<br>配置参数 restart-strategy 定义了采取何种策略.<br>如果没有启用 checkpoint,就采用&quot;不重启&quot;策略.<br>如果启用了 checkpoint 且没有配置重启策略,那么就采用固定延时重启策略, 此时最大尝试重启次数由 Integer.MAX_VALUE 参数设置.<br>下表列出了可用的重启策略和与其对应的配置值.</p>
+<p>每个重启策略都有自己的一组配置参数来控制其行为.<br>这些参数也在配置文件中设置.<br>后文的描述中会详细介绍每种重启策略的配置项.</p>
+<p>除了定义默认的重启策略以外,还可以为每个 Flink 作业单独定义重启策略.<br>这个重启策略通过在程序中的 StreamExecutionEnvironment 对象上调用 setRestartStrategy 方法来设置.<br>当然,对于 StreamExecutionEnvironment 也同样适用.</p>
+<p>下例展示了如何给我们的作业设置固定延时重启策略.<br>如果发生故障,系统会重启作业 3 次,每两次连续的重启尝试之间等待 10 秒钟.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">env.setRestartStrategy(RestartStrategies.fixedDelayRestart(</span><br><span class="line"> 3, &#x2F;&#x2F; 尝试重启的次数</span><br><span class="line"> Time.of(10, TimeUnit.SECONDS) &#x2F;&#x2F; 延时</span><br><span class="line">));</span><br></pre></td></tr></table></figure>
+
+<h4 id="Fixed-Delay-Restart-Strategy-固定延迟重启策略"><a href="#Fixed-Delay-Restart-Strategy-固定延迟重启策略" class="headerlink" title="Fixed Delay Restart Strategy(固定延迟重启策略)"></a>Fixed Delay Restart Strategy(固定延迟重启策略)</h4><p>固定延时重启策略按照给定的次数尝试重启作业.<br>如果尝试超过了给定的最大次数,作业将最终失败.<br>在连续的两次重启尝试之间,重启策略等待一段固定长度的时间.</p>
+<p>通过在 flink-conf.yaml 中设置如下配置参数,默认启用此策略.<br>restart-strategy: fixed-delay</p>
+<p>restart-strategy.fixed-delay.attempts<br>1 Integer<br>则在作业被声明为失败之前 Flink 重试执行的次数fixed-delay.</p>
+<p>restart-strategy.fixed-delay.delay<br>1 s Duration<br>则两次连续重新启动尝试之间的延迟fixed-delay.<br>当程序与外部系统交互时,延迟重试会很有帮助,例如连接或挂起的事务应该在尝试重新执行之前达到超时.<br>可以使用符号来指定:&quot;1 min&quot;/&quot;20 s&quot;.</p>
+<p>例如:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">restart-strategy.fixed-delay.attempts: 3</span><br><span class="line">restart-strategy.fixed-delay.delay: 10 s</span><br></pre></td></tr></table></figure>
+
+<p>固定延迟重启策略也可以在程序中设置:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">env.setRestartStrategy(RestartStrategies.fixedDelayRestart(</span><br><span class="line"> 3, &#x2F;&#x2F; 尝试重启的次数</span><br><span class="line"> Time.of(10, TimeUnit.SECONDS) &#x2F;&#x2F; 延时</span><br><span class="line">));</span><br></pre></td></tr></table></figure>
+
+<h4 id="Failure-Rate-Restart-Strategy-故障率重启策略"><a href="#Failure-Rate-Restart-Strategy-故障率重启策略" class="headerlink" title="Failure Rate Restart Strategy(故障率重启策略)"></a>Failure Rate Restart Strategy(故障率重启策略)</h4><p>故障率重启策略在故障发生之后重启作业,但是当故障率(每个时间间隔发生故障的次数)超过设定的限制时,作业会最终失败.<br>在连续的两次重启尝试之间,重启策略等待一段固定长度的时间.</p>
+<p>通过在 flink-conf.yaml 中设置如下配置参数,默认启用此策略.<br>restart-strategy: failure-rate</p>
+<p>restart-strategy.failure-rate.delay<br>1 s Duration<br>则两次连续重新启动尝试之间的延迟failure-rate,可以使用符号来指定.</p>
+<p>restart-strategy.failure-rate.failure-rate-interval<br>1 min Duration<br>测量故障率的时间间隔,可以使用符号来指定.</p>
+<p>restart-strategy.failure-rate.max-failures-per-interval<br>1 Integer<br>则在作业失败之前的给定时间间隔内的最大重新启动次数</p>
+<p>例如:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">restart-strategy.failure-rate.max-failures-per-interval: 3</span><br><span class="line">restart-strategy.failure-rate.failure-rate-interval: 5 min</span><br><span class="line">restart-strategy.failure-rate.delay: 10 s</span><br></pre></td></tr></table></figure>
+
+<p>故障率重启策略也可以在程序中设置:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">env.setRestartStrategy(RestartStrategies.failureRateRestart(</span><br><span class="line"> 3, &#x2F;&#x2F; 每个时间间隔的最大故障次数</span><br><span class="line"> Time.of(5, TimeUnit.MINUTES), &#x2F;&#x2F; 测量故障率的时间间隔</span><br><span class="line"> Time.of(10, TimeUnit.SECONDS) &#x2F;&#x2F; 延时</span><br><span class="line">));</span><br></pre></td></tr></table></figure>
+
+<h4 id="No-Restart-Strategy-无重启策略"><a href="#No-Restart-Strategy-无重启策略" class="headerlink" title="No Restart Strategy(无重启策略)"></a>No Restart Strategy(无重启策略)</h4><p>作业直接失败,不尝试重启.</p>
+<p>restart-strategy: none<br>不重启策略也可以在程序中设置:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">env.setRestartStrategy(RestartStrategies.noRestart());</span><br></pre></td></tr></table></figure>
+
+<h4 id="Fallback-Restart-Strategy-后备重启策略"><a href="#Fallback-Restart-Strategy-后备重启策略" class="headerlink" title="Fallback Restart Strategy(后备重启策略)"></a>Fallback Restart Strategy(后备重启策略)</h4><p>使用群集定义的重启策略.<br>这对于启用了 checkpoint 的流处理程序很有帮助.<br>如果没有定义其他重启策略,默认选择固定延时重启策略.</p>
+<h3 id="Failover-Strategies-故障转移策略"><a href="#Failover-Strategies-故障转移策略" class="headerlink" title="Failover Strategies(故障转移策略)"></a>Failover Strategies(故障转移策略)</h3><p>Flink 支持多种不同的故障恢复策略,该策略需要通过 Flink 配置文件 flink-conf.yaml 中的 jobmanager.execution.failover-strategy 配置项进行配置.<br>full/region</p>
+<h4 id="Restart-All-Failover-Strategy-重启所有故障转移策略"><a href="#Restart-All-Failover-Strategy-重启所有故障转移策略" class="headerlink" title="Restart All Failover Strategy(重启所有故障转移策略)"></a>Restart All Failover Strategy(重启所有故障转移策略)</h4><p>在全图重启故障恢复策略下,Task 发生故障时会重启作业中的所有 Task 进行故障恢复.</p>
+<h3 id="Restart-Pipelined-Region-Failover-Strategy-重启流水线区域故障转移策略"><a href="#Restart-Pipelined-Region-Failover-Strategy-重启流水线区域故障转移策略" class="headerlink" title="Restart Pipelined Region Failover Strategy(重启流水线区域故障转移策略)"></a>Restart Pipelined Region Failover Strategy(重启流水线区域故障转移策略)</h3><p>该策略会将作业中的所有 Task 划分为数个 Region.<br>当有 Task 发生故障时,它会尝试找出进行故障恢复需要重启的最小 Region 集合.<br>相比于全局重启故障恢复策略,这种策略在一些场景下的故障恢复需要重启的 Task 会更少.</p>
+<p>此处 Region 指以 Pipelined 形式进行数据交换的 Task 集合.<br>也就是说,Batch 形式的数据交换会构成 Region 的边界.</p>
+<ol>
+<li>DataStream 和 流式 Table/SQL 作业的所有数据交换都是 Pipelined 形式的.</li>
+<li>批处理式 Table/SQL 作业的所有数据交换默认都是 Batch 形式的.</li>
+<li>DataSet 作业中的数据交换形式会根据 ExecutionConfig 中配置的 ExecutionMode 决定.</li>
+</ol>
+<p>需要重启的 Region 的判断逻辑如下:</p>
+<ol>
+<li>出错 Task 所在 Region 需要重启.</li>
+<li>如果要重启的 Region 需要消费的数据有部分无法访问(丢失或损坏),产出该部分数据的 Region 也需要重启.</li>
+<li>需要重启的 Region 的下游 Region 也需要重启.<br>这是出于保障数据一致性的考虑,因为一些非确定性的计算或者分发会导致同一个 Result Partition 每次产生时包含的数据都不相同.</li>
+</ol>
+<h2 id="监控-Checkpoint"><a href="#监控-Checkpoint" class="headerlink" title="监控 Checkpoint"></a>监控 Checkpoint</h2><p>Flink 的 Web 界面提供了选项卡/标签(tab)来监视作业的 checkpoint 信息.<br>作业终止后,这些统计信息仍然可用.</p>
+<h3 id="概览-Overview-选项卡"><a href="#概览-Overview-选项卡" class="headerlink" title="概览(Overview)选项卡"></a>概览(Overview)选项卡</h3><p>概览选项卡列出了以下统计信息.<br>请注意,这些统计信息在 JobManager 丢失时无法保存,如果 JobManager 发生故障转移,这些统计信息将重置.</p>
+<ol>
+<li><p>Checkpoint Counts<br>Triggered:自作业开始以来触发的 checkpoint 总数.<br>In Progress:当前正在进行的 checkpoint 数量.<br>Completed:自作业开始以来成功完成的 checkpoint 总数.<br>Failed:自作业开始以来失败的 checkpoint 总数.<br>Restored:自作业开始以来进行的恢复操作的次数.<br>这还表示自 提交以来已重新启动多少次.<br>请注意,带有 savepoint 的初始提交也算作一次恢复,如果 JobManager 在此操作过程中丢失,则该统计将重新计数.</p>
+</li>
+<li><p>Latest Completed Checkpoint:最新(最近)成功完成的 checkpoint.<br>点击 More details 可以得到 subtask 级别的详细统计信息.</p>
+</li>
+<li><p>Latest Failed Checkpoint:最新失败的 checkpoint.<br>点击 More details 可以得到 subtask 级别的详细统计信息.</p>
+</li>
+<li><p>Latest Savepoint:最新触发的 savepoint 及其外部路径.<br>点击 More details 可以得到 subtask 级别的详细统计信息.</p>
+</li>
+<li><p>Latest Restore:有两种类型的恢复操作.<br>Restore from Checkpoint:从 checkpoint 恢复.<br>Restore from Savepoint:从 savepoint 恢复.</p>
+</li>
+</ol>
+<h3 id="历史记录-History-选项卡"><a href="#历史记录-History-选项卡" class="headerlink" title="历史记录(History)选项卡"></a>历史记录(History)选项卡</h3><p>Checkpoint 历史记录保存有关最近触发的 checkpoint 的统计信息,包括当前正在进行的 checkpoint.<br>注意,对于失败的 checkpoint,指标会尽最大努力进行更新,但是可能不准确.</p>
+<img src="/images/flgl80.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p><strong>ID</strong>:已触发 checkpoint 的 ID.每个 checkpoint 的 ID 都会递增,从 1 开始.<br><strong>Status</strong>:Checkpoint 的当前状态,可以是正在进行(In Progress)/已完成(Completed) 或失败(Failed)).<br>如果触发的检查点是一个保存点,你将看到一个 符号.</p>
+<p><strong>Acknowledged</strong>:已确认完成的子任务数量与总任务数量.<br><strong>Trigger Time</strong>:在 JobManager 上发起 checkpoint 的时间.<br><strong>Latest Acknowledgement</strong>:JobManager 接收到任何 subtask 的最新确认的时间(如果尚未收到确认,则不适用).</p>
+<p><strong>End to End Duration</strong>:从触发时间戳到最后一次确认的持续时间(如果还没有收到确认,则不适用).<br>完整 checkpoint 的端到端持续时间由确认 checkpoint 的最后一个 subtask 确定.<br>这个时间通常大于单个 subtask 实际 checkpoint state 所需的时间.</p>
+<p><strong>Checkpointed Data Size</strong>: 在此次checkpoint的sync以及async阶段中持久化的数据量.<br>如果启用了增量 checkpoint或者changelog,则此值可能会与全量checkpoint数据量产生区别.</p>
+<p><strong>Full Checkpoint Data Size</strong>: 所有已确认的 subtask 的 checkpoint 的全量数据大小.</p>
+<p><strong>Processed (persisted) in-flight data</strong>:在 checkpoint 对齐期间(从接收第一个和最后一个 checkpoint barrier 之间的时间)所有已确认的 subtask 处理/持久化 的大约字节数.<br>如果启用了 unaligned checkpoint,持久化的字节数可能会大于0.</p>
+<p>对于 subtask,有两个更详细的统计信息可用.</p>
+<img src="/images/flgl81.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p><strong>Sync Duration</strong>:Checkpoint 同步部分的持续时间.<br>这包括 operator 的快照状态,并阻塞 subtask 上的所有其他活动(处理记录/触发计时器等).</p>
+<p><strong>Async Duration</strong>:Checkpoint 的异步部分的持续时间.<br>这包括将 checkpoint 写入设置的文件系统所需的时间.<br>对于 unaligned checkpoint,这还包括 subtask 必须等待最后一个 checkpoint barrier 到达的时间(checkpoint alignment 持续时间)以及持久化数据所需的时间.</p>
+<p><strong>Alignment Duration</strong>:处理第一个和最后一个 checkpoint barrier 之间的时间.<br>对于 checkpoint alignment 机制的 checkpoint,在 checkpoint alignment 过程中,已经接收到 checkpoint barrier 的 channel 将阻塞并停止处理后续的数据.</p>
+<p><strong>Start Delay</strong>:从 checkpoint barrier 创建开始到 subtask 收到第一个 checkpoint barrier 所用的时间.</p>
+<p><strong>Unaligned Checkpoint</strong>:Checkpoint 完成的时候是否是一个 unaligned checkpoint.<br>在 alignment 超时的时候 aligned checkpoint 可以自动切换成 unaligned checkpoint.</p>
+<h4 id="历史记录数量配置"><a href="#历史记录数量配置" class="headerlink" title="历史记录数量配置"></a>历史记录数量配置</h4><p>你可以通过以下配置键配置历史记录所保存的最近检查点的数量.<br>默认值为 10.</p>
+<p>#保存最近 checkpoint 的个数<br>web.checkpoints.history: 15</p>
+<h3 id="摘要信息-Summary-选项卡"><a href="#摘要信息-Summary-选项卡" class="headerlink" title="摘要信息(Summary)选项卡"></a>摘要信息(Summary)选项卡</h3><p>摘要计算了所有已完成 checkpoint 的端到端持续时间/增量/全量Checkpoint 数据大小和 checkpoint alignment 期间缓冲的字节数的简单 min/average/maximum 统计信息(有关这些内容的详细信息,请参见 History).</p>
+<img src="/images/flgl82.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>请注意,这些统计信息不会在 JobManager 丢失后无法保存,如果 JobManager 故障转移,这些统计信息将重新计数.</p>
+<h3 id="配置信息-Configuration-选项卡"><a href="#配置信息-Configuration-选项卡" class="headerlink" title="配置信息(Configuration)选项卡"></a>配置信息(Configuration)选项卡</h3><p><strong>Checkpointing Mode</strong>:恰好一次(Exactly Once)或者至少一次(At least Once).</p>
+<p><strong>Interval</strong>:配置的 checkpoint 触发间隔.<br>在此间隔内触发 checkpoint.</p>
+<p><strong>Timeout</strong>:超时之后,JobManager 取消 checkpoint 并触发新的 checkpoint.</p>
+<p><strong>Minimum Pause Between Checkpoints</strong>:Checkpoint 之间所需的最小暂停时间.<br>Checkpoint 成功完成后,我们至少要等这段时间再触发下一个,这可能会延迟正常的间隔.</p>
+<p><strong>Maximum Concurrent Checkpoints</strong>:可以同时进行的最大 checkpoint 个数.</p>
+<p><strong>Persist Checkpoints Externally</strong>:启用或禁用持久化 checkpoint 到外部系统.<br>如果启用,还会列出外部化 checkpoint 的清理配置(取消时删除或保留).</p>
+<h3 id="Checkpoint-详细信息"><a href="#Checkpoint-详细信息" class="headerlink" title="Checkpoint 详细信息"></a>Checkpoint 详细信息</h3><p>当你点击某个 checkpoint 的 More details 链接时,你将获得其所有 operator 的 Minimum/Average/Maximum 摘要信息,以及每个 subtask 单独的详细量化信息.</p>
+<img src="/images/flgl83.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>每个 Operator 的摘要信息<br><img src="/images/flgl84.png" style="margin-left: 0px; padding-bottom: 10px;"></p>
+<p>所有 Subtask 的统计信息<br><img src="/images/flgl85.png" style="margin-left: 0px; padding-bottom: 10px;"></p>
+<h2 id="监控反压"><a href="#监控反压" class="headerlink" title="监控反压"></a>监控反压</h2><p>Flink Web 界面提供了一个选项卡来监控正在运行 jobs 的反压行为.</p>
+<h3 id="反压"><a href="#反压" class="headerlink" title="反压"></a>反压</h3><p>如果你看到一个 task 发生 反压警告(例如: High),意味着它生产数据的速率比下游 task 消费数据的速率要快.<br>在工作流中数据记录是从上游向下游流动的(例如:从 Source 到 Sink).<br>反压沿着相反的方向传播,沿着数据流向上游传播.</p>
+<p>以一个简单的 Source -&gt; Sink job 为例.<br>如果看到 Source 发生了警告,意味着 Sink 消费数据的速率比 Source 生产数据的速率要慢.<br>Sink 正在向上游的 Source 算子产生反压.</p>
+<h3 id="Task-性能指标"><a href="#Task-性能指标" class="headerlink" title="Task 性能指标"></a>Task 性能指标</h3><p>Task(SubTask)的每个并行实例都可以用三个一组的指标评价:</p>
+<ol>
+<li>backPressureTimeMsPerSecond,subtask 被反压的时间</li>
+<li>idleTimeMsPerSecond,subtask 等待某类处理的时间</li>
+<li>busyTimeMsPerSecond,subtask 实际工作时间 在任何时间点,这三个指标相加都约等于1000ms.</li>
+</ol>
+<p>这些指标每两秒更新一次,上报的值表示 subtask 在最近两秒被反压(或闲或忙)的平均时长.<br>当你的工作负荷是变化的时需要尤其引起注意.<br>比如,一个以恒定50%负载工作的 subtask 和另一个每秒钟在满负载和闲置切换的 subtask 的busyTimeMsPerSecond值相同,都是500ms.</p>
+<p>在内部,反压根据输出 buffers 的可用性来进行判断的.<br>如果一个 task 没有可用的输出 buffers,那么这个 task 就被认定是在被反压.<br>相反,如果有可用的输入,则可认定为闲置,</p>
+<h3 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h3><p>WebUI 集合了所有 subTasks 的反压和繁忙指标的最大值,并在 JobGraph 中将集合的值进行显示.<br>除了显示原始的数值,tasks 也用颜色进行了标记,使检查更加容易.</p>
+<img src="/images/flgl86.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>闲置的 tasks 为蓝色,完全被反压的 tasks 为黑色,完全繁忙的 tasks 被标记为红色.<br>中间的所有值都表示为这三种颜色之间的过渡色.</p>
+<h3 id="反压状态"><a href="#反压状态" class="headerlink" title="反压状态"></a>反压状态</h3><p>在 Job Overview 旁的 Back Pressure 选项卡中,你可以找到更多细节指标.</p>
+<img src="/images/flgl87.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>如果你看到 subtasks 的状态为 OK 表示没有反压.<br>HIGH 表示这个 subtask 被反压.<br>状态用如下定义:</p>
+<ol>
+<li>OK: 0% &lt;= 反压比例 &lt;= 10%</li>
+<li>LOW: 10% &lt; 反压比例 &lt;= 50%</li>
+<li>HIGH: 50% &lt; 反压比例 &lt;= 100%</li>
+</ol>
+<p>除此之外,你还可以找到每一个 subtask 被反压/闲置或是繁忙的时间百分比.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/flink/" rel="tag"># flink</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/19/flink%20datastream%20api/" rel="prev" title="flink datastream api">
+                  <i class="fa fa-chevron-left"></i> flink datastream api
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/19/flink%20datastream%20api-%E7%AE%97%E5%AD%90/" rel="next" title="flink datastream api-算子">
+                  flink datastream api-算子 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

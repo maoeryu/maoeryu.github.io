@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="RM负责整个集群的资源管理与调度.Nodemanager(NM)负责单个节点的资源管理与调度.NM定时的通过心跳的形式与RM进行通信,报告节点的健康状态与内存使用情况.AM通过与RM交互获取资源,然后然后通过与NM交互,启动计算任务.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="yarn模块介绍">
+<meta property="og:url" content="https://maoeryu.github.io/2022/07/27/yarn%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="RM负责整个集群的资源管理与调度.Nodemanager(NM)负责单个节点的资源管理与调度.NM定时的通过心跳的形式与RM进行通信,报告节点的健康状态与内存使用情况.AM通过与RM交互获取资源,然后然后通过与NM交互,启动计算任务.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/yarn1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl99.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl100.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hadoop2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hadoop3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hadoop4.png">
+<meta property="article:published_time" content="2022-07-26T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-08T03:31:41.738Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hadoop">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/yarn1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/07/27/yarn%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>yarn模块介绍 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ResourceManager"><span class="nav-number">1.1.</span> <span class="nav-text">ResourceManager</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NodeManager"><span class="nav-number">1.2.</span> <span class="nav-text">NodeManager</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ApplicationMaster"><span class="nav-number">1.3.</span> <span class="nav-text">ApplicationMaster</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Container"><span class="nav-number">1.4.</span> <span class="nav-text">Container</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#yarn%E8%BF%90%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">yarn运行流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mapreduce%E8%AF%A6%E8%A7%A3"><span class="nav-number">3.</span> <span class="nav-text">mapreduce详解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="nav-number">3.1.</span> <span class="nav-text">运行流程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%9C%E4%B8%9A%E7%9A%84%E6%8F%90%E4%BA%A4"><span class="nav-number">3.1.1.</span> <span class="nav-text">作业的提交</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%9C%E4%B8%9A%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-number">3.1.2.</span> <span class="nav-text">作业的初始化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%9C%E4%B8%9A%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%86%E9%85%8D"><span class="nav-number">3.1.3.</span> <span class="nav-text">作业任务的分配</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%9C%E4%B8%9A%E4%BB%BB%E5%8A%A1%E7%9A%84%E6%89%A7%E8%A1%8C"><span class="nav-number">3.1.4.</span> <span class="nav-text">作业任务的执行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%9C%E4%B8%9A%E4%BB%BB%E5%8A%A1%E7%9A%84%E7%8A%B6%E6%80%81%E6%9B%B4%E6%96%B0"><span class="nav-number">3.1.5.</span> <span class="nav-text">作业任务的状态更新</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%9C%E4%B8%9A%E7%9A%84%E5%AE%8C%E6%88%90"><span class="nav-number">3.1.6.</span> <span class="nav-text">作业的完成</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#shuffle%E8%BF%87%E7%A8%8B"><span class="nav-number">3.2.</span> <span class="nav-text">shuffle过程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#map%E7%AB%AF"><span class="nav-number">3.2.1.</span> <span class="nav-text">map端</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%BE%93%E5%85%A5"><span class="nav-number">3.2.1.1.</span> <span class="nav-text">输入</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Partition"><span class="nav-number">3.2.1.2.</span> <span class="nav-text">Partition</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#sort-combiner"><span class="nav-number">3.2.1.3.</span> <span class="nav-text">sort&#x2F;combiner</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#combine"><span class="nav-number">3.2.1.3.1.</span> <span class="nav-text">combine</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#merge"><span class="nav-number">3.2.1.4.</span> <span class="nav-text">merge</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%BC%93%E5%86%B2%E5%8C%BA"><span class="nav-number">3.2.1.5.</span> <span class="nav-text">内存缓冲区</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#reduce%E7%AB%AF"><span class="nav-number">3.2.2.</span> <span class="nav-text">reduce端</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#copy%E8%BF%87%E7%A8%8B"><span class="nav-number">3.2.2.1.</span> <span class="nav-text">copy过程</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%BC%93%E5%86%B2%E5%8C%BA-1"><span class="nav-number">3.2.2.1.1.</span> <span class="nav-text">内存缓冲区</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#merge%E8%BF%87%E7%A8%8B"><span class="nav-number">3.2.2.2.</span> <span class="nav-text">merge过程</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#reducer%E7%9A%84%E8%BE%93%E5%85%A5%E6%96%87%E4%BB%B6"><span class="nav-number">3.2.2.3.</span> <span class="nav-text">reducer的输入文件</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E8%B5%84%E6%BA%90%E9%85%8D%E7%BD%AE"><span class="nav-number">4.</span> <span class="nav-text">内存资源配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RM"><span class="nav-number">4.1.</span> <span class="nav-text">RM</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NM"><span class="nav-number">4.2.</span> <span class="nav-text">NM</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AM"><span class="nav-number">4.3.</span> <span class="nav-text">AM</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">4.4.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/07/27/yarn%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          yarn模块介绍
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-07-27 00:00:00" itemprop="dateCreated datePublished" datetime="2022-07-27T00:00:00+08:00">2022-07-27</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-08 11:31:41" itemprop="dateModified" datetime="2022-09-08T11:31:41+08:00">2022-09-08</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>RM负责整个集群的资源管理与调度.<br>Nodemanager(NM)负责单个节点的资源管理与调度.<br>NM定时的通过心跳的形式与RM进行通信,报告节点的健康状态与内存使用情况.<br>AM通过与RM交互获取资源,然后然后通过与NM交互,启动计算任务.</p>
+<span id="more"></span>
+
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>YARN是一个资源管理/任务调度的框架,主要包含三大模块:<br>ResourceManager(RM)<br>NodeManager(NM)<br>ApplicationMaster(AM)</p>
+<p>1)ResourceManager<br>负责所有资源的监控/分配和管理.<br>集群资源的仲裁者,它包括两部分:一个是可插拔式的调度Scheduler,一个是ApplicationManager,用于管理集群中的用户作业.<br>2)ApplicationMaster<br>负责每一个具体应用程序的调度和协调.<br>用户作业生命周期的管理者它的主要功能就是向ResourceManager(全局的)申请计算资源(Containers)并且和NodeManager交互来执行和监控具体的task.<br>3)NodeManager<br>负责每一个节点的维护.<br>每个节点上的NodeManager,管理该节点上的用户作业和工作流,也会不断发送自己Container使用情况给ResourceManager.</p>
+<p>对于所有的applications,RM拥有绝对的控制权和对资源的分配权.而每个AM则会和RM协商资源,同时和NodeManager通信来执行和监控task.</p>
+<img src="/images/yarn1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="ResourceManager"><a href="#ResourceManager" class="headerlink" title="ResourceManager"></a>ResourceManager</h3><p>ResourceManager负责整个集群的资源管理和分配,是一个全局的资源管理系统.<br>NodeManager以心跳的方式向ResourceManager汇报资源使用情况(目前主要是CPU和内存的使用情况).<br>RM只接受NM的资源回报信息,对于具体的资源处理则交给NM自己处理.<br>YARN Scheduler根据application的请求为其分配资源,不负责application job的监控/追踪/运行状态反馈/启动等工作.</p>
+<ol>
+<li>与客户端交互,处理来自客户端的请求</li>
+<li>启动和管理ApplicationMaster,并在它运行失败时重新启动它</li>
+<li>管理NodeManager,接收来自NodeManager的资源汇报信息,并向NodeManager下达管理指令</li>
+<li>资源管理与调度,接收来自ApplicationMaster的资源申请请求,并为之分配资源</li>
+</ol>
+<p>关键配置参数,在yarn-sit.xml中配置,<br>最小容器内存: yarn.scheduler.minimum-allocation-mb<br>容器内存增量: yarn.scheduler.increment-allocation-mb<br>最大容器内存: yarn.scheduler.maximum-allocation-mb<br>最小容器虚拟CPU内核数量: yarn.scheduler.minimum-allocation-vcores<br>容器虚拟CPU内核增量: yarn.scheduler.increment-allocation-vcores<br>最大容器虚拟CPU内核数量: yarn.scheduler.maximum-allocation-vcores<br>ResourceManager Web应用程序HTTP端口: yarn.resourcemanager.webapp.address</p>
+<h3 id="NodeManager"><a href="#NodeManager" class="headerlink" title="NodeManager"></a>NodeManager</h3><p>YARN中每个节点上的代理,它管理Hadoop集群中单个计算节点,包括:</p>
+<ol>
+<li>启动和监视节点上的计算容器(Container)</li>
+<li>以心跳的形式向RM汇报本节点上的资源使用情况和各个Container的运行状态(CPU和内存等资源)</li>
+<li>接收并处理来自AM的Container启动/停止等各种请求</li>
+</ol>
+<p>关键配置参数,在yarn-sit.xml中配置,<br>节点内存: yarn.nodemanager.resource.memory-mb<br>节点虚拟CPU内核: yarn.nodemanager.resource.cpu-vcores<br>NodeManager Web应用程序HTTP端口: yarn.nodemanager.webapp.address</p>
+<h3 id="ApplicationMaster"><a href="#ApplicationMaster" class="headerlink" title="ApplicationMaster"></a>ApplicationMaster</h3><p>应用程序级别的,管理运行在YARN上的应用程序,包括:</p>
+<ol>
+<li>用户提交的每个应用程序均包含一个ApplicationMaster,它可以运行在ResourceManager以外的机器上.</li>
+<li>负责与RM调度器协商以获取资源(用Container表示).</li>
+<li>将得到的任务进一步分配给内部的任务(资源的二次分配).</li>
+<li>与NM通信以启动/停止任务.</li>
+<li>监控所有任务运行状态,并在任务运行失败时重新为任务申请资源以重启任务.</li>
+</ol>
+<p>关键配置参数,在yarn-sit.xml中配置,<br>ApplicationMaster最大尝试次数: yarn.resourcemanager.am.max-attempts<br>ApplicationMaster监控过期: yarn.am.liveness-monitor.expiry-interval-ms</p>
+<p>当前YARN自带了两个ApplicationMaster实现,一个是用于演示AM编写方法的实例程序DistributedShell,它可以申请一定数目的Container以并行运行一个Shell命令或者Shell脚本.另一个是运行MapReduce应用程序的AM—MRAppMaster.</p>
+<blockquote>
+<p>RM只负责监控AM,并在AM运行失败时候启动它.<br>RM不负责AM内部任务的容错,任务的容错由AM完成.</p>
+</blockquote>
+<h3 id="Container"><a href="#Container" class="headerlink" title="Container"></a>Container</h3><p>Container是YARN中资源的抽象,它封装了某个节点上的多维度资源,如内存/CPU/磁盘/网络等.<br>Container由AM向RM申请的,由RM中的资源调度器异步分配给AM.<br>Container的运行是由AM向资源所在的NM发起.</p>
+<p>一个应用程序所需的Container分为两大类:</p>
+<ol>
+<li>运行AM的Container:这是由RM(向内部的资源调度器)申请和启动的,用户提交应用程序时,可指定唯一的AM所需的资源.</li>
+<li>运行各类任务的Container:这是由AM向RM申请的,并由AM与NM通信以启动之.</li>
+</ol>
+<p>以上两类Container可能在任意节点上,它们的位置通常而言是随机的,即AM可能与它管理的任务运行在一个节点上.</p>
+<h2 id="yarn运行流程"><a href="#yarn运行流程" class="headerlink" title="yarn运行流程"></a>yarn运行流程</h2><img src="/images/flgl99.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<ol>
+<li>客户端程序向ResourceManager提交应用并请求一个ApplicationMaster实例,ResourceManager在应答中给出一个applicationID以及有助于客户端请求资源的资源容量信息.</li>
+<li>ResourceManager找到可以运行一个Container的NodeManager,并在这个Container中启动ApplicationMaster实例.</li>
+<li>Application Submission Context发出响应,其中包含有:ApplicationID,用户名,队列以及其他启动ApplicationMaster的信息,Container Launch Context(CLC)也会发给ResourceManager,CLC提供了资源的需求,作业文件,安全令牌以及在节点启动ApplicationMaster所需要的其他信息.</li>
+<li>当ResourceManager接收到客户端提交的上下文,就会给ApplicationMaster调度一个可用的container(通常称为container0).<br>然后ResourceManager就会联系NodeManager启动ApplicationMaster,并建立ApplicationMaster的RPC端口和用于跟踪的URL,用来监控应用程序的状态.</li>
+<li>ApplicationMaster向ResourceManager进行注册,注册之后客户端就可以查询ResourceManager获得自己ApplicationMaster的详细信息,以后就可以和自己的ApplicationMaster直接交互了.<br>在注册响应中,ResourceManager会发送关于集群最大和最小容量信息.</li>
+<li>在平常的操作过程中,ApplicationMaster根据resource-request协议向ResourceManager发送resource-request请求,ResourceManager会根据调度策略尽可能最优的为ApplicationMaster分配container资源,作为资源请求的应答发个ApplicationMaster.</li>
+<li>当Container被成功分配之后,ApplicationMaster通过向NodeManager发送container-launch-specification信息来启动Container, container-launch-specification信息包含了能够让Container和ApplicationMaster交流所需要的资料,一旦container启动成功之后,ApplicationMaster就可以检查他们的状态,Resourcemanager不在参与程序的执行,只处理调度和监控其他资源,Resourcemanager可以命令NodeManager杀死container.</li>
+<li>应用程序的代码在启动的Container中运行,并把运行的进度/状态等信息通过application-specific协议发送给ApplicationMaster,随着作业的执行,ApplicationMaster将心跳和进度信息发给ResourceManager,在这些心跳信息中,ApplicationMaster还可以请求和释放一些container.</li>
+<li>在应用程序运行期间,提交应用的客户端主动和ApplicationMaster交流获得应用的运行状态/进度更新等信息,交流的协议也是application-specific协议.</li>
+<li>一但应用程序执行完成并且所有相关工作也已经完成,ApplicationMaster向ResourceManager取消注册然后关闭,用到所有的Container也归还给系统,当container被杀死或者回收,Resourcemanager都会通知NodeManager聚合日志并清理container专用的文件.</li>
+</ol>
+<h2 id="mapreduce详解"><a href="#mapreduce详解" class="headerlink" title="mapreduce详解"></a>mapreduce详解</h2><h3 id="运行流程"><a href="#运行流程" class="headerlink" title="运行流程"></a>运行流程</h3><p>作业的提交-作业的初始化-作业任务的分配-作业任务的执行-作业执行状态更新-作业完成</p>
+<img src="/images/flgl100.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="作业的提交"><a href="#作业的提交" class="headerlink" title="作业的提交"></a>作业的提交</h4><p>在MR的代码中调用waitForCompletion()方法,里面封装了Job.submit()方法,而Job.submit()方法里面会创建一个JobSubmmiter对象.<br>当我们在waitForCompletion(true)时,则waitForCompletion方法会每秒轮询作业的执行进度,如果发现与上次查询到的状态有差别,则将详情打印到控制台.<br>如果作业执行成功,就显示作业计数器,否则将导致作业失败的记录输出到控制台.</p>
+<p>其中JobSubmmiter实现的大概过程如下:</p>
+<ol>
+<li>向资源管理器resourcemanager提交申请,用于一个mapreduce作业ID</li>
+<li>检查作业的输出配置,判断目录是否已经存在等信息</li>
+<li>计算作业的输入分片的大小</li>
+<li>将运行作业的jar/配置文件/输入分片的计算资源复制到一个以作业ID命名的hdfs临时目录下,作业jar的复本比较多,默认为10个(<code>mapreduce.client.submit.file.replication</code>,mapred-site.xml配置)</li>
+<li>通过资源管理器的submitApplication方法提交作业</li>
+</ol>
+<h4 id="作业的初始化"><a href="#作业的初始化" class="headerlink" title="作业的初始化"></a>作业的初始化</h4><ol>
+<li>当资源管理器通过方法submitApplication方法被调用后,便将请求传给了yarn的调度器,然后调度器在一个节点管理器上分配一个容器(container0)用来启动application master(主类是MRAppMaster)进程.<br>该进程一旦启动就会向resourcemanager注册并报告自己的信息,application master并且可以监控map和reduce的运行状态.<br>因此application master对作业的初始化是通过创建多个对象以保持对作业进度的跟踪.</li>
+<li>application master接收作业提交时的hdfs临时共享目录中的资源文件,jar,分片信息,配置信息等.<br>并对每一个分片创建一个map对象,以及通过<code>mapreduce.job.reduces</code>参数(作业通过setNumReduceTasks()方法设定)确定reduce的数量.</li>
+<li>application master会判断是否使用uber(作业与application master在同一个jvm运行,也就是maptask和reducetask运行在同一个节点上)模式运行作业,uber模式运行条件:map数量小于10个,1个reduce,且输入数据小于一个hdfs块.<br>mapred-site.xml,可以通过如下参数配置:<br>mapreduce.job.ubertask.enable   #是否启用uber模式<br>mapreduce.job.ubertask.maxmaps   #ubertask的最大map数<br>mapreduce.job.ubertask.maxreduces #ubertask的最大reduce数<br>mapreduce.job.ubertask.maxbytes #ubertask最大作业大小</li>
+<li>application master调用setupJob方法设置OutputCommiter,FileOutputCommiter为默认值,表示建立做的最终输出目录和任务输出的临时工作空间</li>
+</ol>
+<h4 id="作业任务的分配"><a href="#作业任务的分配" class="headerlink" title="作业任务的分配"></a>作业任务的分配</h4><ol>
+<li>在application master判断作业不符合uber模式的情况下,那么application master则会向资源管理器为map和reduce任务申请资源容器.</li>
+<li>首先就是为map任务发出资源申请请求,直到有5%的map任务完成时,才会为reduce任务所需资源申请发出请求.</li>
+<li>在任务的分配过程中,reduce任务可以在任何的datanode节点运行,但是map任务执行的时候需要考虑到数据本地化的机制,在给任务指定资源的时候每个map和reduce默认为1G内存.<br>mapred-site.xml,可以通过如下参数配置:<br>mapreduce.map.memory.mb<br>mapreduce.map.cpu.vcores<br>mapreduce.reduce.memory.mb<br>mapreduce.reduce.cpu.vcores</li>
+</ol>
+<h4 id="作业任务的执行"><a href="#作业任务的执行" class="headerlink" title="作业任务的执行"></a>作业任务的执行</h4><p>application master提交申请后,资源管理器为其按需分配资源,这时,application master就与节点管理器通信来启动容器.<br>该任务由主类YarnChild的一个java应用程序执行.<br>在运行任务之前,首先将所需的资源进行本地化,包括作业的配置/jar文件等.<br>接下来就是运行map和reduce任务.<br>YarnChild在单独的JVM中运行.</p>
+<h4 id="作业任务的状态更新"><a href="#作业任务的状态更新" class="headerlink" title="作业任务的状态更新"></a>作业任务的状态更新</h4><p>每个作业和它的每个任务都有一个状态:作业或者任务的状态(运行中/成功/失败等),map和reduce的进度,作业计数器的值,状态消息或描述当作业处于正在运行中的时候,客户端可以直接与application master通信,每秒(<br><code>mapreduce.client.progressmonitor.pollinterval</code>)轮询作业的执行状态,进度等信息.</p>
+<h4 id="作业的完成"><a href="#作业的完成" class="headerlink" title="作业的完成"></a>作业的完成</h4><ol>
+<li>当application master收到最后一个任务已完成的通知,便把作业的状态设置为成功.</li>
+<li>在job轮询作业状态时,知道任务已经完成,然后打印消息告知用户,并从waitForCompletion()方法返回.</li>
+<li>当作业完成时,application master和container会清理中间数据结果等临时问题.<br>OutputCommiter的commitJob()方法被调用,作业信息由作业历史服务存档,以便用户日后查询.</li>
+</ol>
+<h3 id="shuffle过程"><a href="#shuffle过程" class="headerlink" title="shuffle过程"></a>shuffle过程</h3><p>mapreduce确保每个reduce的输入都是按照键值排序的,系统执行排序,将map的输入作为reduce的输入过程称之为shuffle过程.</p>
+<p>Map:数据输入,做初步的处理,输出形式的中间结果;<br>Shuffle:按照partition/key对中间结果进行排序合并,输出给reduce线程;<br>Reduce:对相同key的输入进行最终的处理,并将结果写入到文件中;</p>
+<img src="/images/hadoop2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="map端"><a href="#map端" class="headerlink" title="map端"></a>map端</h4><p>在生成map之前,会计算文件分片的大小.<br>然后会根据分片的大小计算map的个数,对每一个分片都会产生一个map作业,或者是一个文件(小于<code>分片大小*1.1</code>)生成一个map作业,然后通过自定的map方法进行自定义的逻辑计算,计算完毕后会写到本地磁盘.</p>
+<p>在这里不是直接写入磁盘,为了保证IO效率,采用了先写入内存的环形缓冲区,并做一次预排序(快速排序).<br>缓冲区的大小默认为100MB(<code>mapreduce.task.io.sort.mb</code>).<br>当写入内存缓冲区的大小到达一定比例时,默认为80%(<code>mapreduce.map.sort.spill.percent</code>),将启动一个溢写线程将内存缓冲区的内容溢写到磁盘(spill to disk),这个溢写线程是独立的,不影响map向缓冲区写结果的线程,在溢写到磁盘的过程中,map继续输入到缓冲中,如果期间缓冲区被填满,则map写会被阻塞到溢写磁盘过程完成.<br>溢写是通过轮询的方式将缓冲区中的内存写入到本地<code>mapreduce.cluster.local.dir</code>目录下.<br>在溢写到磁盘之前,我们会知道reduce的数量,然后会根据reduce的数量划分分区,默认根据hashpartition对溢写的数据写入到相对应的分区.<br>在每个分区中,后台线程会根据key进行排序,所以溢写到磁盘的文件是分区且排序的.<br>如果有combiner函数,它在排序后的输出运行,使得map输出更紧凑.<br>减少写到磁盘的数据和传输给reduce的数据.</p>
+<p>每次环形换冲区的内存达到阈值时,就会溢写到一个新的文件,因此当一个map溢写完之后,本地会存在多个分区切排序的文件.<br>在map完成之前会把这些文件合并成一个分区且排序(归并排序)的文件,可以通过参数<code>mapreduce.task.io.sort.factor</code>控制每次可以合并多少个文件.</p>
+<p>在map溢写磁盘的过程中,对数据进行压缩可以提交速度的传输,减少磁盘io,减少存储.<br>默认情况下不压缩,使用参数<code>mapreduce.map.output.compress</code>控制,压缩算法使用<code>mapreduce.map.output.compress.codec</code>参数控制.</p>
+<img src="/images/hadoop3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h5 id="输入"><a href="#输入" class="headerlink" title="输入"></a>输入</h5><p>1.map task只读取split分片,split与block(hdfs的最小存储单位,默认为64MB)可能是一对一也能是一对多,但是对于一个split只会对应一个文件的一个block或多个block,不允许一个split对应多个文件的多个block.<br>2.这里切分和输入数据的时会涉及到InputFormat的文件切分算法和host选择算法.</p>
+<p>文件切分算法,主要用于确定InputSplit的个数以及每个InputSplit对应的数据段.<br>FileInputFormat以文件为单位切分生成InputSplit,对于每个文件,由以下三个属性值决定其对应的InputSplit的个数:</p>
+<p><code>goalSize</code><br>它是根据用户期望的InputSplit数目计算出来的,即totalSize/numSplits.<br>其中,totalSize为文件的总大小,numSplits为用户设定的Map Task个数,默认情况下是1.</p>
+<p><code>minSize</code><br>InputSplit的最小值,由配置参数<code>mapred.min.split.size</code>确定,默认是1.</p>
+<p><code>blockSize</code><br>文件在hdfs中存储的block大小,不同文件可能不同,默认是64MB.</p>
+<p>这三个参数共同决定InputSplit的最终大小,计算方法如下:<br><code>splitSize=max&#123;minSize,min&#123;gogalSize,blockSize&#125;&#125;</code></p>
+<h5 id="Partition"><a href="#Partition" class="headerlink" title="Partition"></a>Partition</h5><p>将map的结果发送到相应的reduce端,总的partition的数目等于reducer的数量.</p>
+<blockquote>
+<p>实现功能</p>
+</blockquote>
+<p>map输出的是key/value对,决定于当前的mapper的part交给哪个reduce的方法是mapreduce提供的Partitioner接口,对key进行hash后,再以reducetask数量取模,然后到指定的job上(HashPartitioner,可以通过job.setPartitionerClass(MyPartition.class)自定义).<br>然后将数据写入到内存缓冲区,缓冲区的作用是批量收集map结果,减少磁盘IO的影响.<br>key/value对以及Partition的结果都会被写入缓冲区.<br>在写入之前,key与value值都会被序列化成字节数组.</p>
+<h5 id="sort-combiner"><a href="#sort-combiner" class="headerlink" title="sort/combiner"></a>sort/combiner</h5><p>把内存缓冲区中的数据写入到本地磁盘,在写入本地磁盘时先按照partition,再按照key进行排序(quick sort).</p>
+<p>这个(溢写)是由另外单独的线程来完成,不影响往缓冲区写map结果的线程.<br>内存缓冲区默认大小限制为100MB,它有个溢写比例(spill.percent),默认为0.8.<br>当缓冲区的数据达到阈值时,溢写线程就会启动,先锁定这80MB的内存,执行溢写过程,maptask的输出结果还可以往剩下的20MB内存中写,互不影响.<br>然后再重新利用这块缓冲区,因此Map的内存缓冲区又叫做环形缓冲区.<br>在将数据写入磁盘之前,先要对要写入磁盘的数据进行一次排序操作,先按<code>&lt;key,value,partition&gt;</code>中的partition分区号排序,然后再按key排序,这个就是sort操作.<br>最后溢出的小文件是分区的,且同一个分区内是保证key有序的.</p>
+<h6 id="combine"><a href="#combine" class="headerlink" title="combine"></a>combine</h6><p>执行combine操作要求开发者必须在程序中设置了combine(程序中通过job.setCombinerClass(myCombine.class)自定义combine操作).</p>
+<p>程序中有两个阶段可能会执行combine操作:<br>map输出数据根据分区排序完成后,在写入文件之前会执行一次combine操作(前提是作业中设置了这个操作).<br>如果map输出比较大,溢出文件个数大于3(此值可以通过属性<code>min.num.spills.for.combine</code>配置)时,在merge的过程(多个spill文件合并为一个大文件)中还会执行combine操作.</p>
+<p>combine主要是把形如<code>&lt;aa,1&gt;,&lt;aa,2&gt;</code>这样的key值相同的数据进行计算,计算规则与reduce一致.<br>比如,当前计算是求key对应的值求和,则combine操作后得到<code>&lt;aa,3&gt;</code>这样的结果.</p>
+<p>不是每种作业都可以做combine操作的,只有满足以下条件才可以:<br>reduce的输入输出类型都一样,因为combine本质上就是reduce操作.<br>计算逻辑上,combine操作后不会影响计算结果,像求和就不会影响.</p>
+<h5 id="merge"><a href="#merge" class="headerlink" title="merge"></a>merge</h5><p>当map很大时,每次溢写会产生一个spill_file,这样会有多个spill_file,而最终的一个map task输出只有一个文件.<br>因此,最终的结果输出之前会对多个中间过程进行多次溢写文件(spill_file)的合并,此过程就是merge过程.<br>也即是,待Map Task任务的所有数据都处理完后,会对任务产生的所有中间数据文件做一次合并操作,以确保一个Map Task最终只生成一个中间数据文件.</p>
+<p>如果生成的文件太多,可能会执行多次合并,每次最多能合并的文件数默认为10,可以通过属性<code>min.num.spills.for.combine</code>配置.<br>多个溢出文件合并时,会进行一次排序,排序算法是多路归并排序.<br>是否还需要做combine操作,一是看是否设置了combine,二是看溢出的文件数是否大于等于3.<br>最终生成的文件格式与单个溢出文件一致,也是按分区顺序存储,并且输出文件会有一个对应的索引文件,记录每个分区数据的起始位置,长度以及压缩长度,这个索引文件名叫做file.out.index.</p>
+<h5 id="内存缓冲区"><a href="#内存缓冲区" class="headerlink" title="内存缓冲区"></a>内存缓冲区</h5><p>在Map Task任务的业务处理方法map()中,最后一步通过OutputCollector.collect(key,value)或context.write(key,value)输出Map Task的中间处理结果.<br>在相关的collect(key,value)方法中,会调用Partitioner.getPartition(K2 key,V2 value,int numPartitions)方法获得输出的key/value对应的分区号(分区号可以认为对应着一个要执行Reduce Task的节点),然后将<code>&lt;key,value,partition&gt;</code>暂时保存在内存中的MapOutputBuffe内部的环形数据缓冲区,该缓冲区的默认大小是100MB,可以通过参数io.sort.mb来调整其大小.<br>当缓冲区中的数据使用率达到一定阀值后,触发一次Spill操作,将环形缓冲区中的部分数据写到磁盘上,生成一个临时的Linux本地数据的spill文件.然后在缓冲区的使用率再次达到阀值后,再次生成一个spill文件.直到数据处理完毕,在磁盘上会生成很多的临时文件.<br>缓存有一个阀值比例配置,当达到整个缓存的这个比例时,会触发spill操作.触发时,map输出还会接着往剩下的空间写入,但是写满的空间会被锁定,数据溢出写入磁盘.当这部分溢出的数据写完后,空出的内存空间可以接着被使用,形成像环一样的被循环使用的效果,所以又叫做环形内存缓冲区.<br>MapOutputBuffe内部存数的数据采用了两个索引结构,涉及三个环形内存缓冲区.</p>
+<h4 id="reduce端"><a href="#reduce端" class="headerlink" title="reduce端"></a>reduce端</h4><p>map任务完成后,监控作业状态的application master便知道map的执行情况,并启动reduce任务,application master并且知道map输出和主机之间的对应映射关系,reduce轮询application master便知道主机所要复制的数据.</p>
+<p>一个Map任务的输出,可能被多个Reduce任务抓取.<br>每个Reduce任务可能需要多个Map任务的输出作为其特殊的输入文件,而每个Map任务的完成时间可能不同,当有一个Map任务完成时,Reduce任务就开始运行.<br>Reduce任务根据分区号在多个Map输出中抓取(fetch)对应分区的数据,这个过程也就是Shuffle的copy过程.<br>reduce有少量的复制线程,因此能够并行的复制map的输出,默认为5个线程.<br>可以通过参数<code>mapreduce.reduce.shuffle.parallelcopies</code>控制.</p>
+<p>这个复制过程和map写入磁盘过程类似,也有阀值和内存大小,阀值一样可以在配置文件里配置,而内存大小是直接使用reduce的tasktracker的内存大小,复制时候reduce还会进行排序操作和合并文件操作.</p>
+<p>如果map输出很小,则会被复制到Reducer所在节点的内存缓冲区,缓冲区的大小可以通过mapred-site.xml文件中的<code>mapreduce.reduce.shuffle.input.buffer.percent</code>指定.<br>一旦Reducer所在节点的内存缓冲区达到阀值,或者缓冲区中的文件数达到阀值,则合并溢写到磁盘.</p>
+<p>如果map输出较大,则直接被复制到Reducer所在节点的磁盘中.<br>随着Reducer所在节点的磁盘中溢写文件增多,后台线程会将它们合并为更大且有序的文件.<br>当完成复制map输出,进入sort阶段.<br>这个阶段通过归并排序逐步将多个map输出小文件合并成大文件.<br>最后几个通过归并合并成的大文件作为reduce的输出.</p>
+<img src="/images/hadoop4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h5 id="copy过程"><a href="#copy过程" class="headerlink" title="copy过程"></a>copy过程</h5><p>拉取数据.</p>
+<p>Reduce进程启动一些数据copy线程(Fetcher),通过HTTP方式请求map task所在的TaskTracker获取map task的输出文件.<br>因为这时map task早已结束,这些文件就归TaskTracker管理在本地磁盘中.</p>
+<p>默认情况下,当整个MapReduce作业的所有已执行完成的Map Task任务数超过Map Task总数的5%后,JobTracker便会开始调度执行Reduce Task任务.<br>然后Reduce Task任务默认启动<code>mapred.reduce.parallel.copies</code>(默认为5)个MapOutputCopier线程到已完成的Map Task任务节点上分别copy一份属于自己的数据.<br>这些copy的数据会首先保存的内存缓冲区中,当内冲缓冲区的使用率达到一定阀值后,则写到磁盘上.</p>
+<h6 id="内存缓冲区-1"><a href="#内存缓冲区-1" class="headerlink" title="内存缓冲区"></a>内存缓冲区</h6><p>这个内存缓冲区大小的控制就不像map那样可以通过<code>io.sort.mb</code>来设定了,而是通过另外一个参数来设置,<code>mapred.job.shuffle.input.buffer.percent</code>(default 0.7),这个参数其实是一个百分比,意思是说,shuffile在reduce内存中的数据最多使用内存量为:0.7 × maxHeap of reduce task.</p>
+<p>如果该reduce task的最大heap使用量(通常通过mapred.child.java.opts来设置,比如设置为-Xmx1024m)的一定比例用来缓存数据.<br>默认情况下,reduce会使用其heapsize的70%来在内存中缓存数据.<br>如果reduce的heap由于业务原因调整的比较大,相应的缓存大小也会变大,这也是为什么reduce用来做缓存的参数是一个百分比,而不是一个固定的值了.</p>
+<h5 id="merge过程"><a href="#merge过程" class="headerlink" title="merge过程"></a>merge过程</h5><p>Copy过来的数据会先放入内存缓冲区中,这里的缓冲区大小要比map端的更为灵活,它基于JVM的heap size设置,因为Shuffle阶段Reducer不运行,所以应该把绝大部分的内存都给Shuffle用.</p>
+<p>merge有三种形式:内存到内存/内存到磁盘/磁盘到磁盘.</p>
+<p>默认情况下第一种形式是不启用的.<br>当内存中的数据量到达一定阈值,就启动内存到磁盘的merge.<br>这和map端的很类似,这实际上就是溢写的过程,在这个过程中如果设置有Combiner,它也是会启用的,然后在磁盘中生成了众多的溢写文件,这种merge方式一直在运行,直到没有map端的数据时才结束,然后才会启动第三种磁盘到磁盘的merge方式生成最终的那个文件.</p>
+<p>在远程copy数据的同时,Reduce Task在后台启动了两个后台线程对内存和磁盘上的数据文件做合并操作,以防止内存使用过多或磁盘生的文件过多.</p>
+<h5 id="reducer的输入文件"><a href="#reducer的输入文件" class="headerlink" title="reducer的输入文件"></a>reducer的输入文件</h5><p>merge的最后会生成一个文件,大多数情况下存在于磁盘中,但是需要将其放入内存中.<br>当reducer输入文件已定,整个Shuffle阶段才算结束.<br>然后就是Reducer执行,把结果放到HDFS上.</p>
+<h2 id="内存资源配置"><a href="#内存资源配置" class="headerlink" title="内存资源配置"></a>内存资源配置</h2><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.nodemanager.resource.memory-mb<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>8192<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.scheduler.minimum-allocation-mb<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>256<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.scheduler.maximum-allocation-mb<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>4096<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.nodemanager.resource.cpu-vcores<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>8<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.scheduler.maximum-allocation-vcores<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>8<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.nodemanager.vmem-pmem-ratio<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>2.1<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>mapred.child.java.opts<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>-Xms256m -Xmx1024m<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>mapreduce.task.io.sort.mb<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>200<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.nodemanager.pmem-check-enabled<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>false<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.nodemanager.vmem-check-enabled<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>false<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>mapreduce.reduce.shuffle.memory.limit.percent<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>0.10<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="RM"><a href="#RM" class="headerlink" title="RM"></a>RM</h3><p>最小容器内存: yarn.scheduler.minimum-allocation-mb<br>最大容器内存: yarn.scheduler.maximum-allocation-mb</p>
+<p>单个容器可申请的最小与最大内存,应用在运行申请内存时不能超过最大值,小于最小值则分配最小值.<br>从这个角度看,最小值有点像操作系统中的页.<br>最小值还有另外一种用途,计算一个节点的最大container数目.<br>这两个值一经设定不能动态改变(此处所说的动态改变是指应用运行时).</p>
+<h3 id="NM"><a href="#NM" class="headerlink" title="NM"></a>NM</h3><p>在yarn-sit.xml中配置,<br>yarn.nodemanager.resource.memory-mb<br>yarn.nodemanager.vmem-pmem-ratio</p>
+<p>每个节点可用的最大内存,RM中的两个值不应该超过此值.<br>此数值可以用于计算container最大数目,用此值除以RM中的最小容器内存.<br>虚拟内存率,是占task所用内存的百分比,默认值为2.1倍.</p>
+<p>第一个参数是不可修改的,一旦设置,整个运行过程中不可动态修改,且该值的默认大小是8G,即使计算机内存不足8G也会按着8G内存来使用.</p>
+<h3 id="AM"><a href="#AM" class="headerlink" title="AM"></a>AM</h3><p>mapred-site.xml中配置,<br>mapreduce.map.memory.mb<br>mapreduce.reduce.memory.mb</p>
+<p>这两个参数指定用于MapReduce的两个任务(Map and Reduce task)的内存大小,其值应该在RM中的最大最小container之间.<br>如果没有配置则通过如下简单公式获得:<br>max(MIN_CONTAINER_SIZE, (Total Available RAM) / containers))<br>一般的reduce应该是map的2倍.</p>
+<p>这两个值可以在应用启动时通过参数改变.</p>
+<p>AM中JVM相关的参数,这些参数可以通过,如下选项配置:<br>mapreduce.map.java.opts<br>mapreduce.reduce.java.opts</p>
+<p>这两个参主要是为需要运行JVM程序准备的,通过这两个设置可以向JVM中传递参数的,与内存有关的是,-Xmx,-Xms等选项.<br>此数值大小,应该在AM中的map.mb和reduce.mb之间.</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>当配置Yarn内存的时候主要是配置如下三个方面:<br>每个Map和Reduce可用物理内存限制;<br>对于每个任务的JVM对大小的限制;<br>虚拟内存的限制;</p>
+<p>具体错误实例,错误如下:<br>Container<code>[pid=41884,containerID=container_1405950053048_0016_01_000284]</code> is running beyond virtual memory limits. Current usage: 314.6 MB of 2.9 GB physical memory used; 8.7 GB of 6.2 GB virtual memory used. Killing container.</p>
+<p>配置如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;yarn.nodemanager.resource.memory-mb&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;100000&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;yarn.scheduler.maximum-allocation-mb&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;10000&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;yarn.scheduler.minimum-allocation-mb&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;3000&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;mapreduce.reduce.memory.mb&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;2000&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
+
+<p>通过配置看到,<br>容器的最小内存和最大内存分别为:3000m和10000m,<br>而reduce设置的默认值小于3000m,map没有设置,所以两个值均为3000m,也就是log中的&quot;2.9 GB physical memory used&quot;.<br>而由于使用了默认虚拟内存率(也就是2.1倍),所以对于Map Task和Reduce Task总的虚拟内存为都为<code>3000*2.1=6.2G</code>.<br>而应用的虚拟内存超过了这个数值,故报错.</p>
+<p>解决办法:<br>在启动Yarn是调节虚拟内存率或者应用运行时调节内存大小.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hadoop/" rel="tag"># hadoop</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/07/27/yarn%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6%E5%99%A8%E4%BD%BF%E7%94%A8/" rel="prev" title="yarn资源调度器使用">
+                  <i class="fa fa-chevron-left"></i> yarn资源调度器使用
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/07/27/maven%E6%89%93%E5%8C%85%E4%BE%9D%E8%B5%96/" rel="next" title="maven打包依赖">
+                  maven打包依赖 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

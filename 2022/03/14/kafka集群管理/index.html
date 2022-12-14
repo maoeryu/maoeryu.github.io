@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="kafka版本为kafka_2.11-1.0.0.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kafka集群管理">
+<meta property="og:url" content="https://maoeryu.github.io/2022/03/14/kafka%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="kafka版本为kafka_2.11-1.0.0.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_manager1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_manager2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_manager3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_manager4.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_manager5.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_manager6.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_manager7.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_manager8.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_manager11.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/kafka_manager12.png">
+<meta property="article:published_time" content="2022-03-13T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-08-25T03:20:56.468Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="kafka">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/kafka_manager1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/03/14/kafka%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>kafka集群管理 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">集群管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8-%E5%85%B3%E9%97%ADbroker"><span class="nav-number">1.1.</span> <span class="nav-text">启动&#x2F;关闭broker</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AEJMX%E7%AB%AF%E5%8F%A3"><span class="nav-number">1.2.</span> <span class="nav-text">设置JMX端口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A2%9E%E5%8A%A0broker"><span class="nav-number">1.3.</span> <span class="nav-text">增加broker</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#topic%E7%AE%A1%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">topic管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BAtopic"><span class="nav-number">2.1.</span> <span class="nav-text">创建topic</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A0%E9%99%A4topic"><span class="nav-number">2.2.</span> <span class="nav-text">删除topic</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2topic"><span class="nav-number">2.3.</span> <span class="nav-text">查询topic</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9topic"><span class="nav-number">2.4.</span> <span class="nav-text">修改topic</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#topic%E5%8A%A8%E6%80%81%E9%85%8D%E7%BD%AE"><span class="nav-number">3.</span> <span class="nav-text">topic动态配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A2%9E%E5%8A%A0%E9%85%8D%E7%BD%AE"><span class="nav-number">3.1.</span> <span class="nav-text">增加配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E9%85%8D%E7%BD%AE"><span class="nav-number">3.2.</span> <span class="nav-text">删除配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#consumer%E7%AE%A1%E7%90%86"><span class="nav-number">4.</span> <span class="nav-text">consumer管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#kafka-consumer-groups"><span class="nav-number">4.1.</span> <span class="nav-text">kafka-consumer-groups</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E8%AE%BE%E4%BD%8D%E7%A7%BB"><span class="nav-number">4.2.</span> <span class="nav-text">重设位移</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E6%B6%88%E8%B4%B9%E8%80%85%E7%BB%84"><span class="nav-number">4.3.</span> <span class="nav-text">删除消费者组</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#topic%E5%88%86%E5%8C%BA%E7%AE%A1%E7%90%86"><span class="nav-number">5.</span> <span class="nav-text">topic分区管理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8%E8%84%9A%E6%9C%AC"><span class="nav-number">6.</span> <span class="nav-text">常用脚本</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#kafka-console-producer"><span class="nav-number">6.1.</span> <span class="nav-text">kafka-console-producer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kafka-console-consumer"><span class="nav-number">6.2.</span> <span class="nav-text">kafka-console-consumer</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JMX%E7%9B%91%E6%8E%A7"><span class="nav-number">7.</span> <span class="nav-text">JMX监控</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#broker%E7%AB%AF"><span class="nav-number">7.1.</span> <span class="nav-text">broker端</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E5%85%A5%E7%AB%99-%E5%87%BA%E7%AB%99%E9%80%9F%E7%8E%87"><span class="nav-number">7.1.1.</span> <span class="nav-text">消息入站&#x2F;出站速率</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#controller%E5%AD%98%E6%B4%BB"><span class="nav-number">7.1.2.</span> <span class="nav-text">controller存活</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%87%E4%BB%BD%E4%B8%8D%E8%B6%B3%E7%9A%84%E5%88%86%E5%8C%BA%E6%95%B0"><span class="nav-number">7.1.3.</span> <span class="nav-text">备份不足的分区数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#leader%E5%88%86%E5%8C%BA%E6%95%B0"><span class="nav-number">7.1.4.</span> <span class="nav-text">leader分区数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#isr%E5%8F%98%E5%8C%96%E9%80%9F%E7%8E%87"><span class="nav-number">7.1.5.</span> <span class="nav-text">isr变化速率</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#broker-i-o%E5%B7%A5%E4%BD%9C%E5%A4%84%E7%90%86%E7%BA%BF%E7%A8%8B%E7%A9%BA%E9%97%B2%E7%8E%87"><span class="nav-number">7.1.6.</span> <span class="nav-text">broker i&#x2F;o工作处理线程空闲率</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#broker%E7%BD%91%E7%BB%9C%E5%A4%84%E7%90%86%E7%BA%BF%E7%A8%8B%E7%A9%BA%E9%97%B2%E7%8E%87"><span class="nav-number">7.1.7.</span> <span class="nav-text">broker网络处理线程空闲率</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8D%95%E4%B8%AAtopic%E6%80%BB%E5%AD%97%E8%8A%82%E6%95%B0"><span class="nav-number">7.1.8.</span> <span class="nav-text">单个topic总字节数</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#producer%E7%AB%AF"><span class="nav-number">7.2.</span> <span class="nav-text">producer端</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#consumer%E7%AB%AF"><span class="nav-number">7.3.</span> <span class="nav-text">consumer端</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#fetcher-manager"><span class="nav-number">7.3.1.</span> <span class="nav-text">fetcher-manager</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#consumer"><span class="nav-number">7.3.2.</span> <span class="nav-text">consumer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#coordinator"><span class="nav-number">7.3.3.</span> <span class="nav-text">coordinator</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E4%BC%98%E5%8C%96"><span class="nav-number">8.</span> <span class="nav-text">集群优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%9E%E5%90%90%E9%87%8F"><span class="nav-number">8.1.</span> <span class="nav-text">吞吐量</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#producer"><span class="nav-number">8.1.1.</span> <span class="nav-text">producer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#consumer-1"><span class="nav-number">8.1.2.</span> <span class="nav-text">consumer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#broker"><span class="nav-number">8.1.3.</span> <span class="nav-text">broker</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BB%B6%E6%97%B6"><span class="nav-number">8.2.</span> <span class="nav-text">延时</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#broker-1"><span class="nav-number">8.2.1.</span> <span class="nav-text">broker</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#producer-1"><span class="nav-number">8.2.2.</span> <span class="nav-text">producer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#consumer-2"><span class="nav-number">8.2.3.</span> <span class="nav-text">consumer</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%81%E4%B9%85%E6%80%A7"><span class="nav-number">8.3.</span> <span class="nav-text">持久性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#broker-2"><span class="nav-number">8.3.1.</span> <span class="nav-text">broker</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#producer-2"><span class="nav-number">8.3.2.</span> <span class="nav-text">producer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#consumer-3"><span class="nav-number">8.3.3.</span> <span class="nav-text">consumer</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%AF%E7%94%A8%E6%80%A7"><span class="nav-number">8.4.</span> <span class="nav-text">可用性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#broker-3"><span class="nav-number">8.4.1.</span> <span class="nav-text">broker</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#producer-3"><span class="nav-number">8.4.2.</span> <span class="nav-text">producer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#consumer-4"><span class="nav-number">8.4.3.</span> <span class="nav-text">consumer</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/03/14/kafka%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          kafka集群管理
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-03-14 00:00:00" itemprop="dateCreated datePublished" datetime="2022-03-14T00:00:00+08:00">2022-03-14</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-08-25 11:20:56" itemprop="dateModified" datetime="2022-08-25T11:20:56+08:00">2022-08-25</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>kafka版本为kafka_2.11-1.0.0.</p>
+<span id="more"></span>
+
+<h2 id="集群管理"><a href="#集群管理" class="headerlink" title="集群管理"></a>集群管理</h2><h3 id="启动-关闭broker"><a href="#启动-关闭broker" class="headerlink" title="启动/关闭broker"></a>启动/关闭broker</h3><p>使用<code>nohup … &amp;</code>或加<code>-daemon</code>参数的方式启动Kafka集群.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nohup bin&#x2F;kafka-server-start.sh &lt;path&gt;&#x2F;server.properties &amp;</span><br><span class="line">bin&#x2F;kafka-server-start.sh -daemon &lt;path&gt;&#x2F;server.properties</span><br><span class="line">bin&#x2F;kafka-server-stop.sh</span><br></pre></td></tr></table></figure>
+
+<h3 id="设置JMX端口"><a href="#设置JMX端口" class="headerlink" title="设置JMX端口"></a>设置JMX端口</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">export JMX_PORT&#x3D;9997 bin&#x2F;kafka-server-start.sh -daemon &lt;path&gt;&#x2F;server.properties</span><br></pre></td></tr></table></figure>
+
+<h3 id="增加broker"><a href="#增加broker" class="headerlink" title="增加broker"></a>增加broker</h3><p>只需要为新增broker设置一个唯一的broker.id,然后启动即可,Kafka集群能自动地发现新启动的broker并同步所有的元数据信息.<br>新增的broker不会自动被分配任何已有的topic分区,因此用户必须手动执行分区重分配.</p>
+<h2 id="topic管理"><a href="#topic管理" class="headerlink" title="topic管理"></a>topic管理</h2><p>使用kafka-topics脚本,</p>
+<img src="/images/kafka_manager1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="创建topic"><a href="#创建topic" class="headerlink" title="创建topic"></a>创建topic</h3><p>创建一个 topic,名为test-topic,6个分区,每个分区3个副本,同时指定该topic的日志留存时间是3天.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-topics.sh --create --zookeeper localhost:2181 --partitions 6 --replication-factor 3 --topic test-topic --config delete.retention.ms=259200000</span><br></pre></td></tr></table></figure>
+
+<h3 id="删除topic"><a href="#删除topic" class="headerlink" title="删除topic"></a>删除topic</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-topics.sh --delete --zookeeper localhost:2181 --topic test-topic</span><br></pre></td></tr></table></figure>
+
+<h3 id="查询topic"><a href="#查询topic" class="headerlink" title="查询topic"></a>查询topic</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-topics.sh --zookeeper localhost:2181 --list</span><br><span class="line">bin/kafka-topics.sh --zookeeper localhost:2181 --describe --topic <span class="built_in">test</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="修改topic"><a href="#修改topic" class="headerlink" title="修改topic"></a>修改topic</h3><p>Kafka不支持减少分区数.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-topics.sh --alter --zookeeper localhost:2181 --partitions 10 --topic test-topic</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>kafka-configs脚本</p>
+</blockquote>
+<img src="/images/kafka_manager2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>为已有topic增加一个topic级别的参数,再使用describe查看,</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-topics.sh --zookeeper localhost:2181 --alter --entity-type topics --entity-name test-topic --add-config cleanup.policy=compact</span><br></pre></td></tr></table></figure>
+
+<h2 id="topic动态配置"><a href="#topic动态配置" class="headerlink" title="topic动态配置"></a>topic动态配置</h2><h3 id="增加配置"><a href="#增加配置" class="headerlink" title="增加配置"></a>增加配置</h3><p>以下这些topic级别的参数可以动态修改而无须重启broker.</p>
+<img src="/images/kafka_manager3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-topics.sh --create --zookeeper localhost:2181 --partitions 1 --replication-factor 1 --topic <span class="built_in">test</span></span><br><span class="line">bin/kafka-configs.sh --zookeeper localhost:2181 --alter --entity-type topics --entity-name <span class="built_in">test</span> --add-config preallocate = <span class="literal">true</span>,segment.bytes = 104857600</span><br><span class="line">bin/kafka-configs.sh --zookeeper localhost:2181 --alter --entity-type topics --entity-name xx1 --add-config max.message.bytes=104857600</span><br><span class="line"></span><br><span class="line">bin/kafka-configs.sh --describe --zookeeper localhost:2181 --entity-type topics --entity-name <span class="built_in">test</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="删除配置"><a href="#删除配置" class="headerlink" title="删除配置"></a>删除配置</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-configs.sh --zookeeper localhost:2181 --alter --entity-type topics --entity-name <span class="built_in">test</span> --delete-config preallocate</span><br></pre></td></tr></table></figure>
+
+<h2 id="consumer管理"><a href="#consumer管理" class="headerlink" title="consumer管理"></a>consumer管理</h2><h3 id="kafka-consumer-groups"><a href="#kafka-consumer-groups" class="headerlink" title="kafka-consumer-groups"></a><code>kafka-consumer-groups</code></h3><img src="/images/kafka_manager4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic <span class="built_in">test</span> --consumer-property group.id=<span class="built_in">test</span> --from-beginning</span><br><span class="line"></span><br><span class="line">bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --list</span><br><span class="line">bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group <span class="built_in">test</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="重设位移"><a href="#重设位移" class="headerlink" title="重设位移"></a>重设位移</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-topics.sh --zookeeper localhost:2181 --create --partitions 5 --replication-factor 1 --topic <span class="built_in">test</span></span><br><span class="line">bin/kafka-producer-perf-test.sh --topic <span class="built_in">test</span> --num-records 50000 --throughput -1 --record-size 100 --producer-props bootstrap.servers=localhost:9092 acks=-1</span><br><span class="line">bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic <span class="built_in">test</span> --from-beginning --consumer-property group.id=<span class="built_in">test</span></span><br><span class="line"></span><br><span class="line">bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group <span class="built_in">test</span> --describe</span><br></pre></td></tr></table></figure>
+
+<p><strong>consumer group不能处于运行状态,必须是inactive的</strong>.<br>支持3种作用域,它们分别如下,</p>
+<p><code>--all-topics</code><br>为消费者组下所有topic的所有分区调整位移.</p>
+<p><code>--topic t1,--topic t2</code><br>为指定的若干个topic的所有分区调整位移.</p>
+<p><code>--topic t1:0,1,2</code><br>为topic的指定分区调整位移.</p>
+<p>确定了topic作用域之后,第二步就是确定位移重设策略,当前支持如下8种设置规则,</p>
+<p><code>--to-earliest</code><br>把位移调整到分区当前最早位移处.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group <span class="built_in">test</span> --reset-offsets --all-topics --to-earliest --execute</span><br></pre></td></tr></table></figure>
+
+<p><code>--to-latest</code><br>把位移调整到分区当前最新位移处.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group <span class="built_in">test</span> --reset-offsets --all-topics --to-latest --execute</span><br></pre></td></tr></table></figure>
+
+<p><code>--to-current</code><br>把位移调整到分区当前位移处.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group <span class="built_in">test</span> --reset-offsets --all-topics --to-current --execute</span><br></pre></td></tr></table></figure>
+
+<p><code>--to-offset &lt;offset&gt;</code><br>把位移调整到指定位移处.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group <span class="built_in">test</span> --reset-offsets --all-topics --to-offset 500000 --execute</span><br></pre></td></tr></table></figure>
+
+<p><code>--shift-by N</code><br>把位移调整到当前位移+N处,N可以是负值.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group <span class="built_in">test</span> --reset-offsets --all-topics --shift-by -100000 --execute</span><br></pre></td></tr></table></figure>
+
+<p><code>--to-datetime &lt;datetime&gt;</code><br>把位移调整到大于给定时间的最早位移处.<br>datatime格式是yyyy-MM-ddTHH:mm:ss.xxx,比如<code>2022-03-17T14:30:00.000</code>.<br>需要注意这个参数是utc时间,需要减去8个小时.<br>或者根据时区设置时间,以东8时区进行设置,把对应时间改为<code>2020-12-31T10:00:00.000+08:00</code>.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group <span class="built_in">test</span> --reset-offsets --all-topics --to-datetime 2022-03-17T14:30:00.000 --execute</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>原理</p>
+</blockquote>
+<ol>
+<li><p>Message body<br>Kafka从0.10.0.0版本起,在消息内新增加了个timestamp字段.<br>时间戳的类型有两种:可以设定为producer创建消息的时间(CreateTime),也可以设定为该消息写入Broker的时间(LogAppendTime).<br>默认为CreateTime,可通过参数<code>message.timestamp.type</code>实现Topic级别的类型更改,Broker级别的时间戳类型参数为<code>log.message.timestamp.type</code>.</p>
+</li>
+<li><p>Log Segment<br>从Kafka 0.10开始,对于日志文件,新增一个<code>.timeindex</code>文件,即每个Segment分别由.log/.index和.timeindex这三个文件组成.<br>Kafka API提供了一个<code>offsetsForTimes(Map&lt;TopicPartition, Long&gt; timestampsToSearch)</code>方法,该方法会返回时间戳大于等于待查询时间的第一条消息对应的偏移量.</p>
+</li>
+</ol>
+<p><code>--by-duration &lt;duration&gt;</code><br>把位移调整到距离当前时间指定间隔的位移处.duration格式是PnDTnHnMnS,比如PT0H5M0S.</p>
+<p>将所有分区位移调整为30分钟之前的最早位移,</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group <span class="built_in">test</span> --reset-offsets --all-topics --by-duration PT0H30M0S</span><br></pre></td></tr></table></figure>
+
+<p><code>--from-file &lt;file&gt;</code><br>从CSV文件中读取位移调整策略.</p>
+<p>最后一步是确定执行方案,当前支持如下3种方案,<br>不加任何参数,只是打印位移调整方案,不实际执行.<br><code>--execute</code><br>执行真正的位移调整.<br><code>--export</code><br>把位移调整方案保存成CSV格式并输出到控制台,方便用户保存成CSV文件,供后续结合--from-file参数使用.</p>
+<h3 id="删除消费者组"><a href="#删除消费者组" class="headerlink" title="删除消费者组"></a>删除消费者组</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-consumer-groups.sh --zookeeper localhost:2181 --group <span class="built_in">test</span> --delete</span><br></pre></td></tr></table></figure>
+
+<h2 id="topic分区管理"><a href="#topic分区管理" class="headerlink" title="topic分区管理"></a>topic分区管理</h2><h2 id="常用脚本"><a href="#常用脚本" class="headerlink" title="常用脚本"></a>常用脚本</h2><h3 id="kafka-console-producer"><a href="#kafka-console-producer" class="headerlink" title="kafka-console-producer"></a>kafka-console-producer</h3><img src="/images/kafka_manager5.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">bin&#x2F;kafka-console-producer.sh --broker-list localhost:9092 --topic test --compression-codec lz4 --request-required-acks all --timeout 3000 --message-send-max-retries 10</span><br><span class="line">bin&#x2F;kafka-console-producer.sh --broker-list localhost:9092 --topic test --producer-property connections.max.idle.ms&#x3D;300000</span><br></pre></td></tr></table></figure>
+
+<h3 id="kafka-console-consumer"><a href="#kafka-console-consumer" class="headerlink" title="kafka-console-consumer"></a>kafka-console-consumer</h3><img src="/images/kafka_manager6.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">bin&#x2F;kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic test --from-beginning --consumer-property group.id&#x3D;test</span><br><span class="line">bin&#x2F;kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic test --from-beginning --partition 0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h2 id="JMX监控"><a href="#JMX监控" class="headerlink" title="JMX监控"></a>JMX监控</h2><h3 id="broker端"><a href="#broker端" class="headerlink" title="broker端"></a>broker端</h3><h4 id="消息入站-出站速率"><a href="#消息入站-出站速率" class="headerlink" title="消息入站/出站速率"></a>消息入站/出站速率</h4><p>单位字节/秒,分别表示Kafka broker每秒接收/发送的消息字节数.<br>所谓接收消息,即broker接收来自producer端发送的消息或follower broker接收来自leader broker发送的消息,而发送消息则是指leader broker需要将消息备份到follower broker.</p>
+<img src="/images/kafka_manager7.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>这两个MBean都支持topic级别的统计,即为当前broker处理的各个topic分别计算入站速率和出站速率.<br>若要单独查询某个topic的消息速率,需要将topic名称加入MBean名称中,<br><code>kafka.server:type=BrokerTopicMetrics,name=BytesInPerSec,topic=test</code></p>
+<img src="/images/kafka_manager8.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="controller存活"><a href="#controller存活" class="headerlink" title="controller存活"></a>controller存活</h4><p><code>kafka.controller:type=KafkaController,name=ActiveControllerCount</code></p>
+<p>当前集群中active controller的数量,该MBean值应该始终等于1才是正常情况.<br>一旦长时间发现该值为0,则表示controller已被关闭且未能自行进行选举,临时恢复方法如下,</p>
+<p>1.删除ZooKeeper节点/controller,删除此znode可触发controller重新选举.<br>2.重启controller所在broker,若上面的方法失效,则可考虑使用该方法.</p>
+<h4 id="备份不足的分区数"><a href="#备份不足的分区数" class="headerlink" title="备份不足的分区数"></a>备份不足的分区数</h4><p><code>kafka.server:type=ReplicaManager,name=UnderReplicatedPartitions</code></p>
+<p>此值应该越小越好,0是最好的情况.<br>一旦发现此值长时间大于0,需要检查该broker作为leader的那些分区当前的副本备份情况,是否出现了follower副本长时间无法追上leader副本或broker发生崩溃的情况.</p>
+<h4 id="leader分区数"><a href="#leader分区数" class="headerlink" title="leader分区数"></a>leader分区数</h4><p><code>kafka.server:type=ReplicaManager,name=LeaderCount</code></p>
+<p>集群上所有broker的该MBean值都相差无几,这表明整个负载被均匀地分配到了所有broker上.</p>
+<h4 id="isr变化速率"><a href="#isr变化速率" class="headerlink" title="isr变化速率"></a>isr变化速率</h4><p><code>kafka.server:type=ReplicaManager,name=IsrExpandsPerSec</code><br><code>kafka.server:type=ReplicaManager,name=IsrShrinksPerSec</code></p>
+<p>这两个MBean的平均值应该接近于0才是正常情况,这表明没有经常性的ISR变化.<br>如果该组值长时间远大于0,则需要查看集群上各个broker是否有经常性的宕机出现.</p>
+<h4 id="broker-i-o工作处理线程空闲率"><a href="#broker-i-o工作处理线程空闲率" class="headerlink" title="broker i/o工作处理线程空闲率"></a>broker i/o工作处理线程空闲率</h4><p>默认情况下,每台broker都会创建8个工作线程(由参数<code>num.io.threads</code>指定)来处理外界发往该broker的各种请求.</p>
+<p><code>kafka.server:type=KafkaRequestHandlerPool,name=RequestHandlerAvgIdlePercent</code><br>统计这些线程总的空闲率,是一个百分比值,表示所有I/O工作线程处于空闲状态的时长与总运行时长的比值.<br>建议该值不要小于30%.</p>
+<h4 id="broker网络处理线程空闲率"><a href="#broker网络处理线程空闲率" class="headerlink" title="broker网络处理线程空闲率"></a>broker网络处理线程空闲率</h4><p>默认情况下,每台broker都会创建3个网络处理线程(由参数<code>num.network.threads</code>指定)来处理网络接收请求和发送响应.<br><code>kafka.network:type=SocketServer,name=NetworkProcessorAvgIdlePercent</code><br>是一个百分比值,表示所有网络处理线程处于空闲状态的时长与总运行时长的比值,建议该值不要小于30%.</p>
+<h4 id="单个topic总字节数"><a href="#单个topic总字节数" class="headerlink" title="单个topic总字节数"></a>单个topic总字节数</h4><p><code>kafka.log:type=Log,name=Size,topic=&lt;topic&gt;,partition=&lt;partition id&gt;</code></p>
+<h3 id="producer端"><a href="#producer端" class="headerlink" title="producer端"></a>producer端</h3><p><code>kafka.producer:type=producer-metrics,clientid=&lt;CLIENTID&gt;</code></p>
+<p><code>kafka.producer:type=producer-topic-metrics,client-id=&lt;CLIENT_ID&gt;,topic=&lt;TOPIC&gt;</code><br><code>kafka.producer:type=producer-node-metrics,client-id=&lt;CLIENT_ID&gt;,node-id=&lt;BROKER ID&gt;</code></p>
+<img src="/images/kafka_manager11.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/kafka_manager12.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="consumer端"><a href="#consumer端" class="headerlink" title="consumer端"></a>consumer端</h3><h4 id="fetcher-manager"><a href="#fetcher-manager" class="headerlink" title="fetcher-manager"></a>fetcher-manager</h4><p>统计consumer底层fetcher(消息获取器)的各种状态信息,<br><code>kafka.consumer:type=consumer-fetch-manager-metrics,client-id=&lt;CLIENT_ID&gt;</code></p>
+<p><code>fetch-latency-avg</code><br>该属性与producer端的request-latency-avg含义类似,揭示了FETCH请求发送到broker端的延时.<br>如果发现该值比较大,可能需要调优consumer端参数<code>fetch.max.wait.ms</code>和<code>fetch.min.bytes</code>.</p>
+<p><code>bytes-consumed-rate</code><br>该值揭示了每秒经由此consumer消费的字节数.<br>在实际使用中,建议对此值做一个基准测试并确定业务稳定时的阈值.<br>一旦之后发现该值严重偏离了阈值,则都需要仔细确认造成偏离的具体原因.</p>
+<h4 id="consumer"><a href="#consumer" class="headerlink" title="consumer"></a>consumer</h4><p>统计consumer状态信息,<br><code>kafka.consumer:type=consumermetrics,client-id=&lt;CLIENT_ID&gt;</code></p>
+<p><code>request-rate</code><br>统计该consumer平均每秒发送的FETCH请求数.</p>
+<p><code>request-size-avg</code><br>统计该consumer平均每秒发送的FETCH请求字节<br>数</p>
+<h4 id="coordinator"><a href="#coordinator" class="headerlink" title="coordinator"></a>coordinator</h4><p>统计consumer coordinator状态信息,<br><code>kafka.consumer:type=consumer-coordinator-metrics,client-id=&lt;CLIENT_ID&gt;</code></p>
+<p><code>assigned-partitions</code><br>统计了该consumer被分配的分区数.<br>可以利用此属性值来查看consumergroup中所有成员的分区数是否被均匀地分配.</p>
+<p><code>join-time-avg</code><br>统计该consumer加入consumer group的平均时间.</p>
+<p><code>sync-time-avg</code><br>统计该consumer执行组同步操作的平均时间.</p>
+<p><code>commit-latency-avg</code><br>统计该consumer提交位移的平均延时.</p>
+<h2 id="集群优化"><a href="#集群优化" class="headerlink" title="集群优化"></a>集群优化</h2><h3 id="吞吐量"><a href="#吞吐量" class="headerlink" title="吞吐量"></a>吞吐量</h3><h4 id="producer"><a href="#producer" class="headerlink" title="producer"></a>producer</h4><p>适当增加<code>batch.size</code>,比如100～512KB.<br>适当增加<code>linger.ms</code>,比如10～100毫秒.<br>设置<code>compression.type</code>=lz4.<br>acks=0或1.<br>retries=0.<br>若多线程共享producer或分区数很多,增加<code>buffer.memory</code>.</p>
+<h4 id="consumer-1"><a href="#consumer-1" class="headerlink" title="consumer"></a>consumer</h4><p>采用多consumer实例.<br>增加<code>fetch.min.bytes</code>,比如100000.</p>
+<p><code>fetch.min.bytes</code>控制了leader副本每次返回consumer的最小数据字节数.<br>通过增加该参数值,Kafka会为每个FETCH请求的response填入更多的数据,从而减少了网络开销并提升了TPS.</p>
+<h4 id="broker"><a href="#broker" class="headerlink" title="broker"></a>broker</h4><p>适当增加<code>num.replica.fetchers</code>,但不要超过CPU核数.<br>调优GC避免经常性的Full GC.</p>
+<p><code>num.replica.fetchers</code>控制了broker端follower副本从leader副本处获取消息的最大线程数.<br>默认值1,表明follower副本只使用一个线程去实时拉取leader处的最新消息.<br>对于设置了acks=all的producer而言,主要的延时可能都耽误在follower与leader同步的过程,故增加该值通常能够缩短同步的时间间隔,从而间接地提升producer端的TPS.</p>
+<h3 id="延时"><a href="#延时" class="headerlink" title="延时"></a>延时</h3><h4 id="broker-1"><a href="#broker-1" class="headerlink" title="broker"></a>broker</h4><p>适度增加num.replica.fetchers.<br>避免创建过多topic分区.</p>
+<h4 id="producer-1"><a href="#producer-1" class="headerlink" title="producer"></a>producer</h4><p>设置linger.ms=0.<br>设置compression.type=none.<br>设置acks=1或0.</p>
+<h4 id="consumer-2"><a href="#consumer-2" class="headerlink" title="consumer"></a>consumer</h4><p>设置fetch.min.bytes=1</p>
+<h3 id="持久性"><a href="#持久性" class="headerlink" title="持久性"></a>持久性</h3><h4 id="broker-2"><a href="#broker-2" class="headerlink" title="broker"></a>broker</h4><p>设置unclean.leader.election.enable=false(0.11.0.0之前版本).<br>设置auto.create.topics.enable=false.<br>设置replication.factor = 3,min.insync.replicas = replication.factor-1.<br>设置default.replication.factor = 3.<br>设置broker.rack属性分散分区数据到不同机架.<br>设置log.flush.interval.message和log.flush.interval.ms为一个较小的值.</p>
+<h4 id="producer-2"><a href="#producer-2" class="headerlink" title="producer"></a>producer</h4><p>设置acks=all.<br>设置retries为一个较大的值,比如10～30.<br>设置max.in.flight.requests.per.connection=1.<br>设置enable.idempotence=true启用幂等性.</p>
+<h4 id="consumer-3"><a href="#consumer-3" class="headerlink" title="consumer"></a>consumer</h4><p>设置auto.commit.enable=false.<br>消息消费成功后调用commitSync提交位移.</p>
+<h3 id="可用性"><a href="#可用性" class="headerlink" title="可用性"></a>可用性</h3><h4 id="broker-3"><a href="#broker-3" class="headerlink" title="broker"></a>broker</h4><p>避免创建过多分区.<br>设置unclean.leader.election.enable=true.<br>设置min.insync.replicas=1.<br>设置num.recovery.threads.per.data.dir=broker端参数log.dirs中设置的目录数.</p>
+<h4 id="producer-3"><a href="#producer-3" class="headerlink" title="producer"></a>producer</h4><p>设置acks=1,若一定要设置为all,则遵循上面broker端的min.insyn.replicas配置.</p>
+<h4 id="consumer-4"><a href="#consumer-4" class="headerlink" title="consumer"></a>consumer</h4><p>设置session.timeout.ms为较低的值,比如10000.<br>(0.10.1.0及之后版本)设置max.poll.interval.ms为比消息平均处理时间稍大的值.<br>(0.10.1.0之前版本)设置max.poll.records和max.partition.fetch.bytes减少consumer处理消息的总时长,避免频繁rebalance.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/kafka/" rel="tag"># kafka</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/03/14/zookeeper%E9%83%A8%E7%BD%B2/" rel="prev" title="zookeeper部署">
+                  <i class="fa fa-chevron-left"></i> zookeeper部署
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/03/14/kafka%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/" rel="next" title="kafka集群部署">
+                  kafka集群部署 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta property="og:type" content="article">
+<meta property="og:title" content="hbase memstore flush">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/02/hbase%20memstore%20flush/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbase_架构.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbm1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbm2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbm3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbm4.png">
+<meta property="article:published_time" content="2022-08-01T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-09T06:28:55.514Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hbase">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/hbase_架构.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/02/hbase%20memstore%20flush/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hbase memstore flush | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Memstore%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">Memstore概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Memstore-Flush%E8%A7%A6%E5%8F%91%E6%9D%A1%E4%BB%B6"><span class="nav-number">2.</span> <span class="nav-text">Memstore Flush触发条件</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Memstore%E7%BA%A7%E5%88%AB%E9%99%90%E5%88%B6"><span class="nav-number">2.1.</span> <span class="nav-text">Memstore级别限制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Region%E7%BA%A7%E5%88%AB%E9%99%90%E5%88%B6"><span class="nav-number">2.2.</span> <span class="nav-text">Region级别限制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Region-Server%E7%BA%A7%E5%88%AB%E9%99%90%E5%88%B6"><span class="nav-number">2.3.</span> <span class="nav-text">Region Server级别限制</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%80%81%E7%89%88%E6%9C%AC"><span class="nav-number">2.3.1.</span> <span class="nav-text">老版本</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%96%B0%E7%89%88%E6%9C%AC"><span class="nav-number">2.3.2.</span> <span class="nav-text">新版本</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HLog%E6%95%B0%E9%87%8F%E9%99%90%E5%88%B6"><span class="nav-number">2.4.</span> <span class="nav-text">HLog数量限制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HBase%E5%AE%9A%E6%9C%9F%E5%88%B7%E6%96%B0Memstore"><span class="nav-number">2.5.</span> <span class="nav-text">HBase定期刷新Memstore</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%89%8B%E5%8A%A8%E6%89%A7%E8%A1%8Cflush"><span class="nav-number">2.6.</span> <span class="nav-text">手动执行flush</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B6%E4%BB%96"><span class="nav-number">2.7.</span> <span class="nav-text">其他</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Memstore-Flush%E6%B5%81%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">Memstore Flush流程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#prepare%E9%98%B6%E6%AE%B5"><span class="nav-number">3.1.</span> <span class="nav-text">prepare阶段</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#flush%E9%98%B6%E6%AE%B5"><span class="nav-number">3.2.</span> <span class="nav-text">flush阶段</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#commit%E9%98%B6%E6%AE%B5"><span class="nav-number">3.3.</span> <span class="nav-text">commit阶段</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Memstore-Flush%E5%AF%B9%E4%B8%9A%E5%8A%A1%E8%AF%BB%E5%86%99%E7%9A%84%E5%BD%B1%E5%93%8D"><span class="nav-number">4.</span> <span class="nav-text">Memstore Flush对业务读写的影响</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BD%B1%E5%93%8D%E7%94%9A%E5%BE%AE"><span class="nav-number">4.1.</span> <span class="nav-text">影响甚微</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BD%B1%E5%93%8D%E8%BE%83%E5%A4%A7"><span class="nav-number">4.2.</span> <span class="nav-text">影响较大</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/02/hbase%20memstore%20flush/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hbase memstore flush
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-02 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-02T00:00:00+08:00">2022-08-02</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-09 14:28:55" itemprop="dateModified" datetime="2022-09-09T14:28:55+08:00">2022-09-09</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <img src="/images/hbase_架构.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<span id="more"></span>
+<h3 id="Memstore概述"><a href="#Memstore概述" class="headerlink" title="Memstore概述"></a>Memstore概述</h3><p>HBase中,Region是集群节点上最小的数据服务单元,用户数据表由一个或多个Region组成.<br>在Region中每个ColumnFamily的数据组成一个Store.<br>每个Store由一个Memstore和多个HFile组成.</p>
+<p>HBase是基于LSM-Tree模型的,所有的数据更新插入操作都首先写入Memstore中(同时会顺序写到日志HLog中),达到指定大小之后再将这些修改操作批量写入磁盘,生成一个新的HFile文件,这种设计可以极大地提升HBase的写入性能.<br>另外,HBase为了方便按照RowKey进行检索,要求HFile中数据都按照RowKey进行排序,Memstore数据在flush为HFile之前会进行一次排序,将数据有序化.<br>还有,根据局部性原理,新写入的数据会更大概率被读取,因此HBase在读取数据的时候首先检查请求的数据是否在Memstore,写缓存未命中的话再到读缓存中查找,读缓存还未命中才会到HFile文件中查找,最终返回merged的一个结果给用户.</p>
+<p>可见,Memstore无论是对HBase的写入性能还是读取性能都至关重要.<br>其中flush操作又是Memstore最核心的操作,接下来重点针对Memstore的flush操作进行深入地解析:<br>首先分析HBase在哪些场景下会触发flush,<br>然后结合源代码分析整个flush的操作流程,<br>最后再重点整理总结和flush相关的配置参数,<br>这些参数对于性能调优/问题定位都非常重要.</p>
+<h3 id="Memstore-Flush触发条件"><a href="#Memstore-Flush触发条件" class="headerlink" title="Memstore Flush触发条件"></a>Memstore Flush触发条件</h3><p>HBase会在如下几种情况下触发flush操作,需要注意的是MemStore的最小flush单元是HRegion而不是单个MemStore.<br>可想而知,如果一个HRegion中Memstore过多,每次flush的开销必然会很大,因此我们也建议在进行表设计的时候尽量减少ColumnFamily的个数.</p>
+<h4 id="Memstore级别限制"><a href="#Memstore级别限制" class="headerlink" title="Memstore级别限制"></a>Memstore级别限制</h4><p>当Region中任意一个MemStore的大小达到了上限(<code>hbase.hregion.memstore.flush.size</code>,默认128MB),会触发Memstore刷新.</p>
+<h4 id="Region级别限制"><a href="#Region级别限制" class="headerlink" title="Region级别限制"></a>Region级别限制</h4><p>当Region中所有Memstore的大小总和达到了上限(<code>hbase.hregion.memstore.block.multiplier</code> * <code>hbase.hregion.memstore.flush.size</code>,默认 4 * 128M = 512M),会触发memstore刷新.</p>
+<h4 id="Region-Server级别限制"><a href="#Region-Server级别限制" class="headerlink" title="Region Server级别限制"></a>Region Server级别限制</h4><h5 id="老版本"><a href="#老版本" class="headerlink" title="老版本"></a>老版本</h5><p>当一个Region Server中所有Memstore的大小总和达到了上限(<code>hbase.regionserver.global.memstore.upperLimit</code> ＊ <code>hbase_heapsize</code>,默认 40%的JVM内存使用量),会触发部分Memstore刷新.</p>
+<p>Flush顺序是按照Memstore由大到小执行,先Flush Memstore最大的Region,再执行次大的,直至总体Memstore内存使用量低于阈值(hbase.regionserver.global.memstore.lowerLimit ＊ hbase_heapsize,默认 38%的JVM内存使用量).</p>
+<h5 id="新版本"><a href="#新版本" class="headerlink" title="新版本"></a>新版本</h5><p>当 RegionServer 中 MemStore 的大小总和超过低水位阈值<code>hbase.regionserver.global.memstore.size.lower.limit</code> * <code>hbase.regionserver.global.memstore.size</code>,RegionServer开始强制执行 flush,先 flush MemStore 最大的Region,再 flush 次大的,依次执行.</p>
+<p>如果此时写入吞吐量依然很高,导致总 MemStore 大小超过高水位阈值<code>hbase.regionserver.global.memstore.size</code>,RegionServer 会阻塞更新并强制执行 flush,直至总 MemStore 大小下降到低水位阈值.</p>
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">默认值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">hbase.regionserver.global.memstore.size</td>
+<td align="left">0.4</td>
+</tr>
+<tr>
+<td align="left">hbase.regionserver.global.memstore.size.lower.limit</td>
+<td align="left">0.95</td>
+</tr>
+</tbody></table>
+<p>如果有 16G 堆内存,默认情况下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># 达到该值会触发刷写</span><br><span class="line">16 * 0.4 * 0.95 &#x3D; 6.08</span><br><span class="line"># 达到该值会触发刷写阻塞</span><br><span class="line">16 * 0.4 &#x3D; 6.4</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">新参数</th>
+<th align="left">老参数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">hbase.regionserver.global.memstore.size</td>
+<td align="left">hbase.regionserver.global.memstore.upperLimit</td>
+</tr>
+<tr>
+<td align="left">hbase.regionserver.global.memstore.size.lower.limit</td>
+<td align="left">hbase.regionserver.global.memstore.lowerLimit</td>
+</tr>
+</tbody></table>
+<img src="/images/hbm1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/hbm2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="HLog数量限制"><a href="#HLog数量限制" class="headerlink" title="HLog数量限制"></a>HLog数量限制</h4><p>当一个Region Server中HLog数量达到上限(可通过参数hbase.regionserver.maxlogs配置)时,系统会选取最早的一个 HLog对应的一个或多个Region进行flush.</p>
+<img src="/images/hbm3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="HBase定期刷新Memstore"><a href="#HBase定期刷新Memstore" class="headerlink" title="HBase定期刷新Memstore"></a>HBase定期刷新Memstore</h4><p>HBase 定期刷新 MemStore(hbase.regionserver.optionalcacheflushinterval),默认周期为1小时,确保 MemStore 不会长时间没有持久化.<br>为避免所有的 MemStore 在同一时间都进行 flush 导致的问题,定期的 flush 操作有 20000 左右的随机延时.</p>
+<p>hbase.regionserver.optionalcacheflushinterval 参数设置为 0 可关闭.</p>
+<img src="/images/hbm4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="手动执行flush"><a href="#手动执行flush" class="headerlink" title="手动执行flush"></a>手动执行flush</h4><p>用户可以通过shell命令 flush &#39;tablename&#39;或者flush &#39;region name&#39;分别对一个表或者一个Region进行flush.</p>
+<h4 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h4><p>执行 Compact 和 Split 之前,会进行一次 flush.</p>
+<h3 id="Memstore-Flush流程"><a href="#Memstore-Flush流程" class="headerlink" title="Memstore Flush流程"></a>Memstore Flush流程</h3><p>为了减少flush过程对读写的影响,HBase采用了类似于两阶段提交的方式,将整个flush过程分为三个阶段.</p>
+<h4 id="prepare阶段"><a href="#prepare阶段" class="headerlink" title="prepare阶段"></a>prepare阶段</h4><p>遍历当前Region中的所有Memstore,将Memstore中当前数据集kvset做一个快照snapshot,然后再新建一个新的kvset.<br>后期的所有写入操作都会写入新的kvset中,而整个flush阶段读操作会首先分别遍历kvset和snapshot,如果查找不到再会到HFile中查找.<br>prepare阶段需要加一把updateLock对写请求阻塞,结束之后会释放该锁.<br>因为此阶段没有任何费时操作,因此持锁时间很短.</p>
+<h4 id="flush阶段"><a href="#flush阶段" class="headerlink" title="flush阶段"></a>flush阶段</h4><p>遍历所有Memstore,将prepare阶段生成的snapshot持久化为临时文件,临时文件会统一放到目录.tmp下.<br>这个过程因为涉及到磁盘IO操作,因此相对比较耗时.</p>
+<h4 id="commit阶段"><a href="#commit阶段" class="headerlink" title="commit阶段"></a>commit阶段</h4><p>遍历所有的Memstore,将flush阶段生成的临时文件移到指定的ColumnFamily目录下,针对HFile生成对应的storefile和Reader,把storefile添加到HStore的storefiles列表中,最后再清空prepare阶段生成的snapshot.</p>
+<p>上述flush流程可以通过日志信息查看:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;******* prepare阶段 ********&#x2F;</span><br><span class="line">2016-02-04 03:32:41,516 INFO  [MemStoreFlusher.1] regionserver.HRegion: Started memstore flush for sentry_sgroup1_data,&#123;\xD4\x00\x00\x01|\x00\x00\x03\x82\x00\x00\x00?\x06\xDA&#96;\x13\xCAE\xD3C\xA3:_1\xD6\x99:\x88\x7F\xAA_\xD6[L\xF0\x92\xA6\xFB^\xC7\xA4\xC7\xD7\x8Fv\xCAT\xD2\xAF,1452217805884.572ddf0e8cf0b11aee2273a95bd07879., current region memstore size 128.9 M</span><br><span class="line"></span><br><span class="line">&#x2F;******* flush阶段 ********&#x2F;</span><br><span class="line">2016-02-04 03:32:42,423 INFO  [MemStoreFlusher.1] regionserver.DefaultStoreFlusher: Flushed, sequenceid&#x3D;1726212642, memsize&#x3D;128.9 M, hasBloomFilter&#x3D;true, into tmp file hdfs:&#x2F;&#x2F;hbase1&#x2F;hbase&#x2F;data&#x2F;default&#x2F;sentry_sgroup1_data&#x2F;572ddf0e8cf0b11aee2273a95bd07879&#x2F;.tmp&#x2F;021a430940244993a9450dccdfdcb91d</span><br><span class="line"></span><br><span class="line">&#x2F;******* commit阶段 ********&#x2F;</span><br><span class="line">2016-02-04 03:32:42,464 INFO  [MemStoreFlusher.1] regionserver.HStore: Added hdfs:&#x2F;&#x2F;hbase1&#x2F;hbase&#x2F;data&#x2F;default&#x2F;sentry_sgroup1_data&#x2F;572ddf0e8cf0b11aee2273a95bd07879&#x2F;d&#x2F;021a430940244993a9450dccdfdcb91d, entries&#x3D;643656, sequenceid&#x3D;1726212642, filesize&#x3D;7.1 M</span><br></pre></td></tr></table></figure>
+
+<h3 id="Memstore-Flush对业务读写的影响"><a href="#Memstore-Flush对业务读写的影响" class="headerlink" title="Memstore Flush对业务读写的影响"></a>Memstore Flush对业务读写的影响</h3><h4 id="影响甚微"><a href="#影响甚微" class="headerlink" title="影响甚微"></a>影响甚微</h4><p>正常情况下,大部分Memstore Flush操作都不会对业务读写产生太大影响,比如这几种场景:<br>HBase定期刷新Memstore/手动执行flush操作/触发Memstore级别限制/触发HLog数量限制以及触发Region级别限制等,<br>这几种场景只会阻塞对应Region上的写请求,阻塞时间很短,毫秒级别.</p>
+<h4 id="影响较大"><a href="#影响较大" class="headerlink" title="影响较大"></a>影响较大</h4><p>然而一旦触发Region Server级别限制导致flush,就会对用户请求产生较大的影响.<br>会阻塞所有落在该Region Server上的更新操作,阻塞时间很长,甚至可以达到分钟级别.<br>一般情况下Region Server级别限制很难触发,但在一些极端情况下也不排除有触发的可能,下面分析一种可能触发这种flush操作的场景:</p>
+<p>相关JVM配置以及HBase配置:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">maxHeap &#x3D; 71</span><br><span class="line">hbase.regionserver.global.memstore.upperLimit &#x3D; 0.35</span><br><span class="line">hbase.regionserver.global.memstore.lowerLimit &#x3D; 0.30</span><br></pre></td></tr></table></figure>
+
+<p>基于上述配置,可以得到触发Region Server级别的总Memstore内存和为24.9G,如下所示：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">2015-10-12 13:05:16,232 INFO  [regionserver60020] regionserver.MemStoreFlusher: globalMemStoreLimit&#x3D;24.9 G, globalMemStoreLimitLowMark&#x3D;21.3 G, maxHeap&#x3D;71 G</span><br></pre></td></tr></table></figure>
+
+<p>假设每个Memstore大小为默认128M,在上述配置下如果每个Region有两个Memstore,整个Region Server上运行了100个region,根据计算可得总消耗内存 = 128M * 100 * 2 = 25.6G &gt; 24.9G,很显然,这种情况下就会触发Region Server级别限制,对用户影响相当大.</p>
+<p>根据上面的分析,导致触发Region Server级别限制的因素主要有一个Region Server上运行的Region总数,一个是Region上的Store数(即表的ColumnFamily数).<br>对于前者,根据读写请求量一般建议线上一个Region Server上运行的Region保持在50~80个左右,太小的话会浪费资源,太大的话有可能触发其他异常.<br>对于后者,建议ColumnFamily越少越好,如果从逻辑上确实需要多个ColumnFamily,最好控制在3个以内.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hbase/" rel="tag"># hbase</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/02/hbase%20region/" rel="prev" title="hbase region">
+                  <i class="fa fa-chevron-left"></i> hbase region
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/02/hbase%20gc/" rel="next" title="hbase gc">
+                  hbase gc <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

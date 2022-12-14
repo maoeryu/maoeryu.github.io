@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="table th:first-of-type {   width: 40%; } table th:nth-of-type(2) {   width: 60%; }">
+<meta property="og:type" content="article">
+<meta property="og:title" content="spark-kafka集成指南">
+<meta property="og:url" content="https://maoeryu.github.io/2022/11/23/spark-kafka%E9%9B%86%E6%88%90%E6%8C%87%E5%8D%97/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="table th:first-of-type {   width: 40%; } table th:nth-of-type(2) {   width: 60%; }">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1347.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1348.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1349.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1350.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1351.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1352.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1353.png">
+<meta property="article:published_time" content="2022-11-22T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-12-02T06:15:24.174Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="spark">
+<meta property="article:tag" content="kafka">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1347.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/11/23/spark-kafka%E9%9B%86%E6%88%90%E6%8C%87%E5%8D%97/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>spark-kafka集成指南 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#streaming"><span class="nav-number">1.</span> <span class="nav-text">streaming</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%93%BE%E6%8E%A5"><span class="nav-number">1.1.</span> <span class="nav-text">链接</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E7%9B%B4%E6%8E%A5%E6%B5%81"><span class="nav-number">1.2.</span> <span class="nav-text">创建直接流</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%8D%E7%BD%AE%E7%AD%96%E7%95%A5"><span class="nav-number">1.3.</span> <span class="nav-text">位置策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B6%88%E8%B4%B9%E7%AD%96%E7%95%A5"><span class="nav-number">1.4.</span> <span class="nav-text">消费策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA-RDD"><span class="nav-number">1.5.</span> <span class="nav-text">创建一个 RDD</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8E%B7%E5%BE%97%E5%81%8F%E7%A7%BB%E9%87%8F"><span class="nav-number">1.6.</span> <span class="nav-text">获得偏移量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E5%81%8F%E7%A7%BB%E9%87%8F"><span class="nav-number">1.7.</span> <span class="nav-text">存储偏移量</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5%E7%AB%99"><span class="nav-number">1.7.1.</span> <span class="nav-text">检查站</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#kafka%E6%9C%AC%E8%BA%AB"><span class="nav-number">1.7.2.</span> <span class="nav-text">kafka本身</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%82%A8%E8%87%AA%E5%B7%B1%E7%9A%84%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8"><span class="nav-number">1.7.3.</span> <span class="nav-text">您自己的数据存储</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SSL-TLS"><span class="nav-number">1.8.</span> <span class="nav-text">SSL&#x2F;TLS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2%E4%B8%AD"><span class="nav-number">1.9.</span> <span class="nav-text">部署中</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#structured"><span class="nav-number">2.</span> <span class="nav-text">structured</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%93%BE%E6%8E%A5-1"><span class="nav-number">2.1.</span> <span class="nav-text">链接</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8Ekafka%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE"><span class="nav-number">2.2.</span> <span class="nav-text">从kafka读取数据</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E6%B5%81%E5%BC%8F%E6%9F%A5%E8%AF%A2%E5%88%9B%E5%BB%BA-Kafka-%E6%BA%90"><span class="nav-number">2.2.1.</span> <span class="nav-text">为流式查询创建 Kafka 源</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E6%89%B9%E9%87%8F%E6%9F%A5%E8%AF%A2%E5%88%9B%E5%BB%BA-Kafka-%E6%BA%90"><span class="nav-number">2.2.2.</span> <span class="nav-text">为批量查询创建 Kafka 源</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%91-Kafka-%E5%86%99%E5%85%A5%E6%95%B0%E6%8D%AE"><span class="nav-number">2.3.</span> <span class="nav-text">向 Kafka 写入数据</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E6%B5%81%E5%BC%8F%E6%9F%A5%E8%AF%A2%E5%88%9B%E5%BB%BA-Kafka-%E6%8E%A5%E6%94%B6%E5%99%A8"><span class="nav-number">2.3.1.</span> <span class="nav-text">为流式查询创建 Kafka 接收器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B0%86%E6%89%B9%E9%87%8F%E6%9F%A5%E8%AF%A2%E7%9A%84%E8%BE%93%E5%87%BA%E5%86%99%E5%85%A5-Kafka"><span class="nav-number">2.3.2.</span> <span class="nav-text">将批量查询的输出写入 Kafka</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kafka%E7%89%B9%E5%AE%9A%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.</span> <span class="nav-text">kafka特定配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2%E4%B8%AD-1"><span class="nav-number">2.5.</span> <span class="nav-text">部署中</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/11/23/spark-kafka%E9%9B%86%E6%88%90%E6%8C%87%E5%8D%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          spark-kafka集成指南
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-11-23 00:00:00" itemprop="dateCreated datePublished" datetime="2022-11-23T00:00:00+08:00">2022-11-23</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-12-02 14:15:24" itemprop="dateModified" datetime="2022-12-02T14:15:24+08:00">2022-12-02</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <style>
+table th:first-of-type {
+  width: 40%;
+}
+table th:nth-of-type(2) {
+  width: 60%;
+}
+</style>
+
+<span id="more"></span>
+<h2 id="streaming"><a href="#streaming" class="headerlink" title="streaming"></a>streaming</h2><p>Kafka broker 0.10.0 或更高版本.</p>
+<p>Kafka 0.10 的 Spark Streaming 集成在设计上类似于 0.8 Direct Stream 方法.<br>它提供简单的并行性、Kafka 分区和 Spark 分区之间的 1:1 对应关系以及对偏移量和元数据的访问.<br>但是,由于较新的集成使用新的 Kafka 消费者 API而不是简单的 API,因此在使用上存在显着差异.<br>此版本的集成被标记为实验性的,因此 API 可能会发生变化.</p>
+<p><a target="_blank" rel="noopener" href="https://spark.apache.org/docs/2.4.8/streaming-kafka-integration.html">https://spark.apache.org/docs/2.4.8/streaming-kafka-integration.html</a><br><a target="_blank" rel="noopener" href="https://spark.apache.org/docs/2.4.8/streaming-kafka-0-10-integration.html">https://spark.apache.org/docs/2.4.8/streaming-kafka-0-10-integration.html</a></p>
+<h3 id="链接"><a href="#链接" class="headerlink" title="链接"></a>链接</h3><p>对于使用 SBT/Maven 项目定义的 Scala/Java 应用程序,将您的流式应用程序与以下工件链接(有关更多信息,请参阅主要编程指南中的链接部分).</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">groupId &#x3D; org.apache.spark</span><br><span class="line">artifactId &#x3D; spark-streaming-kafka-0-10_2.12</span><br><span class="line">version &#x3D; 2.4.8</span><br></pre></td></tr></table></figure>
+
+<p>不要手动添加对工件的依赖org.apache.kafka(例如kafka-clients).<br>该spark-streaming-kafka-0-10工件已经具有适当的传递依赖性,并且不同的版本可能以难以诊断的方式不兼容.</p>
+<h3 id="创建直接流"><a href="#创建直接流" class="headerlink" title="创建直接流"></a>创建直接流</h3><p>请注意,导入的命名空间包括版本 <code>org.apache.spark.streaming.kafka010</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.kafka.clients.consumer.ConsumerRecord</span><br><span class="line">import org.apache.kafka.common.serialization.StringDeserializer</span><br><span class="line">import org.apache.spark.streaming.kafka010._</span><br><span class="line">import org.apache.spark.streaming.kafka010.LocationStrategies.PreferConsistent</span><br><span class="line">import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe</span><br><span class="line"></span><br><span class="line">val kafkaParams &#x3D; Map[String, Object](</span><br><span class="line">  &quot;bootstrap.servers&quot; -&gt; &quot;localhost:9092,anotherhost:9092&quot;,</span><br><span class="line">  &quot;key.deserializer&quot; -&gt; classOf[StringDeserializer],</span><br><span class="line">  &quot;value.deserializer&quot; -&gt; classOf[StringDeserializer],</span><br><span class="line">  &quot;group.id&quot; -&gt; &quot;use_a_separate_group_id_for_each_stream&quot;,</span><br><span class="line">  &quot;auto.offset.reset&quot; -&gt; &quot;latest&quot;,</span><br><span class="line">  &quot;enable.auto.commit&quot; -&gt; (false: java.lang.Boolean)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">val topics &#x3D; Array(&quot;topicA&quot;, &quot;topicB&quot;)</span><br><span class="line">val stream &#x3D; KafkaUtils.createDirectStream[String, String](</span><br><span class="line">  streamingContext,</span><br><span class="line">  PreferConsistent,</span><br><span class="line">  Subscribe[String, String](topics, kafkaParams)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">stream.map(record &#x3D;&gt; (record.key, record.value))</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">import java.util.*;</span><br><span class="line">import org.apache.spark.SparkConf;</span><br><span class="line">import org.apache.spark.TaskContext;</span><br><span class="line">import org.apache.spark.api.java.*;</span><br><span class="line">import org.apache.spark.api.java.function.*;</span><br><span class="line">import org.apache.spark.streaming.api.java.*;</span><br><span class="line">import org.apache.spark.streaming.kafka010.*;</span><br><span class="line">import org.apache.kafka.clients.consumer.ConsumerRecord;</span><br><span class="line">import org.apache.kafka.common.TopicPartition;</span><br><span class="line">import org.apache.kafka.common.serialization.StringDeserializer;</span><br><span class="line">import scala.Tuple2;</span><br><span class="line"></span><br><span class="line">Map&lt;String, Object&gt; kafkaParams &#x3D; new HashMap&lt;&gt;();</span><br><span class="line">kafkaParams.put(&quot;bootstrap.servers&quot;, &quot;localhost:9092,anotherhost:9092&quot;);</span><br><span class="line">kafkaParams.put(&quot;key.deserializer&quot;, StringDeserializer.class);</span><br><span class="line">kafkaParams.put(&quot;value.deserializer&quot;, StringDeserializer.class);</span><br><span class="line">kafkaParams.put(&quot;group.id&quot;, &quot;use_a_separate_group_id_for_each_stream&quot;);</span><br><span class="line">kafkaParams.put(&quot;auto.offset.reset&quot;, &quot;latest&quot;);</span><br><span class="line">kafkaParams.put(&quot;enable.auto.commit&quot;, false);</span><br><span class="line"></span><br><span class="line">Collection&lt;String&gt; topics &#x3D; Arrays.asList(&quot;topicA&quot;, &quot;topicB&quot;);</span><br><span class="line"></span><br><span class="line">JavaInputDStream&lt;ConsumerRecord&lt;String, String&gt;&gt; stream &#x3D;</span><br><span class="line">  KafkaUtils.createDirectStream(</span><br><span class="line">    streamingContext,</span><br><span class="line">    LocationStrategies.PreferConsistent(),</span><br><span class="line">    ConsumerStrategies.&lt;String, String&gt;Subscribe(topics, kafkaParams)</span><br><span class="line">  );</span><br><span class="line"></span><br><span class="line">stream.mapToPair(record -&gt; new Tuple2&lt;&gt;(record.key(), record.value()));</span><br></pre></td></tr></table></figure>
+
+<p>流中的每个项目都是一个ConsumerRecord</p>
+<p>有关可能的 kafkaParams,请参阅Kafka 消费者配置文档.<br>如果您的 Spark 批处理持续时间大于默认的 Kafka 心跳会话超时(30 秒),请适当增加 <font color="blue">heartbeat.interval.ms</font> 和 <font color="blue">session.timeout.ms</font>.<br>对于大于 5 分钟的批处理,这将需要更改代理上的 <font color="blue">group.max.session.timeout.ms</font>.<br>请注意,该示例将 enable.auto.commit 设置为 false,有关讨论,请参见下面的存储偏移量.</p>
+<h3 id="位置策略"><a href="#位置策略" class="headerlink" title="位置策略"></a>位置策略</h3><p>新的 Kafka 消费者 API 会将消息预取到缓冲区中.<br>因此,出于性能原因,Spark 集成将缓存的消费者保留在执行器上(而不是为每个批次重新创建它们)并且更愿意在具有适当消费者的主机位置上安排分区非常重要.</p>
+<p>在大多数情况下,您应该使用<font color="blue">LocationStrategies.PreferConsistent</font>如上所示.<br>这将在可用的执行程序之间平均分配分区.<br>如果您的执行者与您的 Kafka 代理位于同一主机上,请使用PreferBrokers,这将更愿意在该分区的 Kafka 领导者上安排分区.<br>最后,如果分区之间的负载存在显着偏差,请使用PreferFixed.<br>这允许您指定分区到主机的显式映射(任何未指定的分区将使用一致的位置).</p>
+<p>消费者缓存的默认最大大小为 64.<br>如果您希望处理超过(64 * 执行者数量)个 Kafka 分区,您可以通过更改此设置<font color="blue">spark.streaming.kafka.consumer.cache.maxCapacity</font>.</p>
+<p>如果你想禁用 Kafka 消费者的缓存,你可以设置<font color="blue">spark.streaming.kafka.consumer.cache.enabled</font>为false.</p>
+<p>缓存由 topicpartition 和 group.id 键控,因此每次调用createDirectStream都使用一个单独的.group.id</p>
+<h3 id="消费策略"><a href="#消费策略" class="headerlink" title="消费策略"></a>消费策略</h3><p>新的 Kafka 消费者 API 有许多不同的方式来指定主题,其中一些需要大量的对象实例化后设置.<br>ConsumerStrategies提供了一个抽象,允许 Spark 即使在从检查点重启后也能获得正确配置的消费者.</p>
+<p>ConsumerStrategies.Subscribe,如上所示,允许您订阅固定的主题集合.<br>SubscribePattern允许您使用正则表达式来指定感兴趣的主题.<br>请注意,与 0.8 集成不同,在运行流期间使用Subscribe或SubscribePattern应该响应添加分区.<br>最后,Assign允许您指定固定的分区集合.<br>这三种策略都有重载的构造函数,允许您为特定分区指定起始偏移量.</p>
+<p>如果您有上述选项无法满足的特定消费者设置需求,则ConsumerStrategy可以扩展一个公共类.</p>
+<h3 id="创建一个-RDD"><a href="#创建一个-RDD" class="headerlink" title="创建一个 RDD"></a>创建一个 RDD</h3><p>如果您有一个更适合批处理的用例,您可以为定义的偏移量范围创建一个 RDD.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; Import dependencies and create kafka params as in Create Direct Stream above</span><br><span class="line"></span><br><span class="line">val offsetRanges &#x3D; Array(</span><br><span class="line">  &#x2F;&#x2F; topic, partition, inclusive starting offset, exclusive ending offset</span><br><span class="line">  OffsetRange(&quot;test&quot;, 0, 0, 100),</span><br><span class="line">  OffsetRange(&quot;test&quot;, 1, 0, 100)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">val rdd &#x3D; KafkaUtils.createRDD[String, String](sparkContext, kafkaParams, offsetRanges, PreferConsistent)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">&#x2F;&#x2F; Import dependencies and create kafka params as in Create Direct Stream above</span><br><span class="line"></span><br><span class="line">OffsetRange[] offsetRanges &#x3D; &#123;</span><br><span class="line">  &#x2F;&#x2F; topic, partition, inclusive starting offset, exclusive ending offset</span><br><span class="line">  OffsetRange.create(&quot;test&quot;, 0, 0, 100),</span><br><span class="line">  OffsetRange.create(&quot;test&quot;, 1, 0, 100)</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">JavaRDD&lt;ConsumerRecord&lt;String, String&gt;&gt; rdd &#x3D; KafkaUtils.createRDD(</span><br><span class="line">  sparkContext,</span><br><span class="line">  kafkaParams,</span><br><span class="line">  offsetRanges,</span><br><span class="line">  LocationStrategies.PreferConsistent()</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>请注意,您不能使用PreferBrokers,因为没有流,就没有驱动程序端消费者自动为您查找代理元数据.<br>PreferFixed如有必要,请使用您自己的元数据查找.</p>
+<h3 id="获得偏移量"><a href="#获得偏移量" class="headerlink" title="获得偏移量"></a>获得偏移量</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">stream.foreachRDD &#123; rdd &#x3D;&gt;</span><br><span class="line">  val offsetRanges &#x3D; rdd.asInstanceOf[HasOffsetRanges].offsetRanges</span><br><span class="line">  rdd.foreachPartition &#123; iter &#x3D;&gt;</span><br><span class="line">    val o: OffsetRange &#x3D; offsetRanges(TaskContext.get.partitionId)</span><br><span class="line">    println(s&quot;$&#123;o.topic&#125; $&#123;o.partition&#125; $&#123;o.fromOffset&#125; $&#123;o.untilOffset&#125;&quot;)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">stream.foreachRDD(rdd -&gt; &#123;</span><br><span class="line">  OffsetRange[] offsetRanges &#x3D; ((HasOffsetRanges) rdd.rdd()).offsetRanges();</span><br><span class="line">  rdd.foreachPartition(consumerRecords -&gt; &#123;</span><br><span class="line">    OffsetRange o &#x3D; offsetRanges[TaskContext.get().partitionId()];</span><br><span class="line">    System.out.println(</span><br><span class="line">      o.topic() + &quot; &quot; + o.partition() + &quot; &quot; + o.fromOffset() + &quot; &quot; + o.untilOffset());</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>请注意,类型转换HasOffsetRanges只有在对createDirectStream的结果调用的第一个方法中完成时才会成功,而不是在后面的方法链中完成.<br>请注意,RDD 分区和 Kafka 分区之间的一对一映射在任何混洗或重新分区方法之后都不会保留,例如 reduceByKey() 或 window().</p>
+<h3 id="存储偏移量"><a href="#存储偏移量" class="headerlink" title="存储偏移量"></a>存储偏移量</h3><p>失败情况下的 Kafka 交付语义取决于偏移量的存储方式和时间.<br>Spark 输出操作至少一次.<br>因此,如果您想要等价于恰好一次语义,则必须在幂等输出之后存储偏移量,或者将偏移量与输出一起存储在原子事务中.<br>有了这个集成,您有 3 个选项,按照可靠性(和代码复杂性)的顺序,如何存储偏移量.</p>
+<h4 id="检查站"><a href="#检查站" class="headerlink" title="检查站"></a>检查站</h4><p>如果启用 Spark checkpointing,偏移量将存储在检查点中.<br>这很容易启用,但也有缺点.<br>你的输出操作必须是幂等的,因为你会得到重复的输出.交易不是一种选择.<br>此外,如果您的应用程序代码已更改,您将无法从检查点恢复.<br>对于计划升级,您可以通过同时运行新代码和旧代码来缓解这种情况(因为无论如何输出都需要幂等,它们不应该发生冲突).<br>但是对于需要更改代码的计划外故障,您将丢失数据,除非您有另一种方法来识别已知良好的起始偏移量.</p>
+<h4 id="kafka本身"><a href="#kafka本身" class="headerlink" title="kafka本身"></a>kafka本身</h4><p>Kafka 有一个偏移量提交 API,它将偏移量存储在一个特殊的 Kafka 主题中.<br>默认情况下,新消费者将定期自动提交偏移量.<br>这几乎肯定不是你想要的,因为消费者成功轮询的消息可能还没有产生 Spark 输出操作,从而导致未定义的语义.<br>这就是上面的流示例将&quot;enable.auto.commit&quot;设置为 false 的原因.<br>但是,在知道输出已存储后,您可以使用commitAsyncAPI 将偏移量提交给 Kafka.<br>与检查点相比,Kafka 是一个持久存储,无论您的应用程序代码如何更改.<br>但是,Kafka 不是事务性的,因此您的输出必须仍然是幂等的.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">stream.foreachRDD &#123; rdd &#x3D;&gt;</span><br><span class="line">  val offsetRanges &#x3D; rdd.asInstanceOf[HasOffsetRanges].offsetRanges</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; some time later, after outputs have completed</span><br><span class="line">  stream.asInstanceOf[CanCommitOffsets].commitAsync(offsetRanges)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">stream.foreachRDD(rdd -&gt; &#123;</span><br><span class="line">  OffsetRange[] offsetRanges &#x3D; ((HasOffsetRanges) rdd.rdd()).offsetRanges();</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; some time later, after outputs have completed</span><br><span class="line">  ((CanCommitOffsets) stream.inputDStream()).commitAsync(offsetRanges);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>与 HasOffsetRanges 一样,只有在调用 createDirectStream 的结果时才会成功转换为 CanCommitOffsets,而不是在转换之后.<br>commitAsync 调用是线程安全的,但如果您想要有意义的语义,则必须在输出之后发生.</p>
+<h4 id="您自己的数据存储"><a href="#您自己的数据存储" class="headerlink" title="您自己的数据存储"></a>您自己的数据存储</h4><p>对于支持事务的数据存储,将偏移量保存在与结果相同的事务中可以使两者保持同步,即使在出现故障的情况下也是如此.<br>如果您对检测重复或跳过的偏移量范围很小心,回滚事务可防止重复或丢失的消息影响结果.<br>这给出了 exactly-once 语义的等价物.<br>甚至对于聚合产生的输出也可以使用这种策略,这通常很难做到幂等.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; The details depend on your data store, but the general idea looks like this</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; begin from the the offsets committed to the database</span><br><span class="line">val fromOffsets &#x3D; selectOffsetsFromYourDatabase.map &#123; resultSet &#x3D;&gt;</span><br><span class="line">  new TopicPartition(resultSet.string(&quot;topic&quot;), resultSet.int(&quot;partition&quot;)) -&gt; resultSet.long(&quot;offset&quot;)</span><br><span class="line">&#125;.toMap</span><br><span class="line"></span><br><span class="line">val stream &#x3D; KafkaUtils.createDirectStream[String, String](</span><br><span class="line">  streamingContext,</span><br><span class="line">  PreferConsistent,</span><br><span class="line">  Assign[String, String](fromOffsets.keys.toList, kafkaParams, fromOffsets)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">stream.foreachRDD &#123; rdd &#x3D;&gt;</span><br><span class="line">  val offsetRanges &#x3D; rdd.asInstanceOf[HasOffsetRanges].offsetRanges</span><br><span class="line"></span><br><span class="line">  val results &#x3D; yourCalculation(rdd)</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; begin your transaction</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; update results</span><br><span class="line">  &#x2F;&#x2F; update offsets where the end of existing offsets matches the beginning of this batch of offsets</span><br><span class="line">  &#x2F;&#x2F; assert that offsets were updated correctly</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; end your transaction</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">&#x2F;&#x2F; The details depend on your data store, but the general idea looks like this</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; begin from the the offsets committed to the database</span><br><span class="line">Map&lt;TopicPartition, Long&gt; fromOffsets &#x3D; new HashMap&lt;&gt;();</span><br><span class="line">for (resultSet : selectOffsetsFromYourDatabase)</span><br><span class="line">  fromOffsets.put(new TopicPartition(resultSet.string(&quot;topic&quot;), resultSet.int(&quot;partition&quot;)), resultSet.long(&quot;offset&quot;));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">JavaInputDStream&lt;ConsumerRecord&lt;String, String&gt;&gt; stream &#x3D; KafkaUtils.createDirectStream(</span><br><span class="line">  streamingContext,</span><br><span class="line">  LocationStrategies.PreferConsistent(),</span><br><span class="line">  ConsumerStrategies.&lt;String, String&gt;Assign(fromOffsets.keySet(), kafkaParams, fromOffsets)</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line">stream.foreachRDD(rdd -&gt; &#123;</span><br><span class="line">  OffsetRange[] offsetRanges &#x3D; ((HasOffsetRanges) rdd.rdd()).offsetRanges();</span><br><span class="line">  </span><br><span class="line">  Object results &#x3D; yourCalculation(rdd);</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; begin your transaction</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; update results</span><br><span class="line">  &#x2F;&#x2F; update offsets where the end of existing offsets matches the beginning of this batch of offsets</span><br><span class="line">  &#x2F;&#x2F; assert that offsets were updated correctly</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; end your transaction</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<h3 id="SSL-TLS"><a href="#SSL-TLS" class="headerlink" title="SSL/TLS"></a>SSL/TLS</h3><p>新的 Kafka 消费者支持 SSL.<br>createDirectStream要启用它,请在传递给/之前适当地设置 kafkaParams createRDD.<br>请注意,这仅适用于 Spark 和 Kafka 代理之间的通信.您仍然负责单独保护Spark 节点间通信.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">val kafkaParams &#x3D; Map[String, Object](</span><br><span class="line">  &#x2F;&#x2F; the usual params, make sure to change the port in bootstrap.servers if 9092 is not TLS</span><br><span class="line">  &quot;security.protocol&quot; -&gt; &quot;SSL&quot;,</span><br><span class="line">  &quot;ssl.truststore.location&quot; -&gt; &quot;&#x2F;some-directory&#x2F;kafka.client.truststore.jks&quot;,</span><br><span class="line">  &quot;ssl.truststore.password&quot; -&gt; &quot;test1234&quot;,</span><br><span class="line">  &quot;ssl.keystore.location&quot; -&gt; &quot;&#x2F;some-directory&#x2F;kafka.client.keystore.jks&quot;,</span><br><span class="line">  &quot;ssl.keystore.password&quot; -&gt; &quot;test1234&quot;,</span><br><span class="line">  &quot;ssl.key.password&quot; -&gt; &quot;test1234&quot;</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">Map&lt;String, Object&gt; kafkaParams &#x3D; new HashMap&lt;String, Object&gt;();</span><br><span class="line">&#x2F;&#x2F; the usual params, make sure to change the port in bootstrap.servers if 9092 is not TLS</span><br><span class="line">kafkaParams.put(&quot;security.protocol&quot;, &quot;SSL&quot;);</span><br><span class="line">kafkaParams.put(&quot;ssl.truststore.location&quot;, &quot;&#x2F;some-directory&#x2F;kafka.client.truststore.jks&quot;);</span><br><span class="line">kafkaParams.put(&quot;ssl.truststore.password&quot;, &quot;test1234&quot;);</span><br><span class="line">kafkaParams.put(&quot;ssl.keystore.location&quot;, &quot;&#x2F;some-directory&#x2F;kafka.client.keystore.jks&quot;);</span><br><span class="line">kafkaParams.put(&quot;ssl.keystore.password&quot;, &quot;test1234&quot;);</span><br><span class="line">kafkaParams.put(&quot;ssl.key.password&quot;, &quot;test1234&quot;);</span><br></pre></td></tr></table></figure>
+
+<h3 id="部署中"><a href="#部署中" class="headerlink" title="部署中"></a>部署中</h3><p>与任何 Spark 应用程序一样,spark-submit用于启动您的应用程序.</p>
+<p>对于 Scala 和 Java 应用程序,如果您使用 SBT 或 Maven 进行项目管理,则将spark-streaming-kafka-0-10_2.12其及其依赖项打包到应用程序 JAR 中.<br>确保spark-core_2.12和spark-streaming_2.12被标记为provided依赖项,因为它们已经存在于 Spark 安装中.<br>然后用于spark-submit启动您的应用程序(请参阅主要编程指南中的部署部分).</p>
+<h2 id="structured"><a href="#structured" class="headerlink" title="structured"></a>structured</h2><p>Kafka broker version 0.10.0 or higher.<br>Kafka 0.10 的结构化流集成,用于从 Kafka 读取数据和向 Kafka 写入数据.</p>
+<p><a target="_blank" rel="noopener" href="https://spark.apache.org/docs/2.4.8/structured-streaming-kafka-integration.html">https://spark.apache.org/docs/2.4.8/structured-streaming-kafka-integration.html</a></p>
+<h3 id="链接-1"><a href="#链接-1" class="headerlink" title="链接"></a>链接</h3><p>对于使用 SBT/Maven 项目定义的 Scala/Java 应用程序,将您的应用程序与以下工件链接:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">groupId &#x3D; org.apache.spark</span><br><span class="line">artifactId &#x3D; spark-sql-kafka-0-10_2.12</span><br><span class="line">version &#x3D; 2.4.8</span><br></pre></td></tr></table></figure>
+
+<p>为了在spark-shell上进行实验,您需要在调用时添加上述库及其依赖项spark-shell.<br>另外,请参阅下面的部署小节.</p>
+<h3 id="从kafka读取数据"><a href="#从kafka读取数据" class="headerlink" title="从kafka读取数据"></a>从kafka读取数据</h3><h4 id="为流式查询创建-Kafka-源"><a href="#为流式查询创建-Kafka-源" class="headerlink" title="为流式查询创建 Kafka 源"></a>为流式查询创建 Kafka 源</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; Subscribe to 1 topic</span><br><span class="line">val df &#x3D; spark</span><br><span class="line">  .readStream</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .option(&quot;subscribe&quot;, &quot;topic1&quot;)</span><br><span class="line">  .load()</span><br><span class="line">df.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br><span class="line">  .as[(String, String)]</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Subscribe to multiple topics</span><br><span class="line">val df &#x3D; spark</span><br><span class="line">  .readStream</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .option(&quot;subscribe&quot;, &quot;topic1,topic2&quot;)</span><br><span class="line">  .load()</span><br><span class="line">df.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br><span class="line">  .as[(String, String)]</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Subscribe to a pattern</span><br><span class="line">val df &#x3D; spark</span><br><span class="line">  .readStream</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .option(&quot;subscribePattern&quot;, &quot;topic.*&quot;)</span><br><span class="line">  .load()</span><br><span class="line">df.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br><span class="line">  .as[(String, String)]</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">&#x2F;&#x2F; Subscribe to 1 topic</span><br><span class="line">Dataset&lt;Row&gt; df &#x3D; spark</span><br><span class="line">  .readStream()</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .option(&quot;subscribe&quot;, &quot;topic1&quot;)</span><br><span class="line">  .load()</span><br><span class="line">df.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Subscribe to multiple topics</span><br><span class="line">Dataset&lt;Row&gt; df &#x3D; spark</span><br><span class="line">  .readStream()</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .option(&quot;subscribe&quot;, &quot;topic1,topic2&quot;)</span><br><span class="line">  .load()</span><br><span class="line">df.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Subscribe to a pattern</span><br><span class="line">Dataset&lt;Row&gt; df &#x3D; spark</span><br><span class="line">  .readStream()</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .option(&quot;subscribePattern&quot;, &quot;topic.*&quot;)</span><br><span class="line">  .load()</span><br><span class="line">df.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br></pre></td></tr></table></figure>
+
+<h4 id="为批量查询创建-Kafka-源"><a href="#为批量查询创建-Kafka-源" class="headerlink" title="为批量查询创建 Kafka 源"></a>为批量查询创建 Kafka 源</h4><p>如果您有一个更适合批处理的用例,您可以为定义的偏移量范围创建数据集/数据帧.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; Subscribe to 1 topic defaults to the earliest and latest offsets</span><br><span class="line">val df &#x3D; spark</span><br><span class="line">  .read</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .option(&quot;subscribe&quot;, &quot;topic1&quot;)</span><br><span class="line">  .load()</span><br><span class="line">df.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br><span class="line">  .as[(String, String)]</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Subscribe to multiple topics, specifying explicit Kafka offsets</span><br><span class="line">val df &#x3D; spark</span><br><span class="line">  .read</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .option(&quot;subscribe&quot;, &quot;topic1,topic2&quot;)</span><br><span class="line">  .option(&quot;startingOffsets&quot;, &quot;&quot;&quot;&#123;&quot;topic1&quot;:&#123;&quot;0&quot;:23,&quot;1&quot;:-2&#125;,&quot;topic2&quot;:&#123;&quot;0&quot;:-2&#125;&#125;&quot;&quot;&quot;)</span><br><span class="line">  .option(&quot;endingOffsets&quot;, &quot;&quot;&quot;&#123;&quot;topic1&quot;:&#123;&quot;0&quot;:50,&quot;1&quot;:-1&#125;,&quot;topic2&quot;:&#123;&quot;0&quot;:-1&#125;&#125;&quot;&quot;&quot;)</span><br><span class="line">  .load()</span><br><span class="line">df.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br><span class="line">  .as[(String, String)]</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Subscribe to a pattern, at the earliest and latest offsets</span><br><span class="line">val df &#x3D; spark</span><br><span class="line">  .read</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .option(&quot;subscribePattern&quot;, &quot;topic.*&quot;)</span><br><span class="line">  .option(&quot;startingOffsets&quot;, &quot;earliest&quot;)</span><br><span class="line">  .option(&quot;endingOffsets&quot;, &quot;latest&quot;)</span><br><span class="line">  .load()</span><br><span class="line">df.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br><span class="line">  .as[(String, String)]</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">&#x2F;&#x2F; Subscribe to 1 topic defaults to the earliest and latest offsets</span><br><span class="line">Dataset&lt;Row&gt; df &#x3D; spark</span><br><span class="line">  .read()</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .option(&quot;subscribe&quot;, &quot;topic1&quot;)</span><br><span class="line">  .load();</span><br><span class="line">df.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Subscribe to multiple topics, specifying explicit Kafka offsets</span><br><span class="line">Dataset&lt;Row&gt; df &#x3D; spark</span><br><span class="line">  .read()</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .option(&quot;subscribe&quot;, &quot;topic1,topic2&quot;)</span><br><span class="line">  .option(&quot;startingOffsets&quot;, &quot;&#123;\&quot;topic1\&quot;:&#123;\&quot;0\&quot;:23,\&quot;1\&quot;:-2&#125;,\&quot;topic2\&quot;:&#123;\&quot;0\&quot;:-2&#125;&#125;&quot;)</span><br><span class="line">  .option(&quot;endingOffsets&quot;, &quot;&#123;\&quot;topic1\&quot;:&#123;\&quot;0\&quot;:50,\&quot;1\&quot;:-1&#125;,\&quot;topic2\&quot;:&#123;\&quot;0\&quot;:-1&#125;&#125;&quot;)</span><br><span class="line">  .load();</span><br><span class="line">df.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Subscribe to a pattern, at the earliest and latest offsets</span><br><span class="line">Dataset&lt;Row&gt; df &#x3D; spark</span><br><span class="line">  .read()</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .option(&quot;subscribePattern&quot;, &quot;topic.*&quot;)</span><br><span class="line">  .option(&quot;startingOffsets&quot;, &quot;earliest&quot;)</span><br><span class="line">  .option(&quot;endingOffsets&quot;, &quot;latest&quot;)</span><br><span class="line">  .load();</span><br><span class="line">df.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;);</span><br></pre></td></tr></table></figure>
+
+<p>源中的每一行都具有以下schema:</p>
+<img src="/images/fly1347.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>必须为批处理和流式查询的 Kafka 源设置以下选项.</p>
+<img src="/images/fly1348.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>以下配置是可选的:</p>
+<img src="/images/fly1349.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1350.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1351.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="向-Kafka-写入数据"><a href="#向-Kafka-写入数据" class="headerlink" title="向 Kafka 写入数据"></a>向 Kafka 写入数据</h3><p>在这里,我们描述了将流查询和批查询写入 Apache Kafka 的支持.<br>请注意,Apache Kafka 仅支持至少一次写入语义.<br>因此,当向 Kafka 写入流查询或批查询时,某些记录可能会重复.<br>例如,如果 Kafka 需要重试 Broker 未确认的消息,即使 Broker 收到并写入了消息记录,也会发生这种情况.<br>由于这些 Kafka 写入语义,结构化流无法阻止此类重复的发生.<br>但是,如果写入查询成功,则可以假设查询输出至少写入了一次.<br>在读取写入数据时删除重复项的一种可能解决方案是引入一个主(唯一)键,该键可用于在读取时执行重复数据删除.</p>
+<p>写入 Kafka 的 Dataframe 应该在模式中包含以下列:</p>
+<img src="/images/fly1352.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>如果未指定&quot;topic&quot;配置选项,则主题列是必需的.</p>
+</blockquote>
+<p>值列是唯一必需的选项.<br>如果未指定null键列,则将自动添加值键列(有关如何null处理值键值,请参阅 Kafka 语义).<br>如果存在主题列,则在将给定行写入 Kafka 时,其值将用作主题,除非设置了&quot;topic&quot;配置选项,即&quot;topic&quot;配置选项会覆盖主题列.</p>
+<img src="/images/fly1353.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="为流式查询创建-Kafka-接收器"><a href="#为流式查询创建-Kafka-接收器" class="headerlink" title="为流式查询创建 Kafka 接收器"></a>为流式查询创建 Kafka 接收器</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; Write key-value data from a DataFrame to a specific Kafka topic specified in an option</span><br><span class="line">val ds &#x3D; df</span><br><span class="line">  .selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br><span class="line">  .writeStream</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .option(&quot;topic&quot;, &quot;topic1&quot;)</span><br><span class="line">  .start()</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Write key-value data from a DataFrame to Kafka using a topic specified in the data</span><br><span class="line">val ds &#x3D; df</span><br><span class="line">  .selectExpr(&quot;topic&quot;, &quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br><span class="line">  .writeStream</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .start()</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">&#x2F;&#x2F; Write key-value data from a DataFrame to a specific Kafka topic specified in an option</span><br><span class="line">StreamingQuery ds &#x3D; df</span><br><span class="line">  .selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br><span class="line">  .writeStream()</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .option(&quot;topic&quot;, &quot;topic1&quot;)</span><br><span class="line">  .start()</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Write key-value data from a DataFrame to Kafka using a topic specified in the data</span><br><span class="line">StreamingQuery ds &#x3D; df</span><br><span class="line">  .selectExpr(&quot;topic&quot;, &quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br><span class="line">  .writeStream()</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .start()</span><br></pre></td></tr></table></figure>
+
+<h4 id="将批量查询的输出写入-Kafka"><a href="#将批量查询的输出写入-Kafka" class="headerlink" title="将批量查询的输出写入 Kafka"></a>将批量查询的输出写入 Kafka</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; Write key-value data from a DataFrame to a specific Kafka topic specified in an option</span><br><span class="line">df.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br><span class="line">  .write</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .option(&quot;topic&quot;, &quot;topic1&quot;)</span><br><span class="line">  .save()</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Write key-value data from a DataFrame to Kafka using a topic specified in the data</span><br><span class="line">df.selectExpr(&quot;topic&quot;, &quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br><span class="line">  .write</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .save()</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;java</span><br><span class="line">&#x2F;&#x2F; Write key-value data from a DataFrame to a specific Kafka topic specified in an option</span><br><span class="line">df.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br><span class="line">  .write()</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .option(&quot;topic&quot;, &quot;topic1&quot;)</span><br><span class="line">  .save()</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; Write key-value data from a DataFrame to Kafka using a topic specified in the data</span><br><span class="line">df.selectExpr(&quot;topic&quot;, &quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)</span><br><span class="line">  .write()</span><br><span class="line">  .format(&quot;kafka&quot;)</span><br><span class="line">  .option(&quot;kafka.bootstrap.servers&quot;, &quot;host1:port1,host2:port2&quot;)</span><br><span class="line">  .save()</span><br></pre></td></tr></table></figure>
+
+<h3 id="kafka特定配置"><a href="#kafka特定配置" class="headerlink" title="kafka特定配置"></a>kafka特定配置</h3><p>Kafka 自身的配置可以通过DataStreamReader.option with kafka.prefix 来设置,例如 stream.option(&quot;kafka.bootstrap.servers&quot;, &quot;host:port&quot;). kafka可能 的参数,读取数据相关参数参见Kafka consumer config文档,写数据相关参数参见Kafka producer config文档 .</p>
+<p>请注意,无法设置以下 Kafka 参数,Kafka 源或接收器将抛出异常:</p>
+<ol>
+<li>group.id:Kafka 源将自动为每个查询创建一个唯一的组 ID.</li>
+<li>auto.offset.reset:设置源选项startingOffsets以指定从哪里开始.<br>Structured Streaming 管理内部消耗哪些偏移量,而不是依赖 kafka Consumer 来完成.<br>这将确保在动态订阅新主题/分区时不会丢失任何数据.<br>请注意,startingOffsets仅在开始新的流式查询时适用,并且恢复将始终从查询停止的地方开始.</li>
+<li>key.deserializer:键始终使用 ByteArrayDeserializer 反序列化为字节数组.<br>使用 DataFrame 操作显式反序列化键.</li>
+<li>value.deserializer:值始终使用 ByteArrayDeserializer 反序列化为字节数组.<br>使用 DataFrame 操作显式反序列化值.</li>
+<li>key.serializer:密钥始终使用 ByteArraySerializer 或 StringSerializer 进行序列化.<br>使用 DataFrame 操作将键显式序列化为字符串或字节数组.</li>
+<li>value.serializer:值始终使用 ByteArraySerializer 或 StringSerializer 进行序列化.<br>使用 DataFrame 操作将值显式序列化为字符串或字节数组.</li>
+<li>enable.auto.commit:Kafka 源不提交任何偏移量.</li>
+<li>interceptor.classes:Kafka 源总是将键和值读取为字节数组.<br>使用 ConsumerInterceptor 是不安全的,因为它可能会破坏查询.</li>
+</ol>
+<h3 id="部署中-1"><a href="#部署中-1" class="headerlink" title="部署中"></a>部署中</h3><p>与任何 Spark 应用程序一样,spark-submit用于启动您的应用程序.<br>spark-sql-kafka-0-10_2.12 并且它的依赖可以直接添加到spark-submitusing 中--packages,比如,</p>
+<p>./bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:2.4.8 ...<br>为了在 上进行实验spark-shell,您还可以直接使用--packages添加spark-sql-kafka-0-10_2.12及其依赖项,</p>
+<p>./bin/spark-shell --packages org.apache.spark:spark-sql-kafka-0-10_2.12:2.4.8 ...<br>有关提交具有外部依赖项的应用程序的更多详细信息,请参阅应用程序提交指南.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/spark/" rel="tag"># spark</a>
+              <a href="/tags/kafka/" rel="tag"># kafka</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/11/23/spark%E7%BB%93%E6%9E%84%E5%8C%96%E6%B5%81%E7%BC%96%E7%A8%8B%E6%8C%87%E5%8D%97/" rel="prev" title="spark结构化流编程指南">
+                  <i class="fa fa-chevron-left"></i> spark结构化流编程指南
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/11/24/spark%20sql%E6%8C%87%E5%8D%97/" rel="next" title="spark sql指南">
+                  spark sql指南 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="下载地址,https:&#x2F;&#x2F;flink.apache.org&#x2F;downloads.html.同时下载hadoop依赖,https:&#x2F;&#x2F;repo.maven.apache.org&#x2F;maven2&#x2F;org&#x2F;apache&#x2F;flink&#x2F;flink-shaded-hadoop-2-uber&#x2F;2.6.5-10.0&#x2F;.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="flink安装及客户端">
+<meta property="og:url" content="https://maoeryu.github.io/2022/07/12/flink%E5%AE%89%E8%A3%85%E5%8F%8A%E5%AE%A2%E6%88%B7%E7%AB%AF/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="下载地址,https:&#x2F;&#x2F;flink.apache.org&#x2F;downloads.html.同时下载hadoop依赖,https:&#x2F;&#x2F;repo.maven.apache.org&#x2F;maven2&#x2F;org&#x2F;apache&#x2F;flink&#x2F;flink-shaded-hadoop-2-uber&#x2F;2.6.5-10.0&#x2F;.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc0.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc4.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc5.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc21.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc22.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc23.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc6.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc7.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc8.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc9.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc10.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc11.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc12.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fc13.png">
+<meta property="article:published_time" content="2022-07-11T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-12-01T06:47:35.742Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="flink">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fc0.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/07/12/flink%E5%AE%89%E8%A3%85%E5%8F%8A%E5%AE%A2%E6%88%B7%E7%AB%AF/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>flink安装及客户端 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85"><span class="nav-number">1.</span> <span class="nav-text">安装</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">1.1.</span> <span class="nav-text">配置</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#flink-conf-yaml"><span class="nav-number">1.1.1.</span> <span class="nav-text">flink-conf.yaml</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#masters"><span class="nav-number">1.1.2.</span> <span class="nav-text">masters</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#workers"><span class="nav-number">1.1.3.</span> <span class="nav-text">workers</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Standalone"><span class="nav-number">1.2.</span> <span class="nav-text">Standalone</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B6%E5%AE%83%E5%91%BD%E4%BB%A4"><span class="nav-number">1.2.1.</span> <span class="nav-text">其它命令</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HA"><span class="nav-number">1.2.2.</span> <span class="nav-text">HA</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#yarn%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.3.</span> <span class="nav-text">yarn模式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF"><span class="nav-number">2.</span> <span class="nav-text">客户端</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Standalone-1"><span class="nav-number">2.1.</span> <span class="nav-text">Standalone</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Run"><span class="nav-number">2.1.1.</span> <span class="nav-text">Run</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#List"><span class="nav-number">2.1.2.</span> <span class="nav-text">List</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Stop"><span class="nav-number">2.1.3.</span> <span class="nav-text">Stop</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Cancel"><span class="nav-number">2.1.4.</span> <span class="nav-text">Cancel</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Savepoint"><span class="nav-number">2.1.5.</span> <span class="nav-text">Savepoint</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Info"><span class="nav-number">2.1.6.</span> <span class="nav-text">Info</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#yarn-application"><span class="nav-number">2.2.</span> <span class="nav-text">yarn-application</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#yarn-per-job"><span class="nav-number">2.3.</span> <span class="nav-text">yarn-per-job</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#yarn-session"><span class="nav-number">2.4.</span> <span class="nav-text">yarn-session</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#File-Systems"><span class="nav-number">3.</span> <span class="nav-text">File Systems</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%AC%E5%9C%B0%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F"><span class="nav-number">3.1.</span> <span class="nav-text">本地文件系统</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%BB%98%E8%AE%A4%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F"><span class="nav-number">3.2.</span> <span class="nav-text">默认文件系统</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%9E%E6%8E%A5%E9%99%90%E5%88%B6"><span class="nav-number">3.2.1.</span> <span class="nav-text">连接限制</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AB%98%E5%8F%AF%E7%94%A8"><span class="nav-number">4.</span> <span class="nav-text">高可用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ZooKeeper-%E9%AB%98%E5%8F%AF%E7%94%A8%E6%9C%8D%E5%8A%A1"><span class="nav-number">4.1.</span> <span class="nav-text">ZooKeeper 高可用服务</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Advanced"><span class="nav-number">5.</span> <span class="nav-text">Advanced</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#History-Server"><span class="nav-number">5.1.</span> <span class="nav-text">History Server</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A6%82%E8%A7%88"><span class="nav-number">5.1.1.</span> <span class="nav-text">概览</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0"><span class="nav-number">5.1.2.</span> <span class="nav-text">配置参数</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#JobManager"><span class="nav-number">5.1.2.1.</span> <span class="nav-text">JobManager</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#HistoryServer"><span class="nav-number">5.1.2.2.</span> <span class="nav-text">HistoryServer</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%AF%E7%94%A8%E7%9A%84%E8%AF%B7%E6%B1%82"><span class="nav-number">5.1.3.</span> <span class="nav-text">可用的请求</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/07/12/flink%E5%AE%89%E8%A3%85%E5%8F%8A%E5%AE%A2%E6%88%B7%E7%AB%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          flink安装及客户端
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-07-12 00:00:00" itemprop="dateCreated datePublished" datetime="2022-07-12T00:00:00+08:00">2022-07-12</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-12-01 14:47:35" itemprop="dateModified" datetime="2022-12-01T14:47:35+08:00">2022-12-01</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>下载地址,<a target="_blank" rel="noopener" href="https://flink.apache.org/downloads.html">https://flink.apache.org/downloads.html</a>.<br>同时下载hadoop依赖,<a target="_blank" rel="noopener" href="https://repo.maven.apache.org/maven2/org/apache/flink/flink-shaded-hadoop-2-uber/2.6.5-10.0/">https://repo.maven.apache.org/maven2/org/apache/flink/flink-shaded-hadoop-2-uber/2.6.5-10.0/</a>.</p>
+<span id="more"></span>
+
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><h4 id="flink-conf-yaml"><a href="#flink-conf-yaml" class="headerlink" title="flink-conf.yaml"></a>flink-conf.yaml</h4><figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#设置 jobmanager.rpc.address 配置项指向 master 节点</span></span><br><span class="line"><span class="attr">jobmanager.rpc.port:</span> <span class="number">6123</span></span><br><span class="line"><span class="comment">#定义 Flink 允许在每个节点上分配的最大内存值,单位是 MB</span></span><br><span class="line"><span class="attr">jobmanager.memory.process.size:</span> <span class="string">1600m</span></span><br><span class="line"><span class="attr">taskmanager.memory.process.size:</span> <span class="string">8192m</span></span><br><span class="line"><span class="comment">#每台机器的可用 CPU 数</span></span><br><span class="line"><span class="attr">taskmanager.numberOfTaskSlots:</span> <span class="number">8</span></span><br><span class="line"><span class="comment">#集群中所有 CPU 数</span></span><br><span class="line"><span class="attr">parallelism.default:</span> <span class="number">1</span></span><br><span class="line"></span><br><span class="line"><span class="attr">high-availability:</span> <span class="string">zookeeper</span></span><br><span class="line"><span class="attr">high-availability.storageDir:</span> <span class="string">hdfs://xxx/flink/ha/</span></span><br><span class="line"><span class="attr">high-availability.zookeeper.quorum:</span> <span class="string">master1:2181,master2:2181,node3:2181</span></span><br><span class="line"><span class="attr">high-availability.zookeeper.path.root:</span> <span class="string">/flink</span></span><br><span class="line"><span class="attr">high-availability.cluster-id:</span> <span class="string">/flinkcluster</span></span><br><span class="line"></span><br><span class="line"><span class="attr">state.backend:</span> <span class="string">filesystem</span></span><br><span class="line"><span class="attr">state.checkpoints.dir:</span> <span class="string">hdfs://xxx/flink/checkpoints</span></span><br><span class="line"><span class="attr">state.savepoints.dir:</span> <span class="string">hdfs://xxx/flink/savepoints</span></span><br><span class="line"><span class="attr">state.backend.incremental:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">jobmanager.execution.failover-strategy:</span> <span class="string">region</span></span><br><span class="line"></span><br><span class="line"><span class="attr">rest.port:</span> <span class="number">8081</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#临时目录</span></span><br><span class="line"><span class="attr">io.tmp.dirs:</span> <span class="string">/opt/flink/tmp</span></span><br><span class="line"></span><br><span class="line"><span class="attr">jobmanager.archive.fs.dir:</span> <span class="string">hdfs://xxx/flink/completed-jobs/</span></span><br><span class="line"><span class="attr">historyserver.web.address:</span> <span class="number">0.0</span><span class="number">.0</span><span class="number">.0</span></span><br><span class="line"><span class="attr">historyserver.web.port:</span> <span class="number">8082</span></span><br><span class="line"><span class="attr">historyserver.archive.fs.dir:</span> <span class="string">hdfs://xxx/flink/completed-jobs/</span></span><br><span class="line"><span class="attr">historyserver.archive.fs.refresh-interval:</span> <span class="number">10000</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="masters"><a href="#masters" class="headerlink" title="masters"></a>masters</h4><p>master1:8081<br>master2:8081</p>
+<h4 id="workers"><a href="#workers" class="headerlink" title="workers"></a>workers</h4><p>master1<br>master2<br>node3</p>
+<h3 id="Standalone"><a href="#Standalone" class="headerlink" title="Standalone"></a>Standalone</h3><p>可以在 conf/flink-conf.yaml 文件中通过 <code>env.java.home</code> 配置项来设置JAVA_HOME变量.<br>将hadoop对应版本的依赖(flink-shaded-hadoop-2-uber)添加到lib目录下,将hadoop配置链接到conf目录下,启动集群.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;start-cluster.sh</span><br></pre></td></tr></table></figure>
+
+<p>查看ui,master1:8081.</p>
+<p>进程名:<br>master:StandaloneSessionClusterEntrypoint<br>worker:TaskManagerRunner</p>
+<p>验证flink,查看日志,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink run examples&#x2F;streaming&#x2F;WordCount.jar</span><br></pre></td></tr></table></figure>
+
+<h4 id="其它命令"><a href="#其它命令" class="headerlink" title="其它命令"></a>其它命令</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">#关闭集群</span><br><span class="line">.&#x2F;bin&#x2F;stop-cluster.sh</span><br><span class="line"></span><br><span class="line">#添加jobmanager</span><br><span class="line">.&#x2F;bin&#x2F;jobmanager.sh ((start|start-foreground) [host] [webui-port])|stop|stop-all</span><br><span class="line"></span><br><span class="line">#taskmanager</span><br><span class="line">.&#x2F;bin&#x2F;taskmanager.sh start|start-foreground|stop|stop-all</span><br></pre></td></tr></table></figure>
+
+<h4 id="HA"><a href="#HA" class="headerlink" title="HA"></a>HA</h4><p>configure the masters file in conf/masters.<br>jobManagerAddress1:webUIPort1 <code>[...]</code> jobManagerAddressX:webUIPortX<br>localhost:8081 localhost:8082</p>
+<h3 id="yarn模式"><a href="#yarn模式" class="headerlink" title="yarn模式"></a>yarn模式</h3><p>yarn模式不需要启动flink集群,类似于spark模式,将core/hdfs配置文件添加到flink/conf目录下.</p>
+<h2 id="客户端"><a href="#客户端" class="headerlink" title="客户端"></a>客户端</h2><h3 id="Standalone-1"><a href="#Standalone-1" class="headerlink" title="Standalone"></a>Standalone</h3><p>启动一个 Standalone 的集群.<br>打开 <a target="_blank" rel="noopener" href="http://127.0.0.1:8081/">http://127.0.0.1:8081</a> 能看到 Web 界面.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;start-cluster.sh</span><br></pre></td></tr></table></figure>
+
+<h4 id="Run"><a href="#Run" class="headerlink" title="Run"></a>Run</h4><p>运行任务,以 Flink 自带的例子 TopSpeedWindowing 为例.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink run -d examples&#x2F;streaming&#x2F;TopSpeedWindowing.jar</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fc0.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>可以使用run(and run-application) 操作从保存点启动作业.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink run --detached \</span><br><span class="line">--fromSavepoint &#x2F;tmp&#x2F;flink-savepoints&#x2F;savepoint-cca7bc-bb1e257f0dab \</span><br><span class="line">.&#x2F;examples&#x2F;streaming&#x2F;StateMachineExample.jar</span><br></pre></td></tr></table></figure>
+
+<p>默认情况下,我们尝试将整个保存点状态与正在提交的作业匹配.<br>如果您想允许跳过无法通过新作业恢复的保存点状态,您可以设置该 --allowNonRestoredState标志.<br>如果您在触发保存点时从程序中删除了作为程序一部分的运算符并且您仍想使用保存点,则需要允许此操作.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink run \</span><br><span class="line">--fromSavepoint &lt;savepointPath&gt; \</span><br><span class="line">--allowNonRestoredState ...</span><br></pre></td></tr></table></figure>
+
+<p>点左侧Task Manager,然后点Stdout能看到输出日志.<br>或者查看本地 Log 目录下的 <code>*.out</code> 文件.</p>
+<h4 id="List"><a href="#List" class="headerlink" title="List"></a>List</h4><p>查看任务列表.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink list -m localhost:8081</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fc1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="Stop"><a href="#Stop" class="headerlink" title="Stop"></a>Stop</h4><p>优雅地停止作业创建最终保存点.<br>当流从源流向接收器时,这是一种更优雅的方式来停止正在运行的流式作业.<br>当用户请求停止作业时,将请求所有源发送将触发保存点的最后一个检查点屏障,并且在该保存点成功完成后,它们将通过调用其cancel()方法来完成.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink stop --savepointPath &#x2F;tmp&#x2F;flink-savepoints $JOB_ID</span><br></pre></td></tr></table></figure>
+
+<p>如果未设置<code>state.savepoints.dir</code>,我们必须使用<code>--savepointPath</code>指定保存点文件夹 .<br>如果--drain指定了标志,则 aMAX_WATERMARK将在最后一个检查点屏障之前发出.这将使所有已注册的事件时间计时器触发,从而清除等待特定水印的任何状态,例如窗口.该作业将继续运行,直到所有源正确关闭.这允许作业完成对所有正在进行的数据的处理,这可以在停止时获取保存点之后生成一些要处理的记录.<br>--drain如果要永久终止作业,请使用该标志.如果您想在稍后的时间点恢复作业,请不要耗尽管道,因为它可能会在恢复作业时导致不正确的结果.</p>
+<p>通过 -m 来指定要停止的 JobManager 的主机地址和端口.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink stop -m localhost:8081 aba053cd4358f7daa7a24c8edabb952c</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fc2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>一个 Job 能够被 Stop 要求所有的 Source 都是可以 Stoppable 的,即实现了 StoppableFunction 接口.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 需要能 stoppable 的函数必须实现这个接口,例如流式任务的 source.</span></span><br><span class="line"><span class="comment"> * stop() 方法在任务收到 STOP 信号的时候调用.</span></span><br><span class="line"><span class="comment"> * source 在接收到这个信号后,必须停止发送新的数据且优雅的停止.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@PublicEvolving</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">StoppableFunction</span> </span>&#123;</span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">    * 停止 source.与 cancel() 不同的是,这是一个让 source 优雅停止的请求.</span></span><br><span class="line"><span class="comment">    * 等待中的数据可以继续发送出去,不需要立即停止.</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">stop</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="Cancel"><a href="#Cancel" class="headerlink" title="Cancel"></a>Cancel</h4><p>取消任务,相应作业的状态将从转换Running为Cancelled,任何计算都将停止.<br>如果在 conf/flink-conf.yaml 里面配置了 state.savepoints.dir,会保存 Savepoint,否则不会保存 Savepoint.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink cancel -m localhost:8081 6c30e91724f38367b828951502977786</span><br></pre></td></tr></table></figure>
+
+<p>Cancelling job 6c30e91724f38367b828951502977786.<br>Cancelled job 6c30e91724f38367b828951502977786.</p>
+<p>也可以在停止的时候显示指定 Savepoint 目录.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#默认本地路径,非当前机器</span><br><span class="line">.&#x2F;bin&#x2F;flink cancel -m localhost:8081 -s &#x2F;tmp&#x2F;savepoint 72785426b6ef8902c202a76cb0eaf05f</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fc3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>取消和停止(流作业)的区别如下:</p>
+<blockquote>
+<p>cancel() 调用,立即调用作业算子的 cancel() 方法,以尽快取消它们.<br>如果算子在接到 cancel() 调用后没有停止,Flink 将开始定期中断算子线程的执行,直到所有算子停止为止.</p>
+<p>stop() 调用,是更优雅的停止正在运行流作业的方式.<br>stop() 仅适用于 Source 实现了 StoppableFunction 接口的作业.<br>当用户请求停止作业时,作业的所有 Source 都将接收 stop() 方法调用.<br>直到所有 Source 正常关闭时,作业才会正常结束.<br>这种方式,使作业正常处理完所有作业.</p>
+</blockquote>
+</blockquote>
+<h4 id="Savepoint"><a href="#Savepoint" class="headerlink" title="Savepoint"></a>Savepoint</h4><p>触发 Savepoint来保存作业的当前状态.<br>保存点文件夹是可选的,如果未设置state.savepoints.dir则需要指定.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#默认本地路径,非当前机器</span><br><span class="line">.&#x2F;bin&#x2F;flink savepoint -m localhost:8081 93a41a39f3cac0673ff77ca8a7e4e87b &#x2F;tmp&#x2F;savepoint</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fc4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>Savepoint 和 Checkpoint 的区别:</p>
+<blockquote>
+<p>Checkpoint 是增量做的,每次的时间较短,数据量较小,只要在程序里面启用后会自动触发,用户无须感知.<br>Checkpoint 是作业 failover 的时候自动使用,不需要用户指定.</p>
+<p>Savepoint 是全量做的,每次的时间较长,数据量较大,需要用户主动去触发.<br>Savepoint 一般用于程序的版本更新(详见文档),Bug 修复,A/BTest 等场景,需要用户指定.</p>
+</blockquote>
+</blockquote>
+<blockquote>
+<p>通过 -s 参数从指定的 Savepoint 启动:</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink run -d -s &#x2F;tmp&#x2F;savepoint&#x2F;savepoint-93a41a-e04098b9d36f .&#x2F;examples&#x2F;streaming&#x2F;TopSpeedWindowing.jar</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fc5.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="Info"><a href="#Info" class="headerlink" title="Info"></a>Info</h4><p>Info 命令是用来查看 Flink 任务的执行计划(StreamGraph)的.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink info examples&#x2F;streaming&#x2F;TopSpeedWindowing.jar</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;nodes&quot; : [ &#123;</span><br><span class="line">    &quot;id&quot; : 1,</span><br><span class="line">    &quot;type&quot; : &quot;Source: Custom Source&quot;,</span><br><span class="line">    &quot;pact&quot; : &quot;Data Source&quot;,</span><br><span class="line">    &quot;contents&quot; : &quot;Source: Custom Source&quot;,</span><br><span class="line">    &quot;parallelism&quot; : 1</span><br><span class="line">  &#125;, &#123;</span><br><span class="line">    &quot;id&quot; : 2,</span><br><span class="line">    &quot;type&quot; : &quot;Timestamps&#x2F;Watermarks&quot;,</span><br><span class="line">    &quot;pact&quot; : &quot;Operator&quot;,</span><br><span class="line">    &quot;contents&quot; : &quot;Timestamps&#x2F;Watermarks&quot;,</span><br><span class="line">    &quot;parallelism&quot; : 1,</span><br><span class="line">    &quot;predecessors&quot; : [ &#123;</span><br><span class="line">      &quot;id&quot; : 1,</span><br><span class="line">      &quot;ship_strategy&quot; : &quot;FORWARD&quot;,</span><br><span class="line">      &quot;side&quot; : &quot;second&quot;</span><br><span class="line">    &#125; ]</span><br><span class="line">  &#125;, &#123;</span><br><span class="line">    &quot;id&quot; : 4,</span><br><span class="line">    &quot;type&quot; : &quot;Window(GlobalWindows(), DeltaTrigger, TimeEvictor, ComparableAggregator, PassThroughWindowFunction)&quot;,</span><br><span class="line">    &quot;pact&quot; : &quot;Operator&quot;,</span><br><span class="line">    &quot;contents&quot; : &quot;Window(GlobalWindows(), DeltaTrigger, TimeEvictor, ComparableAggregator, PassThroughWindowFunction)&quot;,</span><br><span class="line">    &quot;parallelism&quot; : 1,</span><br><span class="line">    &quot;predecessors&quot; : [ &#123;</span><br><span class="line">      &quot;id&quot; : 2,</span><br><span class="line">      &quot;ship_strategy&quot; : &quot;HASH&quot;,</span><br><span class="line">      &quot;side&quot; : &quot;second&quot;</span><br><span class="line">    &#125; ]</span><br><span class="line">  &#125;, &#123;</span><br><span class="line">    &quot;id&quot; : 5,</span><br><span class="line">    &quot;type&quot; : &quot;Sink: Print to Std. Out&quot;,</span><br><span class="line">    &quot;pact&quot; : &quot;Data Sink&quot;,</span><br><span class="line">    &quot;contents&quot; : &quot;Sink: Print to Std. Out&quot;,</span><br><span class="line">    &quot;parallelism&quot; : 1,</span><br><span class="line">    &quot;predecessors&quot; : [ &#123;</span><br><span class="line">      &quot;id&quot; : 4,</span><br><span class="line">      &quot;ship_strategy&quot; : &quot;FORWARD&quot;,</span><br><span class="line">      &quot;side&quot; : &quot;second&quot;</span><br><span class="line">    &#125; ]</span><br><span class="line">  &#125; ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>拷贝输出的 Json 内容,粘贴到这个网站:<a target="_blank" rel="noopener" href="http://flink.apache.org/visualizer/">http://flink.apache.org/visualizer/</a>,</p>
+<h3 id="yarn-application"><a href="#yarn-application" class="headerlink" title="yarn-application"></a>yarn-application</h3><p>需要在yarn集群节点上操作.</p>
+<p>Application Mode 将在 YARN 上启动 Flink 集群,其中应用程序 jar 的 main() 方法在 YARN 中的 JobManager 上执行.<br>应用程序完成后,集群将立即关闭.<br><code>yarn application -kill &lt;ApplicationId&gt;</code>您可以使用或取消 Flink 作业手动停止集群.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink run-application -t yarn-application .&#x2F;examples&#x2F;streaming&#x2F;TopSpeedWindowing.jar</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fc21.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fc22.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fc23.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>部署应用程序模式集群后,您可以与其交互以执行取消或获取保存点等操作.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># List running job on the cluster</span><br><span class="line">.&#x2F;bin&#x2F;flink list -t yarn-application -Dyarn.application.id&#x3D;application_1660702008779_0010</span><br><span class="line"># Cancel running job</span><br><span class="line">.&#x2F;bin&#x2F;flink cancel -t yarn-application -Dyarn.application.id&#x3D;application_1660702008779_0010 &lt;jobId&gt;</span><br></pre></td></tr></table></figure>
+
+<p>请注意,取消应用程序集群上的作业将停止集群.</p>
+<p>要释放应用程序模式的全部潜力,请考虑将其与yarn.provided.lib.dirs配置选项一起使用,并将您的应用程序 jar 预上传到集群中所有节点都可以访问的位置.<br>在这种情况下,命令可能如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink run-application \</span><br><span class="line">-t yarn-application \</span><br><span class="line">-Dyarn.provided.lib.dirs&#x3D;&quot;hdfs:&#x2F;&#x2F;myhdfs&#x2F;my-remote-flink-dist-dir&quot; \</span><br><span class="line">hdfs:&#x2F;&#x2F;myhdfs&#x2F;jars&#x2F;my-application.jar</span><br></pre></td></tr></table></figure>
+
+<p>以上将允许作业提交更加轻量级,因为所需的 Flink jar 和应用程序 jar 将由指定的远程位置拾取,而不是由客户端运送到集群.</p>
+<h3 id="yarn-per-job"><a href="#yarn-per-job" class="headerlink" title="yarn-per-job"></a>yarn-per-job</h3><p>需要在yarn集群节点上操作.</p>
+<p>Per-job Cluster 模式会在 YARN 上启动一个 Flink 集群,然后在本地运行提供的应用程序 jar,最后将 JobGraph 提交到 YARN 上的 JobManager.<br>如果您传递--detached参数,一旦提交被接受,客户端将停止.</p>
+<p>一旦作业停止,YARN 集群将停止.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink run -t yarn-per-job --detached .&#x2F;examples&#x2F;streaming&#x2F;TopSpeedWindowing.jar</span><br></pre></td></tr></table></figure>
+
+<p>部署 Per-Job 集群后,您可以与其交互以执行取消或获取保存点等操作.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># List running job on the cluster</span><br><span class="line">.&#x2F;bin&#x2F;flink list -t yarn-per-job -Dyarn.application.id&#x3D;application_XXXX_YY</span><br><span class="line"># Cancel running job</span><br><span class="line">.&#x2F;bin&#x2F;flink cancel -t yarn-per-job -Dyarn.application.id&#x3D;application_XXXX_YY &lt;jobId&gt;</span><br></pre></td></tr></table></figure>
+
+<p>请注意,取消 Per-Job 集群上的作业将停止集群.</p>
+<blockquote>
+<p>使用<code>-m yarn-cluster</code>参数</p>
+<blockquote>
+<p>不需要在yarn集群节点上操作.<br>默认是 Attach 模式,即客户端会一直等待直到程序结束才会退出.<br>-yd,Detached 模式,客户端提交完任务就退出了</p>
+</blockquote>
+</blockquote>
+<img src="/images/fc6.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fc7.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink run -m yarn-cluster .&#x2F;examples&#x2F;streaming&#x2F;TopSpeedWindowing.jar</span><br><span class="line">.&#x2F;bin&#x2F;flink run -yd -m yarn-cluster .&#x2F;examples&#x2F;streaming&#x2F;TopSpeedWindowing.jar</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fc8.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fc9.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fc10.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="yarn-session"><a href="#yarn-session" class="headerlink" title="yarn-session"></a>yarn-session</h3><p>会话模式有两种操作模式:</p>
+<ol>
+<li>附加模式(默认)<br>yarn-session.sh客户端将 Flink 集群提交给 YARN,但客户端一直在运行,跟踪集群的状态.<br>如果集群失败,客户端将显示错误.<br>如果客户端被终止,它也会发出集群关闭的信号.</li>
+<li>分离模式(-d或--detached)<br>yarn-session.sh客户端将 Flink 集群提交给 YARN,然后客户端返回.<br>需要再次调用客户端或 YARN 工具来停止 Flink 集群.</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;yarn-session.sh --detached</span><br><span class="line">#表示启动一个 Yarn session 集群,每个 TM 的内存是 2 G,每个 TM 有 3 个 Slot.</span><br><span class="line">(注意:-n 参数不生效).</span><br><span class="line">.&#x2F;bin&#x2F;yarn-session.sh -tm 2048 -s 3</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fc11.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fc12.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fc13.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>会话模式会创建一个隐藏的 YARN 属性文件<code>/tmp/.yarn-properties-&lt;username&gt;</code>,在提交作业时,命令行界面将拾取该文件用于集群发现.</p>
+<p>您也可以在提交 Flink 作业时在命令行界面中手动指定目标 YARN 集群.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink run \</span><br><span class="line">-t yarn-session \</span><br><span class="line">-Dyarn.application.id&#x3D;application_1660702008779_0013 \</span><br><span class="line">.&#x2F;examples&#x2F;streaming&#x2F;TopSpeedWindowing.jar</span><br><span class="line"></span><br><span class="line">#执行以下命令会超时报错</span><br><span class="line">.&#x2F;bin&#x2F;flink run .&#x2F;examples&#x2F;streaming&#x2F;TopSpeedWindowing.jar</span><br></pre></td></tr></table></figure>
+
+<p>您可以使用以下命令重新附加到 YARN 会话:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;yarn-session.sh -id application_1660702008779_0013</span><br></pre></td></tr></table></figure>
+
+<p>除了通过文件传递配置外conf/flink-conf.yaml,您还可以在提交时./bin/yarn-session.sh使用-Dkey=value参数将任何配置传递给客户端.</p>
+<p>YARN 会话客户端也有一些常用设置的&quot;快捷参数&quot;.<br>它们可以用 列出./bin/yarn-session.sh -h.</p>
+<h2 id="File-Systems"><a href="#File-Systems" class="headerlink" title="File Systems"></a>File Systems</h2><p>Apache Flink 使用文件系统来消费和持久化地存储数据,以处理应用结果以及容错与恢复.<br>以下是一些最常用的文件系统:本地存储,hadoop-compatible,Amazon S3,阿里云 OSS 和 Azure Blob Storage.</p>
+<p>文件使用的文件系统通过其 URI Scheme 指定,例如,<br>file:///home/user/text.txt 表示一个在本地文件系统中的文件,<br>hdfs://namenode:50010/data/user/text.txt 表示一个在指定 HDFS 集群中的文件.</p>
+<p>文件系统在每个进程实例化一次,然后进行缓存/池化,从而避免每次创建流时的配置开销,并强制执行特定的约束,如连接/流的限制.</p>
+<h3 id="本地文件系统"><a href="#本地文件系统" class="headerlink" title="本地文件系统"></a>本地文件系统</h3><p>Flink 原生支持本地机器上的文件系统,包括任何挂载到本地文件系统的 NFS 或 SAN 驱动器,默认即可使用,无需额外配置.<br>本地文件可通过 file://URI Scheme 引用.</p>
+<h3 id="默认文件系统"><a href="#默认文件系统" class="headerlink" title="默认文件系统"></a>默认文件系统</h3><p>如果文件路径未明确指定文件系统的 scheme(和 authority),将会使用默认的 scheme(和 authority):<br><code>fs.default-scheme: &lt;default-fs&gt;</code><br>例如默认的文件系统配置为 fs.default-scheme: hdfs://localhost:9000/,则文件路径 /user/hugo/in.txt 将被处理为 hdfs://localhost:9000/user/hugo/in.txt.</p>
+<h4 id="连接限制"><a href="#连接限制" class="headerlink" title="连接限制"></a>连接限制</h4><p>如果文件系统不能处理大量并发读/写操作或连接,可以为文件系统同时打开的总连接数设置上限.<br>例如在一个大型 Flink 任务建立 checkpoint 时,具有少量 RPC handler 的小型 HDFS 集群可能会由于建立了过多的连接而过载.<br>要限制文件系统的连接数,可将下列配置添加至 Flink 配置中.设置限制的文件系统由其 scheme 指定:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">fs.&lt;scheme&gt;.limit.total: (数量,0&#x2F;-1 表示无限制)</span><br><span class="line">fs.&lt;scheme&gt;.limit.input: (数量,0&#x2F;-1 表示无限制)</span><br><span class="line">fs.&lt;scheme&gt;.limit.output: (数量,0&#x2F;-1 表示无限制)</span><br><span class="line">fs.&lt;scheme&gt;.limit.timeout: (毫秒,0 表示无穷)</span><br><span class="line">fs.&lt;scheme&gt;.limit.stream-timeout: (毫秒,0 表示无穷)</span><br></pre></td></tr></table></figure>
+
+<p>输入和输出连接(流)的数量可以分别进行限制(<code>fs.&lt;scheme&gt;.limit.input</code> 和 <code>fs.&lt;scheme&gt;.limit.output</code>),也可以限制并发流的总数(<code>fs.&lt;scheme&gt;.limit.total</code>).如果文件系统尝试打开更多的流,操作将被阻塞直至某些流关闭.如果打开流的时间超过 <code>fs.&lt;scheme&gt;.limit.timeout</code>,则流打开失败.</p>
+<p>为避免不活动的流占满整个连接池(阻止新连接的建立),可以在配置中添加无活动超时时间,如果连接至少在 <code>fs.&lt;scheme&gt;.limit.stream-timeout</code> 时间内没有读/写操作,则连接会被强制关闭.</p>
+<p>连接数是按每个 TaskManager/文件系统来进行限制的.因为文件系统的创建是按照 scheme 和 authority 进行的,所以不同的 authority 具有独立的连接池,例如 hdfs://myhdfs:50010/ 和 hdfs://anotherhdfs:4399/ 会有单独的连接池.</p>
+<h2 id="高可用"><a href="#高可用" class="headerlink" title="高可用"></a>高可用</h2><h3 id="ZooKeeper-高可用服务"><a href="#ZooKeeper-高可用服务" class="headerlink" title="ZooKeeper 高可用服务"></a>ZooKeeper 高可用服务</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">high-availability: zookeeper</span><br><span class="line">high-availability.storageDir: hdfs:&#x2F;&#x2F;&#x2F;flink&#x2F;recovery</span><br><span class="line">high-availability.zookeeper.quorum: address1:2181[,...],addressX:2181</span><br><span class="line">high-availability.zookeeper.path.root: &#x2F;flink</span><br><span class="line"></span><br><span class="line">#在 YARN&#x2F;原生 Kubernetes 或其他集群管理器上运行时,不应该手动设置此值.</span><br><span class="line">#在这些情况下,将自动生成一个集群 ID.</span><br><span class="line">#如果在未使用集群管理器的机器上运行多个 Flink 高可用集群,则必须为每个集群手动配置单独的集群 ID(cluster-ids)</span><br><span class="line">high-availability.cluster-id: &#x2F;cluster_one</span><br></pre></td></tr></table></figure>
+
+<h2 id="Advanced"><a href="#Advanced" class="headerlink" title="Advanced"></a>Advanced</h2><h3 id="History-Server"><a href="#History-Server" class="headerlink" title="History Server"></a>History Server</h3><p>Flink 提供了 history server,可以在相应的 Flink 集群关闭之后查询已完成作业的统计信息.<br>此外,它暴露了一套 REST API,该 API 接受 HTTP 请求并返回 JSON 格式的数据.</p>
+<h4 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h4><p>HistoryServer 允许查询 JobManager 存档的已完成作业的状态和统计信息.<br>在配置 HistoryServer 和 JobManager 之后,你可以使用相应的脚本来启动和停止 HistoryServer.</p>
+<p>#启动或者停止 HistoryServer<br><code>bin/historyserver.sh (start|start-foreground|stop)</code><br>默认情况下,此服务器绑定到 localhost 的 8082 端口.<br>目前,只能将 HistoryServer 作为独立的进程运行.</p>
+<p>根据配置文件,提前创建相应的completed-jobs路径(hdfs).</p>
+<h4 id="配置参数"><a href="#配置参数" class="headerlink" title="配置参数"></a>配置参数</h4><p>配置项 <code>jobmanager.archive.fs.dir</code> 和 <code>historyserver.archive.fs.refresh-interval</code> 需要根据 作业存档目录 和 刷新作业存档目录的时间间隔 进行调整.</p>
+<h5 id="JobManager"><a href="#JobManager" class="headerlink" title="JobManager"></a>JobManager</h5><p>已完成作业的存档在 JobManager 上进行,将已存档的作业信息上传到文件系统目录中.<br>你可以在 flink-conf.yaml 文件中通过 jobmanager.archive.fs.dir 设置一个目录存档已完成的作业.</p>
+<p>//上传已完成作业信息的目录<br><code>jobmanager.archive.fs.dir: hdfs:///completed-jobs</code></p>
+<h5 id="HistoryServer"><a href="#HistoryServer" class="headerlink" title="HistoryServer"></a>HistoryServer</h5><p>可以通过 <code>historyserver.archive.fs.dir</code> 设置 HistoryServer 监视以逗号分隔的目录列表.定期轮询已配置的目录以查找新的存档.<br>轮询间隔可以通过 <code>historyserver.archive.fs.refresh-interval</code> 来配置.</p>
+<p>//监视以下目录中已完成的作业<br><code>historyserver.archive.fs.dir: hdfs:///completed-jobs</code></p>
+<p>//每 10 秒刷新一次<br><code>historyserver.archive.fs.refresh-interval: 10000</code><br>所包含的存档被下载缓存在本地文件系统中.<br>本地目录通过 historyserver.web.tmpdir 配置.</p>
+<h4 id="可用的请求"><a href="#可用的请求" class="headerlink" title="可用的请求"></a>可用的请求</h4><p>以下是可用且带有示例 JSON 响应的请求列表.所有请求格式样例均为 <code>http://hostname:8082/jobs</code>,下面我们仅列出了 URLs 的 path 部分. 尖括号中的值为变量,例如作业 7684be6004e4e955c2a558a9bc463f65 的 <code>http://hostname:port/jobs/&lt;jobid&gt;/exceptions</code> 请求须写为 <code>http://hostname:port/jobs/7684be6004e4e955c2a558a9bc463f65/exceptions</code>.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;config</span><br><span class="line">&#x2F;jobs&#x2F;overview</span><br><span class="line">&#x2F;jobs&#x2F;&lt;jobid&gt;</span><br><span class="line">&#x2F;jobs&#x2F;&lt;jobid&gt;&#x2F;vertices</span><br><span class="line">&#x2F;jobs&#x2F;&lt;jobid&gt;&#x2F;config</span><br><span class="line">&#x2F;jobs&#x2F;&lt;jobid&gt;&#x2F;exceptions</span><br><span class="line">&#x2F;jobs&#x2F;&lt;jobid&gt;&#x2F;accumulators</span><br><span class="line">&#x2F;jobs&#x2F;&lt;jobid&gt;&#x2F;vertices&#x2F;&lt;vertexid&gt;</span><br><span class="line">&#x2F;jobs&#x2F;&lt;jobid&gt;&#x2F;vertices&#x2F;&lt;vertexid&gt;&#x2F;subtasktimes</span><br><span class="line">&#x2F;jobs&#x2F;&lt;jobid&gt;&#x2F;vertices&#x2F;&lt;vertexid&gt;&#x2F;taskmanagers</span><br><span class="line">&#x2F;jobs&#x2F;&lt;jobid&gt;&#x2F;vertices&#x2F;&lt;vertexid&gt;&#x2F;accumulators</span><br><span class="line">&#x2F;jobs&#x2F;&lt;jobid&gt;&#x2F;vertices&#x2F;&lt;vertexid&gt;&#x2F;subtasks&#x2F;accumulators</span><br><span class="line">&#x2F;jobs&#x2F;&lt;jobid&gt;&#x2F;vertices&#x2F;&lt;vertexid&gt;&#x2F;subtasks&#x2F;&lt;subtasknum&gt;</span><br><span class="line">&#x2F;jobs&#x2F;&lt;jobid&gt;&#x2F;vertices&#x2F;&lt;vertexid&gt;&#x2F;subtasks&#x2F;&lt;subtasknum&gt;&#x2F;attempts&#x2F;&lt;attempt&gt;</span><br><span class="line">&#x2F;jobs&#x2F;&lt;jobid&gt;&#x2F;vertices&#x2F;&lt;vertexid&gt;&#x2F;subtasks&#x2F;&lt;subtasknum&gt;&#x2F;attempts&#x2F;&lt;attempt&gt;&#x2F;accumulators</span><br><span class="line">&#x2F;jobs&#x2F;&lt;jobid&gt;&#x2F;plan</span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/flink/" rel="tag"># flink</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/07/12/%E4%BF%AE%E6%94%B9%E9%9B%86%E7%BE%A4%E9%BB%98%E8%AE%A4ssh%E7%AB%AF%E5%8F%A3/" rel="prev" title="修改集群默认ssh端口">
+                  <i class="fa fa-chevron-left"></i> 修改集群默认ssh端口
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/07/26/%E5%9F%BA%E4%BA%8Ezookeeper%E5%AE%9E%E7%8E%B0%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/" rel="next" title="基于zookeeper实现配置中心">
+                  基于zookeeper实现配置中心 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

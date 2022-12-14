@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="利用Hudi Bootstrap转化现有Hive表的parquet&#x2F;orc文件为Hudi表. hudi 0.12.1spark 2.4.8scala 2.11">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hudi bootstrapping">
+<meta property="og:url" content="https://maoeryu.github.io/2022/10/31/hudi%20bootstrapping/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="利用Hudi Bootstrap转化现有Hive表的parquet&#x2F;orc文件为Hudi表. hudi 0.12.1spark 2.4.8scala 2.11">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1201.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1202.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1197.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1198.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1200.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1199.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1203.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1204.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1210.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1205.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1206.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1207.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1208.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1209.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1211.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1213.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1216.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1212.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1214.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1217.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1215.png">
+<meta property="article:published_time" content="2022-10-30T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-12-02T06:13:49.759Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hudi">
+<meta property="article:tag" content="hive">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1201.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/10/31/hudi%20bootstrapping/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hudi bootstrapping | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%95%E7%8B%AC%E4%BD%BF%E7%94%A8-Hudi-%E8%BF%9B%E8%A1%8C%E6%96%B0%E5%88%86%E5%8C%BA"><span class="nav-number">1.1.</span> <span class="nav-text">单独使用 Hudi 进行新分区</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%86%E7%8E%B0%E6%9C%89%E8%A1%A8%E8%BD%AC%E6%8D%A2%E4%B8%BAHudi"><span class="nav-number">1.2.</span> <span class="nav-text">将现有表转换为Hudi</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%94%AF%E6%8C%81%E7%9A%84%E6%96%87%E4%BB%B6%E7%B1%BB%E5%9E%8B"><span class="nav-number">2.</span> <span class="nav-text">支持的文件类型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#METADATA-ONLY"><span class="nav-number">2.1.</span> <span class="nav-text">METADATA_ONLY</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FULL-RECORD"><span class="nav-number">2.2.</span> <span class="nav-text">FULL_RECORD</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Bootstrap%E7%B1%BB%E5%9E%8B"><span class="nav-number">3.</span> <span class="nav-text">Bootstrap类型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#METADATA-ONLY-1"><span class="nav-number">3.1.</span> <span class="nav-text">METADATA_ONLY</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FULL-RECORD-1"><span class="nav-number">3.2.</span> <span class="nav-text">FULL_RECORD</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-number">4.</span> <span class="nav-text">示例</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-HoodieDeltaStreamer-%E5%B7%A5%E5%85%B7"><span class="nav-number">4.1.</span> <span class="nav-text">使用 HoodieDeltaStreamer 工具</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%91%BD%E4%BB%A4%E9%80%89%E9%A1%B9"><span class="nav-number">4.1.1.</span> <span class="nav-text">命令选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#METADATA-ONLY-2"><span class="nav-number">4.1.2.</span> <span class="nav-text">METADATA_ONLY</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#FULL-RECORD-2"><span class="nav-number">4.1.3.</span> <span class="nav-text">FULL_RECORD</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#spark-read-write"><span class="nav-number">4.2.</span> <span class="nav-text">spark read&#x2F;write</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E9%80%BB%E8%BE%91"><span class="nav-number">4.3.</span> <span class="nav-text">自定义逻辑</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/10/31/hudi%20bootstrapping/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hudi bootstrapping
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-10-31 00:00:00" itemprop="dateCreated datePublished" datetime="2022-10-31T00:00:00+08:00">2022-10-31</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-12-02 14:13:49" itemprop="dateModified" datetime="2022-12-02T14:13:49+08:00">2022-12-02</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>利用Hudi Bootstrap转化现有Hive表的parquet/orc文件为Hudi表.</p>
+<p>hudi 0.12.1<br>spark 2.4.8<br>scala 2.11</p>
+<span id="more"></span>
+<h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><p>Hudi 维护诸如提交时间线和索引之类的元数据来管理表.<br>提交时间线有助于了解表上发生的操作以及表的当前状态.<br>Hudi 使用索引来维护key到文件 id 的映射,以有效地定位记录.<br>目前,Hudi 仅支持编写 parquet columnar 格式.<br>为了能够开始将 Hudi 用于现有表,您需要将现有表迁移到 Hudi 托管表中.<br>有几种方法可以实现这一目标.</p>
+<h2 id="单独使用-Hudi-进行新分区"><a href="#单独使用-Hudi-进行新分区" class="headerlink" title="单独使用 Hudi 进行新分区"></a>单独使用 Hudi 进行新分区</h2><p>Hudi 可用于管理现有表,而不会影响/更改表中已经存在的历史数据.<br>Hudi 已实现与此类混合表兼容,但需要注意的是完整的 Hive 分区是否由 Hudi 管理.<br>因此,Hudi 管理表的最低粒度是 Hive 分区.<br>开始使用数据源 API 或 WriteClient 写入表,并确保开始写入新分区或将最后 N 个分区转换为 Hudi 而不是整个表.<br>请注意,由于历史分区不由 HUDI 管理,因此 HUDI 提供的原语都不能处理这些分区中的数据.<br>更具体地说,不能对这些不受 HUDI 表管理的旧分区执行 upsert 或增量拉取.</p>
+<h2 id="将现有表转换为Hudi"><a href="#将现有表转换为Hudi" class="headerlink" title="将现有表转换为Hudi"></a>将现有表转换为Hudi</h2><p>将现有表导入 Hudi 托管表.<br>由于所有数据均由 Hudi 管理,因此方法 1 的任何限制均不适用.<br>跨任何分区的更新都可以应用于此表,Hudi 将有效地使更新可用于查询.<br>请注意,您不仅可以使用此表上的所有 Hudi 原语,这样做还有其他额外的好处.<br>Hudi 自动管理 Hudi 托管表的文件大小.<br>您可以在转换此表时定义所需的文件大小,Hudi 将确保它写出符合配置的文件.<br>它还将确保稍后通过将一些新插入路由到小文件而不是编写新的小文件来纠正较小的文件,从而保持集群的健康.<br>选择这种方法时有几个选项.</p>
+<ol>
+<li>使用 <code>HoodieDeltaStreamer</code> 工具</li>
+<li>spark read/write</li>
+<li>自定义逻辑</li>
+</ol>
+<h1 id="支持的文件类型"><a href="#支持的文件类型" class="headerlink" title="支持的文件类型"></a>支持的文件类型</h1><p>目前只支持两种文件类型:parquet和orc.<br>通过文件后缀(orc/parquet)判断.</p>
+<img src="/images/fly1201.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1202.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="METADATA-ONLY"><a href="#METADATA-ONLY" class="headerlink" title="METADATA_ONLY"></a>METADATA_ONLY</h2><p>MetadataBootstrapHandlerFactory.getMetadataHandler(...)</p>
+<img src="/images/fly1197.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>文件类型不匹配时,异常信息如下,<br>&quot;Bootstrap Metadata Handler not implemented for base file format &quot; + extension</p>
+<h2 id="FULL-RECORD"><a href="#FULL-RECORD" class="headerlink" title="FULL_RECORD"></a>FULL_RECORD</h2><p>FullRecordBootstrapDataProvider只有两个实现类,其中,<br>SparkParquetBootstrapDataProvider对应parquet文件类型,<br>SparkOrcBootstrapDataProvider 对应orc文件类型.</p>
+<img src="/images/fly1198.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1200.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1199.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>文件类型不匹配时,异常信息如下,<br>&quot;Could not determine schema from the data files.&quot;</p>
+<h1 id="Bootstrap类型"><a href="#Bootstrap类型" class="headerlink" title="Bootstrap类型"></a>Bootstrap类型</h1><p>有两种类型的引导程序,<code>METADATA_ONLY</code> 和 <code>FULL_RECORD</code>.</p>
+<h2 id="METADATA-ONLY-1"><a href="#METADATA-ONLY-1" class="headerlink" title="METADATA_ONLY"></a>METADATA_ONLY</h2><p>只会生成主键/页脚的基本框架文件,不会重写全部数据,这样可以节省时间/提升效率.<br>而查询时,会根据元数据信息去查源表的文件,也就是原来的表数据文件不能删除.<br>当有后续数据写入,第一次commit对应的parquet文件变为历史文件时,删除源表的文件就不会影响正常读取了.<br><code>_hoodie_commit_time</code>为00000000000001,对应源码<code>HoodieTimeline.METADATA_BOOTSTRAP_INSTANT_TS</code>.</p>
+<h2 id="FULL-RECORD-1"><a href="#FULL-RECORD-1" class="headerlink" title="FULL_RECORD"></a>FULL_RECORD</h2><p>首先读取源表文件生成RDD,然后将RDD以bulkInsert的形式写到新的Hudi表,也就是以Hudi表的形式执行数据的完整复制/重写.<br><code>_hoodie_commit_time</code>为00000000000002,对应源码<code>HoodieTimeline.FULL_BOOTSTRAP_INSTANT_TS</code>.</p>
+<img src="/images/fly1203.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h1 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h1><h2 id="使用-HoodieDeltaStreamer-工具"><a href="#使用-HoodieDeltaStreamer-工具" class="headerlink" title="使用 HoodieDeltaStreamer 工具"></a>使用 <code>HoodieDeltaStreamer</code> 工具</h2><p>HoodieDeltaStreamer 支持带有 <code>--run-bootstrap</code> 命令行选项的引导.</p>
+<h3 id="命令选项"><a href="#命令选项" class="headerlink" title="命令选项"></a>命令选项</h3><p><code>--allow-commit-on-no-checkpoint-change</code><br>|false<br>即使checkpoint在 fetch 前后没有改变,也允许提交来自源的数据.<br>没有检查站时,这可能在像 SqlSource 这样的源中很有用.<br>并且不建议在连续启用模式(continuous mode)时开启.</p>
+<p><code>--base-file-format</code><br>|PARQUET<br>文件格式.PARQUET (or) HFILE</p>
+<p><code>--bootstrap-index-class</code><br>|org.apache.hudi.common.bootstrap.index.HFileBootstrapIndex<br>subclass of BootstrapIndex(HFileBootstrapIndex/NoOpBootstrapIndex)</p>
+<p><code>--bootstrap-overwrite</code><br>|false<br>Overwrite existing target table.</p>
+<p><code>--checkpoint</code><br>从这个检查点恢复 Delta Streamer.</p>
+<p><code>--cluster-scheduling-minshare</code><br>|0<br>Minshare for clustering as defined in <a target="_blank" rel="noopener" href="https://spark.apache.org/docs/latest/job-scheduling.html">https://spark.apache.org/docs/latest/job-scheduling.html</a> </p>
+<p><code>--cluster-scheduling-weight</code><br>|1<br>Scheduling weight for clustering as defined in <a target="_blank" rel="noopener" href="https://spark.apache.org/docs/latest/job-scheduling.html">https://spark.apache.org/docs/latest/job-scheduling.html</a> </p>
+<p><code>--commit-on-errors</code><br>|false<br>Commit even when some records failed to be written</p>
+<p><code>--compact-scheduling-minshare</code><br>|0<br>Minshare for compaction as defined in <a target="_blank" rel="noopener" href="https://spark.apache.org/docs/latest/job-scheduling.html">https://spark.apache.org/docs/latest/job-scheduling.html</a> </p>
+<p><code>--compact-scheduling-weight</code><br>|1<br>Scheduling weight for compaction as defined in <a target="_blank" rel="noopener" href="https://spark.apache.org/docs/latest/job-scheduling.html">https://spark.apache.org/docs/latest/job-scheduling.html</a> </p>
+<p><code>--continuous</code><br>|false<br>Delta Streamer runs in continuous mode running source-fetch -&gt; Transform -&gt; Hudi Write in loop</p>
+<p><code>--delta-sync-scheduling-minshare</code><br>|0<br>Minshare for delta sync as defined in <a target="_blank" rel="noopener" href="https://spark.apache.org/docs/latest/job-scheduling.html">https://spark.apache.org/docs/latest/job-scheduling.html</a> </p>
+<p><code>--delta-sync-scheduling-weight</code><br>|1<br>Scheduling weight for delta sync as defined in <a target="_blank" rel="noopener" href="https://spark.apache.org/docs/latest/job-scheduling.html">https://spark.apache.org/docs/latest/job-scheduling.html</a> </p>
+<p><code>--disable-compaction</code><br>|false<br>Compaction is enabled for MoR table by default. This flag disables it</p>
+<p><code>--enable-hive-sync</code><br>|false<br>Enable syncing to hive</p>
+<p><code>--enable-sync</code><br>|false<br>Enable syncing meta</p>
+<p><code>--filter-dupes</code><br>|false<br>Should duplicate records from source be dropped/filtered out before insert/bulk-insert </p>
+<p><code>--help, -h</code></p>
+<p><code>--hoodie-conf</code><br>|<code>[]</code><br>可以在属性文件中设置的任何配置(使用 CLI参数&quot;--props&quot;),也可以使用这个传递命令行<br>范围,这可以重复.</p>
+<p><code>--initial-checkpoint-provider</code><br><code>org.apache.hudi.utilities.checkpointing.InitialCheckpointProvider</code>的子类.<br>为第一次运行生成 delta streamer 的检查点.<br>这个领域将使用检查点字段覆盖上次提交的检查点.<br>仅在切换源时使用此字段,例如从 DFS source到Kafka Source.</p>
+<p><code>--max-pending-clustering</code><br>|5<br>未完成的inflight/requested clustering的最大数量.<br>除非clustering少于这个数字,否则增量同步不会发生.</p>
+<p><code>--max-pending-compactions</code><br>|5<br>同上,compaction.</p>
+<p><code>--max-retry-count</code><br>|3<br>the max retry count if --retry-on-source-failures is enabled</p>
+<p><code>--min-sync-interval-seconds</code><br>|0<br>the min sync interval of each sync in continuous mode</p>
+<p><code>--op</code><br>|UPSERT<br>Takes one of these values : UPSERT (default), INSERT (当输入是纯粹的新数据/插入以提高速度时使用)<br>Possible Values: [INSERT, INSERT_PREPPED, UPSERT, UPSERT_PREPPED, BULK_INSERT, BULK_INSERT_PREPPED, DELETE, BOOTSTRAP, INSERT_OVERWRITE, CLUSTER, DELETE_PARTITION, INSERT_OVERWRITE_TABLE, COMPACT, INDEX, ALTER_SCHEMA, UNKNOWN]</p>
+<p><code>--payload-class</code><br>|<code>org.apache.hudi.common.model.OverwriteWithLatestAvroPayload</code><br>subclass of <code>HoodieRecordPayload</code>,这适用于 GenericRecord.<br>如果您想做除覆盖之外的其他事情,请实现existing value.</p>
+<p><code>--post-write-termination-strategy-class</code><br>|<code>&lt;empty string&gt;</code><br>Post writer 终止策略类,优雅地关闭连续模式下的 deltastreamer</p>
+<p><code>--props</code><br>|file:///opt/spark-2.4.8-bin-hadoop2.6/src/test/resources/delta-streamer-config/dfs-source.properties<br>localfs/dfs上的属性文件的路径,配置为hoodie client/schema provider/key generator/data source.<br>为了hoodie client props,使用正常的默认值,但建议使用提供基本的东西,如metrics endpoints/hive configs等.<br>对于sources,请参阅各个类,以获取受支持的属性.<br>此文件中的属性可以被&quot;--hoodie-conf&quot;覆盖.</p>
+<p><code>--retry-interval-seconds</code><br>|30<br>the retry interval for source failures if <code>--retry-on-source-failures</code> is<br>enabled </p>
+<p><code>--retry-last-pending-inline-clustering, -rc</code><br>|false<br>Retry last pending inline clustering plan before writing to sink.</p>
+<p><code>--retry-on-source-failures</code><br>|false<br>Retry on any source failures</p>
+<p><code>--run-bootstrap</code><br>|false<br>Run bootstrap if bootstrap index is not found</p>
+<p><code>--schemaprovider-class</code><br>subclass of <code>org.apache.hudi.utilities.schema.SchemaProvider</code> to attach<br>schemas to input &amp; target table data, built in options:<br>org.apache.hudi.utilities.schema.FilebasedSchemaProvider.Source (See<br>org.apache.hudi.utilities.sources.Source) implementation can implement<br>their own SchemaProvider. For Sources that return <code>Dataset&lt;Row&gt;</code>, the<br>schema is obtained implicitly. However, this CLI option allows<br>overriding the schemaprovider returned by Source.</p>
+<p><code>--source-class</code><br>|<code>org.apache.hudi.utilities.sources.JsonDFSSource</code><br>Subclass of <code>org.apache.hudi.utilities.sources</code> to read data. Built-in<br>options: org.apache.hudi.utilities.sources.{JsonDFSSource (default),<br>AvroDFSSource, JsonKafkaSource, AvroKafkaSource, HiveIncrPullSource}</p>
+<p><code>--source-limit</code><br>|9223372036854775807<br>Maximum amount of data to read from source. Default: No limit, e.g:<br>DFS-Source =&gt; max bytes to read, Kafka-Source =&gt; max events to read</p>
+<p><code>--source-ordering-field</code><br>|ts<br>source record中的字段来决定如何打破记录之间的联系在输入数据中使用相同的key.<br>默认值&#39;ts&#39; 为 unix 时间戳记录.</p>
+<p><code>--spark-master</code><br>|<code>local[2]</code><br>spark master to use.</p>
+<p><code>--sync-tool-classes</code><br>|org.apache.hudi.hive.HiveSyncTool<br>Meta sync client tool,使用逗号分隔多个工具.</p>
+<p><code>--table-type</code><br>Type of table. COPY_ON_WRITE (or) MERGE_ON_READ</p>
+<p><code>--target-base-path</code><br>base path for the target hoodie table. (Will be created if did not exist<br>first time around. If exists, expected to be a hoodie table)</p>
+<p><code>--target-table</code><br>name of the target table</p>
+<p><code>--transformer-class</code><br>A subclass or a list of subclasses of<br>org.apache.hudi.utilities.transform.Transformer. Allows transforming raw<br>source Dataset to a target Dataset (conforming to target schema) before<br>writing. Default : Not set. E:g -<br>org.apache.hudi.utilities.transform.SqlQueryBasedTransformer (which<br>allows a SQL query templated to be passed as a transformation function).<br>Pass a comma-separated list of subclass names to chain the<br>transformations. </p>
+<h3 id="METADATA-ONLY-2"><a href="#METADATA-ONLY-2" class="headerlink" title="METADATA_ONLY"></a>METADATA_ONLY</h3><p>区别在于<code>hoodie.bootstrap.mode.selector.regex.mode=METADATA_ONLY</code>,其它一致.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">spark-submit \</span><br><span class="line">--conf &#x27;spark.serializer=org.apache.spark.serializer.KryoSerializer&#x27; \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer \</span><br><span class="line">/opt/spark/jars/hudi-utilities-bundle_2.11-0.12.1.jar \</span><br><span class="line">--bootstrap-overwrite \</span><br><span class="line">--run-bootstrap \</span><br><span class="line">--target-base-path /hoodie/bootstrap_table \</span><br><span class="line">--target-table bootstrap_table \</span><br><span class="line">--table-type COPY_ON_WRITE \</span><br><span class="line">--enable-sync \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.base.path=/user/hive/warehouse/test_xxx22 \</span><br><span class="line">--hoodie-conf hoodie.datasource.write.recordkey.field=accid \</span><br><span class="line">--hoodie-conf hoodie.datasource.write.partitionpath.field=dt \</span><br><span class="line">--hoodie-conf hoodie.datasource.write.precombine.field=type \</span><br><span class="line">--hoodie-conf hoodie.datasource.write.hive_style_partitioning=true \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.keygen.class=org.apache.hudi.keygen.SimpleKeyGenerator \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.full.input.provider=org.apache.hudi.bootstrap.SparkParquetBootstrapDataProvider \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.mode.selector=org.apache.hudi.client.bootstrap.selector.BootstrapRegexModeSelector \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.mode.selector.regex.mode=METADATA_ONLY</span><br></pre></td></tr></table></figure>
+
+<h3 id="FULL-RECORD-2"><a href="#FULL-RECORD-2" class="headerlink" title="FULL_RECORD"></a>FULL_RECORD</h3><p>使用 HoodieDeltaStreamer 保持 hive 样式分区的示例.</p>
+<p>创建hive表,格式为parquet.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> if <span class="keyword">not</span> <span class="keyword">exists</span> `test_xxx22`</span><br><span class="line">(</span><br><span class="line">  `dateline` String,</span><br><span class="line">  `logts` String,</span><br><span class="line">  `accid` String,</span><br><span class="line">  `type` String</span><br><span class="line">) </span><br><span class="line">partitioned <span class="keyword">by</span> (dt string)</span><br><span class="line">stored <span class="keyword">as</span> parquet;</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">into</span> <span class="keyword">TABLE</span> test_xxx22 <span class="keyword">partition</span>(dt<span class="operator">=</span><span class="string">&#x27;20221101&#x27;</span>) <span class="keyword">values</span>(&quot;&quot;,&quot;&quot;,&quot;&quot;,&quot;&quot;);</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test_xxx22;</span><br><span class="line"><span class="keyword">show</span> partitions test_xxx22;</span><br><span class="line"></span><br><span class="line">dt<span class="operator">=</span><span class="number">20221101</span></span><br><span class="line"></span><br><span class="line"><span class="number">1666926681426</span> <span class="number">1666926681397</span> b8960c218cca56be1mDQW4   <span class="number">100028</span> <span class="number">20221031</span></span><br><span class="line"><span class="number">1666926681426</span> <span class="number">1666926681397</span> b8960c218cca56be1mDQW4   <span class="number">100028</span> <span class="number">20221031</span></span><br></pre></td></tr></table></figure>
+
+<p>如果文件后缀不是&quot;.parquet&quot;,报错信息如下,</p>
+<img src="/images/fly1204.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>可以使用<code>hdfs dfs -mv</code>命令将parquet格式表数据文件转为<code>xxx.parquet</code>,或者使用spark进行转换.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">object</span> <span class="title">Txt2Parquet</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="comment">//待转换的文件路径</span></span><br><span class="line">    <span class="keyword">val</span> path = <span class="string">&quot;d:/mypro/sftp/a1&quot;</span></span><br><span class="line">    <span class="keyword">val</span> spark: <span class="type">SparkSession</span> = <span class="type">SparkSession</span>.builder()</span><br><span class="line">        .appName(<span class="string">&quot;Txt2Parquet&quot;</span>)</span><br><span class="line">        .master(<span class="string">&quot;local[*]&quot;</span>).getOrCreate()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">val</span> sc: <span class="type">SparkContext</span> = spark.sparkContext</span><br><span class="line">    <span class="keyword">val</span> stuRDD: <span class="type">RDD</span>[<span class="type">String</span>] = sc.textFile(path)</span><br><span class="line"></span><br><span class="line">    <span class="comment">//RDD ===&gt; DataFrame 需要隐式转换</span></span><br><span class="line">    <span class="keyword">import</span> spark.implicits._</span><br><span class="line">    <span class="keyword">val</span> stuDF: <span class="type">DataFrame</span> = stuRDD.map(_.split(<span class="string">&quot;,&quot;</span>, <span class="number">-1</span>))</span><br><span class="line">        .map(line =&gt; <span class="type">Student</span>(line(<span class="number">0</span>), line(<span class="number">1</span>), line(<span class="number">2</span>), line(<span class="number">3</span>))).toDF()</span><br><span class="line"></span><br><span class="line">    <span class="comment">//写为Snappy压缩的Parquet文件,设置文件数为1</span></span><br><span class="line">    stuDF.repartition(<span class="number">1</span>).write.mode(<span class="type">SaveMode</span>.<span class="type">Overwrite</span>).parquet(<span class="string">&quot;d:/mypro/sftp/xx1&quot;</span>)</span><br><span class="line">    spark.stop()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">Student</span>(<span class="params">dateline: <span class="type">String</span>, logts: <span class="type">String</span>, accid: <span class="type">String</span>, `type`: <span class="type">String</span></span>)</span></span><br><span class="line"><span class="class">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1210.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>执行以下命令.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">spark-submit \</span><br><span class="line">--conf &#x27;spark.serializer=org.apache.spark.serializer.KryoSerializer&#x27; \</span><br><span class="line">--class org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer \</span><br><span class="line">/opt/spark/jars/hudi-utilities-bundle_2.11-0.12.1.jar \</span><br><span class="line">--bootstrap-overwrite \</span><br><span class="line">--run-bootstrap \</span><br><span class="line">--target-base-path /hoodie/bootstrap_table \</span><br><span class="line">--target-table bootstrap_table \</span><br><span class="line">--table-type COPY_ON_WRITE \</span><br><span class="line">--enable-sync \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.base.path=/user/hive/warehouse/test_xxx22 \</span><br><span class="line">--hoodie-conf hoodie.datasource.write.recordkey.field=accid \</span><br><span class="line">--hoodie-conf hoodie.datasource.write.partitionpath.field=dt \</span><br><span class="line">--hoodie-conf hoodie.datasource.write.precombine.field=type \</span><br><span class="line">--hoodie-conf hoodie.datasource.write.hive_style_partitioning=true \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.keygen.class=org.apache.hudi.keygen.SimpleKeyGenerator \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.full.input.provider=org.apache.hudi.bootstrap.SparkParquetBootstrapDataProvider \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.mode.selector=org.apache.hudi.client.bootstrap.selector.BootstrapRegexModeSelector \</span><br><span class="line">--hoodie-conf hoodie.bootstrap.mode.selector.regex.mode=FULL_RECORD \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.enable=true \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.mode=hms \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.database=test \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.table=test_xxx222222 \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.partition_fields=dt \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.auto_create_database=true \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.metastore.uris=thrift://hadoop-sh1-core1:9083 \</span><br><span class="line">--hoodie-conf hoodie.datasource.hive_sync.partition_extractor_class=org.apache.hudi.hive.MultiPartKeysValueExtractor</span><br></pre></td></tr></table></figure>
+
+<p>使用0.12.0版本测试结果.</p>
+<img src="/images/fly1205.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1206.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1207.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1208.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1209.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>0.12.0版本读取文件转rdd时有问题,源码如下,</p>
+<img src="/images/fly1211.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1213.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1216.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>0.12.1源码如下,</p>
+<img src="/images/fly1212.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1214.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1217.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>spark sql中不显示无分区,查询不出数据,查询时报错信息如下.<br>Caused by: org.apache.hudi.exception.HoodieException: No files found for reading in user provided path.<br>  at org.apache.hudi.HoodieBootstrapRelation.buildFileIndex(HoodieBootstrapRelation.scala:167)<br>  at org.apache.hudi.HoodieBootstrapRelation.<init>(HoodieBootstrapRelation.scala:65)<br>  at org.apache.hudi.DefaultSource$.createRelation(DefaultSource.scala:240)<br>  at org.apache.hudi.DefaultSource.createRelation(DefaultSource.scala:111)<br>  at org.apache.spark.sql.execution.datasources.DataSource.resolveRelation(DataSource.scala:330)</p>
+<p>hive中显示分区正常,查询不出数据.<br>数据写入正常.</p>
+<img src="/images/fly1215.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+
+<h2 id="spark-read-write"><a href="#spark-read-write" class="headerlink" title="spark read/write"></a>spark read/write</h2><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> partition in [list of partitions in source table] &#123;</span><br><span class="line">  <span class="keyword">val</span> inputDF = spark.read.format(<span class="string">&quot;any_input_format&quot;</span>).load(<span class="string">&quot;partition_path&quot;</span>)</span><br><span class="line">  inputDF.write.format(<span class="string">&quot;org.apache.hudi&quot;</span>).option()....save(<span class="string">&quot;basePath&quot;</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="自定义逻辑"><a href="#自定义逻辑" class="headerlink" title="自定义逻辑"></a>自定义逻辑</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd hudi-cli &amp;&amp; ./hudi-cli.sh.</span><br><span class="line"><span class="meta">hudi-&gt;</span><span class="bash">bootstrap run --srcPath /tmp/source_table --targetPath /tmp/hoodie/bootstrap_table --tableName bootstrap_table --tableType COPY_ON_WRITE --rowKeyField <span class="variable">$&#123;KEY_FIELD&#125;</span> --partitionPathField <span class="variable">$&#123;PARTITION_FIELD&#125;</span> --sparkMaster <span class="built_in">local</span> --hoodieConfigs hoodie.datasource.write.hive_style_partitioning=<span class="literal">true</span> --selectorClass org.apache.hudi.client.bootstrap.selector.FullRecordBootstrapModeSelector</span></span><br></pre></td></tr></table></figure>
+
+<p>与 deltaStream 不同,FULL_RECORD 或 METADATA_ONLY 使用 <code>--selectorClass</code> 设置.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hudi/" rel="tag"># hudi</a>
+              <a href="/tags/hive/" rel="tag"># hive</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/10/31/hudi%20try/" rel="prev" title="hudi try">
+                  <i class="fa fa-chevron-left"></i> hudi try
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/11/08/flume%20kafka-sink%20partitionId%E4%BD%BF%E7%94%A8/" rel="next" title="flume kafka-sink partitionId使用">
+                  flume kafka-sink partitionId使用 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

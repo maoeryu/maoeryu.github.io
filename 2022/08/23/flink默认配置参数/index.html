@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="基本设置主机名&#x2F;端口这些选项仅对standalone application- or session deployments (simple standalone or Kubernetes)是必需的.如果您将 Flink 与Yarn或活动的Kubernetes 集成一起使用,则会自动发现主机名和端口.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="flink默认配置参数">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/23/flink%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="基本设置主机名&#x2F;端口这些选项仅对standalone application- or session deployments (simple standalone or Kubernetes)是必需的.如果您将 Flink 与Yarn或活动的Kubernetes 集成一起使用,则会自动发现主机名和端口.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl63.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl64.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl65.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl66.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl67.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl68.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl69.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl70.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl71.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl72.png">
+<meta property="article:published_time" content="2022-08-22T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-13T03:28:52.901Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="flink">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/flgl63.svg">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/23/flink%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>flink默认配置参数 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E8%AE%BE%E7%BD%AE"><span class="nav-number">1.</span> <span class="nav-text">基本设置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E6%9C%BA%E5%90%8D-%E7%AB%AF%E5%8F%A3"><span class="nav-number">1.1.</span> <span class="nav-text">主机名&#x2F;端口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%A4%A7%E5%B0%8F"><span class="nav-number">1.2.</span> <span class="nav-text">内存大小</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Parallelism"><span class="nav-number">1.3.</span> <span class="nav-text">Parallelism</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Checkpointing"><span class="nav-number">1.4.</span> <span class="nav-text">Checkpointing</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Web-UI"><span class="nav-number">1.5.</span> <span class="nav-text">Web UI</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E4%BB%96"><span class="nav-number">1.6.</span> <span class="nav-text">其他</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8%E8%AE%BE%E7%BD%AE%E9%80%89%E9%A1%B9"><span class="nav-number">2.</span> <span class="nav-text">常用设置选项</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E6%9C%BA%E5%92%8C%E7%AB%AF%E5%8F%A3"><span class="nav-number">2.1.</span> <span class="nav-text">主机和端口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%B9%E9%94%99"><span class="nav-number">2.2.</span> <span class="nav-text">容错</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9B%BA%E5%AE%9A%E5%BB%B6%E8%BF%9F%E9%87%8D%E5%90%AF%E7%AD%96%E7%95%A5"><span class="nav-number">2.2.1.</span> <span class="nav-text">固定延迟重启策略</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%85%E9%9A%9C%E7%8E%87%E9%87%8D%E5%90%AF%E7%AD%96%E7%95%A5"><span class="nav-number">2.2.2.</span> <span class="nav-text">故障率重启策略</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%AF%E9%87%8D%E8%AF%95%E6%B8%85%E7%90%86"><span class="nav-number">2.3.</span> <span class="nav-text">可重试清理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9B%BA%E5%AE%9A%E5%BB%B6%E8%BF%9F%E6%B8%85%E7%90%86%E9%87%8D%E8%AF%95%E7%AD%96%E7%95%A5"><span class="nav-number">2.3.1.</span> <span class="nav-text">固定延迟清理重试策略</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8C%87%E6%95%B0%E5%BB%B6%E8%BF%9F%E6%B8%85%E7%90%86%E9%87%8D%E8%AF%95%E7%AD%96%E7%95%A5"><span class="nav-number">2.3.2.</span> <span class="nav-text">指数延迟清理重试策略</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5%E7%82%B9%E5%92%8C%E7%8A%B6%E6%80%81%E5%90%8E%E7%AB%AF"><span class="nav-number">2.4.</span> <span class="nav-text">检查点和状态后端</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E5%8F%AF%E7%94%A8%E6%80%A7"><span class="nav-number">2.5.</span> <span class="nav-text">高可用性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%AB%98%E5%8F%AF%E7%94%A8%E6%80%A7%E8%AE%BE%E7%BD%AE%E4%B8%AD%E7%9A%84-JobResultStore-%E9%80%89%E9%A1%B9"><span class="nav-number">2.5.1.</span> <span class="nav-text">高可用性设置中的 JobResultStore 选项</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ZooKeeper-%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8%E6%80%A7%E8%AE%BE%E7%BD%AE%E9%80%89%E9%A1%B9"><span class="nav-number">2.5.2.</span> <span class="nav-text">ZooKeeper 的高可用性设置选项</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E9%85%8D%E7%BD%AE"><span class="nav-number">2.6.</span> <span class="nav-text">内存配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E9%80%89%E9%A1%B9"><span class="nav-number">2.7.</span> <span class="nav-text">其他选项</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#YARN"><span class="nav-number">3.</span> <span class="nav-text">YARN</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8A%B6%E6%80%81%E5%90%8E%E7%AB%AF"><span class="nav-number">4.</span> <span class="nav-text">状态后端</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RocksDB-%E7%8A%B6%E6%80%81%E5%90%8E%E7%AB%AF"><span class="nav-number">4.1.</span> <span class="nav-text">RocksDB 状态后端</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Metrics"><span class="nav-number">5.</span> <span class="nav-text">Metrics</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RocksDB-%E5%8E%9F%E7%94%9F%E6%8C%87%E6%A0%87"><span class="nav-number">5.1.</span> <span class="nav-text">RocksDB 原生指标</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%86%E5%8F%B2%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="nav-number">6.</span> <span class="nav-text">历史服务器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-number">7.</span> <span class="nav-text">实验</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%AF%E6%9F%A5%E8%AF%A2%E7%8A%B6%E6%80%81"><span class="nav-number">7.1.</span> <span class="nav-text">可查询状态</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Client"><span class="nav-number">7.2.</span> <span class="nav-text">Client</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Execution"><span class="nav-number">7.3.</span> <span class="nav-text">Execution</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%A1%E9%81%93"><span class="nav-number">7.4.</span> <span class="nav-text">管道</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5%E7%82%B9"><span class="nav-number">7.5.</span> <span class="nav-text">检查点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Debugging-amp-Expert-Tuning"><span class="nav-number">8.</span> <span class="nav-text">Debugging &amp; Expert Tuning</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B1%BB%E5%8A%A0%E8%BD%BD"><span class="nav-number">8.1.</span> <span class="nav-text">类加载</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E8%AF%95%E7%9A%84%E9%AB%98%E7%BA%A7%E9%80%89%E9%A1%B9"><span class="nav-number">8.2.</span> <span class="nav-text">调试的高级选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E7%BA%A7%E7%8A%B6%E6%80%81%E5%90%8E%E7%AB%AF%E9%80%89%E9%A1%B9"><span class="nav-number">8.3.</span> <span class="nav-text">高级状态后端选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8A%B6%E6%80%81%E5%90%8E%E7%AB%AF%E5%BB%B6%E8%BF%9F%E8%B7%9F%E8%B8%AA%E9%80%89%E9%A1%B9"><span class="nav-number">8.4.</span> <span class="nav-text">状态后端延迟跟踪选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E7%BA%A7-RocksDB-%E7%8A%B6%E6%80%81%E5%90%8E%E7%AB%AF%E9%80%89%E9%A1%B9"><span class="nav-number">8.5.</span> <span class="nav-text">高级 RocksDB 状态后端选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8A%B6%E6%80%81%E5%8F%98%E6%9B%B4%E6%97%A5%E5%BF%97%E9%80%89%E9%A1%B9"><span class="nav-number">8.6.</span> <span class="nav-text">状态变更日志选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%8F%98%E6%9B%B4%E6%97%A5%E5%BF%97-%E9%80%89%E9%A1%B9"><span class="nav-number">8.7.</span> <span class="nav-text">基于文件系统的变更日志 选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RocksDB-%E5%8F%AF%E9%85%8D%E7%BD%AE%E9%80%89%E9%A1%B9"><span class="nav-number">8.8.</span> <span class="nav-text">RocksDB 可配置选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E7%BA%A7%E5%AE%B9%E9%94%99%E9%80%89%E9%A1%B9"><span class="nav-number">8.9.</span> <span class="nav-text">高级容错选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E7%BA%A7%E9%9B%86%E7%BE%A4%E9%80%89%E9%A1%B9"><span class="nav-number">8.10.</span> <span class="nav-text">高级集群选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E7%BA%A7-JobManager-%E9%80%89%E9%A1%B9"><span class="nav-number">8.11.</span> <span class="nav-text">高级 JobManager 选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E7%BA%A7%E8%B0%83%E5%BA%A6%E9%80%89%E9%A1%B9"><span class="nav-number">8.12.</span> <span class="nav-text">高级调度选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E7%BA%A7%E9%AB%98%E5%8F%AF%E7%94%A8%E6%80%A7%E9%80%89%E9%A1%B9"><span class="nav-number">8.13.</span> <span class="nav-text">高级高可用性选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E7%BA%A7%E9%AB%98%E5%8F%AF%E7%94%A8%E6%80%A7-ZooKeeper-%E9%80%89%E9%A1%B9"><span class="nav-number">8.14.</span> <span class="nav-text">高级高可用性 ZooKeeper 选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#REST-%E7%AB%AF%E7%82%B9%E5%92%8C%E5%AE%A2%E6%88%B7%E7%AB%AF%E7%9A%84%E9%AB%98%E7%BA%A7%E9%80%89%E9%A1%B9"><span class="nav-number">8.15.</span> <span class="nav-text">REST 端点和客户端的高级选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Flink-Web-UI-%E7%9A%84%E9%AB%98%E7%BA%A7%E9%80%89%E9%A1%B9"><span class="nav-number">8.16.</span> <span class="nav-text">Flink Web UI 的高级选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%8C%E6%95%B4%E7%9A%84-JobManager-%E9%80%89%E9%A1%B9"><span class="nav-number">8.17.</span> <span class="nav-text">完整的 JobManager 选项</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#JobManager"><span class="nav-number">8.17.1.</span> <span class="nav-text">JobManager</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Blob-Server"><span class="nav-number">8.17.2.</span> <span class="nav-text">Blob Server</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ResourceManager"><span class="nav-number">8.17.3.</span> <span class="nav-text">ResourceManager</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%8C%E6%95%B4%E7%9A%84-TaskManagerOptions"><span class="nav-number">8.18.</span> <span class="nav-text">完整的 TaskManagerOptions</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E4%BC%A0%E8%BE%93%E7%BD%91%E7%BB%9C%E5%A0%86%E6%A0%88"><span class="nav-number">8.18.1.</span> <span class="nav-text">数据传输网络堆栈</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RPC-Akka"><span class="nav-number">8.19.</span> <span class="nav-text">RPC &#x2F; Akka</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#JVM-%E5%92%8C%E6%97%A5%E5%BF%97%E8%AE%B0%E5%BD%95%E9%80%89%E9%A1%B9"><span class="nav-number">8.20.</span> <span class="nav-text">JVM 和日志记录选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BD%AC%E5%8F%91%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F"><span class="nav-number">8.21.</span> <span class="nav-text">转发环境变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Deprecated-Options"><span class="nav-number">8.22.</span> <span class="nav-text">Deprecated Options</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E9%85%8D%E7%BD%AE-1"><span class="nav-number">9.</span> <span class="nav-text">内存配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-Flink-%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%86%85%E5%AD%98"><span class="nav-number">9.1.</span> <span class="nav-text">配置 Flink 进程的内存</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E6%80%BB%E5%86%85%E5%AD%98"><span class="nav-number">9.1.1.</span> <span class="nav-text">配置总内存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#JVM-%E5%8F%82%E6%95%B0"><span class="nav-number">9.1.2.</span> <span class="nav-text">JVM 参数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%97%E9%99%90%E7%9A%84%E7%AD%89%E6%AF%94%E5%86%85%E5%AD%98%E9%83%A8%E5%88%86"><span class="nav-number">9.1.3.</span> <span class="nav-text">受限的等比内存部分</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-TaskManager-%E5%86%85%E5%AD%98"><span class="nav-number">9.2.</span> <span class="nav-text">配置 TaskManager 内存</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E6%80%BB%E5%86%85%E5%AD%98-1"><span class="nav-number">9.2.1.</span> <span class="nav-text">配置总内存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%A0%86%E5%86%85%E5%AD%98%E5%92%8C%E6%89%98%E7%AE%A1%E5%86%85%E5%AD%98"><span class="nav-number">9.2.2.</span> <span class="nav-text">配置堆内存和托管内存</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1-%E7%AE%97%E5%AD%90-%E5%A0%86%E5%86%85%E5%AD%98"><span class="nav-number">9.2.2.1.</span> <span class="nav-text">任务(算子)堆内存</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%89%98%E7%AE%A1%E5%86%85%E5%AD%98"><span class="nav-number">9.2.2.2.</span> <span class="nav-text">托管内存</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%A0%86%E5%A4%96%E5%86%85%E5%AD%98-%E7%9B%B4%E6%8E%A5%E5%86%85%E5%AD%98%E6%88%96%E6%9C%AC%E5%9C%B0%E5%86%85%E5%AD%98"><span class="nav-number">9.2.3.</span> <span class="nav-text">配置堆外内存(直接内存或本地内存)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E8%AF%A6%E8%A7%A3"><span class="nav-number">9.2.4.</span> <span class="nav-text">内存模型详解</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A1%86%E6%9E%B6%E5%86%85%E5%AD%98"><span class="nav-number">9.2.5.</span> <span class="nav-text">框架内存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9C%AC%E5%9C%B0%E6%89%A7%E8%A1%8C"><span class="nav-number">9.2.6.</span> <span class="nav-text">本地执行</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-JobManager-%E5%86%85%E5%AD%98"><span class="nav-number">9.3.</span> <span class="nav-text">配置 JobManager 内存</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E6%80%BB%E5%86%85%E5%AD%98-2"><span class="nav-number">9.3.1.</span> <span class="nav-text">配置总内存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%A6%E7%BB%86%E9%85%8D%E7%BD%AE"><span class="nav-number">9.3.2.</span> <span class="nav-text">详细配置</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-JVM-%E5%A0%86%E5%86%85%E5%AD%98"><span class="nav-number">9.3.2.1.</span> <span class="nav-text">配置 JVM 堆内存</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%A0%86%E5%A4%96%E5%86%85%E5%AD%98"><span class="nav-number">9.3.2.2.</span> <span class="nav-text">配置堆外内存</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9C%AC%E5%9C%B0%E6%89%A7%E8%A1%8C-1"><span class="nav-number">9.3.3.</span> <span class="nav-text">本地执行</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E4%BC%98%E6%8C%87%E5%8D%97"><span class="nav-number">9.4.</span> <span class="nav-text">调优指南</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8B%AC%E7%AB%8B%E9%83%A8%E7%BD%B2%E6%A8%A1%E5%BC%8F-Standalone-Deployment-%E4%B8%8B%E7%9A%84%E5%86%85%E5%AD%98%E9%85%8D%E7%BD%AE"><span class="nav-number">9.4.1.</span> <span class="nav-text">独立部署模式(Standalone Deployment)下的内存配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8-Container-%E7%9A%84%E5%86%85%E5%AD%98%E9%85%8D%E7%BD%AE"><span class="nav-number">9.4.2.</span> <span class="nav-text">容器(Container)的内存配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#State-Backend-%E7%9A%84%E5%86%85%E5%AD%98%E9%85%8D%E7%BD%AE"><span class="nav-number">9.4.3.</span> <span class="nav-text">State Backend 的内存配置</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Heap-State-Backend"><span class="nav-number">9.4.3.1.</span> <span class="nav-text">Heap State Backend</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#RocksDB-State-Backend"><span class="nav-number">9.4.3.2.</span> <span class="nav-text">RocksDB State Backend</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%89%B9%E5%A4%84%E7%90%86%E4%BD%9C%E4%B8%9A%E7%9A%84%E5%86%85%E5%AD%98%E9%85%8D%E7%BD%AE"><span class="nav-number">9.4.4.</span> <span class="nav-text">批处理作业的内存配置</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E5%86%85%E5%AD%98%E8%B0%83%E4%BC%98%E6%8C%87%E5%8D%97"><span class="nav-number">9.5.</span> <span class="nav-text">网络内存调优指南</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">9.5.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%93%E5%86%B2%E6%B6%88%E8%83%80%E6%9C%BA%E5%88%B6-Buffer-Debloating"><span class="nav-number">9.5.2.</span> <span class="nav-text">缓冲消胀机制(Buffer Debloating)</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%99%90%E5%88%B6"><span class="nav-number">9.5.2.1.</span> <span class="nav-text">限制</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E7%BC%93%E5%86%B2%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="nav-number">9.5.3.</span> <span class="nav-text">网络缓冲生命周期</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BE%93%E5%85%A5%E7%BD%91%E7%BB%9C%E7%BC%93%E5%86%B2"><span class="nav-number">9.5.4.</span> <span class="nav-text">输入网络缓冲</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BE%93%E5%87%BA%E7%BD%91%E7%BB%9C%E7%BC%93%E5%86%B2"><span class="nav-number">9.5.5.</span> <span class="nav-text">输出网络缓冲</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%93%E5%86%B2%E5%8C%BA%E7%9A%84%E6%95%B0%E9%87%8F"><span class="nav-number">9.5.6.</span> <span class="nav-text">缓冲区的数量</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%89%E6%8B%A9%E7%BC%93%E5%86%B2%E5%8C%BA%E7%9A%84%E5%A4%A7%E5%B0%8F"><span class="nav-number">9.5.7.</span> <span class="nav-text">选择缓冲区的大小</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%89%E6%8B%A9%E7%BC%93%E5%86%B2%E5%8C%BA%E7%9A%84%E6%95%B0%E9%87%8F"><span class="nav-number">9.5.8.</span> <span class="nav-text">选择缓冲区的数量</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">9.5.9.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/23/flink%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          flink默认配置参数
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-23 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-23T00:00:00+08:00">2022-08-23</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-13 11:28:52" itemprop="dateModified" datetime="2022-09-13T11:28:52+08:00">2022-09-13</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="基本设置"><a href="#基本设置" class="headerlink" title="基本设置"></a>基本设置</h2><h3 id="主机名-端口"><a href="#主机名-端口" class="headerlink" title="主机名/端口"></a>主机名/端口</h3><p>这些选项仅对standalone application- or session deployments (simple standalone or Kubernetes)是必需的.<br>如果您将 Flink 与Yarn或活动的Kubernetes 集成一起使用,则会自动发现主机名和端口.</p>
+<span id="more"></span>
+<p><code>rest.address/rest.port</code><br>这些是客户端用来连接 Flink 的.<br>将此设置为 JobManager 运行的主机名,或者设置为 JobManager 的 REST 接口前面的 (Kubernetes) 服务的主机名.</p>
+<p><code>jobmanager.rpc.address/jobmanager.rpc.port</code><br>TaskManager使用<code>jobmanager.rpc.address</code>(默认为&quot;localhost&quot;)和<code>jobmanager.rpc.port</code>(默认为6123)配置条目连接到 JobManager/ResourceManager.<br>将此设置为 JobManager 运行的主机名,或 JobManager 的(Kubernetes 内部)服务的主机名.<br>在使用领导者选举机制自动发现这一点的高可用性设置中,此选项将被忽略.</p>
+<h3 id="内存大小"><a href="#内存大小" class="headerlink" title="内存大小"></a>内存大小</h3><p>默认内存大小支持简单的流/批处理应用程序,但太低而无法为更复杂的应用程序产生良好的性能.</p>
+<p><code>jobmanager.memory.process.size</code><br>JobManager(JobMaster / ResourceManager / Dispatcher)进程的总大小.</p>
+<p><code>taskmanager.memory.process.size</code><br>TaskManager 进程的总大小.</p>
+<p>总尺寸包括一切.<br>Flink 会为 JVM 自己的内存需求(元空间和其他)减去一些内存,并在其组件(JVM 堆/堆外,对于任务管理器还有网络/托管内存等)之间自动划分和配置其余部分.</p>
+<p>这些值配置为内存大小,例如1536m或2g.</p>
+<h3 id="Parallelism"><a href="#Parallelism" class="headerlink" title="Parallelism"></a>Parallelism</h3><p><code>taskmanager.numberOfTaskSlots</code><br>TaskManager 提供的槽数(默认值:1).<br>每个插槽可以接受一个任务或管道.<br>在 TaskManager 中拥有多个插槽有助于在并行任务或管道之间分摊某些恒定开销(JVM/应用程序库或网络连接).<br>有关详细信息,请参阅任务槽和资源概念部分.</p>
+<p>运行更多较小的 TaskManager,每个都有一个插槽是一个很好的起点,并导致任务之间的最佳隔离.<br>将相同的资源专用于具有更多插槽的更少的大型 TaskManager 有助于提高资源利用率,但代价是任务之间的隔离较弱(更多任务共享同一个 JVM).</p>
+<p><code>parallelism.default</code><br>在任何地方都没有指定并行度时使用的默认并行度(默认值:1).</p>
+<h3 id="Checkpointing"><a href="#Checkpointing" class="headerlink" title="Checkpointing"></a>Checkpointing</h3><p>您可以直接在 Flink 作业或应用程序的代码中配置检查点.<br>将这些值放在配置中将它们定义为默认值,以防应用程序未配置任何内容.</p>
+<p><code>state.backend</code><br>要使用的状态后端.<br>这定义了用于拍摄快照的数据结构机制.<br>常见值为<code>filesystem</code>或<code>rocksdb</code>.</p>
+<p><code>state.checkpoints.dir</code><br>要写入检查点的目录.<br>这需要一个路径 URI,如<code>s3://mybucket/flink-app/checkpoints</code>或<code>hdfs://namenode:port/flink/checkpoints</code>.</p>
+<p><code>state.savepoints.dir</code><br>保存点的默认目录.<br>采用路径 URI,类似于state.checkpoints.dir.</p>
+<p><code>execution.checkpointing.interval</code><br>基本间隔设置.<br>要启用检查点,您需要将此值设置为大于 0.</p>
+<h3 id="Web-UI"><a href="#Web-UI" class="headerlink" title="Web UI"></a>Web UI</h3><p><code>web.submit.enable</code><br>启用通过 Flink UI 上传和启动作业(默认为 true).<br>请注意,即使禁用此功能,会话集群仍会通过 REST 请求(HTTP 调用)接受作业.<br>此标志仅保护在 UI 中上传作业的功能.</p>
+<p><code>web.cancel.enable</code><br>允许通过 Flink UI 取消作业(默认为 true).<br>请注意,即使禁用此功能,会话集群仍会通过 REST 请求(HTTP 调用)取消作业.<br>此标志仅保护取消 UI 中的作业的功能.</p>
+<p><code>web.upload.dir</code><br>存储上传作业的目录.<br>仅在web.submit.enable为真时使用.</p>
+<h3 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h3><p><code>io.tmp.dirs</code><br>Flink 存放本地数据的目录,默认为系统临时目录(java.io.tmpdir属性).<br>如果配置了目录列表,Flink 将在目录之间轮换文件.</p>
+<p>默认情况下,放在这些目录中的数据包括 RocksDB 创建的文件/溢出的中间结果(批处理算法)和缓存的 jar 文件.</p>
+<p>此数据不依赖于持久性/恢复,但如果此数据被删除,通常会导致重量级恢复操作.<br>因此,建议将其设置为不会自动定期清除的目录.</p>
+<p>默认情况下,Yarn 和 Kubernetes 设置会自动将此值配置到本地工作目录.</p>
+<h2 id="常用设置选项"><a href="#常用设置选项" class="headerlink" title="常用设置选项"></a>常用设置选项</h2><p><a target="_blank" rel="noopener" href="https://nightlies.apache.org/flink/flink-docs-release-1.15/zh/docs/deployment/config/">https://nightlies.apache.org/flink/flink-docs-release-1.15/zh/docs/deployment/config/</a></p>
+<h3 id="主机和端口"><a href="#主机和端口" class="headerlink" title="主机和端口"></a>主机和端口</h3><p>为不同的 Flink 组件配置主机名和端口的选项.<br>JobManager 主机名和端口仅与没有高可用性的独立设置相关.在该设置中,TaskManager 使用配置值来查找(并连接到)JobManager.在所有高可用设置中,TaskManagers 通过 High-Availability-Service(例如 ZooKeeper)发现 JobManager.</p>
+<p>使用资源编排框架(K8s/Yarn)的设置通常使用框架的服务发现工具.<br>您不需要配置任何 TaskManager 主机和端口,除非设置需要使用特定的端口范围或特定的网络接口来绑定.</p>
+<p><code>jobmanager.rpc.address</code><br>(none)|String<br>配置参数定义要连接到的网络地址,以便与作业管理器进行通信.<br>此值仅在存在具有静态名称或地址的单个 JobManager 的设置中解释(简单的独立设置,或具有动态服务名称解析的容器设置).<br>当领导者选举服务(如 ZooKeeper)用于从潜在的多个备用 JobManager 中选举和发现 JobManager 领导者时,它不会在许多高可用性设置中使用.</p>
+<p><code>jobmanager.rpc.port</code><br>6123|Integer<br>配置参数定义要连接到的网络端口,以便与作业管理器进行通信.<br>与 jobmanager.rpc.address 一样,此值仅在存在具有静态名称/地址和端口的单个 JobManager 的设置中解释(简单的独立设置,或具有动态服务名称解析的容器设置).<br>当使用领导者选举服务(如 ZooKeeper)从潜在的多个备用 JobManager 中选举和发现 JobManager 领导时,许多高可用性设置中不使用此配置选项.</p>
+<p><code>metrics.internal.query-service.port</code><br>&quot;0&quot;|String<br>Flink 内部指标查询服务使用的端口范围.<br>接受端口列表(&quot;50100,50101&quot;)/范围(&quot;50100-50200&quot;)或两者的组合.<br>建议设置一个端口范围,以避免在同一台机器上运行多个 Flink 组件时发生冲突.<br>默认情况下,Flink 会选择一个随机端口.</p>
+<p><code>rest.address</code><br>(none)|String<br>客户端应该用来连接到服务器的地址.<br>注意:仅当高可用性配置为 NONE 时才考虑此选项.</p>
+<p><code>rest.bind-address</code><br>(none)|String<br>服务器自己绑定的地址.</p>
+<p><code>rest.bind-port</code><br>&quot;8081&quot;|String<br>服务器自己绑定的端口.<br>接受端口列表(&quot;50100,50101&quot;)/范围(&quot;50100-50200&quot;)或两者的组合.<br>建议设置一个端口范围,以避免在同一台机器上运行多个 Rest 服务器时发生冲突.</p>
+<p><code>rest.port</code><br>8081|Integer<br>客户端连接的端口.<br>如果未指定 rest.bind-port,则 REST 服务器将绑定到此端口.<br>注意:仅当高可用性配置为 NONE 时才考虑此选项.</p>
+<p><code>taskmanager.data.port</code><br>0|Integer<br>用于数据交换操作的任务管理器的外部端口.</p>
+<p><code>taskmanager.host</code><br>(none)|String<br>TaskManager 暴露的网络接口的外部地址.<br>因为不同的 TaskManager 需要不同的值来设置这个选项,所以通常在一个额外的非共享 TaskManager 特定的配置文件中指定.</p>
+<p><code>taskmanager.rpc.port</code><br>&quot;0&quot;|String<br>TaskManager 暴露的外部 RPC 端口.<br>接受端口列表(&quot;50100,50101&quot;)/范围(&quot;50100-50200&quot;)或两者的组合.<br>建议设置一个端口范围,以避免在同一台机器上运行多个 TaskManager 时发生冲突.</p>
+<h3 id="容错"><a href="#容错" class="headerlink" title="容错"></a>容错</h3><p>这些配置选项控制 Flink 在执行过程中出现故障时的重启行为.通过在 中配置这些选项,您flink-conf.yaml可以定义集群的默认重启策略.<br>默认重启策略只有在没有通过ExecutionConfig.</p>
+<p><code>restart-strategy</code><br>(none)|String<br>定义在作业失败时使用的重新启动策略.<br>可接受的值为:</p>
+<ol>
+<li>none, off, disable:无重启策略.</li>
+<li>fixeddelay, fixed-delay:固定延迟重启策略.</li>
+<li>failurerate, failure-rate:故障率重启策略.</li>
+<li>exponentialdelay,exponential-delay:指数延迟重启策略.</li>
+</ol>
+<p>如果禁用检查点,则默认值为无.<br>如果启用了检查点,则默认值为固定延迟,具有 Integer.MAX_VALUE 重新启动尝试和 &#39;1 s&#39; 延迟.</p>
+<h4 id="固定延迟重启策略"><a href="#固定延迟重启策略" class="headerlink" title="固定延迟重启策略"></a>固定延迟重启策略</h4><p><code>restart-strategy.fixed-delay.attempts</code><br>1|Integer<br>如果重新启动策略已设置为固定延迟,则 Flink 在将作业声明为失败之前重试执行的次数.</p>
+<p><code>restart-strategy.fixed-delay.delay</code><br>1 s|Duration<br>如果重新启动策略已设置为固定延迟,则两次连续重新启动尝试之间的延迟.<br>当程序与外部系统交互时,延迟重试会很有帮助,例如连接或挂起的事务应该在尝试重新执行之前达到超时.<br>可以使用符号来指定:&quot;1 min&quot;/&quot;20 s&quot;</p>
+<h4 id="故障率重启策略"><a href="#故障率重启策略" class="headerlink" title="故障率重启策略"></a>故障率重启策略</h4><p><code>restart-strategy.failure-rate.delay</code><br>1 s|Duration<br>如果重新启动策略已设置为失败率,则两次连续重新启动尝试之间的延迟.<br>可以使用符号来指定:&quot;1 min&quot;/&quot;20 s&quot;</p>
+<p><code>restart-strategy.failure-rate.failure-rate-interval</code><br>1 min|Duration<br>如果重新启动策略已设置为故障率,则测量故障率的时间间隔.<br>可以使用符号来指定:&quot;1 min&quot;/&quot;20 s&quot;</p>
+<p><code>restart-strategy.failure-rate.max-failures-per-interval</code><br>1|Integer<br>如果重新启动策略已设置为失败率,则在作业失败之前给定时间间隔内的最大重新启动次数.</p>
+<h3 id="可重试清理"><a href="#可重试清理" class="headerlink" title="可重试清理"></a>可重试清理</h3><p>在作业达到全局终端状态后,将执行所有相关资源的清理.如果失败,可以重试此清理.可以配置不同的重试策略来改变这种行为.</p>
+<p><code>cleanup-strategy</code><br>&quot;exponential-delay&quot;|String<br>定义在清理失败时使用的清理策略.<br>可接受的值为:</p>
+<ol>
+<li><p>none/disable/off:清理只执行一次.<br>如果失败,将不会启动重试.<br>作业工件(以及作业的 JobResultStore 条目)必须手动清理,以防万一发生故障.</p>
+</li>
+<li><p>fixed-delay,fixeddelay:清理尝试将按固定间隔分开,直到清理被认为成功或达到设定的重试次数.<br>达到配置的限制意味着可能需要手动清理作业工件(以及作业的 JobResultStore 条目).</p>
+</li>
+<li><p>exponential-delay,exponentialdelay:指数延迟重启策略触发清除,延迟呈指数增加,直到清除成功或达到设定的重试次数.<br>达到配置的限制意味着可能需要手动清理作业工件(以及作业的 JobResultStore 条目).</p>
+</li>
+</ol>
+<p>默认配置依赖于具有给定默认值的指数延迟重试策略.</p>
+<h4 id="固定延迟清理重试策略"><a href="#固定延迟清理重试策略" class="headerlink" title="固定延迟清理重试策略"></a>固定延迟清理重试策略</h4><p><code>cleanup-strategy.fixed-delay.attempts</code><br>infinite|Integer<br>如果 cleanup-strategy 已设置为固定延迟,Flink 在放弃之前重试清理的次数.<br>达到配置的限制意味着可能需要手动清理作业工件(以及作业的 JobResultStore 条目).</p>
+<p><code>cleanup-strategy.fixed-delay.delay</code><br>1 min|Duration<br>如果清理策略设置为固定延迟,Flink 在尝试失败后重新触发清理之前等待的时间.<br>可以使用以下符号指定:&quot;1 min&quot;/&quot;20 s&quot;</p>
+<h4 id="指数延迟清理重试策略"><a href="#指数延迟清理重试策略" class="headerlink" title="指数延迟清理重试策略"></a>指数延迟清理重试策略</h4><p><code>cleanup-strategy.exponential-delay.attempts</code><br>infinite|Integer<br>如果清理策略已设置为指数延迟,则重试失败清理的次数.<br>达到配置的限制意味着可能需要手动清理作业工件(以及作业的 JobResultStore 条目).</p>
+<p><code>cleanup-strategy.exponential-delay.initial-backoff</code><br>1 s|Duration<br>如果清理策略已设置为指数延迟,则清理重试之间的启动持续时间.<br>可以使用以下符号指定:&quot;1 min&quot;/&quot;20 s&quot;</p>
+<p><code>cleanup-strategy.exponential-delay.max-backoff</code><br>1 h|Duration<br>如果清理策略已设置为指数延迟,则清理重试之间可能的最长持续时间.<br>可以使用以下符号指定:&quot;1 min&quot;/&quot;20 s&quot;</p>
+<h3 id="检查点和状态后端"><a href="#检查点和状态后端" class="headerlink" title="检查点和状态后端"></a>检查点和状态后端</h3><p>这些选项控制状态后端和检查点行为的基本设置.<br>这些选项仅与以连续流方式执行的作业/应用程序相关.以批处理方式执行的作业/应用程序不使用状态后端和检查点,而是使用针对批处理进行优化的不同内部数据结构.</p>
+<p><code>state.backend</code><br>(none)|String<br>用于存储状态的状态后端.<br>可以通过它们的快捷方式名称或通过 StateBackendFactory 的类名来指定实现.<br>如果指定了工厂,则通过其零参数构造函数对其进行实例化,并调用其 StateBackendFactory#createFromConfig(ReadableConfig, ClassLoader) 方法.<br>公认的快捷方式名称是&quot;hashmap&quot;和&quot;rocksdb&quot;.</p>
+<p><code>state.checkpoint-storage</code><br>(none)|String<br>用于检查点状态的检查点存储实现.<br>可以通过它们的快捷方式名称或通过 CheckpointStorageFactory 的类名称来指定实现.<br>如果指定了工厂,则通过其零参数构造函数对其进行实例化,并调用其 CheckpointStorageFactory#createFromConfig(ReadableConfig, ClassLoader) 方法.<br>公认的快捷方式名称是&quot;jobmanager&quot;和&quot;filesystem&quot;.</p>
+<p><code>state.checkpoints.dir</code><br>(none)|String<br>Flink 支持的文件系统中用于存储检查点的数据文件和元数据的默认目录.<br>存储路径必须可以从所有参与的进程/节点(即所有 TaskManager 和 JobManager)访问.</p>
+<p><code>state.savepoints.dir</code><br>(none)|String<br>保存点的默认目录.<br>由将保存点写入文件系统的状态后端(HashMapStateBackend/EmbeddedRocksDBStateBackend)使用.</p>
+<p><code>state.backend.incremental</code><br>FALSE|Boolean<br>如果可能,选择状态后端是否应创建增量检查点.<br>对于增量检查点,仅存储与前一个检查点的差异,而不是完整的检查点状态.<br>启用后,Web UI 中显示的状态大小或从 REST API 获取的状态大小仅表示增量检查点大小,而不是完整检查点大小.<br>一些状态后端可能不支持增量检查点并忽略此选项.</p>
+<p><code>state.backend.local-recovery</code><br>FALSE|Boolean<br>此选项为此状态后端配置本地恢复.<br>默认情况下,本地恢复处于禁用状态.<br>本地恢复目前仅涵盖键控状态后端.<br>目前,MemoryStateBackend 不支持本地恢复并忽略此选项.</p>
+<p><code>state.checkpoints.num-retained</code><br>1|Integer<br>要保留的已完成检查点的最大数量.</p>
+<p><code>taskmanager.state.local.root-dirs</code><br>(none)|String<br>config 参数定义用于存储基于文件的状态以进行本地恢复的根目录.<br>本地恢复目前仅涵盖键控状态后端.<br>目前,MemoryStateBackend 不支持本地恢复并忽略此选项.<br>如果未配置,它将默认为 <code>&lt;WORKING_DIR&gt;</code>/localState.<br><code>&lt;WORKING_DIR&gt;</code> 可以通过 <code>process.taskmanager.working-dir</code> 进行配置.</p>
+<h3 id="高可用性"><a href="#高可用性" class="headerlink" title="高可用性"></a>高可用性</h3><p>这里的高可用是指 JobManager 进程从故障中恢复的能力.</p>
+<p>JobManager 确保跨 TaskManager 恢复期间的一致性.为了让 JobManager 自身持续恢复,外部服务必须存储最少量的恢复元数据(例如&quot;最后提交的检查点的 ID&quot;),并帮助选举和锁定哪个 JobManager 是领导者(以避免脑裂情况).</p>
+<p><code>high-availability</code><br>&quot;NONE&quot;|String<br>定义用于集群执行的高可用性模式.<br>要启用高可用性,请将此模式设置为&quot;ZOOKEEPER&quot;或指定工厂类的 FQN.</p>
+<p><code>high-availability.cluster-id</code><br>&quot;/default&quot;|String<br>Flink 集群的 ID,用于分隔多个 Flink 集群.<br>需要为独立集群设置,但会在 YARN 中自动推断.</p>
+<p><code>high-availability.storageDir</code><br>(none)|String<br>Flink 在高可用性设置中保存元数据的文件系统路径 (URI).</p>
+<h4 id="高可用性设置中的-JobResultStore-选项"><a href="#高可用性设置中的-JobResultStore-选项" class="headerlink" title="高可用性设置中的 JobResultStore 选项"></a>高可用性设置中的 JobResultStore 选项</h4><p><code>job-result-store.delete-on-commit</code><br>TRUE|Boolean<br>确定当相应实体转换为干净状态时是否应自动从底层作业结果存储中删除作业结果.<br>如果为 false,则将清理后的作业结果标记为清理以指示其状态.<br>这种情况下,Flink 不再拥有所有权,资源需要用户自己清理.</p>
+<p><code>job-result-store.storage-path</code><br>(none)|String<br>定义作业结果的存储位置.<br>这应该是一个提供写后读一致性的底层文件系统.<br>默认情况下,这是 {high-availability.storageDir}/job-result-store/{high-availability.cluster-id}.</p>
+<h4 id="ZooKeeper-的高可用性设置选项"><a href="#ZooKeeper-的高可用性设置选项" class="headerlink" title="ZooKeeper 的高可用性设置选项"></a>ZooKeeper 的高可用性设置选项</h4><p><code>high-availability.zookeeper.path.root</code><br>&quot;/flink&quot;|String<br>Flink 在 ZooKeeper 中存储其条目的根路径.</p>
+<p><code>high-availability.zookeeper.quorum</code><br>(none)|String<br>使用 ZooKeeper 以高可用性模式运行 Flink 时使用的 ZooKeeper 仲裁.</p>
+<h3 id="内存配置"><a href="#内存配置" class="headerlink" title="内存配置"></a>内存配置</h3><p>这些配置值控制 TaskManager 和 JobManager 使用内存的方式.</p>
+<p>Flink 试图尽可能地为用户屏蔽为数据密集型处理配置 JVM 的复杂性.在大多数情况下,用户只需要设置值taskmanager.memory.process.size或taskmanager.memory.flink.size(取决于设置方式),并可能通过taskmanager.memory.managed.fraction. 下面的其他选项可用于性能调整和修复与内存相关的错误.</p>
+<p><code>jobmanager.memory.enable-jvm-direct-memory-limit</code><br>FALSE|Boolean<br>是否开启JobManager进程的JVM直接内存限制(-XX:MaxDirectMemorySize).<br>限制将设置为&quot;jobmanager.memory.off-heap.size&quot;选项的值.</p>
+<p><code>jobmanager.memory.flink.size</code><br>(none)|MemorySize<br>JobManager 的总 Flink 内存大小.<br>这包括 JobManager 消耗的所有内存,但 JVM Metaspace 和 JVM Overhead 除外.<br>它由JVM堆内存和堆外内存组成.<br>有关总进程内存大小配置,另请参见&quot;jobmanager.memory.process.size&quot;.</p>
+<p><code>jobmanager.memory.heap.size</code><br>(none)|MemorySize<br>JobManager 的 JVM 堆内存大小.<br>建议的最小 JVM 堆大小为 128.000mb(134217728 字节).</p>
+<p><code>jobmanager.memory.jvm-metaspace.size</code><br>256 mb|MemorySize<br>JobManager 的 JVM 元空间大小.</p>
+<p><code>jobmanager.memory.jvm-overhead.fraction</code><br>0.1|Float<br>为 JVM 开销保留的总进程内存的一部分.<br>这是为 JVM 开销保留的堆外内存,例如线程堆栈空间/编译缓存等.<br>这包括本机内存但不包括直接内存,并且在 Flink 计算 JVM 最大直接内存大小参数时不会计算在内.<br>导出 JVM 开销的大小以构成总进程内存的配置部分.<br>如果派生的大小小于或大于配置的最小或最大大小,将使用最小或最大大小.<br>可以通过将最小和最大大小设置为相同的值来明确指定 JVM 开销的确切大小.</p>
+<p><code>jobmanager.memory.jvm-overhead.max</code><br>1 gb|MemorySize<br>JobManager 的最大 JVM 开销大小.<br>这是为 JVM 开销保留的堆外内存,例如线程堆栈空间/编译缓存等.<br>这包括本机内存但不包括直接内存,并且在 Flink 计算 JVM 最大直接内存大小参数时不会计算在内.<br>导出 JVM 开销的大小以构成总进程内存的配置部分.<br>如果派生的大小小于或大于配置的最小或最大大小,将使用最小或最大大小.<br>可以通过将最小和最大大小设置为相同的值来明确指定 JVM 开销的确切大小.</p>
+<p><code>jobmanager.memory.jvm-overhead.min</code><br>192 mb|MemorySize<br>JobManager 的最小 JVM 开销大小.<br>这是为 JVM 开销保留的堆外内存,例如线程堆栈空间/编译缓存等.<br>这包括本机内存但不包括直接内存,并且在 Flink 计算 JVM 最大直接内存大小参数时不会计算在内.<br>导出 JVM 开销的大小以构成总进程内存的配置部分.<br>如果派生的大小小于或大于配置的最小或最大大小,将使用最小或最大大小.<br>可以通过将最小和最大大小设置为相同的值来明确指定 JVM 开销的确切大小.</p>
+<p><code>jobmanager.memory.off-heap.size</code><br>128 mb|MemorySize<br>JobManager 的堆外内存大小.<br>此选项涵盖所有堆外内存使用,包括直接和本机内存分配.<br>如果通过&quot;jobmanager.memory.enable-jvm-direct-memory-limit&quot;启用限制,则 JobManager 进程的 JVM 直接内存限制 (-XX:MaxDirectMemorySize) 将设置为此值.</p>
+<p><code>jobmanager.memory.process.size</code><br>(none)|MemorySize<br>JobManager 的总进程内存大小.<br>这包括 JobManager JVM 进程消耗的所有内存,包括 Total Flink Memory/JVM Metaspace 和 JVM Overhead.<br>在容器化设置中,这应该设置为容器内存.<br>有关总 Flink 内存大小配置,另请参阅&quot;jobmanager.memory.flink.size&quot;.</p>
+<p><code>taskmanager.memory.flink.size</code><br>(none)|MemorySize<br>TaskExecutors 的总 Flink 内存大小.<br>这包括 TaskExecutor 消耗的所有内存,但 JVM Metaspace 和 JVM Overhead 除外.<br>它由框架堆内存/任务堆内存/任务堆外内存/托管内存和网络内存组成.<br>有关总进程内存大小配置,另请参见&quot;taskmanager.memory.process.size&quot;.</p>
+<p><code>taskmanager.memory.framework.heap.size</code><br>128 mb|MemorySize<br>TaskExecutors 的框架堆内存大小.<br>这是为 TaskExecutor 框架保留的 JVM 堆内存大小,不会分配给任务槽.</p>
+<p><code>taskmanager.memory.framework.off-heap.batch-shuffle.size</code><br>64 mb|MemorySize<br>阻塞 shuffle 用于读取 shuffle 数据的内存大小(当前仅由 sort-shuffle 使用).<br>注意: </p>
+<ol>
+<li>内存是从 &#39;taskmanager.memory.framework.off-heap.size&#39; 中截取的,所以必须小于那个,这意味着你可能还需要增加 &#39;taskmanager.memory.framework.off-heap.size&#39;增加此配置值后.</li>
+<li>此内存大小会影响 shuffle 性能,您可以为大规模批处理作业增加此配置值(例如,增加到 128M 或 256M).</li>
+</ol>
+<p><code>taskmanager.memory.framework.off-heap.size</code><br>128 mb|MemorySize<br>TaskExecutors 的框架堆外内存大小.<br>这是为 TaskExecutor 框架保留的堆外内存(JVM 直接内存和本机内存)的大小,不会分配给任务槽.<br>当 Flink 计算 JVM 最大直接内存大小参数时,配置的值将被完全计算在内.</p>
+<p><code>taskmanager.memory.jvm-metaspace.size</code><br>256 mb|MemorySize<br>任务执行器的 JVM 元空间大小.</p>
+<p><code>taskmanager.memory.jvm-overhead.fraction</code><br>0.1|Float<br>为 JVM 开销保留的总进程内存的一部分.<br>这是为 JVM 开销保留的堆外内存,例如线程堆栈空间/编译缓存等.<br>这包括本机内存但不包括直接内存,并且在 Flink 计算 JVM 最大直接内存大小参数时不会计算在内.<br>导出 JVM 开销的大小以构成总进程内存的配置部分.<br>如果派生的大小小于/大于配置的最小/最大大小,将使用最小/最大大小.<br>通过将最小/最大大小设置为相同的值,可以明确指定 JVM 开销的确切大小.</p>
+<p><code>taskmanager.memory.jvm-overhead.max</code><br>1 gb|MemorySize<br>TaskExecutors 的最大 JVM 开销大小.<br>这是为 JVM 开销保留的堆外内存,例如线程堆栈空间/编译缓存等.<br>这包括本机内存但不包括直接内存,并且在 Flink 计算 JVM 最大直接内存大小参数时不会计算在内.<br>导出 JVM 开销的大小以构成总进程内存的配置部分.<br>如果派生的大小小于/大于配置的最小/最大大小,将使用最小/最大大小.<br>通过将最小/最大大小设置为相同的值,可以明确指定 JVM 开销的确切大小.</p>
+<p><code>taskmanager.memory.jvm-overhead.min</code><br>192 mb|MemorySize<br>TaskExecutors 的最小 JVM 开销大小.<br>这是为 JVM 开销保留的堆外内存,例如线程堆栈空间/编译缓存等.<br>这包括本机内存但不包括直接内存,并且在 Flink 计算 JVM 最大直接内存大小参数时不会计算在内.<br>导出 JVM 开销的大小以构成总进程内存的配置部分.<br>如果派生的大小小于/大于配置的最小/最大大小,将使用最小/最大大小.<br>通过将最小/最大大小设置为相同的值,可以明确指定 JVM 开销的确切大小.</p>
+<p><code>taskmanager.memory.managed.consumer-weights</code><br>OPERATOR:70,STATE_BACKEND:70,PYTHON:30|Map<br>为不同类型的消费者管理内存权重.<br>插槽的托管内存由它包含的所有类型的消费者共享,与类型的权重成比例,并且与每种类型的消费者数量无关.<br>目前支持的消费者类型是 OPERATOR(用于内置算法)/STATE_BACKEND(用于 RocksDB 状态后端)和 PYTHON(用于 Python 进程).</p>
+<p><code>taskmanager.memory.managed.fraction</code><br>0.4|Float<br>如果未明确指定托管内存大小,则用作托管内存的总 Flink 内存的分数.</p>
+<p><code>taskmanager.memory.managed.size</code><br>(none)|MemorySize<br>任务执行器的托管内存大小.<br>这是由内存管理器管理的堆外内存的大小,保留用于排序/哈希表/中间结果缓存和 RocksDB 状态后端.<br>内存使用者可以以 MemorySegments 的形式从内存管理器分配内存,或者从内存管理器保留字节并将其内存使用量保持在该边界内.<br>如果未指定,它将被派生以构成总 Flink 内存的配置部分.</p>
+<p><code>taskmanager.memory.network.fraction</code><br>0.1|Float<br>用作网络内存的总 Flink 内存的分数.<br>网络内存是为 ShuffleEnvironment 保留的堆外内存(例如,网络缓冲区).<br>派生网络内存大小以构成总 Flink 内存的配置部分.<br>如果派生的大小小于/大于配置的最小/最大大小,将使用最小/最大大小.<br>通过将最小/最大大小设置为相同的值,可以明确指定网络内存的确切大小.</p>
+<p><code>taskmanager.memory.network.max</code><br>1 gb|MemorySize<br>任务执行器的最大网络内存大小.<br>网络内存是为 ShuffleEnvironment 保留的堆外内存(例如,网络缓冲区).<br>派生网络内存大小以构成总 Flink 内存的配置部分.<br>如果派生的大小小于/大于配置的最小/最大大小,将使用最小/最大大小.<br>可以通过将 min/max 设置为相同的值来明确指定网络内存的确切大小.</p>
+<p><code>taskmanager.memory.network.min</code><br>64 mb|MemorySize<br>任务执行器的最小网络内存大小.<br>网络内存是为 ShuffleEnvironment 保留的堆外内存(例如,网络缓冲区).<br>派生网络内存大小以构成总 Flink 内存的配置部分.<br>如果派生的大小小于/大于配置的最小/最大大小,将使用最小/最大大小.<br>可以通过将 min/max 设置为相同的值来明确指定网络内存的确切大小.</p>
+<p><code>taskmanager.memory.process.size</code><br>(none)|MemorySize<br>TaskExecutors 的总进程内存大小.<br>这包括 TaskExecutor 消耗的所有内存,包括 Total Flink Memory/JVM Metaspace 和 JVM Overhead.<br>在容器化设置中,这应该设置为容器内存.<br>另请参阅&quot;taskmanager.memory.flink.size&quot;以了解 Flink 总内存大小配置.</p>
+<p><code>taskmanager.memory.task.heap.size</code><br>(none)|MemorySize<br>任务执行器的任务堆内存大小.<br>这是为任务保留的 JVM 堆内存大小.<br>如果未指定,它将得出 Total Flink Memory 减去 Framework Heap Memory/Framework Off-Heap Memory/Task Off-Heap Memory/Managed Memory 和 Network Memory.</p>
+<p><code>taskmanager.memory.task.off-heap.size</code><br>0 bytes|MemorySize<br>TaskExecutors 的任务堆外内存大小.<br>这是为任务保留的堆外内存(JVM 直接内存和本机内存)的大小.<br>当 Flink 计算 JVM 最大直接内存大小参数时,配置的值将被完全计算在内.</p>
+<h3 id="其他选项"><a href="#其他选项" class="headerlink" title="其他选项"></a>其他选项</h3><p><code>fs.allowed-fallback-filesystems</code><br>(none)|String<br>文件方案的(分号分隔)列表,可以使用 Hadoop 代替适当的 Flink 插件.<br>(例如:s3;wasb)</p>
+<p><code>fs.default-scheme</code><br>(none)|String<br>默认文件系统方案,用于未明确声明方案的路径.<br>可能包含一个权限,例如在 HDFS NameNode 的情况下的 host:port.</p>
+<p><code>io.tmp.dirs</code><br>&#39;LOCAL_DIRS&#39; on Yarn. System.getProperty(&quot;java.io.tmpdir&quot;) in standalone.|String<br>临时文件的目录,用&quot;,&quot;,&quot;|&quot;或系统的 java.io.File.pathSeparator 分隔.</p>
+<h2 id="YARN"><a href="#YARN" class="headerlink" title="YARN"></a>YARN</h2><p><code>external-resource.&lt;resource_name&gt;.yarn.config-key</code><br>(none)|String<br>如果配置了,Flink 会将这个 key 添加到对 Yarn 的容器请求的资源配置文件中.<br>该值将设置为 <code>external-resource.&lt;resource_name&gt;.amount</code> 的值.</p>
+<p><code>flink.hadoop.&lt;key&gt;</code><br>(none)|String<br>通过前缀&quot;flink.hadoop.&quot;探测 Hadoop 配置的一般选项.<br>Flink 将删除前缀以获取 <code>&lt;key&gt;</code>(来自 core-default.xml 和 hdfs-default.xml),然后将 <code>&lt;key&gt;</code> 和 value 设置为 Hadoop 配置.<br>例如 Flink 配置中的 flink.hadoop.dfs.replication=5,Hadoop 配置中转换为 dfs.replication=5.</p>
+<p><code>flink.yarn.&lt;key&gt;</code><br>(none)|String<br>通过前缀&quot;flink.yarn.&quot;探测 Yarn 配置的一般选项.<br>Flink 将删除前缀&quot;flink&quot;.<br>获取 yarn.<code>&lt;key&gt;</code> (来自 yarn-default.xml)然后将 yarn.<code>&lt;key&gt;</code> 和值设置为 Yarn 配置.<br>例如 Flink 配置中的 flink.yarn.resourcemanager.container.liveness-monitor.interval-ms=300000 和 Yarn 配置中的 yarn.resourcemanager.container.liveness-monitor.interval-ms=300000 .</p>
+<p><code>yarn.application-attempt-failures-validity-interval</code><br>10000|Long<br>以毫秒为单位的时间窗口,它定义了重新启动 AM 时应用程序尝试失败的次数.<br>不在此窗口范围内的故障不予考虑.<br>将此值设置为 -1 以便全局计数.<br>浏览此处获取更多信息.</p>
+<p><code>yarn.application-attempts</code><br>(none)|String<br>ApplicationMaster 重新启动的次数.<br>默认情况下,该值将设置为 1.<br>如果启用了高可用性,则默认值为 2.<br>重启次数也受 YARN 限制(通过 yarn.resourcemanager.am.max-attempts 配置).<br>注意整个 Flink 集群会重启,YARN Client 会失去连接.</p>
+<p><code>yarn.application-master.port</code><br>&quot;0&quot;|String<br>使用此配置选项,用户可以为 Application Master(和 JobManager)RPC 端口指定端口/端口范围或端口列表.<br>默认情况下,我们建议使用默认值 (0) 让操作系统选择合适的端口.<br>特别是当多个 AM 在同一物理主机上运行时,固定端口分配会阻止 AM 启动.<br>例如,在具有限制性防火墙的环境中在 YARN 上运行 Flink 时,此选项允许指定允许的端口范围.</p>
+<p><code>yarn.application.id</code><br>(none)|String<br>正在运行的 YARN 集群的 YARN 应用程序 ID.<br>这是将要执行管道的 YARN 集群.</p>
+<p><code>yarn.application.name</code><br>(none)|String<br>YARN 应用程序的自定义名称.</p>
+<p><code>yarn.application.node-label</code><br>(none)|String<br>为 YARN 应用程序指定 YARN 节点标签.</p>
+<p><code>yarn.application.priority</code><br>-1|Integer<br>一个非负整数,表示提交 Flink YARN 应用程序的优先级.<br>只有启用 YARN 优先级调度设置后才会生效.<br>较大的整数对应于较高的优先级.<br>如果优先级为负数或设置为&#39;-1&#39;(默认),Flink 将取消设置纱线优先级设置并使用集群默认优先级.<br>请参阅 YARN 的官方文档,了解为目标 YARN 版本启用优先级调度所需的具体设置.</p>
+<p><code>yarn.application.queue</code><br>(none)|String<br>放置当前管道的 YARN 队列.</p>
+<p><code>yarn.application.type</code><br>(none)|String<br>您的 YARN 应用程序的自定义类型..</p>
+<p><code>yarn.appmaster.vcores</code><br>1|Integer<br>YARN 应用程序主服务器使用的虚拟核心 (vcore) 的数量.</p>
+<p><code>yarn.classpath.include-user-jar</code><br>ORDER|Enum<br>定义 user-jars 是否包含在系统类路径中以及它们在路径中的位置.<br>可能的值:</p>
+<ol>
+<li>&quot;DISABLED&quot;:从系统类路径中排除用户 jar</li>
+<li>&quot;FIRST&quot;:开头的位置</li>
+<li>&quot;LAST&quot;:最后的位置</li>
+<li>&quot;ORDER&quot;:基于罐子名称的位置</li>
+</ol>
+<p><code>yarn.containers.vcores</code><br>-1|Integer<br>每个 YARN 容器的虚拟核心 (vcore) 数.<br>默认情况下,vcore 的数量设置为每个 TaskManager 的插槽数(如果设置),否则设置为 1.<br>为了使用此参数,您的集群必须启用 CPU 调度.<br>您可以通过设置 org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler 来做到这一点.</p>
+<p><code>yarn.file-replication</code><br>-1|Integer<br>每个本地资源文件的文件复制数.<br>如果未配置,Flink 将使用 hadoop 配置中的默认复制值.</p>
+<p><code>yarn.flink-dist-jar</code><br>(none)|String<br>Flink dist jar 的位置.</p>
+<p><code>yarn.heartbeat.container-request-interval</code><br>500|Integer<br>如果 Flink 请求容器,则与 ResourceManager 的心跳之间的时间(以毫秒为单位):</p>
+<ol>
+<li>该值越低,Flink 越快收到有关容器分配的通知,因为请求和分配是通过心跳传输的.</li>
+<li>该值越低,可能分配的过多容器就越多,这些容器最终将被释放,但会对 Yarn 施加压力.<br>如果您在 ResourceManager 上观察到过多的容器分配,则建议增加此值.</li>
+</ol>
+<p><code>yarn.heartbeat.interval</code><br>5|Integer<br>与 ResourceManager 的心跳之间的时间(以秒为单位).</p>
+<p><code>yarn.properties-file.location</code><br>(none)|String<br>当 Flink 作业提交到 YARN 时,JobManager 的主机和可用处理槽的数量被写入属性文件,以便 Flink 客户端能够获取这些详细信息.<br>此配置参数允许更改该文件的默认位置(例如,对于在用户之间共享 Flink 安装的环境).</p>
+<p><code>yarn.provided.lib.dirs</code><br>(none)|List<code>&lt;String&gt;</code><br>提供的 lib 目录的分号分隔列表.<br>它们应该是预先上传的并且是世界可读的.<br>Flink 将使用它们来排除本地 Flink jars(例如 flink-dist/lib//plugins/)的上传,以加速作业提交过程.<br>此外,YARN 会将它们缓存在节点上,这样就不需要为每个应用程序每次都下载它们.<br>例如 hdfs://$namenode_address/path/of/flink/lib</p>
+<p><code>yarn.ship-archives</code><br>(none)|List<code>&lt;String&gt;</code><br>要发送到 YARN 集群的档案的分号分隔列表.<br>这些档案在本地化时将被解压缩,它们可以是以下任何一种类型:&quot;.tar.gz&quot;/&quot;.tar&quot;/&quot;.tgz&quot;/&quot;.dst&quot;/&quot;.jar&quot;/&quot;.zip&quot; .</p>
+<p><code>yarn.ship-files</code><br>(none)|List<code>&lt;String&gt;</code><br>要传送到 YARN 集群的文件和/或目录的分号分隔列表.</p>
+<p><code>yarn.staging-directory</code><br>(none)|String<br>提交应用程序时用于存储 YARN 文件的暂存目录.<br>默认情况下,它使用配置文件系统的主目录.</p>
+<p><code>yarn.tags</code><br>(none)|String<br>应用于 Flink YARN 应用程序的以逗号分隔的标签列表.</p>
+<p><code>yarn.taskmanager.node-label</code><br>(none)|String<br>为 Flink TaskManagers 指定 YARN 节点标签,如果两者都设置,它将覆盖 TaskManagers 的 yarn.application.node-label.</p>
+<h2 id="状态后端"><a href="#状态后端" class="headerlink" title="状态后端"></a>状态后端</h2><h3 id="RocksDB-状态后端"><a href="#RocksDB-状态后端" class="headerlink" title="RocksDB 状态后端"></a>RocksDB 状态后端</h3><p><code>state.backend.rocksdb.memory.fixed-per-slot</code><br>(none)|MemorySize<br>每个插槽的所有 RocksDB 实例共享的固定总内存量.<br>此选项在配置时会覆盖&quot;state.backend.rocksdb.memory.managed&quot;选项.<br>如果这个选项和 &#39;state.backend.rocksdb.memory.managed&#39; 选项都没有设置,那么每个 RocksDB 列族状态都有自己的内存缓存(由列族选项控制).</p>
+<p><code>state.backend.rocksdb.memory.high-prio-pool-ratio</code><br>0.1|Double<br>为索引/过滤器和压缩字典块等高优先级数据保留的高速缓存内存部分.<br>此选项仅在配置 &#39;state.backend.rocksdb.memory.managed&#39; 或 &#39;state.backend.rocksdb.memory.fixed-per-slot&#39; 时有效.</p>
+<p><code>state.backend.rocksdb.memory.managed</code><br>TRUE|Boolean<br>如果设置,RocksDB 状态后端会自动配置自己使用任务槽的托管内存预算,并将内存划分为写入缓冲区/索引/块缓存等.<br>这样,RocksDB 的内存的三大用途将是封顶.</p>
+<p><code>state.backend.rocksdb.memory.partitioned-index-filters</code><br>FALSE|Boolean<br>通过分区,SST 文件的索引/过滤器块被分割成更小的块,上面有一个额外的顶级索引.<br>读取索引/过滤器时,仅将顶级索引加载到内存中.<br>然后,分区索引/过滤器使用顶级索引将执行索引/过滤器查询所需的分区按需加载到块缓存中.<br>此选项仅在配置 &#39;state.backend.rocksdb.memory.managed&#39; 或 &#39;state.backend.rocksdb.memory.fixed-per-slot&#39; 时有效.</p>
+<p><code>state.backend.rocksdb.memory.write-buffer-ratio</code><br>0.5|Double<br>写入缓冲区可能占用的最大内存量,占总共享内存的一小部分.<br>此选项仅在配置 &#39;state.backend.rocksdb.memory.managed&#39; 或 &#39;state.backend.rocksdb.memory.fixed-per-slot&#39; 时有效.</p>
+<p><code>state.backend.rocksdb.timer-service.factory</code><br>ROCKSDB|Enum<br>这决定了定时器服务状态实现的工厂.<br>可能的值:</p>
+<ol>
+<li>&quot;HEAP&quot;:基于堆的</li>
+<li>&quot;ROCKSDB&quot;:基于RocksDB的实现</li>
+</ol>
+<h2 id="Metrics"><a href="#Metrics" class="headerlink" title="Metrics"></a>Metrics</h2><p><code>metrics.fetcher.update-interval</code><br>10000|Long<br>Web UI 使用的指标获取器的更新间隔(以毫秒为单位).<br>减小此值可以更快地更新指标.<br>如果指标提取器导致负载过多,请增加此值.<br>将此值设置为 0 将完全禁用指标获取.</p>
+<p><code>metrics.internal.query-service.port</code><br>&quot;0&quot;|String<br>Flink 内部指标查询服务使用的端口范围.<br>接受端口列表(&quot;50100,50101&quot;)/范围(&quot;50100-50200&quot;)或两者的组合.<br>建议设置一个端口范围,以避免在同一台机器上运行多个 Flink 组件时发生冲突.<br>默认情况下,Flink 会选择一个随机端口.</p>
+<p><code>metrics.internal.query-service.thread-priority</code><br>1|Integer<br>用于 Flink 内部 metric 查询服务的线程优先级.<br>该线程由 Akka 的线程池执行器创建.<br>优先级的范围是从 1 (MIN_PRIORITY) 到 10 (MAX_PRIORITY).<br>警告,增加这个值可能会导致主要的 Flink 组件停机.</p>
+<p><code>metrics.job.status.enable</code><br>CURRENT_TIME|List<code>&lt;Enum&gt;</code><br>应报告的作业状态指标的选择.<br>可能的值:</p>
+<ol>
+<li>&quot;STATE&quot;:对于给定的状态,如果作业当前处于该状态,则返回 1,否则返回 0.</li>
+<li>&quot;CURRENT_TIME&quot;:对于给定状态,如果作业当前处于该状态,则返回作业转换到该状态以来的时间,否则返回 0.</li>
+<li>&quot;TOTAL_TIME&quot;:对于给定状态,返回作业在该状态中总共花费的时间.</li>
+</ol>
+<p><code>metrics.latency.granularity</code><br>&quot;operator&quot;|String<br>定义延迟指标的粒度.<br>可接受的值为:</p>
+<ol>
+<li>single - 在不区分源和子任务的情况下跟踪延迟.</li>
+<li>operator - 在区分源而不是子任务时跟踪延迟.</li>
+<li>subtask - 在区分源和子任务时跟踪延迟.</li>
+</ol>
+<p><code>metrics.latency.history-size</code><br>128|Integer<br>定义每个操作员要保持的测量延迟数.</p>
+<p><code>metrics.latency.interval</code><br>0|Long<br>定义从源发出延迟跟踪标记的时间间隔.<br>如果设置为 0 或负值,则禁用延迟跟踪.<br>启用此功能会显着影响集群的性能.</p>
+<p><code>metrics.reporter.&lt;name&gt;.&lt;parameter&gt;</code><br>(none)|String<br>为名为 <code>&lt;name&gt;</code> 的报告器配置参数 <code>&lt;parameter&gt;</code>.</p>
+<p><code>metrics.reporter.&lt;name&gt;.class</code><br>(none)|String<br>用于名为 <code>&lt;name&gt;</code> 的报告器的报告器类.</p>
+<p><code>metrics.reporter.&lt;name&gt;.interval</code><br>10 s|Duration<br>用于名为 <code>&lt;name&gt;</code> 的报告者的报告者间隔.</p>
+<p><code>metrics.reporters</code><br>(none)|String<br>报告者姓名的可选列表.<br>如果已配置,则仅启动名称与列表中任何名称匹配的报告器.<br>否则,将启动配置中可以找到的所有报告器.</p>
+<p><code>metrics.scope.delimiter</code><br>&quot;.&quot;|String<br>用于组合度量标识符的分隔符.</p>
+<p><code>metrics.scope.jm</code><br>&quot;<code>&lt;host&gt;</code>.jobmanager&quot;|String<br>定义适用于 JobManager 范围内的所有指标的范围格式字符串.</p>
+<p><code>metrics.scope.jm.job</code><br>&quot;<code>&lt;host&gt;</code>.jobmanager.<code>&lt;job_name&gt;</code>&quot;|String<br>定义适用于 JobManager 上作业范围的所有指标的范围格式字符串.</p>
+<p><code>metrics.scope.operator</code><br>&quot;<code>&lt;host&gt;</code>.taskmanager.<code>&lt;tm_id&gt;.&lt;job_name&gt;.&lt;operator_name&gt;.&lt;subtask_index&gt;</code>&quot;|String<br>定义适用于操作员范围内的所有指标的范围格式字符串.</p>
+<p><code>metrics.scope.task</code><br>&quot;<code>&lt;host&gt;</code>.taskmanager.<code>&lt;tm_id&gt;.&lt;job_name&gt;.&lt;task_name&gt;.&lt;subtask_index&gt;</code>&quot;|String<br>定义适用于任务范围的所有指标的范围格式字符串.</p>
+<p><code>metrics.scope.tm</code><br>&quot;<code>&lt;host&gt;</code>.taskmanager.<code>&lt;tm_id&gt;</code>&quot;|String<br>定义适用于 TaskManager 范围内的所有指标的范围格式字符串.</p>
+<p><code>metrics.scope.tm.job</code><br>&quot;<code>&lt;host&gt;</code>.taskmanager.<code>&lt;tm_id&gt;.&lt;job_name&gt;</code>&quot;|String<br>定义适用于 TaskManager 上作业范围的所有指标的范围格式字符串.</p>
+<p><code>metrics.system-resource</code><br>FALSE|Boolean<br>指示 Flink 是否应报告系统资源指标的标志,例如机器的 CPU/内存或网络使用情况.</p>
+<p><code>metrics.system-resource-probing-interval</code><br>5000|Long<br>以毫秒为单位指定的系统资源指标探测之间的间隔.<br>仅在启用 &#39;metrics.system-resource&#39; 时有效.</p>
+<h3 id="RocksDB-原生指标"><a href="#RocksDB-原生指标" class="headerlink" title="RocksDB 原生指标"></a>RocksDB 原生指标</h3><p>Flink 可以为使用 RocksDB 状态后端的应用程序报告来自 RocksDB 原生代码的指标.这里的指标范围是运算符,然后按列族进一步细分.值报告为无符号长整数.<br>启用 RocksDB 的原生指标可能会导致性能下降,应谨慎设置.</p>
+<p><code>state.backend.rocksdb.metrics.actual-delayed-write-rate</code><br>FALSE|Boolean<br>监控当前的实际延迟写入速率.<br>0 表示没有延迟.</p>
+<p><code>state.backend.rocksdb.metrics.background-errors</code><br>FALSE|Boolean<br>监控 RocksDB 中的后台错误数量.</p>
+<p><code>state.backend.rocksdb.metrics.block-cache-capacity</code><br>FALSE|Boolean<br>监控块缓存容量.</p>
+<p><code>state.backend.rocksdb.metrics.block-cache-pinned-usage</code><br>FALSE|Boolean<br>监控被固定在块缓存中的条目的内存大小.</p>
+<p><code>state.backend.rocksdb.metrics.block-cache-usage</code><br>FALSE|Boolean<br>监视驻留在块缓存中的条目的内存大小.</p>
+<p><code>state.backend.rocksdb.metrics.column-family-as-variable</code><br>FALSE|Boolean<br>是否将列族公开为变量.</p>
+<p><code>state.backend.rocksdb.metrics.compaction-pending</code><br>FALSE|Boolean<br>在 RocksDB 中跟踪待处理的压缩.<br>如果压缩正在等待,则返回 1,否则返回 0.</p>
+<p><code>state.backend.rocksdb.metrics.cur-size-active-mem-table</code><br>FALSE|Boolean<br>监控活动内存表的大致大小(以字节为单位).</p>
+<p><code>state.backend.rocksdb.metrics.cur-size-all-mem-tables</code><br>FALSE|Boolean<br>监控活动和未刷新的不可变内存表的大致大小(以字节为单位).</p>
+<p><code>state.backend.rocksdb.metrics.estimate-live-data-size</code><br>FALSE|Boolean<br>以字节为单位估计实时数据量(由于空间放大,通常小于 sst 文件大小).</p>
+<p><code>state.backend.rocksdb.metrics.estimate-num-keys</code><br>FALSE|Boolean<br>估计 RocksDB 中的键数.</p>
+<p><code>state.backend.rocksdb.metrics.estimate-pending-compaction-bytes</code><br>FALSE|Boolean<br>估计的压缩总字节数需要重写以使所有级别降低到目标大小以下.<br>对基于级别以外的其他压缩无效.</p>
+<p><code>state.backend.rocksdb.metrics.estimate-table-readers-mem</code><br>FALSE|Boolean<br>估计用于读取 SST 表的内存,不包括块缓存(例如,过滤器和索引块)中使用的内存(以字节为单位).</p>
+<p><code>state.backend.rocksdb.metrics.is-write-stopped</code><br>FALSE|Boolean<br>跟踪 RocksDB 中的写入是否已停止.<br>如果写入已停止,则返回 1,否则返回 0.</p>
+<p><code>state.backend.rocksdb.metrics.live-sst-files-size</code><br>FALSE|Boolean<br>监控属于最新版本的所有 SST 文件的总大小(字节).<br>警告:如果文件过多,可能会减慢在线查询速度.</p>
+<p><code>state.backend.rocksdb.metrics.mem-table-flush-pending</code><br>FALSE|Boolean<br>监控 RocksDB 中挂起的 memtable 刷新的数量.</p>
+<p><code>state.backend.rocksdb.metrics.num-deletes-active-mem-table</code><br>FALSE|Boolean<br>监控活动内存表中删除条目的总数.</p>
+<p><code>state.backend.rocksdb.metrics.num-deletes-imm-mem-tables</code><br>FALSE|Boolean<br>监控未刷新的不可变内存表中删除条目的总数.</p>
+<p><code>state.backend.rocksdb.metrics.num-entries-active-mem-table</code><br>FALSE|Boolean<br>监控活动内存表中的条目总数.</p>
+<p><code>state.backend.rocksdb.metrics.num-entries-imm-mem-tables</code><br>FALSE|Boolean<br>监控未刷新的不可变内存表中的条目总数.</p>
+<p><code>state.backend.rocksdb.metrics.num-immutable-mem-table</code><br>FALSE|Boolean<br>监控 RocksDB 中不可变内存表的数量.</p>
+<p><code>state.backend.rocksdb.metrics.num-live-versions</code><br>FALSE|Boolean<br>监控实时版本的数量.<br>版本是一种内部数据结构.<br>有关详细信息,请参阅 RocksDB 文件 version_set.h.<br>更多实时版本通常意味着更多的 SST 文件不会被迭代器或未完成的压缩删除.</p>
+<p><code>state.backend.rocksdb.metrics.num-running-compactions</code><br>FALSE|Boolean<br>监视当前正在运行的压缩的数量.</p>
+<p><code>state.backend.rocksdb.metrics.num-running-flushes</code><br>FALSE|Boolean<br>监控当前运行的刷新次数.</p>
+<p><code>state.backend.rocksdb.metrics.num-snapshots</code><br>FALSE|Boolean<br>监控数据库未发布快照的数量.</p>
+<p><code>state.backend.rocksdb.metrics.size-all-mem-tables</code><br>FALSE|Boolean<br>监控活动的/未刷新的不可变的和固定的不可变内存表的大致大小(以字节为单位).</p>
+<p><code>state.backend.rocksdb.metrics.total-sst-files-size</code><br>FALSE|Boolean<br>监控所有版本的所有 SST 文件的总大小(字节).<br>警告:如果文件太多,可能会减慢在线查询.</p>
+<h2 id="历史服务器"><a href="#历史服务器" class="headerlink" title="历史服务器"></a>历史服务器</h2><p>历史服务器保存已完成作业的信息(图表/运行时/统计信息).要启用它,您必须在 JobManager (jobmanager.archive.fs.dir) 中启用&quot;作业归档&quot;.</p>
+<p><code>historyserver.archive.clean-expired-jobs</code><br>FALSE|Boolean<br>HistoryServer 是否应该清理不再存在的作业 <code>historyserver.archive.fs.dir</code>.</p>
+<p><code>historyserver.archive.fs.dir</code><br>(none)|String<br>逗号分隔的目录列表,用于从中获取归档作业.<br>历史服务器将监视这些目录中的归档作业.<br>您可以配置 JobManager 以通过 <code>jobmanager.archive.fs.dir</code> 将作业归档到目录.</p>
+<p><code>historyserver.archive.fs.refresh-interval</code><br>10000|Long<br>刷新归档作业目录的时间间隔(毫秒).</p>
+<p><code>historyserver.archive.retained-jobs</code><br>-1|Integer<br><code>historyserver.archive.fs.dir</code> 定义的每个归档目录中保留的最大作业数.<br>如果设置为 <code>-1</code>(默认),则存档数量没有限制.<br>如果设置为&quot;0&quot;或小于&quot;-1&quot;,HistoryServer 将抛出 IllegalConfigurationException.</p>
+<p><code>historyserver.web.address</code><br>(none)|String<br>HistoryServer 的 Web 界面的地址.</p>
+<p><code>historyserver.web.port</code><br>8082|Integer<br>HistoryServers Web 界面的端口.</p>
+<p><code>historyserver.web.refresh-interval</code><br>10000|Long<br>HistoryServer Web 前端的刷新间隔(以毫秒为单位).</p>
+<p><code>historyserver.web.ssl.enabled</code><br>FALSE|Boolean<br>启用对 HistoryServer Web 前端的 HTTPs 访问.<br>这仅在全局 SSL 标志 security.ssl.enabled 设置为 true 时适用.</p>
+<p><code>historyserver.web.tmpdir</code><br>(none)|String<br>历史服务器 REST API 用于临时文件的本地目录.</p>
+<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><p>Flink 中实验性功能的选项.</p>
+<h3 id="可查询状态"><a href="#可查询状态" class="headerlink" title="可查询状态"></a>可查询状态</h3><p>Queryable State是一项实验性功能,可让您像键/值存储一样访问 Flink 的内部状态.</p>
+<p><code>queryable-state.client.network-threads</code><br>0|Integer<br>可查询状态客户端的网络(Netty 的事件循环)线程数.</p>
+<p><code>queryable-state.enable</code><br>FALSE|Boolean<br>选项是否应在可能和可配置的情况下启用可查询状态代理和服务器.</p>
+<p><code>queryable-state.proxy.network-threads</code><br>0|Integer<br>可查询状态代理的网络(Netty 的事件循环)线程数.</p>
+<p><code>queryable-state.proxy.ports</code><br>&quot;9069&quot;|String<br>可查询状态代理的端口范围.<br>指定的范围可以是单个端口:&quot;9123&quot;,端口范围:&quot;50100-50200&quot;,或范围和端口列表:&quot;50100-50200,50300-50400,51234&quot;.</p>
+<p><code>queryable-state.proxy.query-threads</code><br>0|Integer<br>可查询状态代理的查询线程数.<br>如果设置为 0,则使用插槽数.</p>
+<p><code>queryable-state.server.network-threads</code><br>0|Integer<br>可查询状态服务器的网络(Netty 的事件循环)线程数.</p>
+<p><code>queryable-state.server.ports</code><br>&quot;9067&quot;|String<br>可查询状态服务器的端口范围.<br>指定的范围可以是单个端口:&quot;9123&quot;,端口范围:&quot;50100-50200&quot;,或范围和端口列表:&quot;50100-50200,50300-50400,51234&quot;.</p>
+<p><code>queryable-state.server.query-threads</code><br>0|Integer<br>可查询状态服务器的查询线程数.<br>如果设置为 0,则使用插槽数.</p>
+<h3 id="Client"><a href="#Client" class="headerlink" title="Client"></a>Client</h3><p><code>client.retry-period</code><br>2 s|Duration<br>通过 CLI 或 Flink 的客户端执行命令失败的连续重试之间的间隔(以毫秒为单位),只要支持重试(默认为 2 秒).</p>
+<p><code>client.timeout</code><br>1 min|Duration<br>客户端超时.</p>
+<h3 id="Execution"><a href="#Execution" class="headerlink" title="Execution"></a>Execution</h3><p><code>execution.allow-client-job-configurations</code><br>TRUE|Boolean<br>确定是否允许用户程序中的配置.<br>根据您的部署模式,失败的作业可能会产生不同的影响.<br>尝试将作业提交到外部集群(会话集群部署)的客户端会引发异常或作业管理器(应用程序模式部署).</p>
+<p><code>execution.attached</code><br>FALSE|Boolean<br>指定管道是以附加模式还是分离模式提交.</p>
+<p><code>execution.job-listeners</code><br>(none)|List<code>&lt;String&gt;</code><br>要在执行环境中注册的自定义 JobListener.<br>注册的侦听器不能有带参数的构造函数.</p>
+<p><code>execution.shutdown-on-application-finish</code><br>TRUE|Boolean<br>Flink 应用程序集群是否应该在其应用程序完成后自动关闭(成功或失败).<br>对其他部署模式无效.</p>
+<p><code>execution.shutdown-on-attached-exit</code><br>FALSE|Boolean<br>如果作业以附加模式提交,则在 CLI 突然终止时(例如,响应用户中断,例如键入 Ctrl + C)执行尽力而为的集群关闭.</p>
+<p><code>execution.submit-failed-job-on-application-error</code><br>FALSE|Boolean<br>如果应用程序驱动程序在实际提交作业之前出现错误,则应提交失败的作业(在应用程序模式下).<br>这旨在提供一种向用户报告故障的干净方式,并且与&quot;execution.shutdown-on-application-finish&quot;结合使用特别有用.<br>此选项仅在强制提交单个作业时有效(启用&quot;高可用性&quot;).<br>请注意,这是一个实验性选项,将来可能会更改.</p>
+<p><code>execution.target</code><br>(none)|String<br>执行的部署目标.<br>在调用 bin/flink 运行时,它可以采用以下值之一:</p>
+<ol>
+<li>remote</li>
+<li>local</li>
+<li>yarn-per-job (deprecated)</li>
+<li>yarn-session</li>
+<li>kubernetes-session</li>
+</ol>
+<p>以及调用时的以下值之一,bin/flink run-application:</p>
+<ol>
+<li>yarn-application</li>
+<li>kubernetes-application</li>
+</ol>
+<p><code>execution.savepoint-restore-mode</code><br>NO_CLAIM|Enum<br>描述 Flink 如何从给定的保存点或保留的检查点恢复的模式.<br>可能的值:</p>
+<ol>
+<li><p>&quot;CLAIM&quot;:Flink 将拥有给定快照的所有权.<br>一旦快照被较新的快照包含,它将清除快照.</p>
+</li>
+<li><p>&quot;NO_CLAIM&quot;:Flink 不会声明对快照文件的所有权.<br>但是,它将确保它不依赖于恢复的快照中的任何人工制品.<br>为了做到这一点,Flink 会将第一个检查点作为一个完整的检查点,这意味着它可能会重新上传/复制作为恢复检查点一部分的文件.</p>
+</li>
+<li><p>&quot;LEGACY&quot;:这是 Flink 迄今为止工作的模式.<br>它不会声明快照的所有权,也不会删除文件.<br>但是,它可以直接取决于恢复的检查点的文件是否存在.<br>删除以旧模式恢复的检查点可能不安全</p>
+</li>
+</ol>
+<p><code>execution.savepoint.ignore-unclaimed-state</code><br>FALSE|Boolean<br>允许跳过无法恢复的保存点状态.<br>如果您在触发保存点后从管道中删除了操作员,则允许此操作.</p>
+<p><code>execution.savepoint.path</code><br>(none)|String<br>从中恢复作业的保存点的路径(例如 hdfs:///flink/savepoint-1537).</p>
+<p><code>execution.batch-shuffle-mode</code><br>ALL_EXCHANGES_BLOCKING|Enum<br>如果尚未为单个交换明确设置改组行为,则定义如何在批处理&quot;execution.runtime-mode&quot;中的任务之间交换数据.<br>通过流水线交换,上游和下游任务同时运行.<br>为了实现更低的延迟,结果记录会立即发送到下游任务并由其处理.<br>因此,接收方对发送方施加反压.<br>流模式始终使用此交换.</p>
+<p>通过阻塞交换,上游和下游任务分阶段运行.<br>记录在阶段之间被持久化到一些存储中.<br>下游任务然后在上游任务完成后获取这些记录.<br>这种交换减少了执行作业所需的资源,因为它不需要同时运行上游和下游任务.</p>
+<p>可能的值:</p>
+<ol>
+<li><p>&quot;ALL_EXCHANGES_PIPELINED&quot;:上游和下游任务同时运行.<br>这导致更低的延迟和更均匀分布(但更高)的资源使用跨任务.</p>
+</li>
+<li><p>&quot;ALL_EXCHANGES_BLOCKING&quot;:上游和下游任务随后运行.<br>这减少了资源使用,因为下游任务在上游任务完成后启动.</p>
+</li>
+</ol>
+<p><code>execution.buffer-timeout</code><br>100 ms|Duration<br>刷新输出缓冲区的最大时间频率(毫秒).<br>默认情况下,输出缓冲区会频繁刷新以提供低延迟并有助于流畅的开发人员体验.<br>设置参数会导致三种逻辑模式:</p>
+<ol>
+<li>正值触发按该间隔定期刷新</li>
+<li>0 在每条记录后触发刷新,从而最大限度地减少延迟</li>
+<li>-1 ms 仅在输出缓冲区已满时触发刷新,从而最大限度地提高吞吐量</li>
+</ol>
+<p><code>execution.checkpointing.snapshot-compression</code><br>FALSE|Boolean<br>告诉我们是否应该对状态快照数据使用压缩</p>
+<p><code>execution.runtime-mode</code><br>STREAMING|Enum<br>DataStream 程序的运行时执行模式.<br>除此之外,它还控制任务调度/网络洗牌行为和时间语义.<br>可能的值:</p>
+<ol>
+<li>&quot;STREAMING&quot;</li>
+<li>&quot;BATCH&quot;</li>
+<li>&quot;AUTOMATIC&quot;</li>
+</ol>
+<h3 id="管道"><a href="#管道" class="headerlink" title="管道"></a>管道</h3><p><code>pipeline.auto-generate-uids</code><br>TRUE|Boolean<br>当自动生成的 UID 被禁用时,用户被迫在 DataStream 应用程序上手动指定 UID.<br>强烈建议用户在部署到生产环境之前指定 UID,因为它们用于将保存点中的状态与作业中的操作员匹配.<br>因为在修改作业时自动生成的 ID 可能会发生变化,所以指定自定义 ID 允许应用程序随着时间的推移而发展,而不会丢弃状态.</p>
+<p><code>pipeline.auto-type-registration</code><br>TRUE|Boolean<br>控制 Flink 是否自动向 Kryo 注册用户程序中的所有类型.</p>
+<p><code>pipeline.auto-watermark-interval</code><br>0 ms|Duration<br>自动水印发射的时间间隔.<br>整个流媒体系统都使用水印来跟踪时间进度.<br>例如,它们用于基于时间的窗口.</p>
+<p><code>pipeline.cached-files</code><br>(none)|<code>List&lt;String&gt;</code><br>要在给定名称下在分布式缓存中注册的文件.<br>可以从本地路径下的(分布式)运行时中的任何用户定义函数访问这些文件.<br>文件可以是本地文件(将通过 BlobServer 分发),也可以是分布式文件系统中的文件.<br>如果需要,运行时会将文件临时复制到本地缓存.<br>例子:<br>name:file1,path:<code>file:///tmp/file1</code>;name:file2,path:<code>hdfs:///tmp/file2</code></p>
+<p><code>pipeline.classpaths</code><br>(none)|<code>List&lt;String&gt;</code><br>要与要发送到集群的作业 jar 一起打包的类路径的分号分隔列表.<br>这些必须是有效的 URL.</p>
+<p><code>pipeline.closure-cleaner-level</code><br>RECURSIVE|Enum<br>配置闭包清理器的工作模式.<br>可能的值:</p>
+<ol>
+<li>&quot;NONE&quot;:完全禁用闭合清洁器.</li>
+<li>&quot;TOP_LEVEL&quot;:只清理顶级类而不递归到字段中.</li>
+<li>&quot;RECURSIVE&quot;:递归清除所有字段.</li>
+</ol>
+<p><code>pipeline.default-kryo-serializers</code><br>(none)|<code>List&lt;String&gt;</code><br>用分号分隔的类名对列表和 Kryo 序列化器类名,用作 Kryo 默认序列化器<br>例子:<br>类:org.example.ExampleClass,序列化器:org.example.ExampleSerializer1.类:org.example.ExampleClass2,序列化器:org.example.ExampleSerializer2</p>
+<p><code>pipeline.force-avro</code><br>FALSE|Boolean<br>强制 Flink 对 POJO 使用 Apache Avro 序列化程序.<br>重要提示:确保包含 flink-avro 模块.</p>
+<p><code>pipeline.force-kryo</code><br>FALSE|Boolean<br>如果启用,则强制 TypeExtractor 为 POJOS 使用 Kryo 序列化程序,即使我们可以分析为 POJO.<br>在某些情况下,这可能更可取.<br>例如,当使用带有不能被分析为 POJO 的子类的接口时.</p>
+<p><code>pipeline.generic-types</code><br>TRUE|Boolean<br>如果禁用泛型类型的使用,Flink 将在遇到将通过 Kryo 进行序列化的数据类型时抛出 UnsupportedOperationException.<br>禁用泛型类型有助于急切地查找和消除在运行时会通过 Kryo 序列化的类型的使用.<br>而不是单独检查类型,使用此选项将在使用泛型类型的地方急切地抛出异常.</p>
+<p>我们建议仅在开发和预生产阶段使用此选项,而不是在实际生产使用期间.<br>应用程序和/或输入数据可以使得新的/以前未见过的类型在某个点出现.<br>在这种情况下,设置此选项会导致程序失败.</p>
+<p><code>pipeline.global-job-parameters</code><br>(none)|Map<br>注册一个自定义的/可序列化的用户配置对象.<br>可以在操作符中访问配置</p>
+<p><code>pipeline.jars</code><br>(none)|<code>List&lt;String&gt;</code><br>要与要发送到集群的作业 jar 一起打包的 jar 的分号分隔列表.<br>这些必须是有效的路径.</p>
+<p><code>pipeline.max-parallelism</code><br>-1|Integer<br>用于未指定最大并行度的运算符的程序范围的最大并行度.<br>最大并行度指定了动态扩展的上限和用于分区状态的键组的数量.</p>
+<p><code>pipeline.name</code><br>(none)|String<br>用于打印和记录的作业名称.</p>
+<p><code>pipeline.object-reuse</code><br>FALSE|Boolean<br>当启用 Flink 内部用于反序列化和将数据传递给用户代码函数的对象将被重用.<br>请记住,当操作的用户代码功能不知道此行为时,这可能会导致错误.</p>
+<p><code>pipeline.operator-chaining</code><br>TRUE|Boolean<br>运算符链允许非混洗操作在同一个线程中共同定位,完全避免了序列化和反序列化.</p>
+<p><code>pipeline.registered-kryo-types</code><br>(none)|<code>List&lt;String&gt;</code><br>要注册到序列化堆栈的类型的分号分隔列表.<br>如果该类型最终被序列化为 POJO,则该类型将注册到 POJO 序列化程序.<br>如果类型最终被 Kryo 序列化,那么它将在 Kryo 注册以确保只写入标签.</p>
+<p><code>pipeline.registered-pojo-types</code><br>(none)|<code>List&lt;String&gt;</code><br>要注册到序列化堆栈的类型的分号分隔列表.<br>如果该类型最终被序列化为 POJO,则该类型将注册到 POJO 序列化程序.<br>如果类型最终被 Kryo 序列化,那么它将在 Kryo 注册以确保只写入标签.</p>
+<p><code>pipeline.vertex-description-mode</code><br>TREE|Enum<br>我们如何组织作业顶点的描述的模式.<br>可能的值:</p>
+<ol>
+<li>&quot;TREE&quot;</li>
+<li>&quot;CASCADING&quot;</li>
+</ol>
+<p><code>pipeline.vertex-name-include-index-prefix</code><br>FALSE|Boolean<br>顶点名称是否包含拓扑索引.<br>当它为真时,名称将具有顶点索引的前缀,如&#39;<code>[vertex-0]</code>Source:source&#39;.<br>默认为假</p>
+<p><code>pipeline.time-characteristic</code><br>ProcessingTime|Enum<br>所有创建的流的时间特征,例如处理时间/事件时间或摄取时间.<br>如果您将特征设置为 IngestionTime 或 EventTime,这将设置默认水印更新间隔为 200 毫秒.<br>如果这不适用于您的应用程序,您应该使用 pipeline.auto-watermark-interval 进行更改.<br>可能的值:</p>
+<ol>
+<li>&quot;ProcessingTime&quot;</li>
+<li>&quot;IngestionTime&quot;</li>
+<li>&quot;EventTime&quot;</li>
+</ol>
+<h3 id="检查点"><a href="#检查点" class="headerlink" title="检查点"></a>检查点</h3><p><code>execution.checkpointing.aligned-checkpoint-timeout</code><br>0 ms|Duration<br>仅当启用 execution.checkpointing.unaligned 时才相关.<br>如果超时为 0,检查点将始终未对齐开始.<br>如果 timeout 有一个正值,检查点将开始对齐.<br>如果在检查点期间,检查点启动延迟超过此超时,对齐将超时并且检查点屏障将作为未对齐检查点开始工作.</p>
+<p><code>execution.checkpointing.checkpoints-after-tasks-finish.enabled</code><br>TRUE|Boolean<br>即使某些任务已经完成,也可以启用检查点功能切换.<br>在启用它之前,请先看看重要的注意事项</p>
+<p><code>execution.checkpointing.externalized-checkpoint-retention</code><br>NO_EXTERNALIZED_CHECKPOINTS|Enum<br>外部化检查点将其元数据写入持久存储,并且在拥有作业失败或挂起(以作业状态 JobStatus#FAILED 或 JobStatus#SUSPENDED 终止)时不会自动清理.<br>在这种情况下,您必须手动清理检查点状态,包括元数据和实际程序状态.<br>该模式定义了在作业取消时应如何清理外部化检查点.<br>如果您选择在取消时保留外部化检查点,您还必须在取消作业时手动处理检查点清理(以作业状态 JobStatus#CANCELED 终止).<br>外部检查点的目标目录是通过 state.checkpoints.dir 配置的.<br>可能的值:</p>
+<ol>
+<li>&quot;DELETE_ON_CANCELLATION&quot;:仅当拥有的作业失败时才保留检查点状态.<br>如果作业被取消,它将被删除.</li>
+<li>&quot;RETAIN_ON_CANCELLATION&quot;:当拥有的作业被取消或失败时,检查点状态保持不变.</li>
+<li>&quot;NO_EXTERNALIZED_CHECKPOINTS&quot;:外部化检查点被禁用.</li>
+</ol>
+<p><code>execution.checkpointing.interval</code><br>(none)|Duration<br>获取定期安排检查点的时间间隔.<br>此设置定义基本间隔.<br>设置 execution.checkpointing.max-concurrent-checkpoints 和 execution.checkpointing.min-pause 可能会延迟检查点触发</p>
+<p><code>execution.checkpointing.max-concurrent-checkpoints</code><br>1|Integer<br>可能同时进行的最大检查点尝试次数.<br>如果此值为 n,则当 n 个检查点尝试当前正在进行时,不会触发任何检查点.<br>要触发下一个检查点,需要完成一次检查点尝试或过期.</p>
+<p><code>execution.checkpointing.min-pause</code><br>0 ms|Duration<br>检查点尝试之间的最小停顿.<br>此设置定义了检查点协调器在可以触发另一个检查点之后多快触发另一个检查点,以考虑最大并发检查点数(请参阅 execution.checkpointing.max-concurrent-checkpoints).<br>如果将最大并发检查点数设置为 1,则此设置可有效确保在根本没有检查点进行的情况下经过最少的时间.</p>
+<p><code>execution.checkpointing.mode</code><br>EXACTLY_ONCE|Enum<br>检查点模式(exactly-once vs. at-least-once).<br>可能的值:</p>
+<ol>
+<li>&quot;EXACTLY_ONCE&quot;</li>
+<li>&quot;AT_LEAST_ONCE&quot;</li>
+</ol>
+<p><code>execution.checkpointing.recover-without-channel-state.checkpoint-id</code><br>-1|Long<br>在从该检查点恢复的情况下,应忽略正在运行的数据的检查点 ID.<br>最好将此值保留为空,直到明确需要从特定检查点恢复而无需传输中的数据.</p>
+<p><code>execution.checkpointing.timeout</code><br>10 min|Duration<br>检查点在被丢弃之前可能花费的最长时间.</p>
+<p><code>execution.checkpointing.tolerable-failed-checkpoints</code><br>(none)|Integer<br>可容忍的检查点连续失败次数.<br>如果设置为 0,则意味着我们不会容忍任何检查点故障.</p>
+<p><code>execution.checkpointing.unaligned</code><br>FALSE|Boolean<br>启用未对齐的检查点,这大大减少了背压下的检查点时间.<br>未对齐的检查点包含存储在缓冲区中的数据作为检查点状态的一部分,这允许检查点屏障超越这些缓冲区.<br>因此,检查点持续时间变得独立于当前吞吐量,因为检查点屏障实际上不再嵌入到数据流中.<br>只有在 execution.checkpointing.mode 为 EXACTLY_ONCE 且 execution.checkpointing.max-concurrent-checkpoints 为 1 时才能启用未对齐的检查点</p>
+<p><code>execution.checkpointing.unaligned.forced</code><br>FALSE|Boolean<br>强制未对齐的检查点,特别是允许它们用于迭代作业.</p>
+<h2 id="Debugging-amp-Expert-Tuning"><a href="#Debugging-amp-Expert-Tuning" class="headerlink" title="Debugging &amp; Expert Tuning"></a>Debugging &amp; Expert Tuning</h2><p>下面的选项适用于专家用户和修复/调试问题.大多数设置不需要配置这些选项.</p>
+<h3 id="类加载"><a href="#类加载" class="headerlink" title="类加载"></a>类加载</h3><p>Flink 动态加载提交到会话集群的作业的代码.此外,Flink 试图对应用程序隐藏类路径中的许多依赖项.这有助于减少应用程序代码和类路径中的依赖项之间的依赖项冲突.</p>
+<p><code>classloader.check-leaked-classloader</code><br>TRUE|Boolean<br>如果作业的用户类加载器在终止后使用,则尝试加载类失败.<br>这通常是由于类加载器被延迟线程或行为不端的库泄漏造成的,这也可能导致类加载器被其他作业使用.<br>仅当此类泄漏阻止进一步的作业运行时,才应禁用此检查.</p>
+<p><code>classloader.fail-on-metaspace-oom-error</code><br>TRUE|Boolean<br>如果在尝试加载用户代码类时抛出&quot;OutOfMemoryError: Metaspace&quot;,则 Flink JVM 进程失败.</p>
+<p><code>classloader.parent-first-patterns.additional</code><br>|<code>List&lt;String&gt;</code><br>一个(分号分隔的)模式列表,它指定哪些类应该总是首先通过父类加载器解析.<br>模式是一个简单的前缀,它根据完全限定的类名进行检查.<br>这些模式附加到&quot;classloader.parent-first-patterns.default&quot;.</p>
+<p><code>classloader.parent-first-patterns.default</code><br>&quot;java.&quot;;&quot;scala.&quot;;&quot;org.apache.flink.&quot;;&quot;com.esotericsoftware.kryo&quot;;&quot;org.apache.hadoop.&quot;;&quot;javax.annotation.&quot;;&quot;org.xml&quot;;&quot;javax.xml&quot;;&quot;org.apache.xerces&quot;;&quot;org.w3c&quot;;&quot;org.rocksdb.&quot;;&quot;org.slf4j&quot;;&quot;org.apache.log4j&quot;;&quot;org.apache.logging&quot;;&quot;org.apache.commons.logging&quot;;&quot;ch.qos.logback&quot;|<code>List&lt;String&gt;</code><br>一个(分号分隔的)模式列表,它指定哪些类应该总是首先通过父类加载器解析.<br>模式是一个简单的前缀,它根据完全限定的类名进行检查.<br>通常不应修改此设置.<br>要添加其他模式,我们建议改用&quot;classloader.parent-first-patterns.additional&quot;.</p>
+<p><code>classloader.resolve-order</code><br>&quot;child-first&quot;|String<br>定义从用户代码加载类时的类解析策略,即是先检查用户代码 jar(&quot;child-first&quot;)还是应用程序类路径(&quot;parent-first&quot;).<br>默认设置指示首先从用户代码 jar 加载类,这意味着用户代码 jar 可以包含和加载与 Flink 使用的不同的依赖项(传递).</p>
+<h3 id="调试的高级选项"><a href="#调试的高级选项" class="headerlink" title="调试的高级选项"></a>调试的高级选项</h3><p><code>jmx.server.port</code><br>(none)|String<br>JMX 服务器启动注册表的端口范围.<br>端口配置可以是单个端口:&quot;9123&quot;,端口范围:&quot;50100-50200&quot;,或范围和端口列表:&quot;50100-50200,50300-50400,51234&quot;.</p>
+<p>此选项覆盖 <code>metrics.reporter.*.port</code> 选项.</p>
+<h3 id="高级状态后端选项"><a href="#高级状态后端选项" class="headerlink" title="高级状态后端选项"></a>高级状态后端选项</h3><p><code>state.storage.fs.memory-threshold</code><br>20 kb|MemorySize<br>状态数据文件的最小大小.<br>所有小于该值的状态块都内联存储在根检查点元数据文件中.<br>此配置的最大内存阈值为 1MB.</p>
+<p><code>state.storage.fs.write-buffer-size</code><br>4096|Integer<br>写入文件系统的检查点流的写入缓冲区的默认大小.<br>实际的写入缓冲区大小被确定为此选项和选项&#39;state.storage.fs.memory-threshold&#39;的值的最大值.</p>
+<h3 id="状态后端延迟跟踪选项"><a href="#状态后端延迟跟踪选项" class="headerlink" title="状态后端延迟跟踪选项"></a>状态后端延迟跟踪选项</h3><p><code>state.backend.latency-track.history-size</code><br>128|Integer<br>定义在每个状态访问操作中要维护的测量延迟数.</p>
+<p><code>state.backend.latency-track.keyed-state-enabled</code><br>FALSE|Boolean<br>是否跟踪键控状态操作的延迟,例如值状态 put/get/clear.</p>
+<p><code>state.backend.latency-track.sample-interval</code><br>100|Integer<br>启用&quot;state.backend.latency-track.keyed-state-enabled&quot;后延迟跟踪的采样间隔.<br>默认值为 100,这意味着我们将跟踪每 100 个访问请求的延迟.</p>
+<p><code>state.backend.latency-track.state-name-as-variable</code><br>TRUE|Boolean<br>如果跟踪延迟,是否将状态名称公开为变量.</p>
+<h3 id="高级-RocksDB-状态后端选项"><a href="#高级-RocksDB-状态后端选项" class="headerlink" title="高级 RocksDB 状态后端选项"></a>高级 RocksDB 状态后端选项</h3><p><code>state.backend.rocksdb.checkpoint.transfer.thread.num</code><br>4|Integer<br>用于在 RocksDBStateBackend 中传输(下载和上传)文件的线程数(每个有状态运算符).</p>
+<p><code>state.backend.rocksdb.localdir</code><br>(none)|String<br>RocksDB 放置文件的本地目录(在 TaskManager 上).<br>默认情况下,它将是 <code>&lt;WORKING_DIR&gt;</code>/tmp.<br>有关更多详细信息,请参见 process.taskmanager.working-dir.</p>
+<p><code>state.backend.rocksdb.options-factory</code><br>(none)|String<br>选项工厂类,供用户在 RocksDB 的 DBOptions 和 ColumnFamilyOptions 中添加自定义选项.<br>如果设置,RocksDB 状态后端将加载类并在从&quot;RocksDBConfigurableOptions&quot;和预定义选项加载配置后将配置应用于 DBOptions 和 ColumnFamilyOptions.</p>
+<p><code>state.backend.rocksdb.predefined-options</code><br>&quot;DEFAULT&quot;|String<br>Flink 社区对 RocksDB DBOptions 和 ColumnFamilyOptions 的预定义设置.<br>当前支持的候选预定义选项是 DEFAULT/SPINNING_DISK_OPTIMIZED/SPINNING_DISK_OPTIMIZED_HIGH_MEM 或 FLASH_SSD_OPTIMIZED.<br>请注意,来自 RocksDBOptionsFactory 的用户自定义选项和选项应用在这些预定义选项之上.</p>
+<h3 id="状态变更日志选项"><a href="#状态变更日志选项" class="headerlink" title="状态变更日志选项"></a>状态变更日志选项</h3><p><code>state.backend.changelog.enabled</code><br>FALSE|Boolean<br>是否启用状态后端将状态更改写入 StateChangelog.<br>如果没有显式设置此配置,则表示不优先启用更改日志,配置级别较低的值将生效.<br>这里的默认值&quot;false&quot;表示如果没有设置值(作业或集群),则不会启用更改日志.</p>
+<p><code>state.backend.changelog.max-failures-allowed</code><br>3|Integer<br>允许的最大连续实现失败次数.</p>
+<p><code>state.backend.changelog.periodic-materialize.interval</code><br>10 min|Duration<br>以毫秒为单位定义为状态后端执行定期实现的时间间隔.<br>当值为负时,周期性实现将被禁用</p>
+<p><code>state.backend.changelog.storage</code><br>&quot;memory&quot;|String<br>用于存储状态更改日志的存储.<br>可以通过它们的快捷方式名称指定实现.<br>可识别的快捷方式名称列表当前包括&quot;内存&quot;和&quot;文件系统&quot;.</p>
+<h3 id="基于文件系统的变更日志-选项"><a href="#基于文件系统的变更日志-选项" class="headerlink" title="基于文件系统的变更日志 选项"></a>基于文件系统的变更日志 选项</h3><p>state.backend.changelog.storage 这些设置在设置为filesystem(见上文) 时生效.</p>
+<p><code>dstl.dfs.base-path</code><br>(none)|String<br>存储更改日志文件的基本路径.</p>
+<p><code>dstl.dfs.batch.persist-delay</code><br>10 ms|Duration<br>收到持久化请求(在检查点上)后,在持久化更改日志之前延迟.<br>如果多个操作员(后端)或子任务使用同一个存储,则最大限度地减少文件和请求的数量.<br>相应地增加了检查点时间(异步阶段).</p>
+<p><code>dstl.dfs.batch.persist-size-threshold</code><br>10 mb|MemorySize<br>请求持久但正在等待 dstl.dfs.batch.persist-delay(来自所有操作员)的状态更改的大小阈值.<br>. 一旦达到,累积的更改将立即保留.<br>这与 dstl.dfs.preemptive-persist-threshold 不同,因为它发生在检查点之后并且可能用于多个运算符的状态更改.<br>不得超过飞行数据限制(见下文)</p>
+<p><code>dstl.dfs.compression.enabled</code><br>FALSE|Boolean<br>序列化更新日志时是否启用压缩.</p>
+<p><code>dstl.dfs.preemptive-persist-threshold</code><br>5 mb|MemorySize<br>单个操作符状态更改的大小阈值,超过该阈值它们会在不等待检查点的情况下抢先保存.<br>通过允许准连续上传状态更改(而不是上传检查点上的所有累积更改)来改进检查点时间.</p>
+<p><code>dstl.dfs.upload.buffer-size</code><br>1 mb|MemorySize<br>上传更改集时使用的缓冲区大小</p>
+<p><code>dstl.dfs.upload.max-attempts</code><br>3|Integer<br>执行特定上传的最大尝试次数(包括初始尝试次数).<br>仅在 dstl.dfs.upload.retry-policy 修复后生效.</p>
+<p><code>dstl.dfs.upload.max-in-flight</code><br>100 mb|MemorySize<br>允许进行中的最大数据量.<br>达到此限制后,任务将被背压.<br>即快照会阻塞.如果 dstl.dfs.preemptive-persist-threshold 设置并达到,则正常处理将被阻止.<br>如果多个操作员/后端使用相同的更改日志存储,则该限制适用于进行中更改的总大小.<br>必须大于或等于 dstl.dfs.batch.persist-size-threshold</p>
+<p><code>dstl.dfs.upload.next-attempt-delay</code><br>500 ms|Duration<br>在下一次尝试之前延迟(如果失败不是由超时引起的).</p>
+<p><code>dstl.dfs.upload.num-threads</code><br>5|Integer<br>用于上传的线程数.</p>
+<p><code>dstl.dfs.upload.retry-policy</code><br>&quot;fixed&quot;|String<br>上传失败(特别是超时)的重试策略.<br>有效值:无,固定.</p>
+<p><code>dstl.dfs.upload.timeout</code><br>1 s|Duration<br>超过该时间阈值,上传被视为超时.<br>如果进行了新尝试但此上传较早成功,则将使用此上传结果.<br>如果上传请求的尾部延迟非常高,可能会缩短上传时间.<br>仅在 dstl.dfs.upload.retry-policy 修复后生效.<br>请注意 timeout * max_attempts 应该小于 execution.checkpointing.timeout</p>
+<h3 id="RocksDB-可配置选项"><a href="#RocksDB-可配置选项" class="headerlink" title="RocksDB 可配置选项"></a>RocksDB 可配置选项</h3><p>这些选项可以对 ColumnFamilies 的行为和资源进行细粒度控制.随着state.backend.rocksdb.memory.managed和state.backend.rocksdb.memory.fixed-per-slot(Apache Flink 1.10)的引入,应该只需要使用此处的选项进行高级性能调优.这些选项也可以在应用程序中通过 指定RocksDBStateBackend.setRocksDBOptions(RocksDBOptionsFactory).</p>
+<p><code>state.backend.rocksdb.block.blocksize</code><br>4 kb|MemorySize<br>每个块打包的用户数据的近似大小(以字节为单位).<br>默认块大小为&quot;4KB&quot;.</p>
+<p><code>state.backend.rocksdb.block.cache-size</code><br>8 mb|MemorySize<br>RocksDB 中数据块的缓存量.<br>默认块缓存大小为&quot;8MB&quot;.</p>
+<p><code>state.backend.rocksdb.block.metadata-blocksize</code><br>4 kb|MemorySize<br>每个块打包的分区元数据的近似大小.<br>当前在启用分区索引/过滤器选项时应用于索引块.<br>默认块大小为&quot;4KB&quot;.</p>
+<p><code>state.backend.rocksdb.bloom-filter.bits-per-key</code><br>10|Double<br>布隆过滤器将使用的每个密钥的位数,这仅在使用布隆过滤器时生效.<br>默认值为 10.0.</p>
+<p><code>state.backend.rocksdb.bloom-filter.block-based-mode</code><br>FALSE|Boolean<br>如果为 true,RocksDB 将使用基于块的过滤器而不是完全过滤器,这仅在使用布隆过滤器时生效.<br>默认值为&quot;假&quot;.</p>
+<p><code>state.backend.rocksdb.compaction.level.max-size-level-base</code><br>256 mb|MemorySize<br>级别基础文件总大小的上限(以字节为单位).<br>默认值为&quot;256MB&quot;.</p>
+<p><code>state.backend.rocksdb.compaction.level.target-file-size-base</code><br>64 mb|MemorySize<br>压缩的目标文件大小,它决定了一级文件大小.<br>默认值为&quot;64MB&quot;.</p>
+<p><code>state.backend.rocksdb.compaction.level.use-dynamic-size</code><br>FALSE|Boolean<br>如果为真,RocksDB 将动态选择每个级别的目标大小.<br>从一个空的 DB 开始,RocksDB 会将最后一层作为基础层,这意味着将 L0 数据合并到最后一层,直到它超过 max_bytes_for_level_base.<br>然后对倒数第二级重复此过程,依此类推.<br>默认值为&quot;假&quot;.<br>更多信息请参考 RocksDB 的文档.</p>
+<p><code>state.backend.rocksdb.compaction.style</code><br>LEVEL|Enum<br>为 DB 指定的压缩样式.<br>候选压缩样式为 LEVEL/FIFO/UNIVERSAL 或 NONE,Flink 选择 &#39;LEVEL&#39; 作为默认样式.<br>可能的值:</p>
+<ol>
+<li>&quot;LEVEL&quot;</li>
+<li>&quot;UNIVERSAL&quot;</li>
+<li>&quot;FIFO&quot;</li>
+<li>&quot;NONE&quot;</li>
+</ol>
+<p><code>state.backend.rocksdb.files.open</code><br>-1|Integer<br>DB 可以使用的打开文件的最大数量(每个有状态操作符),&#39;-1&#39; 表示没有限制.<br>默认值为&quot;-1&quot;.</p>
+<p><code>state.backend.rocksdb.log.dir</code><br>(none)|String<br>RocksDB 信息日志文件的目录.<br>如果为空(Flink 默认设置),则日志文件将与 Flink 日志位于同一目录中.<br>如果非空,则使用该目录,并将数据目录的绝对路径作为日志文件名的前缀.</p>
+<p><code>state.backend.rocksdb.log.file-num</code><br>4|Integer<br>RocksDB 应该为信息记录保留的最大文件数(默认设置:4).</p>
+<p><code>state.backend.rocksdb.log.level</code><br>INFO_LEVEL|Enum<br>RocksDB 的指定信息日志记录级别.<br>如果未设置,Flink 将使用 INFO_LEVEL.<br>注意:RocksDB info 日志不会写入 TaskManager 日志,也没有滚动策略,除非你配置 state.backend.rocksdb.log.dir/state.backend.rocksdb.log.max-file-size 和 state.<br>backend.rocksdb.log.file-num 相应地.<br>如果没有滚动策略,如果配置了更高的日志级别,长时间运行的任务可能会导致磁盘空间使用不受控制！<br>不需要修改 RocksDB 的日志级别,除非是为了排查 RocksDB.<br>可能的值:</p>
+<ol>
+<li>&quot;DEBUG_LEVEL&quot;</li>
+<li>&quot;INFO_LEVEL&quot;</li>
+<li>&quot;WARN_LEVEL&quot;</li>
+<li>&quot;ERROR_LEVEL&quot;</li>
+<li>&quot;FATAL_LEVEL&quot;</li>
+<li>&quot;HEADER_LEVEL&quot;</li>
+<li>&quot;NUM_INFO_LOG_LEVELS&quot;</li>
+</ol>
+<p><code>state.backend.rocksdb.log.max-file-size</code><br>25 mb|MemorySize<br>用于信息记录的 RocksDB 文件的最大大小.<br>如果日志文件变得比这个大,将创建一个新文件.<br>如果为 0,则所有日志都将写入一个日志文件.<br>默认的最大文件大小为&quot;25MB&quot;.</p>
+<p><code>state.backend.rocksdb.thread.num</code><br>2|Integer<br>并发后台刷新和压缩作业的最大数量(每个有状态操作员).<br>默认值为&quot;2&quot;.</p>
+<p><code>state.backend.rocksdb.use-bloom-filter</code><br>FALSE|Boolean<br>如果为 true,则每个新创建的 SST 文件都将包含一个 Bloom 过滤器.<br>默认情况下禁用.</p>
+<p><code>state.backend.rocksdb.write-batch-size</code><br>2 mb|MemorySize<br>RocksDB 批量写入消耗的最大内存大小,如果此配置设置为 0,将仅根据项目计数刷新.</p>
+<p><code>state.backend.rocksdb.writebuffer.count</code><br>2|Integer<br>在内存中建立的最大写入缓冲区数.<br>默认值为&quot;2&quot;.</p>
+<p><code>state.backend.rocksdb.writebuffer.number-to-merge</code><br>1|Integer<br>在写入存储之前将合并在一起的最小写入缓冲区数.<br>默认值为&quot;1&quot;.</p>
+<p><code>state.backend.rocksdb.writebuffer.size</code><br>64 mb|MemorySize<br>在转换为已排序的磁盘文件之前,在内存中建立的数据量(由磁盘上未排序的日志支持).<br>默认写入缓冲区大小为&quot;64MB&quot;.</p>
+<h3 id="高级容错选项"><a href="#高级容错选项" class="headerlink" title="高级容错选项"></a>高级容错选项</h3><p>这些参数可以帮助解决与故障转移相关的问题以及错误地将彼此视为失败的组件.</p>
+<p><code>cluster.io-pool.size</code><br>(none)|Integer<br>集群用于执行阻塞 IO 操作(Master 以及 TaskManager 进程)的 IO 执行器池的大小.<br>默认情况下,它将使用 4 * 集群进程可以访问的 CPU 内核数(硬件上下文).<br>增加池大小允许同时运行更多的 IO 操作.</p>
+<p><code>cluster.registration.error-delay</code><br>10000|Long<br>注册尝试后的暂停导致异常(超时除外)(以毫秒为单位).</p>
+<p><code>cluster.registration.initial-timeout</code><br>100|Long<br>集群组件之间的初始注册超时(以毫秒为单位).</p>
+<p><code>cluster.registration.max-timeout</code><br>30000|Long<br>集群组件之间的最大注册超时时间(以毫秒为单位).</p>
+<p><code>cluster.registration.refused-registration-delay</code><br>30000|Long<br>注册尝试后的暂停以毫秒为单位被拒绝.</p>
+<p><code>cluster.services.shutdown-timeout</code><br>30000|Long<br>集群服务(如执行程序)的关闭超时(以毫秒为单位).</p>
+<p><code>heartbeat.interval</code><br>10000|Long<br>从发送方到接收方的心跳 RPC 请求之间的时间间隔.</p>
+<p><code>heartbeat.rpc-failure-threshold</code><br>2|Integer<br>在心跳目标被标记为不可达之前连续失败的心跳 RPC 的数量.<br>失败的心跳 RPC 可用于更快地检测死目标,因为它们不再接收 RPC.<br>检测时间为heartbeat.interval * heartbeat.rpc-failure-threshold.<br>在网络不稳定的环境中,将此值设置得太低会产生误报.<br>在这种情况下,我们建议增加此值,但不要高于 heartbeat.timeout / heartbeat.interval.<br>可以通过将此选项设置为 -1 来禁用该机制</p>
+<p><code>heartbeat.timeout</code><br>50000|Long<br>发送方和接收方请求和接收心跳的超时.</p>
+<p><code>jobmanager.execution.failover-strategy</code><br>&quot;region&quot;|String<br>此选项指定作业计算如何从任务失败中恢复.<br>可接受的值为:</p>
+<ol>
+<li>&#39;full&#39;:重新启动所有任务以恢复作业.</li>
+<li>&#39;region&#39;:重启所有可能受任务失败影响的任务.</li>
+</ol>
+<h3 id="高级集群选项"><a href="#高级集群选项" class="headerlink" title="高级集群选项"></a>高级集群选项</h3><p><code>cluster.intercept-user-system-exit</code><br>DISABLED|Enum<br>通过终止 JVM 来检查用户代码退出系统的标志(例如,System.exit()).<br>请注意,此配置选项可能会干扰 cluster.processes.halt-on-fatal-error:在截获的用户代码中,当配置 THROW 时,对 System.exit() 的调用不会导致 JVM 停止.<br>可能的值:</p>
+<ol>
+<li>&quot;DISABLED&quot;:Flink 没有监控或拦截对 System.exit() 的调用</li>
+<li>&quot;LOG&quot;:使用堆栈跟踪记录退出尝试,但仍允许执行退出</li>
+<li>&quot;THROW&quot;:尝试退出时抛出异常,不允许 JVM 终止</li>
+</ol>
+<p><code>cluster.processes.halt-on-fatal-error</code><br>FALSE|Boolean<br>进程是否应该在致命错误时停止而不是执行正常关闭.<br>在某些环境中(例如带有 G1 垃圾收集器的 Java 8),定期正常关闭可能会导致 JVM 死锁.<br>有关详细信息,请参阅 FLINK-16510.</p>
+<p><code>cluster.thread-dump.stacktrace-max-depth</code><br>8|Integer<br>TaskManager 和 JobManager 的线程转储 web-frontend 的最大堆栈跟踪深度显示.</p>
+<p><code>cluster.uncaught-exception-handling</code><br>LOG|Enum<br>定义集群是否将通过仅记录它们(LOG 模式)或失败作业(FAIL 模式)来处理任何未捕获的异常<br>可能的值:</p>
+<ol>
+<li>&quot;LOG&quot;</li>
+<li>&quot;FAIL&quot;</li>
+</ol>
+<p><code>process.jobmanager.working-dir</code><br>(none)|String<br>Flink JobManager 进程的工作目录.<br>工作目录可用于存储可在进程恢复时使用的信息.<br>如果未配置,则默认为 process.working-dir.</p>
+<p><code>process.taskmanager.working-dir</code><br>(none)|String<br>Flink TaskManager 进程的工作目录.<br>工作目录可用于存储可在进程恢复时使用的信息.<br>如果未配置,则默认为 process.working-dir.</p>
+<p><code>process.working-dir</code><br>io.tmp.dirs|String<br>Flink 进程的本地工作目录.<br>工作目录可用于存储可在进程恢复时使用的信息.<br>如果未配置,则默认为通过 io.tmp.dirs 定义的随机选取的临时目录.</p>
+<h3 id="高级-JobManager-选项"><a href="#高级-JobManager-选项" class="headerlink" title="高级 JobManager 选项"></a>高级 JobManager 选项</h3><p><code>jobmanager.future-pool.size</code><br>(none)|Integer<br>为所有生成的 JobMaster 执行未来回调的未来线程池的大小.<br>如果未指定值,则 Flink 默认为可用 CPU 内核数.</p>
+<p><code>jobmanager.io-pool.size</code><br>(none)|Integer<br>为所有生成的 JobMaster 运行阻塞操作的 IO 线程池的大小.<br>这包括检查点的恢复和完成.<br>如果您在运行许多作业时遇到缓慢的检查点操作,请增加此值.<br>如果未指定值,则 Flink 默认为可用 CPU 内核数.</p>
+<h3 id="高级调度选项"><a href="#高级调度选项" class="headerlink" title="高级调度选项"></a>高级调度选项</h3><p>这些参数可以帮助针对特定情况微调调度.</p>
+<p><code>cluster.evenly-spread-out-slots</code><br>FALSE|Boolean<br>启用插槽分散分配策略.<br>此策略尝试在所有可用的 TaskExecutor 上平均分布插槽.</p>
+<p><code>cluster.fine-grained-resource-management.enabled</code><br>FALSE|Boolean<br>定义集群是否使用细粒度的资源管理.</p>
+<p><code>fine-grained.shuffle-mode.all-blocking</code><br>FALSE|Boolean<br>在批处理作业中应用细粒度资源管理时是否将所有 PIPELINE 边缘转换为 BLOCKING.</p>
+<p><code>jobmanager.adaptive-batch-scheduler.avg-data-volume-per-task</code><br>1 gb|MemorySize<br>如果 jobmanager.scheduler 已设置为 AdaptiveBatch,则期望每个任务实例处理的平均数据量大小.<br>请注意,由于顶点的并行度调整为 2 的幂,实际平均大小将是该值的 0.75~1.5 倍.<br>另外需要注意的是,当数据倾斜或者决定的并行度到达jobmanager.adaptive-batch-scheduler.max-parallelism(由于数据过多)时,一些任务实际处理的数据可能会远超过这个值.</p>
+<p><code>jobmanager.adaptive-batch-scheduler.default-source-parallelism</code><br>1|Integer<br>如果 jobmanager.scheduler 已设置为 AdaptiveBatch,则源顶点的默认并行度</p>
+<p><code>jobmanager.adaptive-batch-scheduler.max-parallelism</code><br>128|Integer<br>如果 jobmanager.scheduler 已设置为 AdaptiveBatch,则允许自适应设置的并行度上限.<br>目前,该选项应配置为 2 的幂,否则也会自动四舍五入为 2 的幂.</p>
+<p><code>jobmanager.adaptive-batch-scheduler.min-parallelism</code><br>1|Integer<br>如果 jobmanager.scheduler 已设置为 AdaptiveBatch,则允许自适应设置的并行度下限.<br>目前,该选项应配置为 2 的幂,否则也会自动四舍五入为 2 的幂.</p>
+<p><code>jobmanager.adaptive-scheduler.min-parallelism-increase</code><br>1|Integer<br>配置要扩大的作业的最小并行度增加.</p>
+<p><code>jobmanager.adaptive-scheduler.resource-stabilization-timeout</code><br>10 s|Duration<br>资源稳定超时定义了如果可用资源少于所需但足够的资源,JobManager 将等待的时间.<br>一旦有足够的资源来运行作业,超时就会开始.<br>一旦此超时时间过去,作业将使用可用资源开始执行.<br>如果 scheduler-mode 配置为 REACTIVE,此配置值将默认为 0,以便作业立即使用可用资源启动.</p>
+<p><code>jobmanager.adaptive-scheduler.resource-wait-timeout</code><br>5 min|Duration<br>JobManager 在作业提交或重新启动后等待获取所有必需资源的最长时间.<br>一旦过去,它将尝试以较低的并行度运行作业,或者如果无法获取最小数量的资源则失败.<br>增加此值将使集群对临时资源短缺更具弹性(例如,有更多时间重新启动失败的 TaskManager).<br>设置负的持续时间将禁用资源超时:JobManager 将无限期地等待资源出现.<br>如果 scheduler-mode 配置为 REACTIVE,此配置值将默认为负值以禁用资源超时.</p>
+<p><code>scheduler-mode</code><br>(none)|Enum<br>确定调度程序的模式.<br>请注意,scheduler-mode=REACTIVE 仅受独立应用程序部署支持,活动资源管理器(YARN/Kubernetes)或会话集群不支持.<br>可能的值:</p>
+<ol>
+<li>&quot;REACTIVE&quot;</li>
+</ol>
+<p><code>slot.idle.timeout</code><br>50000|Long<br>插槽池中空闲插槽的超时时间(以毫秒为单位).</p>
+<p><code>slot.request.timeout</code><br>300000|Long<br>从插槽池请求插槽的超时时间(以毫秒为单位).</p>
+<p><code>slotmanager.max-total-resource.cpu</code><br>(none)|Double<br>Flink 集群为插槽分配的最大 cpu 核心数.<br>JobManager 和 TaskManager 框架的资源被排除在外.<br>如果未配置,它将从&quot;slotmanager.number-of-slots.max&quot;派生.</p>
+<p><code>slotmanager.max-total-resource.memory</code><br>(none)|MemorySize<br>Flink 集群为插槽分配的最大内存大小.<br>JobManager 和 TaskManager 框架的资源被排除在外.<br>如果未配置,它将从&quot;slotmanager.number-of-slots.max&quot;派生.</p>
+<p><code>slotmanager.number-of-slots.max</code><br>2147483647|Integer<br>定义 Flink 集群分配的最大槽数.<br>此配置选项旨在限制批处理工作负载的资源消耗.<br>不建议为流式工作负载配置此选项,如果插槽不足,可能会失败.<br>请注意,此配置选项对独立集群无效,其中分配多少个插槽不受 Flink 控制.</p>
+<h3 id="高级高可用性选项"><a href="#高级高可用性选项" class="headerlink" title="高级高可用性选项"></a>高级高可用性选项</h3><p><code>high-availability.jobmanager.port</code><br>&quot;0&quot;|String<br>Flink Master 在高可用设置中用于其 RPC 连接的端口(范围).<br>在高可用性设置中,使用此值而不是&quot;jobmanager.rpc.port&quot;.<br>值&quot;0&quot;表示选择了一个随机空闲端口.<br>TaskManagers 通过高可用服务(leader 选举)发现这个端口,所以一个随机端口或一个端口范围可以工作,而不需要任何额外的服务发现手段.</p>
+<p><code>high-availability.use-old-ha-services</code><br>FALSE|Boolean<br>使用此选项可禁用 ZooKeeper 和 K8s 的新 HA 服务实现.<br>这是一个安全舱口,以防新的 ha 服务出现故障.</p>
+<h3 id="高级高可用性-ZooKeeper-选项"><a href="#高级高可用性-ZooKeeper-选项" class="headerlink" title="高级高可用性 ZooKeeper 选项"></a>高级高可用性 ZooKeeper 选项</h3><p><code>high-availability.zookeeper.client.acl</code><br>&quot;open&quot;|String<br>定义要在 ZK 节点上配置的 ACL(open|creator).<br>如果 ZooKeeper 服务器配置的&quot;authProvider&quot;属性映射为使用 SASLAuthenticationProvider 并且集群配置为在安全模式 (Kerberos) 下运行,则可以将配置值设置为&quot;creator&quot;.</p>
+<p><code>high-availability.zookeeper.client.connection-timeout</code><br>15000|Integer<br>以毫秒为单位定义 ZooKeeper 的连接超时.</p>
+<p><code>high-availability.zookeeper.client.max-retry-attempts</code><br>3|Integer<br>定义客户端放弃之前的连接重试次数.</p>
+<p><code>high-availability.zookeeper.client.retry-wait</code><br>5000|Integer<br>以毫秒为单位定义连续重试之间的暂停.</p>
+<p><code>high-availability.zookeeper.client.session-timeout</code><br>60000|Integer<br>以毫秒为单位定义 ZooKeeper 会话的会话超时.</p>
+<p><code>high-availability.zookeeper.client.tolerate-suspended-connections</code><br>FALSE|Boolean<br>定义是否将挂起的 ZooKeeper 连接视为导致领导者信息无效的错误.<br>如果您将此选项设置为 true,Flink 将等到 ZooKeeper 连接被标记为丢失,然后才会撤销组件的领导权.<br>这样做的效果是 Flink 对临时连接不稳定性更有弹性,但代价是更可能遇到 ZooKeeper 的计时问题.</p>
+<p><code>high-availability.zookeeper.path.jobgraphs</code><br>&quot;/jobgraphs&quot;|String<br>作业图的 ZooKeeper 根路径 (ZNode)</p>
+<p><code>high-availability.zookeeper.path.running-registry</code><br>&quot;/running_job_registry/&quot;|String</p>
+<h3 id="REST-端点和客户端的高级选项"><a href="#REST-端点和客户端的高级选项" class="headerlink" title="REST 端点和客户端的高级选项"></a>REST 端点和客户端的高级选项</h3><p><code>rest.async.store-duration</code><br>5 min|Duration<br>存储异步操作结果的最长持续时间.<br>一旦过去,就不能再检索操作的结果.</p>
+<p><code>rest.await-leader-timeout</code><br>30000|Long<br>客户端等待leader地址的时间,以ms为单位,例如Dispatcher或WebMonitorEndpoint</p>
+<p><code>rest.client.max-content-length</code><br>104857600|Integer<br>客户端将处理的最大内容长度(以字节为单位).</p>
+<p><code>rest.connection-timeout</code><br>15000|Long<br>客户端建立 TCP 连接的最长时间(毫秒).</p>
+<p><code>rest.flamegraph.cleanup-interval</code><br>10 min|Duration<br>如果未访问,则清理缓存的统计信息的时间.<br>可以使用符号来指定:&quot;100 s&quot;/&quot;10 m&quot;.</p>
+<p><code>rest.flamegraph.delay-between-samples</code><br>50 ms|Duration<br>用于构建 FlameGraph 的各个堆栈跟踪样本之间的延迟.<br>它可以使用符号来指定:&quot;100 ms&quot;/&quot;1 s&quot;.</p>
+<p><code>rest.flamegraph.enabled</code><br>FALSE|Boolean<br>启用实验火焰图功能.</p>
+<p><code>rest.flamegraph.num-samples</code><br>100|Integer<br>用于构建 FlameGraph 的样本数.</p>
+<p><code>rest.flamegraph.refresh-interval</code><br>1 min|Duration<br>可用统计信息被弃用并需要刷新(通过重新采样)的时间.<br>可以使用符号来指定:&quot;30 s&quot;/&quot;1 m&quot;.</p>
+<p><code>rest.flamegraph.stack-depth</code><br>100|Integer<br>用于创建 FlameGraphs 的堆栈跟踪的最大深度.</p>
+<p><code>rest.idleness-timeout</code><br>300000|Long<br>连接在失败前保持空闲的最长时间(以毫秒为单位).</p>
+<p><code>rest.retry.delay</code><br>3000|Long<br>客户端在重试之间等待的时间(以毫秒为单位)(另请参阅 <code>rest.retry.max-attempts</code>).</p>
+<p><code>rest.retry.max-attempts</code><br>20|Integer<br>如果可重试操作失败,客户端将尝试的重试次数.</p>
+<p><code>rest.server.max-content-length</code><br>104857600|Integer<br>服务器将处理的最大内容长度(以字节为单位).</p>
+<p><code>rest.server.numThreads</code><br>4|Integer<br>异步处理请求的线程数.</p>
+<p><code>rest.server.thread-priority</code><br>5|Integer<br>REST 服务器执行器处理异步请求的线程优先级.<br>降低线程优先级将为 Flink 的主要组件提供更多 CPU 时间,而提高线程优先级将为 REST 服务器的处理分配更多时间.</p>
+<h3 id="Flink-Web-UI-的高级选项"><a href="#Flink-Web-UI-的高级选项" class="headerlink" title="Flink Web UI 的高级选项"></a>Flink Web UI 的高级选项</h3><p><code>web.access-control-allow-origin</code><br>&quot;<code>*</code>&quot;|String<br>来自 Web 前端的所有响应的 Access-Control-Allow-Origin 标头.</p>
+<p><code>web.cancel.enable</code><br>TRUE|Boolean<br>指示是否可以从 Web 前端取消作业的标志.</p>
+<p><code>web.checkpoints.history</code><br>10|Integer<br>要记住最近历史记录的检查点数.</p>
+<p><code>web.exception-history-size</code><br>16|Integer<br>每个作业的异常历史记录收集的最大故障数.</p>
+<p><code>web.history</code><br>5|Integer<br>JobManager 的归档作业数.</p>
+<p><code>web.log.path</code><br>(none)|String<br>日志文件的路径(对于独立文件可能在 /log 中,但在使用 YARN 时在日志目录下).</p>
+<p><code>web.refresh-interval</code><br>3000|Long<br>Web 前端的刷新间隔(以毫秒为单位).</p>
+<p><code>web.submit.enable</code><br>TRUE|Boolean<br>指示作业是否可以从 Web 前端上传和运行的标志.</p>
+<p><code>web.timeout</code><br>600000|Long<br>Web 监视器的异步操作超时(以毫秒为单位).</p>
+<p><code>web.tmpdir</code><br>System.getProperty(&quot;java.io.tmpdir&quot;)|String<br>REST API 用于临时文件的本地目录.</p>
+<p><code>web.upload.dir</code><br>(none)|String<br>REST API 用于存储上传的 jar 的本地目录.<br>如果未指定,将在 web.tmpdir 下创建一个动态目录.</p>
+<h3 id="完整的-JobManager-选项"><a href="#完整的-JobManager-选项" class="headerlink" title="完整的 JobManager 选项"></a>完整的 JobManager 选项</h3><h4 id="JobManager"><a href="#JobManager" class="headerlink" title="JobManager"></a>JobManager</h4><p><code>jobmanager.adaptive-batch-scheduler.avg-data-volume-per-task</code><br>1 gb|MemorySize<br>如果 jobmanager.scheduler 已设置为 AdaptiveBatch,则期望每个任务实例处理的平均数据量大小.<br>请注意,由于顶点的并行度调整为 2 的幂,实际平均大小将是该值的 0.75~1.5 倍.<br>另外需要注意的是,当数据倾斜或者决定的并行度到达jobmanager.adaptive-batch-scheduler.max-parallelism(由于数据过多)时,一些任务实际处理的数据可能会远超过这个值.</p>
+<p><code>jobmanager.adaptive-batch-scheduler.default-source-parallelism</code><br>1|Integer<br>如果 jobmanager.scheduler 已设置为 AdaptiveBatch,则源顶点的默认并行度</p>
+<p><code>jobmanager.adaptive-batch-scheduler.max-parallelism</code><br>128|Integer<br>如果 jobmanager.scheduler 已设置为 AdaptiveBatch,则允许自适应设置的并行度上限.<br>目前,该选项应配置为 2 的幂,否则也会自动四舍五入为 2 的幂.</p>
+<p><code>jobmanager.adaptive-batch-scheduler.min-parallelism</code><br>1|Integer<br>如果 jobmanager.scheduler 已设置为 AdaptiveBatch,则允许自适应设置的并行度下限.<br>目前,该选项应配置为 2 的幂,否则也会自动四舍五入为 2 的幂.</p>
+<p><code>jobmanager.adaptive-scheduler.min-parallelism-increase</code><br>1|Integer<br>配置要扩大的作业的最小并行度增加.</p>
+<p><code>jobmanager.adaptive-scheduler.resource-stabilization-timeout</code><br>10 s|Duration<br>资源稳定超时定义了如果可用资源少于所需但足够的资源,JobManager 将等待的时间.<br>一旦有足够的资源来运行作业,超时就会开始.<br>一旦此超时时间过去,作业将使用可用资源开始执行.<br>如果 scheduler-mode 配置为 REACTIVE,此配置值将默认为 0,以便作业立即使用可用资源启动.</p>
+<p><code>jobmanager.adaptive-scheduler.resource-wait-timeout</code><br>5 min|Duration<br>JobManager 在作业提交或重新启动后等待获取所有必需资源的最长时间.<br>一旦过去,它将尝试以较低的并行度运行作业,或者如果无法获取最小数量的资源则失败.<br>增加此值将使集群对临时资源短缺更具弹性(例如,有更多时间重新启动失败的 TaskManager).<br>设置负的持续时间将禁用资源超时:JobManager 将无限期地等待资源出现.<br>如果 scheduler-mode 配置为 REACTIVE,此配置值将默认为负值以禁用资源超时.</p>
+<p><code>jobmanager.archive.fs.dir</code><br>(none)|String<br>JobManager 用于存储已完成作业档案的字典.</p>
+<p><code>jobmanager.execution.attempts-history-size</code><br>16|Integer<br>历史记录中保留的最大先前执行尝试次数.</p>
+<p><code>jobmanager.execution.failover-strategy</code><br>&quot;region&quot;|String<br>此选项指定作业计算如何从任务失败中恢复.<br>可接受的值为:</p>
+<ol>
+<li>&#39;full&#39;:重新启动所有任务以恢复作业.</li>
+<li>&#39;region&#39;:重启所有可能受任务失败影响的任务.</li>
+</ol>
+<p><code>jobmanager.future-pool.size</code><br>(none)|Integer<br>为所有生成的 JobMaster 执行未来回调的未来线程池的大小.<br>如果未指定值,则 Flink 默认为可用 CPU 内核数.</p>
+<p><code>jobmanager.io-pool.size</code><br>(none)|Integer<br>为所有生成的 JobMaster 运行阻塞操作的 IO 线程池的大小.<br>这包括检查点的恢复和完成.<br>如果您在运行许多作业时遇到缓慢的检查点操作,请增加此值.<br>如果未指定值,则 Flink 默认为可用 CPU 内核数.</p>
+<p><code>jobmanager.resource-id</code><br>(none)|String<br>JobManager 的 ResourceID.<br>如果不配置,ResourceID 会随机生成.</p>
+<p><code>jobmanager.retrieve-taskmanager-hostname</code><br>TRUE|Boolean<br>指示 JobManager 在注册期间是否会检索 TaskManager 的规范主机名的标志.<br>如果该选项设置为&quot;false&quot;,TaskManager 向 JobManager 注册可能会更快,因为不执行反向 DNS 查找.<br>但是,本地输入拆分分配(例如 HDFS 文件)可能会受到影响.</p>
+<p><code>jobmanager.rpc.address</code><br>(none)|String<br>配置参数定义要连接到的网络地址,以便与作业管理器进行通信.<br>此值仅在存在具有静态名称或地址的单个 JobManager 的设置中解释(简单的独立设置,或具有动态服务名称解析的容器设置).<br>当领导者选举服务(如 ZooKeeper)用于从潜在的多个备用 JobManager 中选举和发现 JobManager 领导者时,它不会在许多高可用性设置中使用.</p>
+<p><code>jobmanager.rpc.port</code><br>6123|Integer<br>配置参数定义要连接到的网络端口,以便与作业管理器进行通信.<br>与 jobmanager.rpc.address 一样,此值仅在存在具有静态名称/地址和端口的单个 JobManager 的设置中解释(简单的独立设置,或具有动态服务名称解析的容器设置).<br>当使用领导者选举服务(如 ZooKeeper)从潜在的多个备用 JobManager 中选举和发现 JobManager 领导时,许多高可用性设置中不使用此配置选项.</p>
+<p><code>jobstore.cache-size</code><br>52428800|Long<br>作业存储缓存大小(以字节为单位),用于将已完成的作业保存在内存中.</p>
+<p><code>jobstore.expiration-time</code><br>3600|Long<br>完成的作业过期并从作业存储中清除之前的时间(以秒为单位).</p>
+<p><code>jobstore.max-capacity</code><br>2147483647|Integer<br>可以保存在作业存储中的已完成作业的最大数量.<br>注意:如果内存存储在会话集群中保留了过多的作业,可能会导致 jm 中的 FullGC 或 OOM.</p>
+<p><code>jobstore.type</code><br>File|Enum<br>确定在会话集群中使用哪个作业存储实现.<br>可接受的值为:</p>
+<ol>
+<li>&quot;File&quot;:文件作业存储将归档的执行图保存在文件中</li>
+<li>&quot;Memory&quot;:内存作业存储将归档的执行图保存在内存中.<br>当图表过多时,您可能需要限制 jobstore.max-capacity 以缓解 FullGC 或 OOM<br>可能的值:&quot;File&quot;/&quot;Memory&quot;</li>
+</ol>
+<p><code>web.exception-history-size</code><br>16|Integer<br>每个作业的异常历史记录收集的最大故障数.</p>
+<h4 id="Blob-Server"><a href="#Blob-Server" class="headerlink" title="Blob Server"></a>Blob Server</h4><p>Blob Server 是 JobManager 中的一个组件.它用于分发太大而无法附加到 RPC 消息并且受益于缓存的对象(如 Jar 文件或大型序列化代码对象).</p>
+<p><code>blob.client.connect.timeout</code><br>0|Integer<br>Blob 客户端的连接超时(以毫秒为单位).</p>
+<p><code>blob.client.socket.timeout</code><br>300000|Integer<br>blob 客户端的套接字超时(以毫秒为单位).</p>
+<p><code>blob.fetch.backlog</code><br>1000|Integer<br>定义所需积压的 BLOB 的配置参数在 JobManager 上获取.<br>请注意,操作系统通常会根据 SOMAXCONN 设置对积压大小实施上限.</p>
+<p><code>blob.fetch.num-concurrent</code><br>50|Integer<br>定义 JobManager 服务的并发 BLOB 提取的最大数量的配置参数.</p>
+<p><code>blob.fetch.retries</code><br>5|Integer<br>配置参数定义失败的 BLOB 提取的退休次数.</p>
+<p><code>blob.offload.minsize</code><br>1048576|Integer<br>要卸载到 BlobServer 的消息的最小大小.</p>
+<p><code>blob.server.port</code><br>&quot;0&quot;|String<br>定义 blob 服务的服务器端口的配置参数.</p>
+<p><code>blob.service.cleanup.interval</code><br>3600|Long<br>任务管理器中 blob 缓存的清理间隔(以秒为单位).</p>
+<p><code>blob.service.ssl.enabled</code><br>TRUE|Boolean<br>标记以覆盖对 blob 服务传输的 ssl 支持.</p>
+<p><code>blob.storage.directory</code><br>(none)|String<br>定义 Blob 服务器要使用的本地存储目录的配置参数.<br>如果未配置,则默认为 <code>&lt;WORKING_DIR&gt;</code>/blobStorage.</p>
+<h4 id="ResourceManager"><a href="#ResourceManager" class="headerlink" title="ResourceManager"></a>ResourceManager</h4><p>这些配置键控制基本的资源管理器行为,独立于使用的资源编排管理框架(YARN 等).</p>
+<p><code>resourcemanager.job.timeout</code><br>&quot;5 minutes&quot;|String<br>没有分配工作经理作为领导者的工作超时.</p>
+<p><code>resourcemanager.rpc.port</code><br>0|Integer<br>定义要连接到的网络端口,以便与资源管理器进行通信.<br>默认情况下,JobManager 的端口,因为使用相同的 ActorSystem.<br>无法使用此配置键来定义端口范围.</p>
+<p><code>resourcemanager.standalone.start-up-time</code><br>-1|Long<br>独立集群的启动时间,以毫秒为单位.<br>在此期间,独立集群的资源管理器希望注册新的任务执行器,并且不会使当前注册的任何插槽无法满足的插槽请求失败.<br>在此时间之后,注册槽无法满足的挂起和新来的请求将立即失败.<br>如果未设置,默认使用 slot.request.timeout.</p>
+<p><code>resourcemanager.start-worker.max-failure-rate</code><br>10|Double<br>在暂停请求新工作人员之前,每分钟启动工作人员失败的最大次数(原生 Kubernetes / Yarn).<br>一旦达到阈值,后续工作请求将被推迟到配置的重试间隔(&#39;resourcemanager.start-worker.retry-interval&#39;)之后.</p>
+<p><code>resourcemanager.start-worker.retry-interval</code><br>3 s|Duration<br>一旦达到启动工作人员的最大失败率(&#39;resourcemanager.start-worker.max-failure-rate&#39;),在请求新工作人员(本机 Kubernetes / Yarn)之前等待的时间.</p>
+<p><code>resourcemanager.taskmanager-registration.timeout</code><br>5 min|Duration<br>TaskManagers 在活动资源管理器上注册的超时.<br>如果超过,活动资源管理器将释放并尝试为工作人员重新请求资源.<br>如果未配置,则回退到&quot;taskmanager.registration.timeout&quot;.</p>
+<p><code>resourcemanager.taskmanager-timeout</code><br>30000|Long<br>空闲任务管理器释放的超时时间.</p>
+<p><code>slotmanager.max-total-resource.cpu</code><br>(none)|Double<br>Flink 集群为插槽分配的最大 cpu 核心数.<br>JobManager 和 TaskManager 框架的资源被排除在外.<br>如果未配置,它将从&quot;slotmanager.number-of-slots.max&quot;派生.</p>
+<p><code>slotmanager.max-total-resource.memory</code><br>(none)|MemorySize<br>Flink 集群为插槽分配的最大内存大小.<br>JobManager 和 TaskManager 框架的资源被排除在外.<br>如果未配置,它将从&quot;slotmanager.number-of-slots.max&quot;派生.</p>
+<p><code>slotmanager.number-of-slots.max</code><br>2147483647|Integer<br>定义 Flink 集群分配的最大槽数.<br>此配置选项旨在限制批处理工作负载的资源消耗.<br>不建议为流式工作负载配置此选项,如果插槽不足,可能会失败.<br>请注意,此配置选项对独立集群无效,其中分配多少个插槽不受 Flink 控制.</p>
+<p><code>slotmanager.redundant-taskmanager-num</code><br>0|Integer<br>冗余任务管理器的数量.<br>冗余任务管理器是 Flink 启动的额外任务管理器,用于在任务管理器丢失导致失败的情况下加快作业恢复.<br>请注意,此功能仅适用于活动部署(本机 K8s/Yarn).</p>
+<h3 id="完整的-TaskManagerOptions"><a href="#完整的-TaskManagerOptions" class="headerlink" title="完整的 TaskManagerOptions"></a>完整的 TaskManagerOptions</h3><p><code>task.cancellation.interval</code><br>30000|Long<br>两次连续的任务取消尝试之间的时间间隔(以毫秒为单位).</p>
+<p><code>task.cancellation.timeout</code><br>180000|Long<br>以毫秒为单位的超时,之后任务取消超时并导致致命的 TaskManager 错误.<br>值 0 将停用看门狗.<br>请注意,任务取消不同于任务失败和干净关闭.<br>任务取消超时仅适用于任务取消,不适用于任务失败或干净关闭导致的任务关闭/清理.</p>
+<p><code>task.cancellation.timers.timeout</code><br>7500|Long<br>当流任务被取消时,我们等待计时器以毫秒为单位完成所有挂起的计时器线程的时间.</p>
+<p><code>taskmanager.data.port</code><br>0|Integer<br>用于数据交换操作的任务管理器的外部端口.</p>
+<p><code>taskmanager.data.ssl.enabled</code><br>TRUE|Boolean<br>为任务管理器数据传输启用 SSL 支持.<br>这仅在内部 SSL (security.ssl.internal.enabled) 的全局标志设置为 true 时适用</p>
+<p><code>taskmanager.debug.memory.log</code><br>FALSE|Boolean<br>指示是否启动线程的标志,该线程重复记录JVM的内存使用情况.</p>
+<p><code>taskmanager.debug.memory.log-interval</code><br>5000|Long<br>日志线程记录当前内存使用情况的时间间隔(以毫秒为单位).</p>
+<p><code>taskmanager.host</code><br>(none)|String<br>TaskManager 暴露的网络接口的外部地址.<br>因为不同的 TaskManager 需要不同的值来设置这个选项,所以通常在一个额外的非共享 TaskManager 特定的配置文件中指定.</p>
+<p><code>taskmanager.jvm-exit-on-oom</code><br>FALSE|Boolean<br>当任务线程抛出 OutOfMemoryError 时是否终止 TaskManager.</p>
+<p><code>taskmanager.memory.min-segment-size</code><br>256 bytes|MemorySize<br>网络堆栈和内存管理器使用的内存缓冲区的最小可能大小.<br>前任.<br>可用于自动调整缓冲区大小.</p>
+<p><code>taskmanager.memory.segment-size</code><br>32 kb|MemorySize<br>网络堆栈和内存管理器使用的内存缓冲区的大小.</p>
+<p><code>taskmanager.network.bind-policy</code><br>&quot;ip&quot;|String<br>如果&quot;taskmanager.host&quot;未设置,TaskManager 使用的自动地址绑定策略.<br>该值应为以下之一:</p>
+<ol>
+<li>&quot;name&quot; - 使用主机名作为绑定地址</li>
+<li>&quot;ip&quot; - 使用主机的 ip 地址作为绑定地址</li>
+</ol>
+<p><code>taskmanager.numberOfTaskSlots</code><br>1|Integer<br>单个 TaskManager 可以运行的并行算子或用户函数实例的数量.<br>如果此值大于 1,则单个 TaskManager 会采用函数或运算符的多个实例.<br>这样,TaskManager 可以利用多个 CPU 内核,但同时可用内存在不同的算子或函数实例之间分配.<br>该值通常与TaskManager 的机器拥有的物理CPU 内核数成正比(例如,等于内核数,或内核数的一半).</p>
+<p><code>taskmanager.registration.timeout</code><br>5 min|Duration<br>定义 TaskManager 注册的超时时间.<br>如果在没有成功注册的情况下超过了持续时间,则 TaskManager 终止.</p>
+<p><code>taskmanager.resource-id</code><br>(none)|String<br>TaskManager 的 ResourceID.<br>如果未配置,将使用&quot;RpcAddress:RpcPort&quot;和 6 个字符的随机字符串生成 ResourceID.<br>请注意,此选项在 Yarn 和 Native Kubernetes 模式下无效.</p>
+<p><code>taskmanager.rpc.port</code><br>&quot;0&quot;|String<br>TaskManager 暴露的外部 RPC 端口.<br>接受端口列表(&quot;50100,50101&quot;)/范围(&quot;50100-50200&quot;)或两者的组合.<br>建议设置一个端口范围,以避免在同一台机器上运行多个 TaskManager 时发生冲突.</p>
+<p><code>taskmanager.slot.timeout</code><br>10 s|Duration<br>用于识别非活动槽的超时.<br>如果在给定的时间内没有激活,TaskManager 将释放槽.<br>不活动的插槽可能是由过期的插槽请求引起的.<br>如果没有配置值,那么它将回退到 akka.ask.timeout.</p>
+<h4 id="数据传输网络堆栈"><a href="#数据传输网络堆栈" class="headerlink" title="数据传输网络堆栈"></a>数据传输网络堆栈</h4><p>这些选项适用于处理 TaskManager 之间的流式传输和批处理数据交换的网络堆栈.</p>
+<p><code>taskmanager.network.blocking-shuffle.compression.enabled</code><br>TRUE|Boolean<br>布尔标志,指示是否将 shuffle 数据压缩为阻塞 shuffle 模式.<br>请注意,数据是按缓冲区压缩的,压缩会产生额外的 CPU 开销,因此在压缩率高的 IO 受限场景中更有效.</p>
+<p><code>taskmanager.network.blocking-shuffle.type</code><br>&quot;file&quot;|String<br>阻塞 shuffle 类型,&quot;mmap&quot;或&quot;file&quot;.<br>&quot;auto&quot;是指根据系统内存架构自动选择属性类型(mmap 为 64 位,文件为 32 位).<br>请注意,mmap 的内存使用不计入配置的内存限制,但是一些资源框架(如 yarn)会跟踪此内存使用并在内存超过某个阈值时终止容器.<br>另请注意,此选项是实验性的,将来可能会更改.</p>
+<p><code>taskmanager.network.detailed-metrics</code><br>FALSE|Boolean<br>用于启用/禁用有关入站/出站网络队列长度的更详细指标的布尔标志.</p>
+<p><code>taskmanager.network.max-num-tcp-connections</code><br>1|Integer<br>用于数据通信的任务管理器之间的最大 tpc 连接数.</p>
+<p><code>taskmanager.network.memory.buffer-debloat.enabled</code><br>FALSE|Boolean<br>自动缓冲消胀功能的开关.<br>如果启用,飞行中的数据量将根据测量的吞吐量自动调整.</p>
+<p><code>taskmanager.network.memory.buffer-debloat.period</code><br>200 ms|Duration<br>如果需要,缓冲区大小将被消胀的最短时间段.<br>较低的值可对负载波动做出快速反应,但会影响性能.</p>
+<p><code>taskmanager.network.memory.buffer-debloat.samples</code><br>20|Integer<br>将用于正确计算新缓冲区大小值的最后一个缓冲区大小值的数量.</p>
+<p><code>taskmanager.network.memory.buffer-debloat.target</code><br>1 s|Duration<br>缓冲的动态数据应该被完全消耗的目标总时间.<br>此配置选项将与测量的吞吐量结合使用,以调整飞行中的数据量.</p>
+<p><code>taskmanager.network.memory.buffer-debloat.threshold-percentages</code><br>25|Integer<br>新计算的缓冲区大小与宣布新值的旧缓冲区大小之间的最小百分比差异.<br>可以用来避免不断的来回小调整.</p>
+<p><code>taskmanager.network.memory.buffers-per-channel</code><br>2|Integer<br>在基于信用的流量控制模型中,用于每个传出/传入通道(子分区/输入通道)的独占网络缓冲区的数量.<br>为了获得良好的性能,它应该至少配置 2 个.<br>1 个缓冲区用于接收子分区中的动态数据,1 个缓冲区用于并行序列化.<br>可以配置的最小有效值为 0.<br>当配置 0 buffers-per-channel 时,每个下游传入通道使用的独占网络缓冲区将为 0,但对于每个上游传出通道,max(1, 配置值) 将为用过的.<br>换句话说,出于性能原因,我们确保无论配置如何,每个传出通道至少有一个缓冲区.</p>
+<p><code>taskmanager.network.memory.floating-buffers-per-gate</code><br>8|Integer<br>用于每个传出/传入门(结果分区/输入门)的额外网络缓冲区的数量.<br>在基于信用的流控模式下,这表示在所有输入通道之间共享了多少浮动信用.<br>浮动缓冲区是根据积压(子分区中的实时输出缓冲区)反馈分配的,可以帮助缓解子分区之间数据分布不平衡造成的背压.<br>如果节点之间的往返时间较长和/或集群中的机器数量较多,则应增加此值.</p>
+<p><code>taskmanager.network.memory.max-buffers-per-channel</code><br>10|Integer<br>每个通道可以使用的最大缓冲区数.<br>如果一个通道超过了最大缓冲区的数量,就会使任务变得不可用,造成背压,阻塞数据处理.<br>这可以通过防止在数据倾斜和大量配置的浮动缓冲区的情况下缓冲的动态数据的过度增长来加速检查点对齐.<br>这个限制并没有得到严格的保证,并且可以被 flatMap 操作符/跨越多个缓冲区的记录或产生大量数据的单个计时器之类的东西忽略.</p>
+<p><code>taskmanager.network.netty.client.connectTimeoutSec</code><br>120|Integer<br>Netty 客户端连接超时.</p>
+<p><code>taskmanager.network.netty.client.numThreads</code><br>-1|Integer<br>Netty 客户端线程的数量.</p>
+<p><code>taskmanager.network.netty.num-arenas</code><br>-1|Integer<br>Netty 竞技场的数量.</p>
+<p><code>taskmanager.network.netty.sendReceiveBufferSize</code><br>0|Integer<br>Netty 发送和接收缓冲区大小.<br>这默认为系统缓冲区大小(cat /proc/sys/net/ipv4/<code>tcp_[rw]mem</code>),在现代 Linux 中为 4 MiB.</p>
+<p><code>taskmanager.network.netty.server.backlog</code><br>0|Integer<br>netty 服务器连接积压.</p>
+<p><code>taskmanager.network.netty.server.numThreads</code><br>-1|Integer<br>Netty 服务器线程的数量.</p>
+<p><code>taskmanager.network.netty.transport</code><br>&quot;auto&quot;|String<br>Netty 传输类型,&quot;nio&quot;或&quot;epoll&quot;.<br>&quot;自动&quot;是指根据平台自动选择属性模式.<br>请注意,&quot;epoll&quot;模式可以获得更好的性能/更少的 GC 并具有更多仅在现代 Linux 上可用的高级功能.</p>
+<p><code>taskmanager.network.request-backoff.initial</code><br>100|Integer<br>输入通道的分区请求的最小退避(以毫秒为单位).</p>
+<p><code>taskmanager.network.request-backoff.max</code><br>10000|Integer<br>输入通道的分区请求的最大退避(以毫秒为单位).</p>
+<p><code>taskmanager.network.retries</code><br>0|Integer<br>网络通信的重试次数.<br>目前仅用于建立输入/输出通道连接</p>
+<p><code>taskmanager.network.sort-shuffle.min-buffers</code><br>512|Integer<br>sort-shuffle 每个阻塞结果分区所需的最小网络缓冲区数.<br>对于生产使用,建议将此配置值至少增加到 2048(如果使用默认的 32K 内存段大小,则为 64M 内存)以提高数据压缩率并减少小网络数据包.<br>通常,数百兆字节的内存对于大规模批处理作业就足够了.<br>注意:如果您增加此配置值,您可能还需要增加总网络内存的大小以避免&quot;网络缓冲区数量不足&quot;错误.</p>
+<p><code>taskmanager.network.sort-shuffle.min-parallelism</code><br>1|Integer<br>在基于排序的阻塞 shuffle 和基于哈希的阻塞 shuffle 之间切换的并行阈值,这意味着对于并行度较小的批处理作业,将使用 hash-shuffle,对于并行度较大或相等的批处理作业,将使用 sort-shuffle.<br>值 1 表示 sort-shuffle 是默认选项.<br>注意:对于生产用途,您可能还需要调整&quot;taskmanager.network.sort-shuffle.min-buffers&quot;和&quot;taskmanager.memory.framework.off-heap.batch-shuffle.size&quot;以获得更好的性能.</p>
+<p><code>taskmanager.network.tcp-connection.enable-reuse-across-jobs</code><br>TRUE|Boolean<br>是否在多个作业中重用 tcp 连接.<br>如果设置为 true,则作业完成后不会释放 tcp 连接.<br>后续作业将不受重新建立连接的开销.<br>但是,这可能会导致计算机上的连接总数增加.<br>当达到上限时,您可以将其设置为 false 以释放空闲连接.<br>请注意,为避免连接泄漏,您必须在启用 tcp 连接重用之前将 taskmanager.network.max-num-tcp-connections 设置为较小的值.</p>
+<h3 id="RPC-Akka"><a href="#RPC-Akka" class="headerlink" title="RPC / Akka"></a>RPC / Akka</h3><p>Flink 在组件(JobManager/TaskManager/ResourceManager)之间使用 Akka 进行 RPC.Flink 不使用 Akka 进行数据传输.</p>
+<p><code>akka.ask.callstack</code><br>TRUE|Boolean<br>如果为真,则捕获异步请求的调用堆栈.<br>这样,当请求失败(例如超时)时,您会得到一个适当的异常,描述原始方法调用和调用站点.<br>请注意,如果有数百万个并发 RPC 调用,这可能会增加内存占用.</p>
+<p><code>akka.ask.timeout</code><br>10 s|Duration<br>超时用于所有期货和阻塞 Akka 调用.<br>如果 Flink 由于超时而失败,那么你应该尝试增加这个值.<br>超时可能是由慢速机器或拥塞的网络引起的.<br>超时值需要时间单位说明符 (ms/s/min/h/d).</p>
+<p><code>akka.client-socket-worker-pool.pool-size-factor</code><br>1|Double<br>池大小因子用于使用以下公式确定线程池大小:ceil(可用处理器 * 因子).<br>然后,结果大小受 pool-size-min 和 pool-size-max 值的限制.</p>
+<p><code>akka.client-socket-worker-pool.pool-size-max</code><br>2|Integer<br>将基于因子的数量限制为的最大线程数.</p>
+<p><code>akka.client-socket-worker-pool.pool-size-min</code><br>1|Integer<br>将基于因子的数量限制为的最小线程数.</p>
+<p><code>akka.fork-join-executor.parallelism-factor</code><br>2|Double<br>并行度因子用于使用以下公式确定线程池大小:ceil(可用处理器 * 因子).<br>然后,生成的大小受并行度最小值和并行度最大值的限制.</p>
+<p><code>akka.fork-join-executor.parallelism-max</code><br>64|Integer<br>将基于因子的并行数限制为的最大线程数.</p>
+<p><code>akka.fork-join-executor.parallelism-min</code><br>8|Integer<br>将基于因子的并行数限制为的最小线程数.</p>
+<p><code>akka.framesize</code><br>&quot;10485760b&quot;|String<br>JobManager 和 TaskManager 之间发送的消息的最大大小.<br>如果 Flink 因为消息超过这个限制而失败,那么你应该增加它.<br>消息大小需要一个大小单位说明符.</p>
+<p><code>akka.jvm-exit-on-fatal-error</code><br>TRUE|Boolean<br>出现致命的 Akka 错误时退出 JVM.</p>
+<p><code>akka.log.lifecycle.events</code><br>FALSE|Boolean<br>打开 Akka 的远程事件记录.<br>在调试的情况下将此值设置为&quot;true&quot;.</p>
+<p><code>akka.lookup.timeout</code><br>10 s|Duration<br>用于查找 JobManager 的超时.<br>超时值必须包含时间单位说明符 (ms/s/min/h/d).</p>
+<p><code>akka.retry-gate-closed-for</code><br>50|Long<br>远程连接断开后应关闭门的毫秒数.</p>
+<p><code>akka.server-socket-worker-pool.pool-size-factor</code><br>1|Double<br>池大小因子用于使用以下公式确定线程池大小:ceil(可用处理器 * 因子).<br>然后,结果大小受 pool-size-min 和 pool-size-max 值的限制.</p>
+<p><code>akka.server-socket-worker-pool.pool-size-max</code><br>2|Integer<br>将基于因子的数量限制为的最大线程数.</p>
+<p><code>akka.server-socket-worker-pool.pool-size-min</code><br>1|Integer<br>将基于因子的数量限制为的最小线程数.</p>
+<p><code>akka.ssl.enabled</code><br>TRUE|Boolean<br>为 Akka 的远程通信打开 SSL.<br>这仅在全局 ssl 标志 security.ssl.enabled 设置为 true 时适用.</p>
+<p><code>akka.startup-timeout</code><br>(none)|String<br>超时后远程组件的启动被视为失败.</p>
+<p><code>akka.tcp.timeout</code><br>&quot;20 s&quot;|String<br>所有出站连接超时.<br>如果由于网络缓慢而在连接到 TaskManager 时遇到问题,则应增加此值.</p>
+<p><code>akka.throughput</code><br>15|Integer<br>在将线程返回池之前批量处理的消息数.<br>低值表示公平调度,而高值可以以不公平为代价提高性能.</p>
+<h3 id="JVM-和日志记录选项"><a href="#JVM-和日志记录选项" class="headerlink" title="JVM 和日志记录选项"></a>JVM 和日志记录选项</h3><p><code>env.hadoop.conf.dir</code><br>(none)|String<br>hadoop 配置目录的路径.<br>需要读取 HDFS 和/或 YARN 配置.<br>您也可以通过环境变量进行设置.</p>
+<p><code>env.hbase.conf.dir</code><br>(none)|String<br>hbase 配置目录的路径.<br>需要读取 HBASE 配置.<br>您也可以通过环境变量进行设置.</p>
+<p><code>env.java.opts</code><br>(none)|String<br>用于启动所有 Flink 进程的 JVM 的 Java 选项.</p>
+<p><code>env.java.opts.client</code><br>(none)|String<br>用于启动 Flink Client 的 JVM 的 Java 选项.</p>
+<p><code>env.java.opts.historyserver</code><br>(none)|String<br>用于启动 HistoryServer 的 JVM 的 Java 选项.</p>
+<p><code>env.java.opts.jobmanager</code><br>(none)|String<br>用于启动 JobManager 的 JVM 的 Java 选项.</p>
+<p><code>env.java.opts.taskmanager</code><br>(none)|String<br>用于启动 TaskManager 的 JVM 的 Java 选项.</p>
+<p><code>env.log.dir</code><br>(none)|String<br>定义保存 Flink 日志的目录.<br>它必须是绝对路径.<br>(默认为 Flink home 下的 log 目录)</p>
+<p><code>env.log.max</code><br>5|Integer<br>要保留的旧日志文件的最大数量.</p>
+<p><code>env.pid.dir</code><br>&quot;/tmp&quot;|String<br>定义 flink-<host>-<process>.pid 文件保存的目录.</p>
+<p><code>env.ssh.opts</code><br>(none)|String<br>启动或停止 JobManager/TaskManager 和 Zookeeper 服务(start-cluster.sh/stop-cluster.sh/start-zookeeper-quorum.sh/stop-zookeeper-quorum.sh)时传递给 SSH 客户端的其他命令行选项.</p>
+<p><code>env.yarn.conf.dir</code><br>(none)|String<br>纱线配置目录的路径.<br>需要在 YARN 上运行 flink.<br>您也可以通过环境变量进行设置.</p>
+<h3 id="转发环境变量"><a href="#转发环境变量" class="headerlink" title="转发环境变量"></a>转发环境变量</h3><p>您可以配置要在 Yarn 上启动的 JobManager 和 TaskManager 进程上设置的环境变量.</p>
+<ol>
+<li><p>containerized.master.env.: 用于将自定义环境变量传递给 Flink 的 JobManager 进程的前缀.例如,要将 LD_LIBRARY_PATH 作为环境变量传递给 JobManager,请在 flink-conf.yaml 中设置 containerized.master.env.LD_LIBRARY_PATH: &quot;/usr/lib/native&quot;.</p>
+</li>
+<li><p>containerized.taskmanager.env.:与上述类似,此配置前缀允许为工作人员(TaskManagers)设置自定义环境变量.</p>
+</li>
+</ol>
+<h3 id="Deprecated-Options"><a href="#Deprecated-Options" class="headerlink" title="Deprecated Options"></a>Deprecated Options</h3><p><code>compiler.delimited-informat.max-line-samples</code><br>10|Integer<br>编译器为分隔输入获取的最大行样本数.<br>样本用于估计记录数.<br>可以使用输入格式的参数为特定输入覆盖此值.</p>
+<p><code>compiler.delimited-informat.max-sample-len</code><br>2097152|Integer<br>编译器用于分隔输入的行样本的最大长度.<br>如果单个样本的长度超过此值(可能是由于解析器配置错误),则采样中止.<br>可以使用输入格式的参数为特定输入覆盖此值.</p>
+<p><code>compiler.delimited-informat.min-line-samples</code><br>2|Integer<br>编译器为定界输入采集的最小行样本数.<br>样本用于估计记录数.<br>可以使用输入格式的参数为特定输入覆盖此值</p>
+<p><code>taskmanager.runtime.hashjoin-bloom-filters</code><br>FALSE|Boolean<br>在混合哈希连接实现中激活/停用布隆过滤器的标志.<br>在哈希连接需要溢出到磁盘的情况下(数据集大于内存的保留部分),这些布隆过滤器可以大大减少溢出记录的数量,但代价是一些 CPU 周期.</p>
+<p><code>taskmanager.runtime.large-record-handler</code><br>FALSE|Boolean<br>溢出时是否使用 LargeRecordHandler.<br>如果一条记录不适合排序缓冲区.<br>记录将溢出到磁盘上,并且仅使用密钥继续排序.<br>合并后将读取记录本身.</p>
+<p><code>taskmanager.runtime.max-fan</code><br>128|Integer<br>外部合并连接的最大扇入和溢出哈希表的扇出.<br>限制每个运算符的文件句柄数,但如果设置得太小,可能会导致中间合并/分区.</p>
+<p><code>taskmanager.runtime.sort-spilling-threshold</code><br>0.8|Float<br>当这部分内存预算已满时,排序操作开始溢出.</p>
+<p><code>fs.output.always-create-directory</code><br>FALSE|Boolean<br>以大于一个并行度运行的文件编写器为输出文件路径创建一个目录,并将不同的结果文件(每个并行编写器任务一个)放入该目录.<br>如果此选项设置为&quot;true&quot;,则并行度为 1 的编写器还将创建一个目录并将单个结果文件放入其中.<br>如果该选项设置为&quot;false&quot;,编写器将直接在输出路径处创建文件,而不创建包含目录.</p>
+<p><code>fs.overwrite-files</code><br>FALSE|Boolean<br>指定默认情况下文件输出编写器是否应覆盖现有文件.<br>设置为&quot;true&quot;以默认覆盖,否则设置为&quot;false&quot;.</p>
+<h2 id="内存配置-1"><a href="#内存配置-1" class="headerlink" title="内存配置"></a>内存配置</h2><h3 id="配置-Flink-进程的内存"><a href="#配置-Flink-进程的内存" class="headerlink" title="配置 Flink 进程的内存"></a>配置 Flink 进程的内存</h3><p>Apache Flink 基于 JVM 的高效处理能力,依赖于其对各组件内存用量的细致掌控.<br>考虑到用户在 Flink 上运行的应用的多样性,尽管社区已经努力为所有配置项提供合理的默认值,仍无法满足所有情况下的需求.<br>为了给用户生产提供最大化的价值, Flink 允许用户在整体上以及细粒度上对集群的内存分配进行调整.<br>为了优化内存需求,参考网络内存调优指南.</p>
+<p>本文接下来介绍的内存配置方法适用于 1.10 及以上版本的 TaskManager 进程和 1.11 及以上版本的 JobManager 进程.<br>Flink 在 1.10 和 1.11 版本中对内存配置部分进行了较大幅度的改动,从早期版本升级的用户请参考升级指南.</p>
+<h4 id="配置总内存"><a href="#配置总内存" class="headerlink" title="配置总内存"></a>配置总内存</h4><p>Flink JVM 进程的<strong>进程总内存</strong>(Total Process Memory)包含了由 Flink 应用使用的内存(Flink 总内存)以及由运行 Flink 的 JVM 使用的内存.<br>Flink 总内存(Total Flink Memory)包括 JVM 堆内存(Heap Memory)和堆外内存(Off-Heap Memory).<br>其中堆外内存包括直接内存(Direct Memory)和本地内存(Native Memory).</p>
+<img src="/images/flgl63.svg" width="300" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>配置 Flink 进程内存最简单的方法是指定以下两个配置项中的任意一个:</p>
+<img src="/images/flgl64.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>Flink 会根据默认值或其他配置参数自动调整剩余内存部分的大小.<br>关于各内存部分的更多细节,请分别参考 TaskManager 和 JobManager 的相关文档.</p>
+<p>对于独立部署模式(Standalone Deployment),如果你希望指定由 Flink 应用本身使用的内存大小,最好选择配置 Flink 总内存.<br>Flink 总内存会进一步划分为 JVM 堆内存和堆外内存.<br>更多详情请参考如何为独立部署模式配置内存.</p>
+<p>通过配置进程总内存可以指定由 Flink JVM 进程使用的总内存大小.<br>对于容器化部署模式(Containerized Deployment),这相当于申请的容器(Container)大小,详情请参考如何配置容器内存(Kubernetes 或 Yarn).</p>
+<p>此外,还可以通过设置 Flink 总内存的特定内部组成部分的方式来进行内存配置.<br>不同进程需要设置的内存组成部分是不一样的.<br>详情请分别参考 TaskManager 和 JobManager 的相关文档.</p>
+<p>提示:以上三种方式中,用户需要至少选择其中一种进行配置(本地运行除外),否则 Flink 将无法启动.<br>这意味着,用户需要从以下无默认值的配置参数(或参数组合)中选择一个给出明确的配置:</p>
+<img src="/images/flgl65.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>提示:不建议同时设置进程总内存和 Flink 总内存.<br>这可能会造成内存配置冲突,从而导致部署失败.<br>额外配置其他内存部分时,同样需要注意可能产生的配置冲突.</p>
+<h4 id="JVM-参数"><a href="#JVM-参数" class="headerlink" title="JVM 参数"></a>JVM 参数</h4><p>Flink 进程启动时,会根据配置的和自动推导出的各内存部分大小,显式地设置以下 JVM 参数:</p>
+<img src="/images/flgl66.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p><code>(*)</code> 请记住,根据所使用的 GC 算法,你可能无法使用到全部堆内存.<br>一些 GC 算法会为它们自身分配一定量的堆内存.<br>这会导致堆的指标返回一个不同的最大值.</p>
+<p><code>(**)</code> 请注意,堆外内存也包括了用户代码使用的本地内存(非直接内存).</p>
+<p><code>(***)</code> 只有在 <code>jobmanager.memory.enable-jvm-direct-memory-limit</code> 设置为 true 时,JobManager 才会设置 JVM 直接内存限制.</p>
+<p>相关内存部分的配置方法,请同时参考 TaskManager 和 JobManager 的详细内存模型.</p>
+<h4 id="受限的等比内存部分"><a href="#受限的等比内存部分" class="headerlink" title="受限的等比内存部分"></a>受限的等比内存部分</h4><p>本节介绍下列内存部分的配置方法,它们都可以通过指定在总内存中所占比例的方式进行配置,同时受限于相应的的最大/最小值范围.</p>
+<ol>
+<li>JVM 开销:可以配置占用进程总内存的固定比例</li>
+<li>网络内存:可以配置占用 Flink 总内存的固定比例(仅针对 TaskManager)<br>相关内存部分的配置方法,请同时参考 TaskManager 和 JobManager 的详细内存模型.</li>
+</ol>
+<p>这些内存部分的大小必须在相应的最大值/最小值范围内,否则 Flink 将无法启动.<br>最大值/最小值具有默认值,也可以通过相应的配置参数进行设置.<br>例如,如果仅配置下列参数:</p>
+<ol>
+<li>进程总内存 = 1000Mb</li>
+<li>JVM 开销最小值 = 64Mb</li>
+<li>JVM 开销最大值 = 128Mb</li>
+<li>JVM 开销占比 = 0.1<br>那么 JVM 开销的实际大小将会是 1000Mb x 0.1 = 100Mb,在 64-128Mb 的范围内.</li>
+</ol>
+<p>如果将最大值/最小值设置成相同大小,那相当于明确指定了该内存部分的大小.</p>
+<p>如果没有明确指定内存部分的大小,Flink 会根据总内存和占比计算出该内存部分的大小.<br>计算得到的内存大小将受限于相应的最大值/最小值范围.<br>例如,如果仅配置下列参数:</p>
+<ol>
+<li>进程总内存 = 1000Mb</li>
+<li>JVM 开销最小值 = 128Mb</li>
+<li>JVM 开销最大值 = 256Mb</li>
+<li>JVM 开销占比 = 0.1<br>那么 JVM 开销的实际大小将会是 128Mb,因为根据总内存和占比计算得到的内存大小 100Mb 小于最小值.</li>
+</ol>
+<p>如果配置了总内存和其他内存部分的大小,那么 Flink 也有可能会忽略给定的占比.<br>这种情况下,受限的等比内存部分的实际大小是总内存减去其他所有内存部分后剩余的部分.<br>这样推导得出的内存大小必须符合最大值/最小值范围,否则 Flink 将无法启动.<br>例如,如果仅配置下列参数:</p>
+<ol>
+<li>进程总内存 = 1000Mb</li>
+<li>任务堆内存 = 100Mb(或 JobManager 的 JVM 堆内存)</li>
+<li>JVM 开销最小值 = 64Mb</li>
+<li>JVM 开销最大值 = 256Mb</li>
+<li>JVM 开销占比 = 0.1<br>进程总内存中所有其他内存部分均有默认大小,包括 TaskManager 的托管内存默认占比或 JobManager 的默认堆外内存.<br>因此,JVM 开销的实际大小不是根据占比算出的大小(1000Mb x 0.1 = 100Mb),而是进程总内存中剩余的部分.<br>这个剩余部分的大小必须在 64-256Mb 的范围内,否则将会启动失败.</li>
+</ol>
+<h3 id="配置-TaskManager-内存"><a href="#配置-TaskManager-内存" class="headerlink" title="配置 TaskManager 内存"></a>配置 TaskManager 内存</h3><p>Flink 的 TaskManager 负责执行用户代码.<br>根据实际需求为 TaskManager 配置内存将有助于减少 Flink 的资源占用,增强作业运行的稳定性.</p>
+<p>本文接下来介绍的内存配置方法适用于 1.10 及以上版本.<br>Flink 在 1.10 版本中对内存配置部分进行了较大幅度的改动,从早期版本升级的用户请参考升级指南.</p>
+<p>提示:本篇内存配置文档仅针对 TaskManager. 与 JobManager 相比,TaskManager 具有相似但更加复杂的内存模型.</p>
+<h4 id="配置总内存-1"><a href="#配置总内存-1" class="headerlink" title="配置总内存"></a>配置总内存</h4><p>Flink JVM 进程的<strong>进程总内存</strong>(Total Process Memory)包含了由 Flink 应用使用的内存(Flink 总内存)以及由运行 Flink 的 JVM 使用的内存.<br>其中,<strong>Flink 总内存</strong>(Total Flink Memory)包括 JVM 堆内存(Heap Memory)/<strong>托管内存</strong>(Managed Memory)以及其他直接内存(Direct Memory)或本地内存(Native Memory).</p>
+<img src="/images/flgl67.svg" width="300" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>如果你是在本地运行 Flink(例如在 IDE 中)而非创建一个集群,那么本文介绍的配置并非所有都是适用的,详情请参考本地执行.</p>
+<p>其他情况下,配置 Flink 内存最简单的方法就是配置总内存.<br>此外,Flink 也支持更细粒度的内存配置方式.</p>
+<p>Flink 会根据默认值或其他配置参数自动调整剩余内存部分的大小.<br>接下来的章节将介绍关于各内存部分的更多细节.</p>
+<h4 id="配置堆内存和托管内存"><a href="#配置堆内存和托管内存" class="headerlink" title="配置堆内存和托管内存"></a>配置堆内存和托管内存</h4><p>如配置总内存中所述,另一种配置 Flink 内存的方式是同时设置任务堆内存和托管内存.<br>通过这种方式,用户可以更好地掌控用于 Flink 任务的 JVM 堆内存及 Flink 的托管内存大小.</p>
+<p>Flink 会根据默认值或其他配置参数自动调整剩余内存部分的大小.<br>关于各内存部分的更多细节,请参考相关文档.</p>
+<p>提示:如果已经明确设置了任务堆内存和托管内存,建议不要再设置进程总内存或 Flink 总内存,否则可能会造成内存配置冲突.</p>
+<h5 id="任务-算子-堆内存"><a href="#任务-算子-堆内存" class="headerlink" title="任务(算子)堆内存"></a>任务(算子)堆内存</h5><p>如果希望确保指定大小的 JVM 堆内存给用户代码使用,可以明确指定任务堆内存(<code>taskmanager.memory.task.heap.size</code>).<br>指定的内存将被包含在总的 JVM 堆空间中,专门用于 Flink 算子及用户代码的执行.</p>
+<h5 id="托管内存"><a href="#托管内存" class="headerlink" title="托管内存"></a>托管内存</h5><p>托管内存是由 Flink 负责分配和管理的本地(堆外)内存.<br>以下场景需要使用托管内存:</p>
+<ol>
+<li>流处理作业中用于 RocksDB State Backend.</li>
+<li>流处理和批处理作业中用于排序/哈希表及缓存中间结果.</li>
+<li>流处理和批处理作业中用于在 Python 进程中执行用户自定义函数.</li>
+</ol>
+<p>可以通过以下两种范式指定托管内存的大小:</p>
+<ol>
+<li>通过 <code>taskmanager.memory.managed.size</code> 明确指定其大小.</li>
+<li>通过 <code>taskmanager.memory.managed.fraction</code> 指定在Flink 总内存中的占比.</li>
+</ol>
+<p>当同时指定二者时,会优先采用指定的大小(Size).<br>若二者均未指定,会根据默认占比进行计算.</p>
+<p>请同时参考如何配置 State Backend 内存以及如何配置批处理作业内存.</p>
+<blockquote>
+<p>消费者权重</p>
+</blockquote>
+<p>对于包含不同种类的托管内存消费者的作业,可以进一步控制托管内存如何在消费者之间分配.<br>通过 taskmanager.memory.managed.consumer-weights 可以为每一种类型的消费者指定一个权重,Flink 会按照权重的比例进行内存分配.<br>目前支持的消费者类型包括:</p>
+<ol>
+<li>OPERATOR: 用于内置算法.</li>
+<li>STATE_BACKEND: 用于流处理中的 RocksDB State Backend.</li>
+<li>PYTHON:用户 Python 进程.</li>
+</ol>
+<p>例如,一个流处理作业同时使用到了 RocksDB State Backend 和 Python UDF,消费者权重设置为 STATE_BACKEND:70,PYTHON:30,那么 Flink 会将 70% 的托管内存用于 RocksDB State Backend,30% 留给 Python 进程.</p>
+<p>提示:只有作业中包含某种类型的消费者时,Flink 才会为该类型分配托管内存.<br>例如,一个流处理作业使用 Heap State Backend 和 Python UDF,消费者权重设置为 STATE_BACKEND:70,PYTHON:30,那么 Flink 会将全部托管内存用于 Python 进程,因为 Heap State Backend 不使用托管内存.</p>
+<p>提示:对于未出现在消费者权重中的类型,Flink 将不会为其分配托管内存.<br>如果缺失的类型是作业运行所必须的,则会引发内存分配失败.<br>默认情况下,消费者权重中包含了所有可能的消费者类型.<br>上述问题仅可能出现在用户显式地配置了消费者权重的情况下.</p>
+<h4 id="配置堆外内存-直接内存或本地内存"><a href="#配置堆外内存-直接内存或本地内存" class="headerlink" title="配置堆外内存(直接内存或本地内存)"></a>配置堆外内存(直接内存或本地内存)</h4><p>用户代码中分配的堆外内存被归为任务堆外内存(Task Off-heap Memory),可以通过 <code>taskmanager.memory.task.off-heap.size</code> 指定.</p>
+<p>提示:你也可以调整框架堆外内存(Framework Off-heap Memory).<br>这是一个进阶配置,建议仅在确定 Flink 框架需要更多的内存时调整该配置.</p>
+<p>Flink 将框架堆外内存和任务堆外内存都计算在 JVM 的直接内存限制中,请参考 JVM 参数.</p>
+<p>提示:本地内存(非直接内存)也可以被归在框架堆外内存或任务堆外内存中,在这种情况下 JVM 的直接内存限制可能会高于实际需求.</p>
+<p>提示:网络内存(Network Memory)同样被计算在 JVM 直接内存中.<br>Flink 会负责管理网络内存,保证其实际用量不会超过配置大小.<br>因此,调整网络内存的大小不会对其他堆外内存有实质上的影响.</p>
+<p>请参考内存模型详解.</p>
+<h4 id="内存模型详解"><a href="#内存模型详解" class="headerlink" title="内存模型详解"></a>内存模型详解</h4><img src="/images/flgl68.svg" width="300" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>如上图所示,下表中列出了 Flink TaskManager 内存模型的所有组成部分,以及影响其大小的相关配置参数.</p>
+<img src="/images/flgl69.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>我们可以看到,有些内存部分的大小可以直接通过一个配置参数进行设置,有些则需要根据多个参数进行调整.</p>
+<h4 id="框架内存"><a href="#框架内存" class="headerlink" title="框架内存"></a>框架内存</h4><p>通常情况下,不建议对框架堆内存和框架堆外内存进行调整.<br>除非你非常肯定 Flink 的内部数据结构及操作需要更多的内存.<br>这可能与具体的部署环境及作业结构有关,例如非常高的并发度.<br>此外,Flink 的部分依赖(例如 Hadoop)在某些特定的情况下也可能会需要更多的直接内存或本地内存.</p>
+<p>提示:不管是堆内存还是堆外内存,Flink 中的框架内存和任务内存之间目前是没有隔离的.<br>对框架和任务内存的区分,主要是为了在后续版本中做进一步优化.</p>
+<h4 id="本地执行"><a href="#本地执行" class="headerlink" title="本地执行"></a>本地执行</h4><p>如果你是将 Flink 作为一个单独的 Java 程序运行在你的电脑本地而非创建一个集群(例如在 IDE 中),那么只有下列配置会生效,其他配置参数则不会起到任何效果:</p>
+<img src="/images/flgl70.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>本地执行模式下,上面列出的所有内存部分均可以但不是必须进行配置.<br>如果未配置,则会采用默认值.<br>其中,任务堆内存和任务堆外内存的默认值无穷大(Long.MAX_VALUE 字节),以及托管内存的默认值 128Mb 均只针对本地执行模式.</p>
+<p>提示:这种情况下,任务堆内存的大小与实际的堆空间大小无关.<br>该配置参数可能与后续版本中的进一步优化相关.<br>本地执行模式下,JVM 堆空间的实际大小不受 Flink 掌控,而是取决于本地执行进程是如何启动的.<br>如果希望控制 JVM 的堆空间大小,可以在启动进程时明确地指定相关的 JVM 参数,即 -Xmx 和 -Xms.</p>
+<h3 id="配置-JobManager-内存"><a href="#配置-JobManager-内存" class="headerlink" title="配置 JobManager 内存"></a>配置 JobManager 内存</h3><p>JobManager 是 Flink 集群的控制单元.<br>它由三种不同的组件组成:ResourceManager/Dispatcher 和每个正在运行作业的 JobMaster.<br>本篇文档将介绍 JobManager 内存在整体上以及细粒度上的配置方法.</p>
+<p>本文接下来介绍的内存配置方法适用于 1.11 及以上版本.<br>Flink 在 1.11 版本中对内存配置部分进行了较大幅度的改动,从早期版本升级的用户请参考升级指南.</p>
+<p>提示:本篇内存配置文档仅针对 JobManager. 与 TaskManager 相比,JobManager 具有相似但更加简单的内存模型.</p>
+<h4 id="配置总内存-2"><a href="#配置总内存-2" class="headerlink" title="配置总内存"></a>配置总内存</h4><p>配置 JobManager 内存最简单的方法就是进程的配置总内存.<br>本地执行模式下不需要为 JobManager 进行内存配置,配置参数将不会生效.</p>
+<h4 id="详细配置"><a href="#详细配置" class="headerlink" title="详细配置"></a>详细配置</h4><img src="/images/flgl71.svg" width="300" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>如上图所示,下表中列出了 Flink JobManager 内存模型的所有组成部分,以及影响其大小的相关配置参数.</p>
+<img src="/images/flgl72.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h5 id="配置-JVM-堆内存"><a href="#配置-JVM-堆内存" class="headerlink" title="配置 JVM 堆内存"></a>配置 JVM 堆内存</h5><p>如配置总内存中所述,另一种配置 JobManager 内存的方式是明确指定 JVM 堆内存的大小(<code>jobmanager.memory.heap.size</code>).<br>通过这种方式,用户可以更好地掌控用于以下用途的 JVM 堆内存大小.</p>
+<ol>
+<li>Flink 框架</li>
+<li>在作业提交时(例如一些特殊的批处理 Source)及 Checkpoint 完成的回调函数中执行的用户代码</li>
+</ol>
+<p>Flink 需要多少 JVM 堆内存,很大程度上取决于运行的作业数量/作业的结构及上述用户代码的需求.</p>
+<p>提示:如果已经明确设置了 JVM 堆内存,建议不要再设置进程总内存或 Flink 总内存,否则可能会造成内存配置冲突.</p>
+<p>在启动 JobManager 进程时,Flink 启动脚本及客户端通过设置 JVM 参数 -Xms 和 -Xmx 来管理 JVM 堆空间的大小.<br>请参考 JVM 参数.</p>
+<h5 id="配置堆外内存"><a href="#配置堆外内存" class="headerlink" title="配置堆外内存"></a>配置堆外内存</h5><p>堆外内存包括 JVM 直接内存 和 本地内存.<br>可以通过配置参数 <code>jobmanager.memory.enable-jvm-direct-memory-limit</code> 设置是否启用 JVM 直接内存限制.<br>如果该配置项设置为 true,Flink 会根据配置的堆外内存大小设置 JVM 参数 -XX:MaxDirectMemorySize.<br>请参考 JVM 参数.</p>
+<p>可以通过配置参数 <code>jobmanager.memory.off-heap.size</code> 设置堆外内存的大小.<br>如果遇到 JobManager 进程抛出 &quot;OutOfMemoryError: Direct buffer memory&quot; 的异常,可以尝试调大这项配置.<br>请参考常见问题.</p>
+<p>以下情况可能用到堆外内存:</p>
+<ol>
+<li>Flink 框架依赖(例如 Akka 的网络通信)</li>
+<li>在作业提交时(例如一些特殊的批处理 Source)及 Checkpoint 完成的回调函数中执行的用户代码</li>
+</ol>
+<p>提示:如果同时配置了 Flink 总内存和 JVM 堆内存,且没有配置堆外内存,那么堆外内存的大小将会是 Flink 总内存减去JVM 堆内存.<br>这种情况下,堆外内存的默认大小将不会生效.</p>
+<h4 id="本地执行-1"><a href="#本地执行-1" class="headerlink" title="本地执行"></a>本地执行</h4><p>如果你是在本地运行 Flink(例如在 IDE 中)而非创建一个集群,那么 JobManager 的内存配置将不会生效.</p>
+<h3 id="调优指南"><a href="#调优指南" class="headerlink" title="调优指南"></a>调优指南</h3><h4 id="独立部署模式-Standalone-Deployment-下的内存配置"><a href="#独立部署模式-Standalone-Deployment-下的内存配置" class="headerlink" title="独立部署模式(Standalone Deployment)下的内存配置"></a>独立部署模式(Standalone Deployment)下的内存配置</h4><p>独立部署模式下,我们通常更关注 Flink 应用本身使用的内存大小.<br>建议配置 Flink 总内存(taskmanager.memory.flink.size 或者 jobmanager.memory.flink.size)或其组成部分.<br>此外,如果出现 Metaspace 不足的问题,可以调整 JVM Metaspace 的大小.</p>
+<p>这种情况下通常无需配置进程总内存,因为不管是 Flink 还是部署环境都不会对 JVM 开销 进行限制,它只与机器的物理资源相关.</p>
+<h4 id="容器-Container-的内存配置"><a href="#容器-Container-的内存配置" class="headerlink" title="容器(Container)的内存配置"></a>容器(Container)的内存配置</h4><p>在容器化部署模式(Containerized Deployment)下(Kubernetes 或 Yarn),建议配置进程总内存(taskmanager.memory.process.size 或者 jobmanager.memory.process.size).<br>该配置参数用于指定分配给 Flink JVM 进程的总内存,也就是需要申请的容器大小.</p>
+<p>提示:如果配置了 Flink 总内存,Flink 会自动加上 JVM 相关的内存部分,根据推算出的进程总内存大小申请容器.</p>
+<p>注意: 如果 Flink 或者用户代码分配超过容器大小的非托管的堆外(本地)内存,部署环境可能会杀掉超用内存的容器,造成作业执行失败.</p>
+<p>请参考容器内存超用中的相关描述.</p>
+<h4 id="State-Backend-的内存配置"><a href="#State-Backend-的内存配置" class="headerlink" title="State Backend 的内存配置"></a>State Backend 的内存配置</h4><p>本章节内容仅与 TaskManager 相关.</p>
+<p>在部署 Flink 流处理应用时,可以根据 State Backend 的类型对集群的配置进行优化.</p>
+<h5 id="Heap-State-Backend"><a href="#Heap-State-Backend" class="headerlink" title="Heap State Backend"></a>Heap State Backend</h5><p>执行无状态作业或者使用 Heap State Backend(MemoryStateBackend 或 FsStateBackend)时,建议将托管内存设置为 0.<br>这样能够最大化分配给 JVM 上用户代码的内存.</p>
+<h5 id="RocksDB-State-Backend"><a href="#RocksDB-State-Backend" class="headerlink" title="RocksDB State Backend"></a>RocksDB State Backend</h5><p>RocksDBStateBackend 使用本地内存.<br>默认情况下,RocksDB 会限制其内存用量不超过用户配置的托管内存.<br>因此,使用这种方式存储状态时,配置足够多的托管内存是十分重要的.<br>如果你关闭了 RocksDB 的内存控制,那么在容器化部署模式下如果 RocksDB 分配的内存超出了申请容器的大小(进程总内存),可能会造成 TaskExecutor 被部署环境杀掉.<br>请同时参考如何调整 RocksDB 内存以及 state.backend.rocksdb.memory.managed.</p>
+<h4 id="批处理作业的内存配置"><a href="#批处理作业的内存配置" class="headerlink" title="批处理作业的内存配置"></a>批处理作业的内存配置</h4><p>Flink 批处理算子使用托管内存来提高处理效率.<br>算子运行时,部分操作可以直接在原始数据上进行,而无需将数据反序列化成 Java 对象.<br>这意味着托管内存对应用的性能具有实质上的影响.<br>因此 Flink 会在不超过其配置限额的前提下,尽可能分配更多的托管内存.<br>Flink 明确知道可以使用的内存大小,因此可以有效避免 OutOfMemoryError 的发生.<br>当托管内存不足时,Flink 会优雅地将数据落盘.</p>
+<h3 id="网络内存调优指南"><a href="#网络内存调优指南" class="headerlink" title="网络内存调优指南"></a>网络内存调优指南</h3><h4 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h4><p>Flink 中每条消息都会被放到网络缓冲(network buffer) 中,并以此为最小单位发送到下一个 subtask.<br>为了维持连续的高吞吐,Flink 在传输过程的输入端和输出端使用了网络缓冲队列.</p>
+<p>每个 subtask 都有一个输入队列来接收数据和一个输出队列来发送数据到下一个 subtask.<br>在 pipeline 场景,拥有更多的中间缓存数据可以使 Flink 提供更高/更富有弹性的吞吐量,但是也会增加快照时间.</p>
+<p>只有所有的 subtask 都收到了全部注入的 checkpoint barrier 才能完成快照.<br>在对齐的 checkpoints 中,checkpoint barrier 会跟着网络缓冲数据在 job graph 中流动.<br>缓冲数据越多,checkpoint barrier 流动的时间就越长.<br>在非对齐的 checkpoints 中,缓冲数据越多,checkpoint 就会越大,因为这些数据都会被持久化到 checkpoint 中.</p>
+<h4 id="缓冲消胀机制-Buffer-Debloating"><a href="#缓冲消胀机制-Buffer-Debloating" class="headerlink" title="缓冲消胀机制(Buffer Debloating)"></a>缓冲消胀机制(Buffer Debloating)</h4><p>之前,配置缓冲数据量的唯一方法是指定缓冲区的数量和大小.<br>然而,因为每次部署的不同很难配置一组完美的参数.<br>Flink 1.14 新引入的缓冲消胀机制尝试通过自动调整缓冲数据量到一个合理值来解决这个问题.</p>
+<p>缓冲消胀功能计算 subtask 可能达到的最大吞吐(始终保持繁忙状态时)并且通过调整缓冲数据量来使得数据的消费时间达到配置值.</p>
+<p>可以通过设置 taskmanager.network.memory.buffer-debloat.enabled 为 true 来开启缓冲消胀机制.<br>通过设置 taskmanager.network.memory.buffer-debloat.target 为 duration 类型的值来指定消费缓冲数据的目标时间.<br>默认值应该能满足大多数场景.</p>
+<p>这个功能使用过去的吞吐数据来预测消费剩余缓冲数据的时间.<br>如果预测不准,缓冲消胀机制会导致以下问题:</p>
+<ol>
+<li>没有足够的缓存数据来提供全量吞吐.</li>
+<li>有太多缓冲数据对 checkpoint barrier 推进或者非对齐的 checkpoint 的大小造成不良影响.</li>
+</ol>
+<p>如果您的作业负载经常变化(即,突如其来的数据尖峰,定期的窗口聚合触发或者 join ),您可能需要调整以下设置:</p>
+<p>taskmanager.network.memory.buffer-debloat.period:<br>这是缓冲区大小重算的最小时间周期.<br>周期越小,缓冲消胀机制的反应时间就越快,但是必要的计算会消耗更多的CPU.</p>
+<p>taskmanager.network.memory.buffer-debloat.samples:<br>调整用于计算平均吞吐量的采样数.<br>采集样本的频率可以通过 taskmanager.network.memory.buffer-debloat.period 来设置.<br>样本数越少,缓冲消胀机制的反应时间就越快,但是当吞吐量突然飙升或者下降时,缓冲消胀机制计算的最佳缓冲数据量会更容易出错.</p>
+<p>taskmanager.network.memory.buffer-debloat.threshold-percentages:<br>防止缓冲区大小频繁改变的优化(比如,新的大小跟旧的大小相差不大).</p>
+<p>更多详细和额外的参数配置,请参考配置参数.</p>
+<p>您可以使用以下指标来监控当前的缓冲区大小:</p>
+<ol>
+<li>estimatedTimeToConsumeBuffersMs:消费所有输入通道(input channel)中数据的总时间.</li>
+<li>debloatedBufferSize:当前的缓冲区大小.</li>
+</ol>
+<h5 id="限制"><a href="#限制" class="headerlink" title="限制"></a>限制</h5><p>当前,有一些场景还没有自动地被缓冲消胀机制处理.</p>
+<p>1.多个输入和合并<br>当前,吞吐计算和缓冲消胀发生在 subtask 层面.</p>
+<p>如果您的 subtask 有很多不同的输入或者有一个合并的输入,缓冲消胀可能会导致低吞吐的输入有太多缓冲数据,而高吞吐输入的缓冲区数量可能太少而不够维持当前吞吐.<br>当不同的输入吞吐差别比较大时,这种现象会更加的明显.<br>我们推荐您在测试这个功能时重点关注这种 subtask.</p>
+<p>2.缓冲区的尺寸和个数<br>当前,缓冲消胀仅在使用的缓冲区大小上设置上限.<br>实际的缓冲区大小和个数保持不变.<br>这意味着缓冲消胀机制不会减少作业的内存使用.<br>您应该手动减少缓冲区的大小或者个数.</p>
+<p>此外,如果您想减少缓冲数据量使其低于缓冲消胀当前允许的量,您可能需要手动的设置缓冲区的个数.</p>
+<p>3.High parallelism<br>目前,使用默认配置的高并行度(大约 200 以上),缓冲区去膨胀机制可能无法正确执行.<br>如果您观察到吞吐量降低或检查点时间高于预期,我们建议将浮动缓冲区的数量(taskmanager.network.memory.floating-buffers-per-gate)从默认值增加到至少等于并行度的数量.</p>
+<p>发生问题的并行度的实际值因工作而异,但通常应该超过几百个.</p>
+<h4 id="网络缓冲生命周期"><a href="#网络缓冲生命周期" class="headerlink" title="网络缓冲生命周期"></a>网络缓冲生命周期</h4><p>Flink 有多个本地缓冲区池 —— 每个输出和输入流对应一个.<br>每个缓冲区池的大小被限制为<br>#channels * taskmanager.network.memory.buffers-per-channel + taskmanager.network.memory.floating-buffers-per-gate</p>
+<p>缓冲区的大小可以通过 taskmanager.memory.segment-size 来设置.</p>
+<h4 id="输入网络缓冲"><a href="#输入网络缓冲" class="headerlink" title="输入网络缓冲"></a>输入网络缓冲</h4><p>输入通道中的缓冲区被分为独占缓冲区(exclusive buffer)和流动缓冲区(floating buffer).<br>每个独占缓冲区只能被一个特定的通道使用.<br>一个通道可以从输入流的共享缓冲区池中申请额外的流动缓冲区.<br>剩余的流动缓冲区是可选的并且只有资源足够的时候才能获取.</p>
+<p>在初始阶段:<br>Flink 会为每一个输入通道获取配置数量的独占缓冲区.<br>所有的独占缓冲区都必须被满足,否则作业会抛异常失败.<br>Flink 至少要有一个流动缓冲区才能运行.</p>
+<h4 id="输出网络缓冲"><a href="#输出网络缓冲" class="headerlink" title="输出网络缓冲"></a>输出网络缓冲</h4><p>不像输入缓冲区池,输出缓冲区池只有一种类型的缓冲区被所有的 subpartitions 共享.</p>
+<p>为了避免过多的数据倾斜,每个 subpartition 的缓冲区数量可以通过 taskmanager.network.memory.max-buffers-per-channel 来限制.</p>
+<p>不同于输入缓冲区池,这里配置的独占缓冲区和流动缓冲区只被当作推荐值.<br>如果没有足够的缓冲区,每个输出 subpartition 可以只使用一个独占缓冲区而没有流动缓冲区.</p>
+<h4 id="缓冲区的数量"><a href="#缓冲区的数量" class="headerlink" title="缓冲区的数量"></a>缓冲区的数量</h4><p>独占缓冲区和流动缓冲区的默认配置应该足以应对最大吞吐.<br>如果想要最小化缓冲数据量,那么可以将独占缓冲区设置为 0,同时减小内存段的大小.</p>
+<h4 id="选择缓冲区的大小"><a href="#选择缓冲区的大小" class="headerlink" title="选择缓冲区的大小"></a>选择缓冲区的大小</h4><p>在往下游 subtask 发送数据部分时,缓冲区通过汇集 record 来优化网络开销.<br>下游 subtask 应该在接收到完整的 record 后才开始处理它.</p>
+<p>如果缓冲区大小太小,或者缓冲区刷新太频繁(execution.buffer-timeout 配置参数),这可能会导致吞吐量下降,因为在 Flink 运行时中,每个缓冲区的开销明显高于每个记录的开销.</p>
+<p>根据经验,我们不建议考虑增加缓冲区大小或缓冲区超时,除非您可以观察到实际工作负载中的网络瓶颈(下游操作员空闲/上游背压/输出缓冲区队列已满/下游输入队列为空).</p>
+<p>如果缓冲区太大,会导致:<br>内存使用高<br>大量的 checkpoint 数据量(针对非对齐的 checkpoints)<br>漫长的 checkpoint 时间(针对对齐的 checkpoints)<br>execution.buffer-timeout 较小时内存分配使用率会比较低,因为缓冲区还没被塞满数据就被发送下去了.</p>
+<h4 id="选择缓冲区的数量"><a href="#选择缓冲区的数量" class="headerlink" title="选择缓冲区的数量"></a>选择缓冲区的数量</h4><p>缓冲区的数量是通过 taskmanager.network.memory.buffers-per-channel 和 taskmanager.network.memory.floating-buffers-per-gate 来配置的.</p>
+<p>为了最好的吞吐率,我们建议使用独占缓冲区和流动缓冲区的默认值(except you have one of limit cases).<br>如果缓冲数据量存在问题,更建议打开缓冲消胀.</p>
+<p>您可以人工地调整网络缓冲区的个数,但是需要注意:</p>
+<p>您应该根据期待的吞吐量(单位 bytes/second)来调整缓冲区的数量.<br>协调数据传输量(大约两个节点之间的两个往返消息).<br>延迟也取决于您的网络.</p>
+<p>使用 buffer 往返时间(大概 1ms 在正常的本地网络中),缓冲区大小和期待的吞吐,您可以通过下面的公式计算维持吞吐所需要的缓冲区数量:</p>
+<p>number_of_buffers = expected_throughput * buffer_roundtrip / buffer_size<br>比如,期待吞吐为 320MB/s,往返延迟为 1ms,内存段为默认大小,为了维持吞吐需要使用10个活跃的缓冲区:</p>
+<p>number_of_buffers = 320MB/s * 1ms / 32KB = 10<br>流动缓冲区的目的是为了处理数据倾斜.<br>理想情况下,流动缓冲区的数量(默认8个)和每个通道独占缓冲区的数量(默认2个)能够使网络吞吐量饱和.<br>但这并不总是可行和必要的.<br>所有 subtask 中只有一个通道被使用也是非常罕见的.</p>
+<p>独占缓冲区的目的是提供一个流畅的吞吐量.<br>当一个缓冲区在传输数据时,另一个缓冲区被填充.<br>当吞吐量比较高时,独占缓冲区的数量是决定 Flink 中缓冲数据的主要因素.</p>
+<p>当低吞吐量下出现反压时,您应该考虑减少独占缓冲区.</p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>可以通过开启缓冲消胀机制来简化 Flink 网络的内存配置调整.<br>您也可能需要调整它.</p>
+<p>如果这不起作用,您可以关闭缓冲消胀机制并且人工地配置内存段的大小和缓冲区个数.<br>针对第二种场景,我们推荐:</p>
+<p>使用默认值以获得最大吞吐<br>减少内存段大小/独占缓冲区的数量来加快 checkpoint 并减少网络栈消耗的内存量.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/flink/" rel="tag"># flink</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/22/flink%20datastream-table%20api%E9%9B%86%E6%88%90/" rel="prev" title="flink datastream-table api集成">
+                  <i class="fa fa-chevron-left"></i> flink datastream-table api集成
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/23/flink%20question/" rel="next" title="flink question">
+                  flink question <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="create &#39;xxx&#39;,&amp;#123;NAME&#x3D;&gt;&#39;d&#39;,VERSIONS&#x3D;&gt;1,BLOCKCACHE&#x3D;&gt;true,BLOOMFILTER&#x3D;&gt;&#39;ROW&#39;,COMPRESSION&#x3D;&gt;&#39;SNAPPY&#39;,TTL &#x3D;&gt; &#39; 259200 &#39;&amp;#125;,&amp;#123;SPLITS &#x3D;&gt;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hbase建表语句解析">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/03/hbase%E5%BB%BA%E8%A1%A8%E8%AF%AD%E5%8F%A5%E8%A7%A3%E6%9E%90/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="create &#39;xxx&#39;,&amp;#123;NAME&#x3D;&gt;&#39;d&#39;,VERSIONS&#x3D;&gt;1,BLOCKCACHE&#x3D;&gt;true,BLOOMFILTER&#x3D;&gt;&#39;ROW&#39;,COMPRESSION&#x3D;&gt;&#39;SNAPPY&#39;,TTL &#x3D;&gt; &#39; 259200 &#39;&amp;#125;,&amp;#123;SPLITS &#x3D;&gt;">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-08-02T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-08-25T03:21:00.001Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hbase">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/03/hbase%E5%BB%BA%E8%A1%A8%E8%AF%AD%E5%8F%A5%E8%A7%A3%E6%9E%90/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hbase建表语句解析 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#VERSIONS"><span class="nav-number">1.</span> <span class="nav-text">VERSIONS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BLOOMFILTER"><span class="nav-number">2.</span> <span class="nav-text">BLOOMFILTER</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#COMPRESSION"><span class="nav-number">3.</span> <span class="nav-text">COMPRESSION</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TTL"><span class="nav-number">4.</span> <span class="nav-text">TTL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IN-MEMORY"><span class="nav-number">5.</span> <span class="nav-text">IN_MEMORY</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BLOCKCACHE"><span class="nav-number">6.</span> <span class="nav-text">BLOCKCACHE</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SPLITS"><span class="nav-number">7.</span> <span class="nav-text">SPLITS</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/03/hbase%E5%BB%BA%E8%A1%A8%E8%AF%AD%E5%8F%A5%E8%A7%A3%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hbase建表语句解析
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-03 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-03T00:00:00+08:00">2022-08-03</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-08-25 11:21:00" itemprop="dateModified" datetime="2022-08-25T11:21:00+08:00">2022-08-25</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p><code>create &#39;xxx&#39;,&#123;NAME=&gt;&#39;d&#39;,VERSIONS=&gt;1,BLOCKCACHE=&gt;true,BLOOMFILTER=&gt;&#39;ROW&#39;,COMPRESSION=&gt;&#39;SNAPPY&#39;,TTL =&gt; &#39; 259200 &#39;&#125;,&#123;SPLITS =&gt; [&#39;1&#39;,&#39;2&#39;,&#39;3&#39;,&#39;4&#39;,&#39;5&#39;,&#39;6&#39;,&#39;7&#39;,&#39;8&#39;,&#39;9&#39;,&#39;a&#39;,&#39;b&#39;,&#39;c&#39;,&#39;d&#39;,&#39;e&#39;,&#39;f&#39;]&#125;</code></p>
+<p>上述建表语句表示创建一个表名为&quot;xxx&quot;的表,该表只包含一个列簇&quot;d&quot;.</p>
+<span id="more"></span>
+<h3 id="VERSIONS"><a href="#VERSIONS" class="headerlink" title="VERSIONS"></a>VERSIONS</h3><p>数据版本数,HBase数据模型允许一个cell的数据为带有不同时间戳的多版本数据集,VERSIONS参数指定了最多保存几个版本数据,默认为1.<br>假如某个用户想保存两个历史版本数据,可以将VERSIONS参数设置为2,再使用如下Scan命令就可以获取到所有历史数据:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">scan &#39;xxx&#39;,&#123;VERSIONS &#x3D;&gt; 2&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="BLOOMFILTER"><a href="#BLOOMFILTER" class="headerlink" title="BLOOMFILTER"></a>BLOOMFILTER</h3><p>布隆过滤器,优化HBase的随机读取性能,可选值<code>NONE|ROW|ROWCOL</code>,默认为NONE,该参数可以单独对某个列簇启用.<br>启用过滤器,对于get操作以及部分scan操作可以剔除掉不会用到的存储文件,减少实际IO次数,提高随机读性能.<br>Row类型适用于只根据Row进行查找,而RowCol类型适用于根据Row+Col联合查找,如下:</p>
+<p>Row类型适用于:<br>get &#39;xxx&#39;,&#39;row1′</p>
+<p>RowCol类型适用于:<br>get &#39;xxx&#39;,&#39;row1′,{COLUMN =&gt; &#39;c1&#39;}</p>
+<p>对于有随机读的业务,建议开启Row类型的过滤器,使用空间换时间,提高随机读性能.</p>
+<h3 id="COMPRESSION"><a href="#COMPRESSION" class="headerlink" title="COMPRESSION"></a>COMPRESSION</h3><p>数据压缩方式,HBase支持多种形式的数据压缩,一方面减少数据存储空间,一方面降低数据网络传输量进而提升读取效率.<br>目前HBase支持的压缩算法主要包括三种,GZip/LZO/Snappy,<br>Snappy的压缩率最低,但是编解码速率最高,对CPU的消耗也最小,目前一般建议使用Snappy.</p>
+<h3 id="TTL"><a href="#TTL" class="headerlink" title="TTL"></a>TTL</h3><p>数据过期时间,<strong>单位为秒</strong>,默认为永久保存.<br>对于很多业务来说,有时候并不需要永久保存某些数据,永久保存会导致数据量越来越大,消耗存储空间是其一,另一方面还会导致查询效率降低.<br>如果设置了过期时间,HBase在Compact时会通过一定机制检查数据是否过期,过期数据会被删除.<br>用户可以根据具体业务场景设置为一个月或者三个月.<br>示例中TTL =&gt; &#39;259200&#39;设置数据过期时间为三天.</p>
+<h3 id="IN-MEMORY"><a href="#IN-MEMORY" class="headerlink" title="IN_MEMORY"></a>IN_MEMORY</h3><p>数据是否常驻内存,默认为false.<br>HBase为频繁访问的数据提供了一个缓存区域,缓存区域一般存储数据量小/访问频繁的数据,常见场景为元数据存储.<br>默认情况,该缓存区域大小等于Jvm Heapsize * 0.2 * 0.25 ,假如Jvm Heapsize = 70G,存储区域的大小约等于3.2G.<br>需要注意的是HBase Meta元数据信息存储在这块区域,如果业务数据设置为true而且太大会导致Meta数据被置换出去,导致整个集群性能降低,所以在设置该参数时需要格外小心.</p>
+<h3 id="BLOCKCACHE"><a href="#BLOCKCACHE" class="headerlink" title="BLOCKCACHE"></a>BLOCKCACHE</h3><p>是否开启block cache缓存,默认开启.</p>
+<h3 id="SPLITS"><a href="#SPLITS" class="headerlink" title="SPLITS"></a>SPLITS</h3><p>region预分配策略.<br>通过region预分配,数据会被均衡到多台机器上,这样可以一定程度上解决热点应用数据量剧增导致系统自动split引起的性能问题.<br>HBase数据是按照rowkey按升序排列,为避免热点数据产生,一般采用hash + partition的方式预分配region,比如示例中rowkey首先使用md5 hash,然后再按照首字母partition为16份,就可以预分配16个region.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hbase/" rel="tag"># hbase</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/02/hbase%20blockcache/" rel="prev" title="hbase blockcache">
+                  <i class="fa fa-chevron-left"></i> hbase blockcache
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/03/hbase%E5%86%85%E5%AD%98%E8%A7%84%E5%88%92/" rel="next" title="hbase内存规划">
+                  hbase内存规划 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

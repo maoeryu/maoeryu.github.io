@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="在像Elasticsearch这样的分布式系统中执行完整的SQL风格的连接是非常昂贵的,相反Elasticsearch提供了两种设计为水平伸缩的join形式.  nested(嵌套查询)  文档可以包含类型为nested的字段,这些字段用于索引对象数组,其中每个对象都可以查询(使用嵌套查询)作为独立文档.  has_child&#x2F;has_parent  一个join字段关系可以存在于单个索引中的文档">
+<meta property="og:type" content="article">
+<meta property="og:title" content="elasticsearch-连接查询">
+<meta property="og:url" content="https://maoeryu.github.io/2021/11/24/elasticsearch-%E8%BF%9E%E6%8E%A5%E6%9F%A5%E8%AF%A2/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="在像Elasticsearch这样的分布式系统中执行完整的SQL风格的连接是非常昂贵的,相反Elasticsearch提供了两种设计为水平伸缩的join形式.  nested(嵌套查询)  文档可以包含类型为nested的字段,这些字段用于索引对象数组,其中每个对象都可以查询(使用嵌套查询)作为独立文档.  has_child&#x2F;has_parent  一个join字段关系可以存在于单个索引中的文档">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2021-11-23T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-07-26T02:51:14.963Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="elasticsearch">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/11/24/elasticsearch-%E8%BF%9E%E6%8E%A5%E6%9F%A5%E8%AF%A2/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>elasticsearch-连接查询 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B5%8C%E5%A5%97%E6%9F%A5%E8%AF%A2"><span class="nav-number">1.</span> <span class="nav-text">嵌套查询</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95%E8%AE%BE%E7%BD%AE"><span class="nav-number">1.1.</span> <span class="nav-text">索引设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2"><span class="nav-number">1.2.</span> <span class="nav-text">查询</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E6%95%B0"><span class="nav-number">1.3.</span> <span class="nav-text">参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E7%BA%A7%E5%B5%8C%E5%A5%97%E6%9F%A5%E8%AF%A2"><span class="nav-number">1.4.</span> <span class="nav-text">多级嵌套查询</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2-1"><span class="nav-number">1.4.1.</span> <span class="nav-text">查询</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#has-child"><span class="nav-number">2.</span> <span class="nav-text">has_child</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95%E8%AE%BE%E7%BD%AE-1"><span class="nav-number">2.1.</span> <span class="nav-text">索引设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2-2"><span class="nav-number">2.2.</span> <span class="nav-text">查询</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E6%95%B0-1"><span class="nav-number">2.3.</span> <span class="nav-text">参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%92%E5%BA%8F"><span class="nav-number">2.4.</span> <span class="nav-text">排序</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#has-parent"><span class="nav-number">3.</span> <span class="nav-text">has_parent</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95%E8%AE%BE%E7%BD%AE-2"><span class="nav-number">3.1.</span> <span class="nav-text">索引设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2-3"><span class="nav-number">3.2.</span> <span class="nav-text">查询</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E6%95%B0-2"><span class="nav-number">3.3.</span> <span class="nav-text">参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%92%E5%BA%8F-1"><span class="nav-number">3.4.</span> <span class="nav-text">排序</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%88%B6id%E6%9F%A5%E8%AF%A2"><span class="nav-number">4.</span> <span class="nav-text">父id查询</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95%E8%AE%BE%E7%BD%AE-3"><span class="nav-number">4.1.</span> <span class="nav-text">索引设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2-4"><span class="nav-number">4.2.</span> <span class="nav-text">查询</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E6%95%B0-3"><span class="nav-number">4.3.</span> <span class="nav-text">参数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#example"><span class="nav-number">5.</span> <span class="nav-text">example</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#mapping"><span class="nav-number">5.1.</span> <span class="nav-text">mapping</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A1%AB%E5%85%85%E6%95%B0%E6%8D%AE"><span class="nav-number">5.2.</span> <span class="nav-text">填充数据</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%88%B6%E6%95%B0%E6%8D%AE"><span class="nav-number">5.2.1.</span> <span class="nav-text">父数据</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%90%E6%95%B0%E6%8D%AE"><span class="nav-number">5.2.2.</span> <span class="nav-text">子数据</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95"><span class="nav-number">5.3.</span> <span class="nav-text">测试</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%A5%E5%AD%90%E6%9F%A5%E7%88%B6"><span class="nav-number">5.3.1.</span> <span class="nav-text">以子查父</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%88%B6%E5%AD%90%E7%BA%A7%E8%81%94%E4%BF%A1%E6%81%AF"><span class="nav-number">5.3.2.</span> <span class="nav-text">父子级联信息</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%A5%E7%88%B6%E6%9F%A5%E5%AD%90"><span class="nav-number">5.3.3.</span> <span class="nav-text">以父查子</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#java%E4%BB%A3%E7%A0%81"><span class="nav-number">5.4.</span> <span class="nav-text">java代码</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/11/24/elasticsearch-%E8%BF%9E%E6%8E%A5%E6%9F%A5%E8%AF%A2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          elasticsearch-连接查询
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-11-24 00:00:00" itemprop="dateCreated datePublished" datetime="2021-11-24T00:00:00+08:00">2021-11-24</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-07-26 10:51:14" itemprop="dateModified" datetime="2022-07-26T10:51:14+08:00">2022-07-26</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>在像Elasticsearch这样的分布式系统中执行完整的SQL风格的连接是非常昂贵的,相反Elasticsearch提供了两种设计为水平伸缩的join形式.</p>
+<blockquote>
+<p>nested(嵌套查询)</p>
+</blockquote>
+<p>文档可以包含类型为<code>nested</code>的字段,这些字段用于索引对象数组,其中每个对象都可以查询(使用嵌套查询)作为独立文档.</p>
+<blockquote>
+<p>has_child/has_parent</p>
+</blockquote>
+<p>一个join字段关系可以存在于单个索引中的文档之间,<code>has_child</code>查询返回子文档与指定查询匹配的父文档,<code>has_parent</code>查询返回其父文档与指定查询匹配的子文档.</p>
+<p>需要配置<code>search.allow_expensive_queries=true</code>.</p>
+<p>elastic版本7.10.0.</p>
+<span id="more"></span>
+
+<h2 id="嵌套查询"><a href="#嵌套查询" class="headerlink" title="嵌套查询"></a>嵌套查询</h2><h3 id="索引设置"><a href="#索引设置" class="headerlink" title="索引设置"></a>索引设置</h3><p>使用<code>nested</code>查询,索引必须包含<code>nested</code>字段映射.</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">curl -X PUT &quot;localhost:9200/my-index-000001?pretty&quot; -H &#x27;Content-Type: application/json&#x27; -d&#x27;</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;mappings&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;obj1&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;nested&quot;</span></span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#x27;</span><br></pre></td></tr></table></figure>
+
+<h3 id="查询"><a href="#查询" class="headerlink" title="查询"></a>查询</h3><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">curl -X GET &quot;localhost:9200/my-index-000001/_search?pretty&quot; -H &#x27;Content-Type: application/json&#x27; -d&#x27;</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;nested&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;path&quot;</span>: <span class="string">&quot;obj1&quot;</span>,</span><br><span class="line">      <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;bool&quot;</span>: &#123;</span><br><span class="line">          <span class="attr">&quot;must&quot;</span>: [</span><br><span class="line">            &#123; <span class="attr">&quot;match&quot;</span>: &#123; <span class="attr">&quot;obj1.name&quot;</span>: <span class="string">&quot;blue&quot;</span> &#125; &#125;,</span><br><span class="line">            &#123; <span class="attr">&quot;range&quot;</span>: &#123; <span class="attr">&quot;obj1.count&quot;</span>: &#123; <span class="attr">&quot;gt&quot;</span>: <span class="number">5</span> &#125; &#125; &#125;</span><br><span class="line">          ]</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;,</span><br><span class="line">      <span class="attr">&quot;score_mode&quot;</span>: <span class="string">&quot;avg&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#x27;</span><br></pre></td></tr></table></figure>
+
+<h3 id="参数"><a href="#参数" class="headerlink" title="参数"></a>参数</h3><p><code>path</code><br>必需,字符串,要搜索的嵌套对象的路径.</p>
+<p><code>query</code><br>必需,查询对象.</p>
+<p><code>score_mode</code><br>可选,字符串,匹配子对象的分数如何影响父文档的相关性得分,avg/max/min/none/sum.</p>
+<p><code>ignore_unmapped</code><br>可选,布尔值,是否忽略未映射的path不返回任何文档而不是返回错误,默认false.</p>
+<h3 id="多级嵌套查询"><a href="#多级嵌套查询" class="headerlink" title="多级嵌套查询"></a>多级嵌套查询</h3><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">curl -X PUT &quot;localhost:9200/drivers?pretty&quot; -H &#x27;Content-Type: application/json&#x27; -d&#x27;</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;mappings&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;driver&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;nested&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">          <span class="attr">&quot;last_name&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">          &#125;,</span><br><span class="line">          <span class="attr">&quot;vehicle&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;nested&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">              <span class="attr">&quot;make&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">              &#125;,</span><br><span class="line">              <span class="attr">&quot;model&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">              &#125;</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>填充文档到drivers索引,</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">curl -X PUT &quot;localhost:9200/drivers/_doc/1?pretty&quot; -H &#x27;Content-Type: application/json&#x27; -d&#x27;</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;driver&quot;</span> : &#123;</span><br><span class="line">        <span class="attr">&quot;last_name&quot;</span> : <span class="string">&quot;McQueen&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;vehicle&quot;</span> : [</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">&quot;make&quot;</span> : <span class="string">&quot;Powell Motors&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;model&quot;</span> : <span class="string">&quot;Canyonero&quot;</span></span><br><span class="line">            &#125;,</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">&quot;make&quot;</span> : <span class="string">&quot;Miller-Meteor&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;model&quot;</span> : <span class="string">&quot;Ecto-1&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#x27;</span><br><span class="line">curl -X PUT &quot;localhost:9200/drivers/_doc/2?refresh&amp;pretty&quot; -H &#x27;Content-Type: application/json&#x27; -d&#x27;</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;driver&quot;</span> : &#123;</span><br><span class="line">        <span class="attr">&quot;last_name&quot;</span> : <span class="string">&quot;Hudson&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;vehicle&quot;</span> : [</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">&quot;make&quot;</span> : <span class="string">&quot;Mifune&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;model&quot;</span> : <span class="string">&quot;Mach Five&quot;</span></span><br><span class="line">            &#125;,</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">&quot;make&quot;</span> : <span class="string">&quot;Miller-Meteor&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;model&quot;</span> : <span class="string">&quot;Ecto-1&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#x27;</span><br></pre></td></tr></table></figure>
+
+<h4 id="查询-1"><a href="#查询-1" class="headerlink" title="查询"></a>查询</h4><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">curl -X GET &quot;localhost:9200/drivers/_search?pretty&quot; -H &#x27;Content-Type: application/json&#x27; -d&#x27;</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;nested&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;path&quot;</span>: <span class="string">&quot;driver&quot;</span>,</span><br><span class="line">      <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;nested&quot;</span>: &#123;</span><br><span class="line">          <span class="attr">&quot;path&quot;</span>: <span class="string">&quot;driver.vehicle&quot;</span>,</span><br><span class="line">          <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;bool&quot;</span>: &#123;</span><br><span class="line">              <span class="attr">&quot;must&quot;</span>: [</span><br><span class="line">                &#123; <span class="attr">&quot;match&quot;</span>: &#123; <span class="attr">&quot;driver.vehicle.make&quot;</span>: <span class="string">&quot;Powell Motors&quot;</span> &#125; &#125;,</span><br><span class="line">                &#123; <span class="attr">&quot;match&quot;</span>: &#123; <span class="attr">&quot;driver.vehicle.model&quot;</span>: <span class="string">&quot;Canyonero&quot;</span> &#125; &#125;</span><br><span class="line">              ]</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>响应,</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;took&quot;</span> : <span class="number">18</span>,</span><br><span class="line">  <span class="attr">&quot;timed_out&quot;</span> : <span class="literal">false</span>,</span><br><span class="line">  <span class="attr">&quot;_shards&quot;</span> : &#123;</span><br><span class="line">    <span class="attr">&quot;total&quot;</span> : <span class="number">1</span>,</span><br><span class="line">    <span class="attr">&quot;successful&quot;</span> : <span class="number">1</span>,</span><br><span class="line">    <span class="attr">&quot;skipped&quot;</span> : <span class="number">0</span>,</span><br><span class="line">    <span class="attr">&quot;failed&quot;</span> : <span class="number">0</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">&quot;hits&quot;</span> : &#123;</span><br><span class="line">    <span class="attr">&quot;total&quot;</span> : &#123;</span><br><span class="line">      <span class="attr">&quot;value&quot;</span> : <span class="number">1</span>,</span><br><span class="line">      <span class="attr">&quot;relation&quot;</span> : <span class="string">&quot;eq&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;max_score&quot;</span> : <span class="number">3.7349272</span>,</span><br><span class="line">    <span class="attr">&quot;hits&quot;</span> : [</span><br><span class="line">      &#123;</span><br><span class="line">        <span class="attr">&quot;_index&quot;</span> : <span class="string">&quot;drivers&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;_type&quot;</span> : <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;_id&quot;</span> : <span class="string">&quot;1&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;_score&quot;</span> : <span class="number">3.7349272</span>,</span><br><span class="line">        <span class="attr">&quot;_source&quot;</span> : &#123;</span><br><span class="line">          <span class="attr">&quot;driver&quot;</span> : &#123;</span><br><span class="line">            <span class="attr">&quot;last_name&quot;</span> : <span class="string">&quot;McQueen&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;vehicle&quot;</span> : [</span><br><span class="line">              &#123;</span><br><span class="line">                <span class="attr">&quot;make&quot;</span> : <span class="string">&quot;Powell Motors&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;model&quot;</span> : <span class="string">&quot;Canyonero&quot;</span></span><br><span class="line">              &#125;,</span><br><span class="line">              &#123;</span><br><span class="line">                <span class="attr">&quot;make&quot;</span> : <span class="string">&quot;Miller-Meteor&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;model&quot;</span> : <span class="string">&quot;Ecto-1&quot;</span></span><br><span class="line">              &#125;</span><br><span class="line">            ]</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    ]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="has-child"><a href="#has-child" class="headerlink" title="has_child"></a>has_child</h2><h3 id="索引设置-1"><a href="#索引设置-1" class="headerlink" title="索引设置"></a>索引设置</h3><p>使用<code>has_child</code>查询,索引必须包含<code>join</code>字段映射.</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">curl -X PUT &quot;localhost:9200/my-index-000001?pretty&quot; -H &#x27;Content-Type: application/json&#x27; -d&#x27;</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;mappings&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;my-join-field&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;join&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;relations&quot;</span>: &#123;</span><br><span class="line">          <span class="attr">&quot;parent&quot;</span>: <span class="string">&quot;child&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#x27;</span><br></pre></td></tr></table></figure>
+
+<h3 id="查询-2"><a href="#查询-2" class="headerlink" title="查询"></a>查询</h3><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">curl -X GET &quot;localhost:9200/_search?pretty&quot; -H &#x27;Content-Type: application/json&#x27; -d&#x27;</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;has_child&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;child&quot;</span>,</span><br><span class="line">      <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;match_all&quot;</span>: &#123;&#125;</span><br><span class="line">      &#125;,</span><br><span class="line">      <span class="attr">&quot;max_children&quot;</span>: <span class="number">10</span>,</span><br><span class="line">      <span class="attr">&quot;min_children&quot;</span>: <span class="number">2</span>,</span><br><span class="line">      <span class="attr">&quot;score_mode&quot;</span>: <span class="string">&quot;min&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#x27;</span><br></pre></td></tr></table></figure>
+
+<h3 id="参数-1"><a href="#参数-1" class="headerlink" title="参数"></a>参数</h3><p><code>type</code><br>必需,字符串,<code>join</code></p>
+<p><code>query</code><br><code>ignore_unmapped</code><br><code>max_children</code><br><code>min_children</code><br><code>score_mode</code></p>
+<h3 id="排序"><a href="#排序" class="headerlink" title="排序"></a>排序</h3><p>不能对has_child使用标准查询排序<code>sort</code>.<br>如果需要按子文档中的字段对返回的文档进行排序,请使用<code>function_score</code>查询和排序依据.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">GET /_search</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;has_child&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;child&quot;</span>,</span><br><span class="line">      <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;function_score&quot;</span>: &#123;</span><br><span class="line">          <span class="attr">&quot;script_score&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;script&quot;</span>: <span class="string">&quot;_score * doc[&#x27;click_count&#x27;].value&quot;</span></span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;,</span><br><span class="line">      <span class="attr">&quot;score_mode&quot;</span>: <span class="string">&quot;max&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="has-parent"><a href="#has-parent" class="headerlink" title="has_parent"></a>has_parent</h2><h3 id="索引设置-2"><a href="#索引设置-2" class="headerlink" title="索引设置"></a>索引设置</h3><p>使用<code>has_parent</code>查询,索引必须包含<code>join</code>字段映射.</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">curl -X PUT &quot;localhost:9200/my-index-000001?pretty&quot; -H &#x27;Content-Type: application/json&#x27; -d&#x27;</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;mappings&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;my-join-field&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;join&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;relations&quot;</span>: &#123;</span><br><span class="line">          <span class="attr">&quot;parent&quot;</span>: <span class="string">&quot;child&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">      &#125;,</span><br><span class="line">      <span class="attr">&quot;tag&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;keyword&quot;</span></span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#x27;</span><br></pre></td></tr></table></figure>
+
+<h3 id="查询-3"><a href="#查询-3" class="headerlink" title="查询"></a>查询</h3><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">curl -X GET &quot;localhost:9200/my-index-000001/_search?pretty&quot; -H &#x27;Content-Type: application/json&#x27; -d&#x27;</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;has_parent&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;parent_type&quot;</span>: <span class="string">&quot;parent&quot;</span>,</span><br><span class="line">      <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">          <span class="attr">&quot;tag&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;value&quot;</span>: <span class="string">&quot;Elasticsearch&quot;</span></span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#x27;</span><br></pre></td></tr></table></figure>
+
+<h3 id="参数-2"><a href="#参数-2" class="headerlink" title="参数"></a>参数</h3><p><code>parent_type</code><br>必需,字符串,<code>join</code></p>
+<p><code>query</code><br><code>ignore_unmapped</code><br><code>score</code><br>可选,布尔值,默认为false.</p>
+<h3 id="排序-1"><a href="#排序-1" class="headerlink" title="排序"></a>排序</h3><p>不能对has_parent使用标准查询排序<code>sort</code>.<br>如果需要按子文档中的字段对返回的文档进行排序,请使用<code>function_score</code>查询和排序依据.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">GET /_search</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;has_parent&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;parent_type&quot;</span>: <span class="string">&quot;parent&quot;</span>,</span><br><span class="line">      <span class="attr">&quot;score&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">      <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;function_score&quot;</span>: &#123;</span><br><span class="line">          <span class="attr">&quot;script_score&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;script&quot;</span>: <span class="string">&quot;_score * doc[&#x27;view_count&#x27;].value&quot;</span></span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="父id查询"><a href="#父id查询" class="headerlink" title="父id查询"></a>父id查询</h2><h3 id="索引设置-3"><a href="#索引设置-3" class="headerlink" title="索引设置"></a>索引设置</h3><p>使用<code>parent_id</code>查询,索引必须包含<code>join</code>字段映射.</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">curl -X PUT &quot;localhost:9200/my-index-000001?pretty&quot; -H &#x27;Content-Type: application/json&#x27; -d&#x27;</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;mappings&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;my-join-field&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;join&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;relations&quot;</span>: &#123;</span><br><span class="line">          <span class="attr">&quot;my-parent&quot;</span>: <span class="string">&quot;my-child&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>索引父文档.</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">curl -X PUT &quot;localhost:9200/my-index-000001/_doc/1?refresh&amp;pretty&quot; -H &#x27;Content-Type: application/json&#x27; -d&#x27;</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;text&quot;</span>: <span class="string">&quot;This is a parent document.&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;my-join-field&quot;</span>: <span class="string">&quot;my-parent&quot;</span></span><br><span class="line">&#125;</span><br><span class="line">&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>索引子文档.</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">curl -X PUT &quot;localhost:9200/my-index-000001/_doc/2?routing=1&amp;refresh&amp;pretty&quot; -H &#x27;Content-Type: application/json&#x27; -d&#x27;</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;text&quot;</span>: <span class="string">&quot;This is a child document.&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;my-join-field&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;my-child&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;parent&quot;</span>: <span class="string">&quot;1&quot;</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#x27;</span><br></pre></td></tr></table></figure>
+
+<h3 id="查询-4"><a href="#查询-4" class="headerlink" title="查询"></a>查询</h3><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">curl -X GET &quot;localhost:9200/my-index-000001/_search?pretty&quot; -H &#x27;Content-Type: application/json&#x27; -d&#x27;</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;parent_id&quot;</span>: &#123;</span><br><span class="line">          <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;my-child&quot;</span>,</span><br><span class="line">          <span class="attr">&quot;id&quot;</span>: <span class="string">&quot;1&quot;</span></span><br><span class="line">      &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#x27;</span><br></pre></td></tr></table></figure>
+
+<h3 id="参数-3"><a href="#参数-3" class="headerlink" title="参数"></a>参数</h3><p><code>type</code><br>必需,字符串,<code>join</code></p>
+<p><code>id</code><br>必需,字符串,父文档的id,查询将返回此父文档.</p>
+<p><code>ignore_unmapped</code></p>
+<h2 id="example"><a href="#example" class="headerlink" title="example"></a>example</h2><h3 id="mapping"><a href="#mapping" class="headerlink" title="mapping"></a>mapping</h3><p>建立<code>family</code>索引,父:parent,子:child.</p>
+<p>父包含id,parentName字段(数据:父亲1,父亲2),<br>子包含id,childName,parentId字段(数据:父亲1有一儿一女,父亲2有一儿),<br>relation表示关系,名称自定义,type:join表示父子结构.</p>
+<p><code>put family</code><br><code>put family/_mapping</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;parent&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;id&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;integer&quot;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="attr">&quot;parentName&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;child&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;id&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;integer&quot;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="attr">&quot;childName&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="attr">&quot;parentId&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;integer&quot;</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;relation&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;join&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;relations&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;parent&quot;</span>: [</span><br><span class="line">                    <span class="string">&quot;child&quot;</span></span><br><span class="line">                ]</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="填充数据"><a href="#填充数据" class="headerlink" title="填充数据"></a>填充数据</h3><h4 id="父数据"><a href="#父数据" class="headerlink" title="父数据"></a>父数据</h4><p><code>put family/_doc/1</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;parent.id&quot;</span>: <span class="number">1</span>,</span><br><span class="line">    <span class="attr">&quot;relation&quot;</span>: <span class="string">&quot;parent&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;parent.parentName&quot;</span>: <span class="string">&quot;父亲1&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>put family/_doc/2</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;parent.id&quot;</span>: <span class="number">2</span>,</span><br><span class="line">    <span class="attr">&quot;relation&quot;</span>: <span class="string">&quot;parent&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;parent.parentName&quot;</span>: <span class="string">&quot;父亲2&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="子数据"><a href="#子数据" class="headerlink" title="子数据"></a>子数据</h4><p><code>put family/_doc/101?routing=1</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123; </span><br><span class="line">  <span class="attr">&quot;child.id&quot;</span>:<span class="number">101</span>,</span><br><span class="line">  <span class="attr">&quot;relation&quot;</span>:</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="attr">&quot;name&quot;</span>:<span class="string">&quot;child&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;parent&quot;</span>:<span class="number">1</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">&quot;child.childName&quot;</span>:<span class="string">&quot;父亲1的儿子&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;child.parentId&quot;</span>:<span class="number">1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>put family/_doc/102?routing=1</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;child.id&quot;</span>: <span class="number">102</span>,</span><br><span class="line">    <span class="attr">&quot;relation&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;child&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;parent&quot;</span>: <span class="number">1</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;child.childName&quot;</span>: <span class="string">&quot;父亲1的女儿&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;child.parentId&quot;</span>: <span class="number">1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>put family/_doc/201?routing=2</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;child.id&quot;</span>: <span class="number">201</span>,</span><br><span class="line">    <span class="attr">&quot;relation&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;child&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;parent&quot;</span>: <span class="number">2</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;child.childName&quot;</span>: <span class="string">&quot;父亲2的儿子&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;child.parentId&quot;</span>: <span class="number">2</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h3><h4 id="以子查父"><a href="#以子查父" class="headerlink" title="以子查父"></a>以子查父</h4><p><code>get family/_search</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;has_child&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;child&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;child.parentId&quot;</span>: <span class="string">&quot;1&quot;</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>响应,</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;took&quot;</span>: <span class="number">24</span>,</span><br><span class="line">    <span class="attr">&quot;timed_out&quot;</span>: <span class="literal">false</span>,</span><br><span class="line">    <span class="attr">&quot;_shards&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;total&quot;</span>: <span class="number">1</span>,</span><br><span class="line">        <span class="attr">&quot;successful&quot;</span>: <span class="number">1</span>,</span><br><span class="line">        <span class="attr">&quot;skipped&quot;</span>: <span class="number">0</span>,</span><br><span class="line">        <span class="attr">&quot;failed&quot;</span>: <span class="number">0</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;hits&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;total&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;value&quot;</span>: <span class="number">1</span>,</span><br><span class="line">            <span class="attr">&quot;relation&quot;</span>: <span class="string">&quot;eq&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;max_score&quot;</span>: <span class="number">1.0</span>,</span><br><span class="line">        <span class="attr">&quot;hits&quot;</span>: [</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;family&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;_score&quot;</span>: <span class="number">1.0</span>,</span><br><span class="line">                <span class="attr">&quot;_source&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;parent.id&quot;</span>: <span class="number">1</span>,</span><br><span class="line">                    <span class="attr">&quot;relation&quot;</span>: <span class="string">&quot;parent&quot;</span>,</span><br><span class="line">                    <span class="attr">&quot;parent.parentName&quot;</span>: <span class="string">&quot;父亲1&quot;</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="父子级联信息"><a href="#父子级联信息" class="headerlink" title="父子级联信息"></a>父子级联信息</h4><p>带inner_hits,以子查父,查出父子级联信息.<br><code>get family/_search</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;has_child&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;child&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;child.parentId&quot;</span>: <span class="number">1</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;,</span><br><span class="line">            <span class="attr">&quot;inner_hits&quot;</span>: &#123;</span><br><span class="line">                </span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>响应,</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;took&quot;</span>: <span class="number">57</span>,</span><br><span class="line">    <span class="attr">&quot;timed_out&quot;</span>: <span class="literal">false</span>,</span><br><span class="line">    <span class="attr">&quot;_shards&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;total&quot;</span>: <span class="number">1</span>,</span><br><span class="line">        <span class="attr">&quot;successful&quot;</span>: <span class="number">1</span>,</span><br><span class="line">        <span class="attr">&quot;skipped&quot;</span>: <span class="number">0</span>,</span><br><span class="line">        <span class="attr">&quot;failed&quot;</span>: <span class="number">0</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;hits&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;total&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;value&quot;</span>: <span class="number">1</span>,</span><br><span class="line">            <span class="attr">&quot;relation&quot;</span>: <span class="string">&quot;eq&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;max_score&quot;</span>: <span class="number">1.0</span>,</span><br><span class="line">        <span class="attr">&quot;hits&quot;</span>: [</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;family&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;_score&quot;</span>: <span class="number">1.0</span>,</span><br><span class="line">                <span class="attr">&quot;_source&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;parent.id&quot;</span>: <span class="number">1</span>,</span><br><span class="line">                    <span class="attr">&quot;relation&quot;</span>: <span class="string">&quot;parent&quot;</span>,</span><br><span class="line">                    <span class="attr">&quot;parent.parentName&quot;</span>: <span class="string">&quot;父亲1&quot;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="attr">&quot;inner_hits&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;child&quot;</span>: &#123;</span><br><span class="line">                        <span class="attr">&quot;hits&quot;</span>: &#123;</span><br><span class="line">                            <span class="attr">&quot;total&quot;</span>: &#123;</span><br><span class="line">                                <span class="attr">&quot;value&quot;</span>: <span class="number">2</span>,</span><br><span class="line">                                <span class="attr">&quot;relation&quot;</span>: <span class="string">&quot;eq&quot;</span></span><br><span class="line">                            &#125;,</span><br><span class="line">                            <span class="attr">&quot;max_score&quot;</span>: <span class="number">1.0</span>,</span><br><span class="line">                            <span class="attr">&quot;hits&quot;</span>: [</span><br><span class="line">                                &#123;</span><br><span class="line">                                    <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;family&quot;</span>,</span><br><span class="line">                                    <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">                                    <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;101&quot;</span>,</span><br><span class="line">                                    <span class="attr">&quot;_score&quot;</span>: <span class="number">1.0</span>,</span><br><span class="line">                                    <span class="attr">&quot;_routing&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">                                    <span class="attr">&quot;_source&quot;</span>: &#123;</span><br><span class="line">                                        <span class="attr">&quot;child.id&quot;</span>: <span class="number">101</span>,</span><br><span class="line">                                        <span class="attr">&quot;relation&quot;</span>: &#123;</span><br><span class="line">                                            <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;child&quot;</span>,</span><br><span class="line">                                            <span class="attr">&quot;parent&quot;</span>: <span class="number">1</span></span><br><span class="line">                                        &#125;,</span><br><span class="line">                                        <span class="attr">&quot;child.childName&quot;</span>: <span class="string">&quot;父亲1的儿子&quot;</span>,</span><br><span class="line">                                        <span class="attr">&quot;child.parentId&quot;</span>: <span class="number">1</span></span><br><span class="line">                                    &#125;</span><br><span class="line">                                &#125;,</span><br><span class="line">                                &#123;</span><br><span class="line">                                    <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;family&quot;</span>,</span><br><span class="line">                                    <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">                                    <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;102&quot;</span>,</span><br><span class="line">                                    <span class="attr">&quot;_score&quot;</span>: <span class="number">1.0</span>,</span><br><span class="line">                                    <span class="attr">&quot;_routing&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">                                    <span class="attr">&quot;_source&quot;</span>: &#123;</span><br><span class="line">                                        <span class="attr">&quot;child.id&quot;</span>: <span class="number">102</span>,</span><br><span class="line">                                        <span class="attr">&quot;relation&quot;</span>: &#123;</span><br><span class="line">                                            <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;child&quot;</span>,</span><br><span class="line">                                            <span class="attr">&quot;parent&quot;</span>: <span class="number">1</span></span><br><span class="line">                                        &#125;,</span><br><span class="line">                                        <span class="attr">&quot;child.childName&quot;</span>: <span class="string">&quot;父亲1的女儿&quot;</span>,</span><br><span class="line">                                        <span class="attr">&quot;child.parentId&quot;</span>: <span class="number">1</span></span><br><span class="line">                                    &#125;</span><br><span class="line">                                &#125;</span><br><span class="line">                            ]</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="以父查子"><a href="#以父查子" class="headerlink" title="以父查子"></a>以父查子</h4><p><code>get family/_search</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;has_parent&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;parent_type&quot;</span>: <span class="string">&quot;parent&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;query&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;term&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;parent.id&quot;</span>: <span class="string">&quot;1&quot;</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>响应,</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;took&quot;</span>: <span class="number">9</span>,</span><br><span class="line">    <span class="attr">&quot;timed_out&quot;</span>: <span class="literal">false</span>,</span><br><span class="line">    <span class="attr">&quot;_shards&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;total&quot;</span>: <span class="number">1</span>,</span><br><span class="line">        <span class="attr">&quot;successful&quot;</span>: <span class="number">1</span>,</span><br><span class="line">        <span class="attr">&quot;skipped&quot;</span>: <span class="number">0</span>,</span><br><span class="line">        <span class="attr">&quot;failed&quot;</span>: <span class="number">0</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;hits&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;total&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;value&quot;</span>: <span class="number">2</span>,</span><br><span class="line">            <span class="attr">&quot;relation&quot;</span>: <span class="string">&quot;eq&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;max_score&quot;</span>: <span class="number">1.0</span>,</span><br><span class="line">        <span class="attr">&quot;hits&quot;</span>: [</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;family&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;101&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;_score&quot;</span>: <span class="number">1.0</span>,</span><br><span class="line">                <span class="attr">&quot;_routing&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;_source&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;child.id&quot;</span>: <span class="number">101</span>,</span><br><span class="line">                    <span class="attr">&quot;relation&quot;</span>: &#123;</span><br><span class="line">                        <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;child&quot;</span>,</span><br><span class="line">                        <span class="attr">&quot;parent&quot;</span>: <span class="number">1</span></span><br><span class="line">                    &#125;,</span><br><span class="line">                    <span class="attr">&quot;child.childName&quot;</span>: <span class="string">&quot;父亲1的儿子&quot;</span>,</span><br><span class="line">                    <span class="attr">&quot;child.parentId&quot;</span>: <span class="number">1</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;,</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">&quot;_index&quot;</span>: <span class="string">&quot;family&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;_type&quot;</span>: <span class="string">&quot;_doc&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;_id&quot;</span>: <span class="string">&quot;102&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;_score&quot;</span>: <span class="number">1.0</span>,</span><br><span class="line">                <span class="attr">&quot;_routing&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">                <span class="attr">&quot;_source&quot;</span>: &#123;</span><br><span class="line">                    <span class="attr">&quot;child.id&quot;</span>: <span class="number">102</span>,</span><br><span class="line">                    <span class="attr">&quot;relation&quot;</span>: &#123;</span><br><span class="line">                        <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;child&quot;</span>,</span><br><span class="line">                        <span class="attr">&quot;parent&quot;</span>: <span class="number">1</span></span><br><span class="line">                    &#125;,</span><br><span class="line">                    <span class="attr">&quot;child.childName&quot;</span>: <span class="string">&quot;父亲1的女儿&quot;</span>,</span><br><span class="line">                    <span class="attr">&quot;child.parentId&quot;</span>: <span class="number">1</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="java代码"><a href="#java代码" class="headerlink" title="java代码"></a>java代码</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">SearchRequest request = <span class="keyword">new</span> SearchRequest();</span><br><span class="line">request.indices(<span class="string">&quot;family&quot;</span>);</span><br><span class="line">HasChildQueryBuilder qb = JoinQueryBuilders.hasChildQuery(</span><br><span class="line">    <span class="string">&quot;child&quot;</span>,</span><br><span class="line">    QueryBuilders.termQuery(<span class="string">&quot;child.parentId&quot;</span>, <span class="string">&quot;1&quot;</span>),</span><br><span class="line">    ScoreMode.None</span><br><span class="line">).innerHit(<span class="keyword">new</span> InnerHitBuilder());</span><br><span class="line">SearchSourceBuilder searchSourceBuilder = <span class="keyword">new</span> SearchSourceBuilder().query(qb);</span><br><span class="line">request.source(searchSourceBuilder);</span><br><span class="line">SearchResponse response = client.search(request, RequestOptions.DEFAULT);</span><br><span class="line">response.getHits().forEach(message -&gt; &#123;</span><br><span class="line">  System.out.println(message.getSourceAsString());</span><br><span class="line">  message.getInnerHits().get(<span class="string">&quot;child&quot;</span>).forEach(e -&gt; &#123;</span><br><span class="line">    System.out.println(e.getSourceAsString());</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>{&quot;parent.id&quot;:1,&quot;relation&quot;:&quot;parent&quot;,&quot;parent.parentName&quot;:&quot;父亲1&quot;}<br>{&quot;child.id&quot;:101,&quot;relation&quot;:{&quot;name&quot;:&quot;child&quot;,&quot;parent&quot;:1},&quot;child.childName&quot;:&quot;父亲1的儿子&quot;,&quot;child.parentId&quot;:1}<br>{&quot;child.id&quot;:102,&quot;relation&quot;:{&quot;name&quot;:&quot;child&quot;,&quot;parent&quot;:1},&quot;child.childName&quot;:&quot;父亲1的女儿&quot;,&quot;child.parentId&quot;:1}</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/elasticsearch/" rel="tag"># elasticsearch</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/11/23/elasticsearch-book/" rel="prev" title="elasticsearch-book">
+                  <i class="fa fa-chevron-left"></i> elasticsearch-book
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/11/26/elasticsearch-query%20dsl/" rel="next" title="elasticsearch-query dsl">
+                  elasticsearch-query dsl <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="Flink 中的 DataStream 程序是对数据流(例如过滤&#x2F;更新状态&#x2F;定义窗口&#x2F;聚合)进行转换的常规程序.数据流的起始是从各种源(例如消息队列&#x2F;套接字流&#x2F;文件)创建的.结果通过 sink 返回,例如可以将数据写入文件或标准输出(例如命令行终端).Flink 程序可以在各种上下文中运行,可以独立运行,也可以嵌入到其它程序中.任务执行可以运行在本地 JVM 中,也可以运行在多台机器的集群上.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="flink datastream api">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/19/flink%20datastream%20api/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="Flink 中的 DataStream 程序是对数据流(例如过滤&#x2F;更新状态&#x2F;定义窗口&#x2F;聚合)进行转换的常规程序.数据流的起始是从各种源(例如消息队列&#x2F;套接字流&#x2F;文件)创建的.结果通过 sink 返回,例如可以将数据写入文件或标准输出(例如命令行终端).Flink 程序可以在各种上下文中运行,可以独立运行,也可以嵌入到其它程序中.任务执行可以运行在本地 JVM 中,也可以运行在多台机器的集群上.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl31.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl32.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl33.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl34.svg">
+<meta property="og:image" content="https://maoeryu.github.io/images/flgl35.svg">
+<meta property="article:published_time" content="2022-08-18T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-12-02T06:11:24.349Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="flink">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/flgl31.svg">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/19/flink%20datastream%20api/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>flink datastream api | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Flink-%E7%A8%8B%E5%BA%8F%E5%89%96%E6%9E%90"><span class="nav-number">1.1.</span> <span class="nav-text">Flink 程序剖析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E7%A8%8B%E5%BA%8F"><span class="nav-number">1.2.</span> <span class="nav-text">示例程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Data-Sources"><span class="nav-number">1.3.</span> <span class="nav-text">Data Sources</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E6%96%87%E4%BB%B6"><span class="nav-number">1.3.1.</span> <span class="nav-text">基于文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E5%A5%97%E6%8E%A5%E5%AD%97"><span class="nav-number">1.3.2.</span> <span class="nav-text">基于套接字</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E9%9B%86%E5%90%88"><span class="nav-number">1.3.3.</span> <span class="nav-text">基于集合</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89"><span class="nav-number">1.3.4.</span> <span class="nav-text">自定义</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DataStream-Transformations"><span class="nav-number">1.4.</span> <span class="nav-text">DataStream Transformations</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Data-Sinks"><span class="nav-number">1.5.</span> <span class="nav-text">Data Sinks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Iterations"><span class="nav-number">1.6.</span> <span class="nav-text">Iterations</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E5%8F%82%E6%95%B0"><span class="nav-number">1.7.</span> <span class="nav-text">执行参数</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%B9%E9%94%99"><span class="nav-number">1.7.1.</span> <span class="nav-text">容错</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8E%A7%E5%88%B6%E5%BB%B6%E8%BF%9F"><span class="nav-number">1.7.2.</span> <span class="nav-text">控制延迟</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E8%AF%95"><span class="nav-number">1.8.</span> <span class="nav-text">调试</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9C%AC%E5%9C%B0%E6%89%A7%E8%A1%8C%E7%8E%AF%E5%A2%83"><span class="nav-number">1.8.1.</span> <span class="nav-text">本地执行环境</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9B%86%E5%90%88-Data-Sources"><span class="nav-number">1.8.2.</span> <span class="nav-text">集合 Data Sources</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%AD%E4%BB%A3%E5%99%A8-Data-Sink"><span class="nav-number">1.8.3.</span> <span class="nav-text">迭代器 Data Sink</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E6%A8%A1%E5%BC%8F-%E6%B5%81-%E6%89%B9"><span class="nav-number">2.</span> <span class="nav-text">执行模式(流&#x2F;批)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E5%8F%AF%E4%BB%A5-%E5%BA%94%E8%AF%A5%E4%BD%BF%E7%94%A8%E6%89%B9%E6%89%A7%E8%A1%8C%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.1.</span> <span class="nav-text">什么时候可以&#x2F;应该使用批执行模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E6%89%B9%E6%89%A7%E8%A1%8C%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.2.</span> <span class="nav-text">配置批执行模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E8%A1%8C%E4%B8%BA"><span class="nav-number">2.3.</span> <span class="nav-text">执行行为</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E4%B8%8E%E7%BD%91%E7%BB%9CShuffle"><span class="nav-number">2.3.1.</span> <span class="nav-text">任务调度与网络Shuffle</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%B5%81%E6%89%A7%E8%A1%8C%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.3.1.1.</span> <span class="nav-text">流执行模式</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%89%B9%E6%89%A7%E8%A1%8C%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.3.1.2.</span> <span class="nav-text">批执行模式</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#State-Backends-State"><span class="nav-number">2.3.2.</span> <span class="nav-text">State Backends &#x2F; State</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E9%A1%BA%E5%BA%8F"><span class="nav-number">2.3.3.</span> <span class="nav-text">处理顺序</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E6%97%B6%E9%97%B4%E6%B0%B4%E5%8D%B0"><span class="nav-number">2.3.4.</span> <span class="nav-text">事件时间水印</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E6%97%B6%E9%97%B4"><span class="nav-number">2.3.5.</span> <span class="nav-text">处理时间</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%85%E9%9A%9C%E6%81%A2%E5%A4%8D"><span class="nav-number">2.3.6.</span> <span class="nav-text">故障恢复</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E8%A6%81%E7%9A%84%E8%80%83%E8%99%91%E5%9B%A0%E7%B4%A0"><span class="nav-number">2.4.</span> <span class="nav-text">重要的考虑因素</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Checkpointing"><span class="nav-number">2.4.1.</span> <span class="nav-text">Checkpointing</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%96%E5%86%99%E8%87%AA%E5%AE%9A%E4%B9%89%E7%AE%97%E5%AD%90"><span class="nav-number">2.4.2.</span> <span class="nav-text">编写自定义算子</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E6%97%B6%E9%97%B4"><span class="nav-number">3.</span> <span class="nav-text">事件时间</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E6%88%90-Watermark"><span class="nav-number">3.1.</span> <span class="nav-text">生成 Watermark</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Watermark-%E7%AD%96%E7%95%A5%E7%AE%80%E4%BB%8B"><span class="nav-number">3.1.1.</span> <span class="nav-text">Watermark 策略简介</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-Watermark-%E7%AD%96%E7%95%A5"><span class="nav-number">3.1.2.</span> <span class="nav-text">使用 Watermark 策略</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E7%A9%BA%E9%97%B2%E6%95%B0%E6%8D%AE%E6%BA%90"><span class="nav-number">3.1.3.</span> <span class="nav-text">处理空闲数据源</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B0%B4%E5%8D%B0%E5%AF%B9%E9%BD%90"><span class="nav-number">3.1.4.</span> <span class="nav-text">水印对齐</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89WatermarkGenerator"><span class="nav-number">3.1.5.</span> <span class="nav-text">自定义WatermarkGenerator</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%91%A8%E6%9C%9F%E6%80%A7-Watermark-%E7%94%9F%E6%88%90%E5%99%A8"><span class="nav-number">3.1.5.1.</span> <span class="nav-text">自定义周期性 Watermark 生成器</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%A0%87%E8%AE%B0-Watermark-%E7%94%9F%E6%88%90%E5%99%A8"><span class="nav-number">3.1.5.2.</span> <span class="nav-text">自定义标记 Watermark 生成器</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Watermark-%E7%AD%96%E7%95%A5%E4%B8%8E-Kafka-%E8%BF%9E%E6%8E%A5%E5%99%A8"><span class="nav-number">3.1.6.</span> <span class="nav-text">Watermark 策略与 Kafka 连接器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AE%97%E5%AD%90%E5%A4%84%E7%90%86-Watermark-%E7%9A%84%E6%96%B9%E5%BC%8F"><span class="nav-number">3.1.7.</span> <span class="nav-text">算子处理 Watermark 的方式</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E7%BD%AEWatermark%E7%94%9F%E6%88%90%E5%99%A8"><span class="nav-number">3.2.</span> <span class="nav-text">内置Watermark生成器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8D%95%E8%B0%83%E9%80%92%E5%A2%9E%E6%97%B6%E9%97%B4%E6%88%B3%E5%88%86%E9%85%8D%E5%99%A8"><span class="nav-number">3.2.1.</span> <span class="nav-text">单调递增时间戳分配器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E4%B9%8B%E9%97%B4%E5%AD%98%E5%9C%A8%E6%9C%80%E5%A4%A7%E5%9B%BA%E5%AE%9A%E5%BB%B6%E8%BF%9F%E7%9A%84%E6%97%B6%E9%97%B4%E6%88%B3%E5%88%86%E9%85%8D%E5%99%A8"><span class="nav-number">3.2.2.</span> <span class="nav-text">数据之间存在最大固定延迟的时间戳分配器</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E8%87%AA%E5%AE%9A%E4%B9%89-Functions"><span class="nav-number">4.</span> <span class="nav-text">用户自定义 Functions</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E6%8E%A5%E5%8F%A3"><span class="nav-number">4.1.</span> <span class="nav-text">实现接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8C%BF%E5%90%8D%E7%B1%BB"><span class="nav-number">4.2.</span> <span class="nav-text">匿名类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Java-8-Lambdas"><span class="nav-number">4.3.</span> <span class="nav-text">Java 8 Lambdas</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Rich-functions"><span class="nav-number">4.4.</span> <span class="nav-text">Rich functions</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B4%AF%E5%8A%A0%E5%99%A8%E5%92%8C%E8%AE%A1%E6%95%B0%E5%99%A8"><span class="nav-number">4.5.</span> <span class="nav-text">累加器和计数器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8%E7%B4%AF%E5%8A%A0%E5%99%A8"><span class="nav-number">4.5.1.</span> <span class="nav-text">如何使用累加器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9A%E5%88%B6%E7%B4%AF%E5%8A%A0%E5%99%A8"><span class="nav-number">4.5.2.</span> <span class="nav-text">定制累加器</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E6%BA%90"><span class="nav-number">5.</span> <span class="nav-text">数据源</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Data-Source%E5%8E%9F%E7%90%86"><span class="nav-number">5.1.</span> <span class="nav-text">Data Source原理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6"><span class="nav-number">5.1.1.</span> <span class="nav-text">核心组件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B5%81%E5%A4%84%E7%90%86%E5%92%8C%E6%89%B9%E5%A4%84%E7%90%86%E7%9A%84%E7%BB%9F%E4%B8%80"><span class="nav-number">5.1.2.</span> <span class="nav-text">流处理和批处理的统一</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-number">5.2.</span> <span class="nav-text">示例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9C%89%E7%95%8CFile-Source"><span class="nav-number">5.2.1.</span> <span class="nav-text">有界File Source</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%97%A0%E7%95%8CStreaming-File-Source"><span class="nav-number">5.2.2.</span> <span class="nav-text">无界Streaming File Source</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%97%A0%E7%95%8C-Streaming-Kafka-Source"><span class="nav-number">5.2.3.</span> <span class="nav-text">无界 Streaming Kafka Source</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9C%89%E7%95%8C-Kafka-Source"><span class="nav-number">5.2.4.</span> <span class="nav-text">有界 Kafka Source</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Data-Source-API"><span class="nav-number">5.3.</span> <span class="nav-text">Data Source API</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Source"><span class="nav-number">5.3.1.</span> <span class="nav-text">Source</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SplitEnumerator"><span class="nav-number">5.3.2.</span> <span class="nav-text">SplitEnumerator</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SourceReader"><span class="nav-number">5.3.3.</span> <span class="nav-text">SourceReader</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Source-%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95"><span class="nav-number">5.3.4.</span> <span class="nav-text">Source 使用方法</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SplitReader-API"><span class="nav-number">5.4.</span> <span class="nav-text">SplitReader API</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#SplitReader"><span class="nav-number">5.4.1.</span> <span class="nav-text">SplitReader</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SourceReaderBase"><span class="nav-number">5.4.2.</span> <span class="nav-text">SourceReaderBase</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SplitFetcherManager"><span class="nav-number">5.4.3.</span> <span class="nav-text">SplitFetcherManager</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E6%97%B6%E9%97%B4%E5%92%8C%E6%B0%B4%E5%8D%B0"><span class="nav-number">5.5.</span> <span class="nav-text">事件时间和水印</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#API"><span class="nav-number">5.5.1.</span> <span class="nav-text">API</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E6%97%B6%E9%97%B4%E6%88%B3"><span class="nav-number">5.5.2.</span> <span class="nav-text">事件时间戳</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B0%B4%E5%8D%B0%E7%94%9F%E6%88%90"><span class="nav-number">5.5.3.</span> <span class="nav-text">水印生成</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%81%E8%B7%AF%E8%BE%93%E5%87%BA"><span class="nav-number">6.</span> <span class="nav-text">旁路输出</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E5%8F%82%E6%95%B0%E5%A4%84%E7%90%86"><span class="nav-number">7.</span> <span class="nav-text">应用程序参数处理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8ParameterTool%E8%AF%BB%E5%8F%96%E9%85%8D%E7%BD%AE%E5%80%BC"><span class="nav-number">7.1.</span> <span class="nav-text">用ParameterTool读取配置值</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%80%BC%E6%9D%A5%E8%87%AA-properties%E6%96%87%E4%BB%B6"><span class="nav-number">7.1.1.</span> <span class="nav-text">配置值来自.properties文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%80%BC%E6%9D%A5%E8%87%AA%E5%91%BD%E4%BB%A4%E8%A1%8C"><span class="nav-number">7.1.2.</span> <span class="nav-text">配置值来自命令行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%80%BC%E6%9D%A5%E8%87%AA%E7%B3%BB%E7%BB%9F%E5%B1%9E%E6%80%A7"><span class="nav-number">7.1.3.</span> <span class="nav-text">配置值来自系统属性</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%A8-Flink-%E7%A8%8B%E5%BA%8F%E4%B8%AD%E4%BD%BF%E7%94%A8%E5%8F%82%E6%95%B0"><span class="nav-number">7.2.</span> <span class="nav-text">在 Flink 程序中使用参数</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%9B%B4%E6%8E%A5%E4%BB%8EParameterTool%E8%8E%B7%E5%8F%96"><span class="nav-number">7.2.1.</span> <span class="nav-text">直接从ParameterTool获取</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B3%A8%E5%86%8C%E5%85%A8%E5%B1%80%E5%8F%82%E6%95%B0"><span class="nav-number">7.2.2.</span> <span class="nav-text">注册全局参数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8Configuration"><span class="nav-number">7.2.3.</span> <span class="nav-text">使用Configuration</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B9%B6%E8%A1%8C%E6%89%A7%E8%A1%8C"><span class="nav-number">8.</span> <span class="nav-text">并行执行</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E5%B9%B6%E8%A1%8C%E5%BA%A6"><span class="nav-number">8.1.</span> <span class="nav-text">设置并行度</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AE%97%E5%AD%90%E5%B1%82%E6%AC%A1"><span class="nav-number">8.1.1.</span> <span class="nav-text">算子层次</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E7%8E%AF%E5%A2%83%E5%B1%82%E6%AC%A1"><span class="nav-number">8.1.2.</span> <span class="nav-text">执行环境层次</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%B1%82%E6%AC%A1"><span class="nav-number">8.1.3.</span> <span class="nav-text">客户端层次</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E5%B1%82%E6%AC%A1"><span class="nav-number">8.1.4.</span> <span class="nav-text">系统层次</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E6%9C%80%E5%A4%A7%E5%B9%B6%E8%A1%8C%E5%BA%A6"><span class="nav-number">8.2.</span> <span class="nav-text">设置最大并行度</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E9%85%8D%E7%BD%AE"><span class="nav-number">9.</span> <span class="nav-text">执行配置</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/19/flink%20datastream%20api/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          flink datastream api
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-19 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-19T00:00:00+08:00">2022-08-19</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-12-02 14:11:24" itemprop="dateModified" datetime="2022-12-02T14:11:24+08:00">2022-12-02</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>Flink 中的 DataStream 程序是对数据流(例如过滤/更新状态/定义窗口/聚合)进行转换的常规程序.<br>数据流的起始是从各种源(例如消息队列/套接字流/文件)创建的.<br>结果通过 sink 返回,例如可以将数据写入文件或标准输出(例如命令行终端).<br>Flink 程序可以在各种上下文中运行,可以独立运行,也可以嵌入到其它程序中.<br>任务执行可以运行在本地 JVM 中,也可以运行在多台机器的集群上.</p>
+<span id="more"></span>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><h3 id="Flink-程序剖析"><a href="#Flink-程序剖析" class="headerlink" title="Flink 程序剖析"></a>Flink 程序剖析</h3><p>Flink 程序看起来像一个转换 DataStream 的常规程序.<br>每个程序由相同的基本部分组成:</p>
+<ol>
+<li>获取一个执行环境(execution environment).</li>
+<li>加载/创建初始数据.</li>
+<li>指定数据相关的转换.</li>
+<li>指定计算结果的存储位置.</li>
+<li>触发程序执行.</li>
+</ol>
+<p>StreamExecutionEnvironment 是所有 Flink 程序的基础.<br>你可以使用 StreamExecutionEnvironment 的如下静态方法获取 StreamExecutionEnvironment:<br>getExecutionEnvironment();<br>createLocalEnvironment();<br>createRemoteEnvironment(String host, int port, String... jarFiles);</p>
+<p>通常,你只需要使用 <code>getExecutionEnvironment()</code> 即可,因为该方法会根据上下文做正确的处理:<br>如果你在 IDE 中执行你的程序或将其作为一般的 Java 程序执行,那么它将创建一个本地环境,该环境将在你的本地机器上执行你的程序.<br>如果你基于程序创建了一个 JAR 文件,并通过命令行运行它,Flink 集群管理器将执行程序的 main 方法,同时 getExecutionEnvironment() 方法会返回一个执行环境以在集群上执行你的程序.</p>
+<p>为了指定 data sources,执行环境提供了一些方法,支持使用各种方法从文件中读取数据:<br>你可以直接逐行读取数据,像读 CSV 文件一样,或使用任何第三方提供的 source.<br>如果你只是将一个文本文件作为一个行的序列来读取,那么可以使用:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">final StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">DataStream&lt;String&gt; text &#x3D; env.readTextFile(&quot;file:&#x2F;&#x2F;&#x2F;path&#x2F;to&#x2F;file&quot;);</span><br></pre></td></tr></table></figure>
+
+<p>这将生成一个 DataStream,然后你可以在上面应用转换(transformation)来创建新的派生 DataStream.</p>
+<p>你可以调用 DataStream 上具有转换功能的方法来应用转换.<br>例如,一个 map 的转换如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">DataStream&lt;String&gt; input &#x3D; ...;</span><br><span class="line">DataStream&lt;Integer&gt; parsed &#x3D; input.map(new MapFunction&lt;String, Integer&gt;() &#123;</span><br><span class="line">    @Override</span><br><span class="line">    public Integer map(String value) &#123;</span><br><span class="line">        return Integer.parseInt(value);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>这将通过把原始集合中的每一个字符串转换为一个整数来创建一个新的 DataStream.<br>一旦你有了包含最终结果的 DataStream,你就可以通过创建 sink 把它写到外部系统.<br>下面是一些用于创建 sink 的示例方法:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">writeAsText(String path);</span><br><span class="line">print();</span><br></pre></td></tr></table></figure>
+
+<p>一旦指定了完整的程序,需要调用 StreamExecutionEnvironment 的 <code>execute()</code> 方法来触发程序执行.<br>根据 ExecutionEnvironment 的类型,执行会在你的本地机器上触发,或将你的程序提交到某个集群上执行.</p>
+<p>execute() 方法将等待作业完成,然后返回一个 JobExecutionResult,其中包含执行时间和累加器结果.</p>
+<p>如果不想等待作业完成,可以通过调用 StreamExecutionEnvironment 的 executeAsync() 方法来触发作业异步执行.<br>它会返回一个 JobClient,你可以通过它与刚刚提交的作业进行通信.<br>如下是使用 executeAsync() 实现 execute() 语义的示例.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">final JobClient jobClient &#x3D; env.executeAsync();</span><br><span class="line">final JobExecutionResult jobExecutionResult &#x3D; jobClient.getJobExecutionResult().get();</span><br></pre></td></tr></table></figure>
+
+<p>关于程序执行的最后一部分对于理解何时以及如何执行 Flink 算子是至关重要的.<br>所有 Flink 程序都是延迟执行的:<br>当程序的 main 方法被执行时,数据加载和转换不会直接发生.<br>相反,每个算子都被创建并添加到 dataflow 形成的有向图.<br>当执行被执行环境的 execute() 方法显示地触发时,这些算子才会真正执行.<br>程序是在本地执行还是在集群上执行取决于执行环境的类型.</p>
+<p>延迟计算允许你构建复杂的程序,Flink 会将其作为一个整体的计划单元来执行.</p>
+<h3 id="示例程序"><a href="#示例程序" class="headerlink" title="示例程序"></a>示例程序</h3><p>如下是一个完整的/可运行的程序示例,它是基于流窗口的单词统计应用程序,<code>计算 5 秒窗口内来自 Web 套接字的单词数</code>.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.flink.api.common.functions.FlatMapFunction;</span><br><span class="line">import org.apache.flink.api.java.tuple.Tuple2;</span><br><span class="line">import org.apache.flink.streaming.api.datastream.DataStream;</span><br><span class="line">import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;</span><br><span class="line">import org.apache.flink.streaming.api.windowing.time.Time;</span><br><span class="line">import org.apache.flink.util.Collector;</span><br><span class="line"></span><br><span class="line">public class WindowWordCount &#123;</span><br><span class="line"></span><br><span class="line">    public static void main(String[] args) throws Exception &#123;</span><br><span class="line"></span><br><span class="line">        StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line"></span><br><span class="line">        DataStream&lt;Tuple2&lt;String, Integer&gt;&gt; dataStream &#x3D; env</span><br><span class="line">                .socketTextStream(&quot;localhost&quot;, 9999)</span><br><span class="line">                .flatMap(new Splitter())</span><br><span class="line">                .keyBy(value -&gt; value.f0)</span><br><span class="line">                .window(TumblingProcessingTimeWindows.of(Time.seconds(5)))</span><br><span class="line">                .sum(1);</span><br><span class="line"></span><br><span class="line">        dataStream.print();</span><br><span class="line"></span><br><span class="line">        env.execute(&quot;Window WordCount&quot;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public static class Splitter implements FlatMapFunction&lt;String, Tuple2&lt;String, Integer&gt;&gt; &#123;</span><br><span class="line">        @Override</span><br><span class="line">        public void flatMap(String sentence, Collector&lt;Tuple2&lt;String, Integer&gt;&gt; out) throws Exception &#123;</span><br><span class="line">            for (String word: sentence.split(&quot; &quot;)) &#123;</span><br><span class="line">                out.collect(new Tuple2&lt;String, Integer&gt;(word, 1));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>要运行示例程序,首先从终端使用 netcat 启动输入流:<br>nc -lk 9999</p>
+<p>只需输入一些单词,然后按回车键即可传入新单词.<br>这些将作为单词统计程序的输入.<br>如果想查看大于 1 的计数,在 5 秒内重复输入相同的单词即可(如果无法快速输入,则可以将窗口大小从 5 秒增加0).</p>
+<h3 id="Data-Sources"><a href="#Data-Sources" class="headerlink" title="Data Sources"></a>Data Sources</h3><p>Source 是你的程序从中读取其输入的地方.<br>你可以用<strong>StreamExecutionEnvironment.addSource(sourceFunction)</strong> 将一个 source 关联到你的程序.<br>Flink 自带了许多预先实现的 source functions,不过你仍然可以通过实现 <code>SourceFunction</code> 接口编写自定义的非并行 source,也可以通过实现 <code>ParallelSourceFunction</code> 接口或者继承 <code>RichParallelSourceFunction</code> 类编写自定义的并行 sources.</p>
+<p>通过 StreamExecutionEnvironment 可以访问多种预定义的 stream source:</p>
+<h4 id="基于文件"><a href="#基于文件" class="headerlink" title="基于文件"></a>基于文件</h4><p>readTextFile(path)<br>读取文本文件,例如遵守 TextInputFormat 规范的文件,逐行读取并将它们作为字符串返回.</p>
+<p>readFile(fileInputFormat, path)<br>按照指定的文件输入格式读取(一次)文件.</p>
+<p>readFile(fileInputFormat, path, watchType, interval, pathFilter, typeInfo)<br>这是前两个方法内部调用的方法.<br>它基于给定的 fileInputFormat 读取路径 path 上的文件.<br>根据提供的 watchType 的不同,source 可能定期(每 interval 毫秒)监控路径上的新数据(watchType 为 FileProcessingMode.PROCESS_CONTINUOUSLY),或者处理一次当前路径中的数据然后退出(watchType 为 FileProcessingMode.PROCESS_ONCE).<br>使用 pathFilter,用户可以进一步排除正在处理的文件.</p>
+<blockquote>
+<p>实现</p>
+</blockquote>
+<p>在底层,Flink 将文件读取过程拆分为两个子任务,即 目录监控 和 数据读取.<br>每个子任务都由一个单独的实体实现.<br>监控由单个非并行(并行度 = 1)任务实现,而读取由多个并行运行的任务执行.<br>后者的并行度和作业的并行度相等.<br>单个监控任务的作用是扫描目录(定期或仅扫描一次,取决于 watchType),找到要处理的文件,将它们划分为 分片,并将这些分片分配给下游 reader.<br>Reader 是将实际获取数据的角色.<br>每个分片只能被一个 reader 读取,而一个 reader 可以一个一个地读取多个分片.</p>
+<blockquote>
+<p>注意:</p>
+<blockquote>
+<p>如果 watchType 设置为 FileProcessingMode.PROCESS_CONTINUOUSLY,<br>当一个文件被修改时,它的内容会被完全重新处理.<br>这可能会打破 &quot;精确一次&quot; 的语义,因为在文件末尾追加数据将导致重新处理文件的所有内容.</p>
+<p>如果 watchType 设置为 FileProcessingMode.PROCESS_ONCE,<br>source 扫描一次路径然后退出,无需等待 reader 读完文件内容.<br>当然,reader 会继续读取数据,直到所有文件内容都读完.<br>关闭 source 会导致在那之后不再有检查点.<br>这可能会导致节点故障后恢复速度变慢,因为作业将从最后一个检查点恢复读取.</p>
+</blockquote>
+</blockquote>
+<h4 id="基于套接字"><a href="#基于套接字" class="headerlink" title="基于套接字"></a>基于套接字</h4><p>socketTextStream<br>从套接字读取.<br>元素可以由分隔符分隔.</p>
+<h4 id="基于集合"><a href="#基于集合" class="headerlink" title="基于集合"></a>基于集合</h4><p>fromCollection(Collection)<br>从 Java Java.util.Collection 创建数据流.<br>集合中的所有元素必须属于同一类型.</p>
+<p>fromCollection(Iterator, Class)<br>从迭代器创建数据流.<br>class 参数指定迭代器返回元素的数据类型.</p>
+<p>fromElements(T ...)<br>从给定的对象序列中创建数据流.<br>所有的对象必须属于同一类型.</p>
+<p>fromParallelCollection(SplittableIterator, Class)<br>从迭代器并行创建数据流.<br>class 参数指定迭代器返回元素的数据类型.</p>
+<p>generateSequence(from, to)<br>基于给定间隔内的数字序列并行生成数据流.</p>
+<h4 id="自定义"><a href="#自定义" class="headerlink" title="自定义"></a>自定义</h4><p>addSource<br>关联一个新的 source function.<br>例如,你可以使用 addSource(new FlinkKafkaConsumer&lt;&gt;(...)) 来从 Apache Kafka 获取数据.</p>
+<h3 id="DataStream-Transformations"><a href="#DataStream-Transformations" class="headerlink" title="DataStream Transformations"></a>DataStream Transformations</h3><h3 id="Data-Sinks"><a href="#Data-Sinks" class="headerlink" title="Data Sinks"></a>Data Sinks</h3><p>Data sinks 使用 DataStream 并将它们转发到文件/套接字/外部系统或打印它们.<br>Flink 自带了多种内置的输出格式,这些格式相关的实现封装在 DataStreams 的算子里:</p>
+<p>writeAsText() / TextOutputFormat<br>将元素按行写成字符串.<br>通过调用每个元素的 toString() 方法获得字符串.</p>
+<p>writeAsCsv(...) / CsvOutputFormat<br>将元组写成逗号分隔值文件.<br>行和字段的分隔符是可配置的.<br>每个字段的值来自对象的 toString() 方法.</p>
+<p>print() / printToErr()<br>在标准输出/标准错误流上打印每个元素的 toString() 值.<br>可选地,可以提供一个前缀(msg)附加到输出.<br>这有助于区分不同的 print 调用.<br>如果并行度大于1,输出结果将附带输出任务标识符的前缀.</p>
+<p>writeUsingOutputFormat() / FileOutputFormat<br>自定义文件输出的方法和基类.<br>支持自定义 object 到 byte 的转换.</p>
+<p>writeToSocket<br>根据 SerializationSchema 将元素写入套接字.</p>
+<p>addSink<br>调用自定义 sink function.<br>Flink 捆绑了连接到其他系统(例如 Apache Kafka)的连接器,这些连接器被实现为 sink functions.</p>
+<blockquote>
+<p>注意<br>DataStream 的 write*() 方法主要用于调试目的.<br>它们不参与 Flink 的 checkpointing,这意味着这些函数通常具有至少有一次语义.<br>刷新到目标系统的数据取决于 OutputFormat 的实现.<br>这意味着并非所有发送到 OutputFormat 的元素都会立即显示在目标系统中.<br>此外,在失败的情况下,这些记录可能会丢失.</p>
+</blockquote>
+<p>为了将流可靠地/精准一次地传输到文件系统中,请使用 <code>StreamingFileSink</code>.<br>此外,通过 .addSink(...) 方法调用的自定义实现也可以参与 Flink 的 checkpointing,以实现精准一次的语义.</p>
+<h3 id="Iterations"><a href="#Iterations" class="headerlink" title="Iterations"></a>Iterations</h3><p>Iterative streaming 程序实现了 setp function 并将其嵌入到 IterativeStream .<br>由于 DataStream 程序可能永远不会完成,因此没有最大迭代次数.<br>相反,你需要指定流的哪一部分反馈给迭代,哪一部分使用旁路输出或过滤器转发到下游.</p>
+<p>这里,我们展示了一个使用过滤器的示例.<br>首先,我们定义一个 IterativeStream.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">IterativeStream&lt;Integer&gt; iteration &#x3D; input.iterate();</span><br></pre></td></tr></table></figure>
+
+<p>然后,我们使用一系列转换(这里是一个简单的 map 转换)指定将在循环内执行的逻辑</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DataStream&lt;Integer&gt; iterationBody &#x3D; iteration.map(&#x2F;* this is executed many times *&#x2F;);</span><br></pre></td></tr></table></figure>
+
+<p>要关闭迭代并定义迭代尾部,请调用 IterativeStream 的 closeWith(feedbackStream) 方法.<br>提供给 closeWith 函数的 DataStream 将反馈给迭代头.<br>一种常见的模式是使用过滤器将反馈的流部分和向前传播的流部分分开.<br>例如,这些过滤器可以定义&quot;终止&quot;逻辑,其中允许元素向下游传播而不是被反馈.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">iteration.closeWith(iterationBody.filter(&#x2F;* one part of the stream *&#x2F;));</span><br><span class="line">DataStream&lt;Integer&gt; output &#x3D; iterationBody.filter(&#x2F;* some other part of the stream *&#x2F;);</span><br></pre></td></tr></table></figure>
+
+<p>例如,下面的程序从一系列整数中连续减去 1,直到它们达到0:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">DataStream&lt;Long&gt; someIntegers &#x3D; env.generateSequence(0, 1000);</span><br><span class="line"></span><br><span class="line">IterativeStream&lt;Long&gt; iteration &#x3D; someIntegers.iterate();</span><br><span class="line"></span><br><span class="line">DataStream&lt;Long&gt; minusOne &#x3D; iteration.map(new MapFunction&lt;Long, Long&gt;() &#123;</span><br><span class="line">  @Override</span><br><span class="line">  public Long map(Long value) throws Exception &#123;</span><br><span class="line">    return value - 1 ;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">DataStream&lt;Long&gt; stillGreaterThanZero &#x3D; minusOne.filter(new FilterFunction&lt;Long&gt;() &#123;</span><br><span class="line">  @Override</span><br><span class="line">  public boolean filter(Long value) throws Exception &#123;</span><br><span class="line">    return (value &gt; 0);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">iteration.closeWith(stillGreaterThanZero);</span><br><span class="line"></span><br><span class="line">DataStream&lt;Long&gt; lessThanZero &#x3D; minusOne.filter(new FilterFunction&lt;Long&gt;() &#123;</span><br><span class="line">  @Override</span><br><span class="line">  public boolean filter(Long value) throws Exception &#123;</span><br><span class="line">    return (value &lt;&#x3D; 0);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<h3 id="执行参数"><a href="#执行参数" class="headerlink" title="执行参数"></a>执行参数</h3><p>StreamExecutionEnvironment 包含了 ExecutionConfig,它允许在运行时设置作业特定的配置值.<br>大多数参数的说明可参考执行配置.<br>这些参数特别适用于 DataStream API.</p>
+<p><code>setAutoWatermarkInterval(long milliseconds)</code><br>设置自动发送 watermark 的时间间隔.<br>你可以使用 long getAutoWatermarkInterval() 获取当前配置值.</p>
+<h4 id="容错"><a href="#容错" class="headerlink" title="容错"></a>容错</h4><h4 id="控制延迟"><a href="#控制延迟" class="headerlink" title="控制延迟"></a>控制延迟</h4><p>默认情况下,元素不会在网络上一一传输(这会导致不必要的网络传输),而是被缓冲.<br>缓冲区的大小(实际在机器之间传输)可以在 Flink 配置文件中设置.<br>虽然此方法有利于优化吞吐量,但当输入流不够快时,它可能会导致延迟问题.<br>要控制吞吐量和延迟,你可以调用执行环境(或单个算子)的 <code>env.setBufferTimeout(timeoutMillis)</code> 方法来设置缓冲区填满的最长等待时间.<br>超过此时间后,即使缓冲区没有未满,也会被自动发送.<br>超时时间的默认值为 100 毫秒.</p>
+<blockquote>
+<p>用法</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">LocalStreamEnvironment env &#x3D; StreamExecutionEnvironment.createLocalEnvironment();</span><br><span class="line">env.setBufferTimeout(timeoutMillis);</span><br><span class="line">env.generateSequence(1,10).map(new MyMapper()).setBufferTimeout(timeoutMillis);</span><br></pre></td></tr></table></figure>
+
+<p>为了最大限度地提高吞吐量,设置 setBufferTimeout(-1) 来删除超时,这样缓冲区仅在它们已满时才会被刷新.<br>要最小化延迟,请将超时设置为接近 0 的值(例如 5 或 10 毫秒).<br>应避免超时为 0 的缓冲区,因为它会导致严重的性能下降.</p>
+<h3 id="调试"><a href="#调试" class="headerlink" title="调试"></a>调试</h3><p>在分布式集群中运行流程序之前,最好确保实现的算法能按预期工作.<br>因此,实现数据分析程序通常是一个检查结果/调试和改进的增量过程.</p>
+<p>Flink 通过提供 IDE 内本地调试/注入测试数据和收集结果数据的特性大大简化了数据分析程序的开发过程.<br>本节给出了一些如何简化 Flink 程序开发的提示.</p>
+<h4 id="本地执行环境"><a href="#本地执行环境" class="headerlink" title="本地执行环境"></a>本地执行环境</h4><p><code>LocalStreamEnvironment</code> 在创建它的同一个 JVM 进程中启动 Flink 系统.<br>如果你从 IDE 启动 LocalEnvironment,则可以在代码中设置断点并轻松调试程序.</p>
+<p>一个 LocalEnvironment 的创建和使用如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">final StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.createLocalEnvironment();</span><br><span class="line">DataStream&lt;String&gt; lines &#x3D; env.addSource(&#x2F;* some source *&#x2F;);</span><br><span class="line">&#x2F;&#x2F; 构建你的程序</span><br><span class="line"></span><br><span class="line">env.execute();</span><br></pre></td></tr></table></figure>
+
+<h4 id="集合-Data-Sources"><a href="#集合-Data-Sources" class="headerlink" title="集合 Data Sources"></a>集合 Data Sources</h4><p>Flink 提供了由 Java 集合支持的特殊 data sources 以简化测试.<br>一旦程序通过测试,sources 和 sinks 可以很容易地被从外部系统读取/写入到外部系统的 sources 和 sinks 替换.</p>
+<p>可以按如下方式使用集合 Data Sources:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">final StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.createLocalEnvironment();</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 从元素列表创建一个 DataStream</span><br><span class="line">DataStream&lt;Integer&gt; myInts &#x3D; env.fromElements(1, 2, 3, 4, 5);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 从任何 Java 集合创建一个 DataStream</span><br><span class="line">List&lt;Tuple2&lt;String, Integer&gt;&gt; data &#x3D; ...</span><br><span class="line">DataStream&lt;Tuple2&lt;String, Integer&gt;&gt; myTuples &#x3D; env.fromCollection(data);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 从迭代器创建一个 DataStream</span><br><span class="line">Iterator&lt;Long&gt; longIt &#x3D; ...</span><br><span class="line">DataStream&lt;Long&gt; myLongs &#x3D; env.fromCollection(longIt, Long.class);</span><br></pre></td></tr></table></figure>
+
+<p>目前,集合 data source 要求数据类型和迭代器实现 Serializable.<br>此外,集合 data sources 不能并行执行(parallelism = 1).</p>
+<h4 id="迭代器-Data-Sink"><a href="#迭代器-Data-Sink" class="headerlink" title="迭代器 Data Sink"></a>迭代器 Data Sink</h4><p>Flink 还提供了一个 sink 来收集 DataStream 的结果,它用于测试和调试目的.<br>可以按以下方式使用.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.flink.streaming.experimental.DataStreamUtils</span><br><span class="line"></span><br><span class="line">DataStream&lt;Tuple2&lt;String, Integer&gt;&gt; myResult &#x3D; ...</span><br><span class="line">Iterator&lt;Tuple2&lt;String, Integer&gt;&gt; myOutput &#x3D; DataStreamUtils.collect(myResult)</span><br></pre></td></tr></table></figure>
+
+<h2 id="执行模式-流-批"><a href="#执行模式-流-批" class="headerlink" title="执行模式(流/批)"></a>执行模式(流/批)</h2><p>DataStream API 支持不同的运行时执行模式,你可以根据你的用例需要和作业特点进行选择.</p>
+<p>DataStream API 有一种&quot;经典&quot;的执行行为,我们称之为流(<strong>STREAMING</strong>)执行模式.<br>这种模式适用于需要连续增量处理,而且预计无限期保持在线的无边界作业.</p>
+<p>此外,还有一种批式执行模式,我们称之为批(<strong>BATCH</strong>)执行模式.<br>这种执行作业的方式更容易让人联想到批处理框架,比如 MapReduce.<br>这种执行模式适用于有一个已知的固定输入,而且不会连续运行的有边界作业.</p>
+<p>Apache Flink 对流处理和批处理统一方法,意味着无论配置何种执行模式,在有界输入上执行的 DataStream 应用都会产生相同的最终 结果.<br>一个在流模式执行的作业可能会产生增量更新(想想数据库中的插入(upsert)操作),而批作业只在最后产生一个最终结果.<br>尽管计算方法不同,只要呈现方式得当,最终结果会是相同的.</p>
+<p>通过启用批执行,我们允许 Flink 应用只有在我们知道输入是有边界的时侯才会使用到的额外的优化.<br>例如,可以使用不同的关联(join)/ 聚合(aggregation)策略,允许实现更高效的任务调度和故障恢复行为的不同 shuffle.</p>
+<h3 id="什么时候可以-应该使用批执行模式"><a href="#什么时候可以-应该使用批执行模式" class="headerlink" title="什么时候可以/应该使用批执行模式"></a>什么时候可以/应该使用批执行模式</h3><p>批执行模式只能用于 <strong>有边界 的作业/Flink 程序</strong>.<br>边界是数据源的一个属性,告诉我们在执行前,来自该数据源的所有输入是否都是已知的,或者是否会有新的数据出现,可能是无限的.<br>而对一个作业来说,如果它的所有源都是有边界的,则它就是有边界的,否则就是无边界的.</p>
+<p>而流执行模式,既可用于有边界任务,也可用于无边界任务.</p>
+<p>一般来说,在你的程序是有边界的时候,你应该使用批执行模式,因为这样做会更高效.<br>当你的程序是无边界的时候,你必须使用流执行模式,因为只有这种模式足够通用,能够处理连续的数据流.</p>
+<p>一个明显的例外是当你想使用一个有边界作业去自展一些作业状态,并将状态使用在之后的无边界作业的时候.<br>例如,通过流模式运行一个有边界作业,取一个 savepoint,然后在一个无边界作业上恢复这个 savepoint.<br>这是一个非常特殊的用例,当我们允许将 savepoint 作为批执行作业的附加输出时,这个用例可能很快就会过时.</p>
+<p>另一个你可能会使用流模式运行有边界作业的情况是当你为最终会在无边界数据源写测试代码的时候.<br>对于测试来说,在这些情况下使用有边界数据源可能更自然.</p>
+<h3 id="配置批执行模式"><a href="#配置批执行模式" class="headerlink" title="配置批执行模式"></a>配置批执行模式</h3><p>执行模式可以通过 <code>execute.runtime-mode</code> 设置来配置.<br>有三种可选的值:</p>
+<ol>
+<li>STREAMING: 经典 DataStream 执行模式(默认)</li>
+<li>BATCH: 在 DataStream API 上进行批量式执行</li>
+<li>AUTOMATIC: 让系统根据数据源的边界性来决定</li>
+</ol>
+<p>这可以通过 bin/flink run ... 的命令行参数进行配置,或者在创建/配置 StreamExecutionEnvironment 时写进程序.</p>
+<p>下面是如何通过命令行配置执行模式:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink run -Dexecution.runtime-mode&#x3D;BATCH examples&#x2F;streaming&#x2F;WordCount.jar</span><br></pre></td></tr></table></figure>
+
+<p>这个例子展示了如何在代码中配置执行模式:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">env.setRuntimeMode(RuntimeExecutionMode.BATCH);</span><br></pre></td></tr></table></figure>
+
+<p>我们不建议用户在程序中设置运行模式,而是在提交应用程序时使用命令行进行设置.<br>保持应用程序代码的免配置可以让程序更加灵活,因为同一个应用程序可能在任何执行模式下执行.</p>
+<h3 id="执行行为"><a href="#执行行为" class="headerlink" title="执行行为"></a>执行行为</h3><h4 id="任务调度与网络Shuffle"><a href="#任务调度与网络Shuffle" class="headerlink" title="任务调度与网络Shuffle"></a>任务调度与网络Shuffle</h4><p>Flink 作业由不同的操作组成,这些操作在数据流图中连接在一起.<br>系统决定如何在不同的进程/机器(TaskManager)上调度这些操作的执行,以及如何在它们之间 shuffle (发送)数据.</p>
+<p>将多个操作/算子链接在一起的功能称为链.<br>Flink 称一个调度单位的一组或多个(链接在一起的)算子为一个 任务.<br>通常,子任务 用来指代在多个 TaskManager 上并行运行的单个任务实例,但我们在这里只使用 任务(task)一词.</p>
+<p>任务调度和网络 shuffle 对于批和流执行模式的执行方式不同.<br>这主要是由于在批执行模式中,当知道输入数据是有边界的时候,Flink可以使用更高效的数据结构和算法.</p>
+<p>我们将用这个例子来解释任务调度和网络传输的差异.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line"></span><br><span class="line">DataStreamSource&lt;String&gt; source &#x3D; env.fromElements(...);</span><br><span class="line"></span><br><span class="line">source.name(&quot;source&quot;)</span><br><span class="line">  .map(...).name(&quot;map1&quot;)</span><br><span class="line">  .map(...).name(&quot;map2&quot;)</span><br><span class="line">  .rebalance()</span><br><span class="line">  .map(...).name(&quot;map3&quot;)</span><br><span class="line">  .map(...).name(&quot;map4&quot;)</span><br><span class="line">  .keyBy((value) -&gt; value)</span><br><span class="line">  .map(...).name(&quot;map5&quot;)</span><br><span class="line">  .map(...).name(&quot;map6&quot;)</span><br><span class="line">  .sinkTo(...).name(&quot;sink&quot;);</span><br></pre></td></tr></table></figure>
+
+<p>包含 1-to-1 连接模式的操作,比如 map()/ flatMap() 或 filter(),可以直接将数据转发到下一个操作,这使得这些操作可以被链接在一起.<br>这意味着 Flink 一般不会在他们之间插入网络 shuffle.</p>
+<p>而像 keyBy() 或者 rebalance() 这样需要在不同的任务并行实例之间进行数据 shuffle 的操作,就会引起网络 shuffle.</p>
+<p>对于上面的例子,Flink 会将操作分组为这些任务:</p>
+<ol>
+<li>任务1: source/ map1 和 map2</li>
+<li>任务2: map3 和 map4</li>
+<li>任务3: map5 / map6 和 sink</li>
+</ol>
+<p>我们在任务1到任务2/任务2到任务3之间各有一次网络 shuffle.<br>这是该作业的可视化表示:</p>
+<img src="/images/flgl31.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h5 id="流执行模式"><a href="#流执行模式" class="headerlink" title="流执行模式"></a>流执行模式</h5><p>在流执行模式下,所有任务需要一直在线/运行.<br>这使得 Flink可以通过整个管道立即处理新的记录,以达到我们需要的连续和低延迟的流处理.<br>这同样意味着分配给某个作业的 TaskManagers 需要有足够的资源来同时运行所有的任务.</p>
+<p>网络 shuffle 是 流水线 式的,这意味着记录会立即发送给下游任务,在网络层上进行一些缓冲.<br>同样,这也是必须的,因为当处理连续的数据流时,在任务(或任务管道)之间没有可以实体化的自然数据点(时间点).<br>这与批执行模式形成了鲜明的对比,在批执行模式下,中间的结果可以被实体化,如下所述.</p>
+<h5 id="批执行模式"><a href="#批执行模式" class="headerlink" title="批执行模式"></a>批执行模式</h5><p>在批执行模式下,一个作业的任务可以被分离成可以一个接一个执行的阶段.<br>我们之所以能做到这一点,是因为输入是有边界的,因此 Flink 可以在进入下一个阶段之前完全处理管道中的一个阶段.<br>在上面的例子中,工作会有三个阶段,对应着被 shuffle 界线分开的三个任务.</p>
+<p>不同于上文所介绍的流模式立即向下游任务发送记录,分阶段处理要求 Flink 将任务的中间结果实体化到一些非永久存储中,让下游任务在上游任务已经下线后再读取.<br>这将增加处理的延迟,但也会带来其他有趣的特性.<br>其一,这允许 Flink 在故障发生时回溯到最新的可用结果,而不是重新启动整个任务.<br>其二,批作业可以在更少的资源上执行(就 TaskManagers 的可用槽而言),因为系统可以一个接一个地顺序执行任务.</p>
+<p>TaskManagers 将至少在下游任务开始消费它们前保留中间结果(从技术上讲,它们将被保留到消费的流水线区域产生它们的输出为止).<br>在这之后,只要空间允许,它们就会被保留,以便在失败的情况下,可以回溯到前面涉及的结果.</p>
+<h4 id="State-Backends-State"><a href="#State-Backends-State" class="headerlink" title="State Backends / State"></a>State Backends / State</h4><p>在流模式下,Flink 使用 StateBackend 来控制状态的存储方式和检查点的工作方式.<br>在批模式下,配置的 state backend 被忽略.<br>取而代之的是,keyed 操作的输入按键分组(使用排序),然后我们依次处理一个键的所有记录.<br>这样就可以在同一时间只保留一个键的状态.<br>当进行到下一个键时,一个给定键的状态将被丢弃.</p>
+<h4 id="处理顺序"><a href="#处理顺序" class="headerlink" title="处理顺序"></a>处理顺序</h4><p>在批执行和流执行中,算子或用户自定义函数(UDFs)处理记录的顺序可能不同.</p>
+<p>在流模式下,用户自定义函数不应该对传入记录的顺序做任何假设.<br>数据一到达就被处理.</p>
+<p>在批执行模式下,Flink 通过一些操作确保顺序.<br>排序可以是特定调度任务/网络 shuffle/上文提到的 state backend 或是系统有意识选择的副作用.</p>
+<p>我们可以将常见输入类型分为三类:</p>
+<ol>
+<li>广播输入(broadcast input):从广播流输入</li>
+<li>常规输入(regular input):从广播或 keyed 输入</li>
+<li>keyed 输入(keyed input):从 KeyedStream 输入</li>
+</ol>
+<p>消费多种类型输入的函数或是算子可以使用以下顺序处理:</p>
+<ol>
+<li>广播输入第一个处理</li>
+<li>常规输入第二个处理</li>
+<li>keyed 输入最后处理</li>
+</ol>
+<p>对于从多个常规或广播输入进行消费的函数,比如 CoProcessFunction, Flink 有权从任一输入以任意顺序处理数据.<br>对于从多个keyed输入进行消费的函数,比如 KeyedCoProcessFunction,Flink 先处理单一键中的所有记录再处理下一个.</p>
+<h4 id="事件时间水印"><a href="#事件时间水印" class="headerlink" title="事件时间水印"></a>事件时间水印</h4><p>在支持事件时间方面,Flink 的流运行时间建立在一个事件可能是乱序到来的悲观假设上的,即一个时间戳 t 的事件可能会在一个时间戳 t+1 的事件之后出现.<br>因为如此,系统永远无法确定在给定的时间戳 T 下,未来不会再有时间戳 t &lt; T 的元素出现.<br>为了摊平这种失序性对最终结果的影响,同时使系统实用,在流模式下,Flink 使用了一种名为 Watermarks 的启发式方法.<br>一个带有时间戳 T 的水印标志着再没有时间戳 t &lt; T 的元素跟进.</p>
+<p>在批模式下,输入的数据集是事先已知的,不需要这样的启发式方法,因为至少可以按照时间戳对元素进行排序,从而按照时间顺序进行处理.<br>对于熟悉流的读者来说,在批中,我们可以假设&quot;完美的 Watermark&quot;.</p>
+<p>综上所述,在批模式下,我们只需要在输入的末尾有一个与每个键相关的 MAX_WATERMARK,如果输入流没有键,则在输入的末尾需要一个 MAX_WATERMARK.<br>基于这个方案,所有注册的定时器都会在时间结束时触发,用户定义的 WatermarkAssigners 或 WatermarkStrategies 会被忽略.<br>但细化一个 WatermarkStrategy 仍然是重要的,因为它的 TimestampAssigner 仍然会被用来给记录分配时间戳.</p>
+<h4 id="处理时间"><a href="#处理时间" class="headerlink" title="处理时间"></a>处理时间</h4><p>处理时间是指在处理记录的具体实例上,处理记录的机器上的挂钟时间.<br>根据这个定义,我们知道基于处理时间的计算结果是不可重复的.<br>因为同一条记录被处理两次,会有两个不同的时间戳.</p>
+<p>尽管如此,在流模式下处理时间还是很有用的.<br>原因在于因为流式管道从 真实时间 摄取无边界输入,所以事件时间和处理时间之间存在相关性.<br>此外,由于上述原因,在流模式下事件时间的1小时也往往可以几乎是处理时间,或者叫挂钟时间的1小时.<br>所以使用处理时间可以用于早期(不完全)触发,给出预期结果的提示.</p>
+<p>在批处理世界中,这种相关性并不存在,因为在批处理世界中,输入的数据集是静态的,是预先知道的.<br>鉴于此,在批模式中,我们允许用户请求当前的处理时间,并注册处理时间计时器,但与事件时间的情况一样,所有的计时器都要在输入结束时触发.</p>
+<p>在概念上,我们可以想象,在作业执行过程中,处理时间不会提前,当整个输入处理完毕后,我们会快进到时间结束.</p>
+<h4 id="故障恢复"><a href="#故障恢复" class="headerlink" title="故障恢复"></a>故障恢复</h4><p>在流执行模式下,Flink 使用 checkpoints 进行故障恢复.<br>Checkpointing 用于故障恢复的特点之一是,在发生故障时,Flink 会从 checkpoint 重新启动所有正在运行的任务.<br>这可能比我们在批模式下所要做的事情代价更高(如下文所解释),这也是如果你的任务允许的话应该使用批执行模式的原因之一.</p>
+<p>在批执行模式下,Flink 会尝试并回溯到之前的中间结果仍可获取的处理阶段.<br>只有失败的任务(或它们在图中的前辈)才可能需要重新启动.<br>这与从 checkpoint 重新启动所有任务相比,可以提高作业的处理效率和整体处理时间.</p>
+<h3 id="重要的考虑因素"><a href="#重要的考虑因素" class="headerlink" title="重要的考虑因素"></a>重要的考虑因素</h3><p>与经典的流执行模式相比,在批模式下,有些东西可能无法按照预期工作.<br>一些功能的工作方式会略有不同,而其他功能会不支持.</p>
+<blockquote>
+<p>批模式下的行为变化</p>
+</blockquote>
+<p>&quot;滚动&quot;操作,如 reduce() 或 sum(),会对流模式下每一条新记录发出增量更新.<br>在批模式下,这些操作不是&quot;滚动&quot;.<br>它们只发出最终结果.</p>
+<blockquote>
+<p>批模式下不支持的</p>
+</blockquote>
+<p>Checkpointing 和任何依赖于 checkpointing 的操作都不支持.<br>迭代(Iterations)</p>
+<p>自定义算子应谨慎执行,否则可能会有不恰当的行为.</p>
+<h4 id="Checkpointing"><a href="#Checkpointing" class="headerlink" title="Checkpointing"></a>Checkpointing</h4><p>如上文所述,批处理程序的故障恢复不使用检查点.</p>
+<p>重要的是要记住,因为没有 checkpoints,某些功能如 ( CheckpointListener ),以及因此,Kafka 的 精确一次(EXACTLY_ONCE) 模式或 File Sink 的 OnCheckpointRollingPolicy 将无法工作.</p>
+<p>你仍然可以使用所有的 状态原语(state primitives),只是用于故障恢复的机制会有所不同.</p>
+<h4 id="编写自定义算子"><a href="#编写自定义算子" class="headerlink" title="编写自定义算子"></a>编写自定义算子</h4><p>自定义算子是 Apache Flink 的一种高级使用模式.<br>对于大多数的使用情况,可以考虑使用(keyed-)处理函数来代替.</p>
+<p>在编写自定义算子时,记住批执行模式的假设是很重要的.<br>否则,一个在流模式下运行良好的操作符可能会在批模式下产生错误的结果.<br>算子永远不会被限定在一个特定的键上,这意味着他们看到了 Flink 试图利用的批处理的一些属性.</p>
+<p>首先你不应该在一个算子内缓存最后看到的 Watermark.<br>在批模式下,我们会逐个键处理记录.<br>因此,Watermark 会在每个键之间从 MAX_VALUE 切换到 MIN_VALUE.<br>你不应该认为 Watermark 在一个算子中总是递增的.<br>出于同样的原因,定时器将首先按键的顺序触发,然后按每个键内的时间戳顺序触发.<br>此外,不支持手动更改键的操作.</p>
+<h2 id="事件时间"><a href="#事件时间" class="headerlink" title="事件时间"></a>事件时间</h2><h3 id="生成-Watermark"><a href="#生成-Watermark" class="headerlink" title="生成 Watermark"></a>生成 Watermark</h3><h4 id="Watermark-策略简介"><a href="#Watermark-策略简介" class="headerlink" title="Watermark 策略简介"></a>Watermark 策略简介</h4><p>为了使用事件时间语义,Flink 应用程序需要知道事件时间戳对应的字段,意味着数据流中的每个元素都需要拥有可分配的事件时间戳.<br>其通常通过使用 TimestampAssigner API 从元素中的某个字段去访问/提取时间戳.</p>
+<p>时间戳的分配与 watermark 的生成是齐头并进的,其可以告诉 Flink 应用程序事件时间的进度.<br>其可以通过指定 WatermarkGenerator 来配置 watermark 的生成方式.</p>
+<p>使用 Flink API 时需要设置一个同时包含 TimestampAssigner 和 WatermarkGenerator 的 WatermarkStrategy.<br>WatermarkStrategy 工具类中也提供了许多常用的 watermark 策略,并且用户也可以在某些必要场景下构建自己的 watermark 策略.<br>WatermarkStrategy 接口如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">public interface WatermarkStrategy&lt;T&gt; </span><br><span class="line">    extends TimestampAssignerSupplier&lt;T&gt;, WatermarkGeneratorSupplier&lt;T&gt;&#123;</span><br><span class="line"></span><br><span class="line">    &#x2F;**</span><br><span class="line">     * 根据策略实例化一个可分配时间戳的 &#123;@link TimestampAssigner&#125;.</span><br><span class="line">     *&#x2F;</span><br><span class="line">    @Override</span><br><span class="line">    TimestampAssigner&lt;T&gt; createTimestampAssigner(TimestampAssignerSupplier.Context context);</span><br><span class="line"></span><br><span class="line">    &#x2F;**</span><br><span class="line">     * 根据策略实例化一个 watermark 生成器.</span><br><span class="line">     *&#x2F;</span><br><span class="line">    @Override</span><br><span class="line">    WatermarkGenerator&lt;T&gt; createWatermarkGenerator(WatermarkGeneratorSupplier.Context context);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如上所述,通常情况下,你不用实现此接口,而是可以使用 WatermarkStrategy 工具类中通用的 watermark 策略,或者可以使用这个工具类将自定义的 TimestampAssigner 与 WatermarkGenerator 进行绑定.<br>例如,你想要要使用有界无序(bounded-out-of-orderness)watermark 生成器和一个 lambda 表达式作为时间戳分配器,那么可以按照如下方式实现:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">WatermarkStrategy</span><br><span class="line">        .&lt;Tuple2&lt;Long, String&gt;&gt;forBoundedOutOfOrderness(Duration.ofSeconds(20))</span><br><span class="line">        .withTimestampAssigner((event, timestamp) -&gt; event.f0);</span><br></pre></td></tr></table></figure>
+
+<p>其中 TimestampAssigner 的设置与否是可选的,大多数情况下,可以不用去特别指定.<br>例如,当使用 Kafka 或 Kinesis 数据源时,你可以直接从 Kafka/Kinesis 数据源记录中获取到时间戳.</p>
+<blockquote>
+<p>注意</p>
+<blockquote>
+<p>时间戳和 watermark 都是从 1970-01-01T00:00:00Z 起的 Java 纪元开始,并以毫秒为单位.</p>
+</blockquote>
+</blockquote>
+<h4 id="使用-Watermark-策略"><a href="#使用-Watermark-策略" class="headerlink" title="使用 Watermark 策略"></a>使用 Watermark 策略</h4><p>WatermarkStrategy 可以在 Flink 应用程序中的两处使用,第一种是直接在数据源上使用,第二种是直接在非数据源的操作之后使用.</p>
+<p>第一种方式相比会更好,因为数据源可以利用 watermark 生成逻辑中有关分片/分区(shards/partitions/splits)的信息.<br>使用这种方式,数据源通常可以更精准地跟踪 watermark,整体 watermark 生成将更精确.<br>直接在源上指定 WatermarkStrategy 意味着你必须使用特定数据源接口,参阅 Watermark 策略与 Kafka 连接器以了解如何使用 Kafka Connector,以及有关每个分区的 watermark 是如何生成以及工作的.</p>
+<p>仅当无法直接在数据源上设置策略时,才应该使用第二种方式(在任意转换操作之后设置 WatermarkStrategy):</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">final StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line"></span><br><span class="line">DataStream&lt;MyEvent&gt; stream &#x3D; env.readFile(</span><br><span class="line">        myFormat, myFilePath, FileProcessingMode.PROCESS_CONTINUOUSLY, 100,</span><br><span class="line">        FilePathFilter.createDefaultFilter(), typeInfo);</span><br><span class="line"></span><br><span class="line">DataStream&lt;MyEvent&gt; withTimestampsAndWatermarks &#x3D; stream</span><br><span class="line">        .filter( event -&gt; event.severity() &#x3D;&#x3D; WARNING )</span><br><span class="line">        .assignTimestampsAndWatermarks(&lt;watermark strategy&gt;);</span><br><span class="line"></span><br><span class="line">withTimestampsAndWatermarks</span><br><span class="line">        .keyBy( (event) -&gt; event.getGroup() )</span><br><span class="line">        .window(TumblingEventTimeWindows.of(Time.seconds(10)))</span><br><span class="line">        .reduce( (a, b) -&gt; a.add(b) )</span><br><span class="line">        .addSink(...);</span><br></pre></td></tr></table></figure>
+
+<p>使用 WatermarkStrategy 去获取流并生成带有时间戳的元素和 watermark 的新流时,如果原始流已经具有时间戳或 watermark,则新指定的时间戳分配器将覆盖原有的时间戳和 watermark.</p>
+<h4 id="处理空闲数据源"><a href="#处理空闲数据源" class="headerlink" title="处理空闲数据源"></a>处理空闲数据源</h4><p>如果数据源中的某一个分区/分片在一段时间内未发送事件数据,则意味着 WatermarkGenerator 也不会获得任何新数据去生成 watermark.<br>我们称这类数据源为空闲输入或空闲源.<br>在这种情况下,当某些其他分区仍然发送事件数据的时候就会出现问题.<br>由于下游算子 watermark 的计算方式是取所有不同的上游并行数据源 watermark 的最小值,则其 watermark 将不会发生变化.</p>
+<p>为了解决这个问题,你可以使用 WatermarkStrategy 来检测空闲输入并将其标记为空闲状态.<br>WatermarkStrategy 为此提供了一个工具接口:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">WatermarkStrategy</span><br><span class="line">        .&lt;Tuple2&lt;Long, String&gt;&gt;forBoundedOutOfOrderness(Duration.ofSeconds(20))</span><br><span class="line">        .withIdleness(Duration.ofMinutes(1));</span><br></pre></td></tr></table></figure>
+
+<h4 id="水印对齐"><a href="#水印对齐" class="headerlink" title="水印对齐"></a>水印对齐</h4><p>在上一段中,我们讨论了拆分/分区/分片或源处于空闲状态并且可能会停止增加水印的情况.<br>另一方面,拆分/分区/分片或源可能会非常快速地处理记录,从而比其他的相对更快地增加其水印.<br>这本身不是问题.<br>但是,对于使用水印发出一些数据的下游运营商来说,这实际上可能成为一个问题.</p>
+<p>在这种情况下,与空闲源相反,此类下游运算符的水印(如聚合上的窗口连接)可以进行.<br>但是,此类运算符可能需要缓冲来自快速输入的过多数据,因为来自其所有输入的最小水印被滞后输入阻止.<br>由快速输入发出的所有记录因此必须在所述下游操作符状态中进行缓冲,这可能导致操作符状态的不可控增长.</p>
+<p>为了解决这个问题,您可以启用水印对齐,这将确保没有源/拆分/分片/分区将其水印增加太多.<br>您可以分别为每个源启用对齐:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">WatermarkStrategy</span><br><span class="line">        .&lt;Tuple2&lt;Long, String&gt;&gt;forBoundedOutOfOrderness(Duration.ofSeconds(20))</span><br><span class="line">        .withWatermarkAlignment(&quot;alignment-group-1&quot;, Duration.ofSeconds(20), Duration.ofSeconds(1));</span><br></pre></td></tr></table></figure>
+
+<p>启用对齐时,需要告诉 Flink,源应该属于哪个组.<br>您可以通过提供一个标签(例如alignment-group-1)来实现,该标签将所有共享它的源绑定在一起.<br>此外,您必须从属于该组的所有源中的当前最小水印中分辨出最大漂移.<br>第三个参数描述了当前最大水印应该多久更新一次.<br>频繁更新的缺点是在 TM 和 JM 之间传输的 RPC 消息会更多.</p>
+<p>为了实现对齐,Flink 将暂停对源/任务的消费,这会产生距离未来太远的水印.<br>与此同时,它将继续从其他来源/任务中读取记录,这些来源/任务可以将组合水印向前移动,从而解锁更快的水印.</p>
+<blockquote>
+<p>注意</p>
+</blockquote>
+<p>从 1.15 开始,Flink 支持跨同源和/或不同源的任务对齐.<br>它不支持在同一任务中对齐拆分/分区/分片.<br>例如,在有两个 Kafka 分区以不同的速度产生水印的情况下,分配给同一任务水印的行为可能不会像预期的那样运行.<br>幸运的是,在最坏的情况下,它的性能不应该比没有对齐更差.</p>
+<p>鉴于上述限制,我们建议在两种情况下应用水印对齐:</p>
+<ol>
+<li>您有两个不同的来源(例如 Kafka 和 File)以不同的速度产生水印</li>
+<li>您以等于拆分/分片/分区数量的并行度运行源代码,这会导致为每个子任务分配一个工作单元.</li>
+</ol>
+<h4 id="自定义WatermarkGenerator"><a href="#自定义WatermarkGenerator" class="headerlink" title="自定义WatermarkGenerator"></a>自定义WatermarkGenerator</h4><p>TimestampAssigner 是一个可以从事件数据中提取时间戳字段的简单函数.<br>但是 WatermarkGenerator 的编写相对就要复杂一些了,我们将在接下来的两小节中介绍如何实现此接口.<br>WatermarkGenerator 接口代码如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;**</span><br><span class="line"> * &#123;@code WatermarkGenerator&#125; 可以基于事件或者周期性的生成 watermark.</span><br><span class="line"> *</span><br><span class="line"> * &lt;p&gt;&lt;b&gt;注意:</span><br><span class="line">&lt;&#x2F;b&gt;  WatermarkGenerator 将以前互相独立的 &#123;@code AssignerWithPunctuatedWatermarks&#125; </span><br><span class="line"> * 和 &#123;@code AssignerWithPeriodicWatermarks&#125; 一同包含了进来.</span><br><span class="line"> *&#x2F;</span><br><span class="line">@Public</span><br><span class="line">public interface WatermarkGenerator&lt;T&gt; &#123;</span><br><span class="line"></span><br><span class="line">    &#x2F;**</span><br><span class="line">     * 每来一条事件数据调用一次,可以检查或者记录事件的时间戳,或者也可以基于事件数据本身去生成 watermark.</span><br><span class="line">     *&#x2F;</span><br><span class="line">    void onEvent(T event, long eventTimestamp, WatermarkOutput output);</span><br><span class="line"></span><br><span class="line">    &#x2F;**</span><br><span class="line">     * 周期性的调用,也许会生成新的 watermark,也许不会.</span><br><span class="line">     * &lt;p&gt;调用此方法生成 watermark 的间隔时间由 &#123;@link ExecutionConfig#getAutoWatermarkInterval()&#125; 决定.</span><br><span class="line">     *&#x2F;</span><br><span class="line">    void onPeriodicEmit(WatermarkOutput output);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>watermark 的生成方式本质上是有两种:<br><strong>周期性生成</strong>和<strong>标记生成</strong>.</p>
+<p>周期性生成器通常通过 onEvent() 观察传入的事件数据,然后在框架调用 onPeriodicEmit() 时发出 watermark.<br>标记生成器将查看 onEvent() 中的事件数据,并等待检查在流中携带 watermark 的特殊标记事件或打点数据.<br>当获取到这些事件数据时,它将立即发出 watermark.<br>通常情况下,标记生成器不会通过 onPeriodicEmit() 发出 watermark.</p>
+<h5 id="自定义周期性-Watermark-生成器"><a href="#自定义周期性-Watermark-生成器" class="headerlink" title="自定义周期性 Watermark 生成器"></a>自定义周期性 Watermark 生成器</h5><p>周期性生成器会观察流事件数据并定期生成 watermark(其生成可能取决于流数据,或者完全基于处理时间).</p>
+<p>生成 watermark 的时间间隔(每 n 毫秒)可以通过 ExecutionConfig.setAutoWatermarkInterval(...) 指定.<br>每次都会调用生成器的 onPeriodicEmit() 方法,如果返回的 watermark 非空且值大于前一个 watermark,则将发出新的 watermark.</p>
+<p>如下是两个使用周期性 watermark 生成器的简单示例.</p>
+<blockquote>
+<p>注意</p>
+</blockquote>
+<p>Flink 已经附带了 BoundedOutOfOrdernessWatermarks,它实现了 WatermarkGenerator,其工作原理与下面的 BoundedOutOfOrdernessGenerator 相似.<br>可以在这里参阅如何使用它的内容.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;**</span><br><span class="line"> * 该 watermark 生成器可以覆盖的场景是:数据源在一定程度上乱序.</span><br><span class="line"> * 即某个最新到达的时间戳为 t 的元素将在最早到达的时间戳为 t 的元素之后最多 n 毫秒到达.</span><br><span class="line"> *&#x2F;</span><br><span class="line">public class BoundedOutOfOrdernessGenerator implements WatermarkGenerator&lt;MyEvent&gt; &#123;</span><br><span class="line"></span><br><span class="line">    private final long maxOutOfOrderness &#x3D; 3500; &#x2F;&#x2F; 3.5 秒</span><br><span class="line"></span><br><span class="line">    private long currentMaxTimestamp;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void onEvent(MyEvent event, long eventTimestamp, WatermarkOutput output) &#123;</span><br><span class="line">        currentMaxTimestamp &#x3D; Math.max(currentMaxTimestamp, eventTimestamp);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void onPeriodicEmit(WatermarkOutput output) &#123;</span><br><span class="line">        &#x2F;&#x2F; 发出的 watermark &#x3D; 当前最大时间戳 - 最大乱序时间</span><br><span class="line">        output.emitWatermark(new Watermark(currentMaxTimestamp - maxOutOfOrderness - 1));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;**</span><br><span class="line"> * 该生成器生成的 watermark 滞后于处理时间固定量.它假定元素会在有限延迟后到达 Flink.</span><br><span class="line"> *&#x2F;</span><br><span class="line">public class TimeLagWatermarkGenerator implements WatermarkGenerator&lt;MyEvent&gt; &#123;</span><br><span class="line"></span><br><span class="line">    private final long maxTimeLag &#x3D; 5000; &#x2F;&#x2F; 5 秒</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void onEvent(MyEvent event, long eventTimestamp, WatermarkOutput output) &#123;</span><br><span class="line">        &#x2F;&#x2F; 处理时间场景下不需要实现</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void onPeriodicEmit(WatermarkOutput output) &#123;</span><br><span class="line">        output.emitWatermark(new Watermark(System.currentTimeMillis() - maxTimeLag));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="自定义标记-Watermark-生成器"><a href="#自定义标记-Watermark-生成器" class="headerlink" title="自定义标记 Watermark 生成器"></a>自定义标记 Watermark 生成器</h5><p>标记 watermark 生成器观察流事件数据并在获取到带有 watermark 信息的特殊事件元素时发出 watermark.<br>如下是实现标记生成器的方法,当事件带有某个指定标记时,该生成器就会发出 watermark:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public class PunctuatedAssigner implements WatermarkGenerator&lt;MyEvent&gt; &#123;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void onEvent(MyEvent event, long eventTimestamp, WatermarkOutput output) &#123;</span><br><span class="line">        if (event.hasWatermarkMarker()) &#123;</span><br><span class="line">            output.emitWatermark(new Watermark(event.getWatermarkTimestamp()));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void onPeriodicEmit(WatermarkOutput output) &#123;</span><br><span class="line">        &#x2F;&#x2F; onEvent 中已经实现</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意</p>
+<p>可以针对每个事件去生成 watermark.<br>但是由于每个 watermark 都会在下游做一些计算,因此过多的 watermark 会降低程序性能.</p>
+</blockquote>
+<h4 id="Watermark-策略与-Kafka-连接器"><a href="#Watermark-策略与-Kafka-连接器" class="headerlink" title="Watermark 策略与 Kafka 连接器"></a>Watermark 策略与 Kafka 连接器</h4><p>当使用 Apache Kafka 连接器作为数据源时,每个 Kafka 分区可能有一个简单的事件时间模式(递增的时间戳或有界无序).<br>然而,当使用 Kafka 数据源时,多个分区常常并行使用,因此交错来自各个分区的事件数据就会破坏每个分区的事件时间模式(这是 Kafka 消费客户端所固有的).</p>
+<p>在这种情况下,你可以使用 Flink 中可识别 Kafka 分区的 watermark 生成机制.<br>使用此特性,将在 Kafka 消费端内部针对每个 Kafka 分区生成 watermark,并且不同分区 watermark 的合并方式与在数据流 shuffle 时的合并方式相同.</p>
+<p>例如,如果每个 Kafka 分区中的事件时间戳严格递增,则使用单调递增时间戳分配器按分区生成的 watermark 将生成完美的全局 watermark.<br>注意,我们在示例中未使用 TimestampAssigner,而是使用了 Kafka 记录自身的时间戳.</p>
+<p>下图展示了如何使用单 kafka 分区 watermark 生成机制,以及在这种情况下 watermark 如何通过 dataflow 传播.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">FlinkKafkaConsumer&lt;MyType&gt; kafkaSource &#x3D; new FlinkKafkaConsumer&lt;&gt;(&quot;myTopic&quot;, schema, props);</span><br><span class="line">kafkaSource.assignTimestampsAndWatermarks(</span><br><span class="line">        WatermarkStrategy</span><br><span class="line">                .forBoundedOutOfOrderness(Duration.ofSeconds(20)));</span><br><span class="line"></span><br><span class="line">DataStream&lt;MyType&gt; stream &#x3D; env.addSource(kafkaSource);</span><br></pre></td></tr></table></figure>
+
+<img src="/images/flgl32.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="算子处理-Watermark-的方式"><a href="#算子处理-Watermark-的方式" class="headerlink" title="算子处理 Watermark 的方式"></a>算子处理 Watermark 的方式</h4><p>一般情况下,在将 watermark 转发到下游之前,需要算子对其进行触发的事件完全进行处理.<br>例如,WindowOperator 将首先计算该 watermark 触发的所有窗口数据,当且仅当由此 watermark 触发计算进而生成的所有数据被转发到下游之后,其才会被发送到下游.<br>换句话说,由于此 watermark 的出现而产生的所有数据元素都将在此 watermark 之前发出.</p>
+<p>相同的规则也适用于 TwoInputStreamOperator.<br>但是,在这种情况下,算子当前的 watermark 会取其两个输入的最小值.</p>
+<p>详细内容可查看对应算子的实现:<br>OneInputStreamOperator#processWatermark/TwoInputStreamOperator#processWatermark1 和 TwoInputStreamOperator#processWatermark2.</p>
+<blockquote>
+<p>可以弃用 AssignerWithPeriodicWatermarks 和 AssignerWithPunctuatedWatermarks 了.</p>
+<p>在 Flink 新的 WatermarkStrategy,TimestampAssigner 和 WatermarkGenerator 的抽象接口之前,Flink 使用的是 AssignerWithPeriodicWatermarks 和 AssignerWithPunctuatedWatermarks.<br>你仍可以在 API 中看到它们,但建议使用新接口,因为其对时间戳和 watermark 等重点的抽象和分离很清晰,并且还统一了周期性和标记形式的 watermark 生成方式.</p>
+</blockquote>
+<h3 id="内置Watermark生成器"><a href="#内置Watermark生成器" class="headerlink" title="内置Watermark生成器"></a>内置Watermark生成器</h3><p>如生成 Watermark 小节中所述,Flink 提供的抽象方法可以允许用户自己去定义时间戳分配方式和 watermark 生成的方式.<br>你可以通过实现 WatermarkGenerator 接口来实现上述功能.</p>
+<p>为了进一步简化此类任务的编程工作,Flink 框架预设了一些时间戳分配器.</p>
+<h4 id="单调递增时间戳分配器"><a href="#单调递增时间戳分配器" class="headerlink" title="单调递增时间戳分配器"></a>单调递增时间戳分配器</h4><p>周期性 watermark 生成方式的一个最简单特例就是你给定的数据源中数据的时间戳升序出现.<br>在这种情况下,当前时间戳就可以充当 watermark,因为后续到达数据的时间戳不会比当前的小.</p>
+<blockquote>
+<p>注意</p>
+</blockquote>
+<p>在 Flink 应用程序中,如果是并行数据源,则只要求并行数据源中的每个单分区数据源任务时间戳递增.<br>例如,设置每一个并行数据源实例都只读取一个 Kafka 分区,则时间戳只需在每个 Kafka 分区内递增即可.<br>Flink 的 watermark 合并机制会在并行数据流进行分发(shuffle)/联合(union)/连接(connect)或合并(merge)时生成正确的 watermark.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WatermarkStrategy.forMonotonousTimestamps();</span><br></pre></td></tr></table></figure>
+
+<h4 id="数据之间存在最大固定延迟的时间戳分配器"><a href="#数据之间存在最大固定延迟的时间戳分配器" class="headerlink" title="数据之间存在最大固定延迟的时间戳分配器"></a>数据之间存在最大固定延迟的时间戳分配器</h4><p>另一个周期性 watermark 生成的典型例子是,watermark 滞后于数据流中最大(事件时间)时间戳一个固定的时间量.<br>该示例可以覆盖的场景是你预先知道数据流中的数据可能遇到的最大延迟,例如,在测试场景下创建了一个自定义数据源,并且这个数据源的产生的数据的时间戳在一个固定范围之内.<br>Flink 针对上述场景提供了 boundedOutfordernessWatermarks 生成器,该生成器将 maxOutOfOrderness 作为参数,该参数代表在计算给定窗口的结果时,允许元素被忽略计算之前延迟到达的最长时间.<br>其中延迟时长就等于 <code>t - t_w</code> ,其中 t 代表元素的(事件时间)时间戳,t_w 代表前一个 watermark 对应的(事件时间)时间戳.<br>如果 lateness &gt; 0,则认为该元素迟到了,并且在计算相应窗口的结果时默认会被忽略.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WatermarkStrategy.forBoundedOutOfOrderness(Duration.ofSeconds(10));</span><br></pre></td></tr></table></figure>
+
+<h2 id="用户自定义-Functions"><a href="#用户自定义-Functions" class="headerlink" title="用户自定义 Functions"></a>用户自定义 Functions</h2><p>大多数操作都需要用户自定义 function.<br>本节列出了实现用户自定义 function 的不同方式.<br>还会介绍 Accumulators(累加器),可用于深入了解你的 Flink 应用程序.</p>
+<h3 id="实现接口"><a href="#实现接口" class="headerlink" title="实现接口"></a>实现接口</h3><p>最基本的方法是实现提供的接口:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">class MyMapFunction implements MapFunction&lt;String, Integer&gt; &#123;</span><br><span class="line">  public Integer map(String value) &#123; return Integer.parseInt(value); &#125;</span><br><span class="line">&#125;</span><br><span class="line">data.map(new MyMapFunction());</span><br></pre></td></tr></table></figure>
+
+<h3 id="匿名类"><a href="#匿名类" class="headerlink" title="匿名类"></a>匿名类</h3><p>你可以将 function 当做匿名类传递:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">data.map(new MapFunction&lt;String, Integer&gt; () &#123;</span><br><span class="line">  public Integer map(String value) &#123; return Integer.parseInt(value); &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<h3 id="Java-8-Lambdas"><a href="#Java-8-Lambdas" class="headerlink" title="Java 8 Lambdas"></a>Java 8 Lambdas</h3><p>Flink 在 Java API 中还支持 Java 8 Lambdas 表达式.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">data.filter(s -&gt; s.startsWith(&quot;http:&#x2F;&#x2F;&quot;));</span><br><span class="line">data.reduce((i1,i2) -&gt; i1 + i2);</span><br></pre></td></tr></table></figure>
+
+<h3 id="Rich-functions"><a href="#Rich-functions" class="headerlink" title="Rich functions"></a>Rich functions</h3><p>所有需要用户自定义 function 的转化操作都可以将 rich function 作为参数.<br>例如,你可以将下面代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">class MyMapFunction implements MapFunction&lt;String, Integer&gt; &#123;</span><br><span class="line">  public Integer map(String value) &#123; return Integer.parseInt(value); &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>替换成</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">class MyMapFunction extends RichMapFunction&lt;String, Integer&gt; &#123;</span><br><span class="line">  public Integer map(String value) &#123; return Integer.parseInt(value); &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>并将 function 照常传递给 map transformation:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">data.map(new MyMapFunction());</span><br></pre></td></tr></table></figure>
+
+<p>Rich functions 也可以定义成匿名类:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">data.map (new RichMapFunction&lt;String, Integer&gt;() &#123;</span><br><span class="line">  public Integer map(String value) &#123; return Integer.parseInt(value); &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>除了用户自定义的 function(map,reduce 等),Rich functions 还提供了四个方法:<br>open/close/getRuntimeContext 和 setRuntimeContext.<br>这些方法对于参数化 function (参阅 给 function 传递参数), 创建和最终确定本地状态,访问广播变量(参阅 广播变量),以及访问运行时信息,例如累加器和计数器(参阅 累加器和计数器),以及迭代器的相关信息(参阅 迭代器) 有很大作用.</p>
+<h3 id="累加器和计数器"><a href="#累加器和计数器" class="headerlink" title="累加器和计数器"></a>累加器和计数器</h3><p>累加器是具有加法运算和最终累加结果的一种简单结构,可在作业结束后使用.</p>
+<p>最简单的累加器就是计数器: 你可以使用 Accumulator.add(V value) 方法将其递增.<br>在作业结束时,Flink 会汇总(合并)所有部分的结果并将其发送给客户端.<br>在调试过程中或在你想快速了解有关数据更多信息时,累加器作用很大.</p>
+<p>Flink 目前有如下内置累加器.<br>每个都实现了 累加器 接口.</p>
+<ol>
+<li>IntCounter , LongCounter 和 DoubleCounter : 有关使用计数器的示例,请参见下文.</li>
+<li>直方图 : 离散数量的柱状直方图实现.<br>在内部,它只是整形到整形的映射.<br>你可以使用它来计算值的分布,例如,单词计数程序的每行单词的分布情况.</li>
+</ol>
+<h4 id="如何使用累加器"><a href="#如何使用累加器" class="headerlink" title="如何使用累加器"></a>如何使用累加器</h4><p>首先,在需要使用累加器的用户自定义的转换 function 中创建一个累加器对象(此处是计数器).</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">private IntCounter numLines &#x3D; new IntCounter();</span><br></pre></td></tr></table></figure>
+
+<p>其次,你必须在 rich function 的 open() 方法中注册累加器对象.<br>也可以在此处定义名称.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">getRuntimeContext().addAccumulator(&quot;num-lines&quot;, this.numLines);</span><br></pre></td></tr></table></figure>
+
+<p>现在你可以在操作 function 中的任何位置(包括 open() 和 close() 方法中)使用累加器.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">this.numLines.add(1);</span><br></pre></td></tr></table></figure>
+
+<p>最终整体结果会存储在由执行环境的 execute() 方法返回的 JobExecutionResult 对象中(当前只有等待作业完成后执行才起作用).</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">myJobExecutionResult.getAccumulatorResult(&quot;num-lines&quot;);</span><br></pre></td></tr></table></figure>
+
+<p>单个作业的所有累加器共享一个命名空间.<br>因此你可以在不同的操作 function 里面使用同一个累加器.<br>Flink 会在内部将所有具有相同名称的累加器合并起来.</p>
+<p>关于累加器和迭代的注意事项:<br>当前累加器的结果只有在整个作业结束后才可用.<br>我们还计划在下一次迭代中提供上一次的迭代结果.<br>你可以使用 聚合器 来计算每次迭代的统计信息,并基于此类统计信息来终止迭代.</p>
+<h4 id="定制累加器"><a href="#定制累加器" class="headerlink" title="定制累加器"></a>定制累加器</h4><p>要实现自己的累加器,你只需要实现累加器接口即可.<br>如果你认为自定义累加器应随 Flink 一起提供,请尽管创建 pull request.</p>
+<p>你可以选择实现 Accumulator 或 SimpleAccumulator .</p>
+<p><code>Accumulator&lt;V,R&gt;</code> 的实现十分灵活: 它定义了将要添加的值类型 V,并定义了最终的结果类型 R.<br>例如,对于直方图,V 是一个数字且 R 是一个直方图.<br>SimpleAccumulator 适用于两种类型都相同的情况,例如计数器.</p>
+<h2 id="数据源"><a href="#数据源" class="headerlink" title="数据源"></a>数据源</h2><p>当前页面所描述的是 Flink 的 Data Source API 及其背后的概念和架构.<br>如果您对 Flink 中的 Data Source 如何工作感兴趣,或者您想实现一个新的数据 source,请阅读本文.<br>如果您正在寻找预定义的 source 连接器,请查看连接器文档.</p>
+<h3 id="Data-Source原理"><a href="#Data-Source原理" class="headerlink" title="Data Source原理"></a>Data Source原理</h3><h4 id="核心组件"><a href="#核心组件" class="headerlink" title="核心组件"></a>核心组件</h4><p>一个数据 source 包括三个核心组件:<br>分片(Splits)/分片枚举器(SplitEnumerator) 以及 源阅读器(SourceReader).</p>
+<ol>
+<li><p>分片(Split) 是对一部分 source 数据的包装,如一个文件或者日志分区.<br>分片是 source 进行任务分配和数据并行读取的基本粒度.</p>
+</li>
+<li><p>源阅读器(SourceReader) 会请求分片并进行处理,例如读取分片所表示的文件或日志分区.<br>SourceReader 在 TaskManagers 上的 SourceOperators 并行运行,并产生并行的事件流/记录流.</p>
+</li>
+<li><p>分片枚举器(SplitEnumerator) 会生成分片并将它们分配给 SourceReader.<br>该组件在 JobManager 上以单并行度运行,负责对未分配的分片进行维护,并以均衡的方式将其分配给 reader.</p>
+</li>
+</ol>
+<p>Source 类作为API入口,将上述三个组件结合在了一起.</p>
+<img src="/images/flgl33.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="流处理和批处理的统一"><a href="#流处理和批处理的统一" class="headerlink" title="流处理和批处理的统一"></a>流处理和批处理的统一</h4><p>Data Source API 以统一的方式对无界流数据和有界批数据进行处理.</p>
+<p>事实上,这两种情况之间的区别是非常小的:<br>在有界/批处理情况中,枚举器生成固定数量的分片,而且每个分片都必须是有限的.<br>但在无界流的情况下,则无需遵从限制,也就是分片大小可以不是有限的,或者枚举器将不断生成新的分片.</p>
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><p>以下是一些简化的概念示例,以说明在流和批处理情况下 data source 组件如何交互.<br>请注意,以下内容并没有准确地描述出 Kafka 和 File source 的工作方式,因为出于说明的目的,部分内容被简化处理.</p>
+<h4 id="有界File-Source"><a href="#有界File-Source" class="headerlink" title="有界File Source"></a>有界File Source</h4><p>Source 将包含待读取目录的 URI/路径(Path),以及一个定义了如何对文件进行解析的 格式(Format).<br>在该情况下:</p>
+<ol>
+<li>分片是一个文件,或者是文件的一个区域(如果该文件格式支持对文件进行拆分).</li>
+<li>SplitEnumerator 将会列举给定目录路径下的所有文件,并在收到来自 reader 的请求时对分片进行分配.<br>一旦所有的分片都被分配完毕,则会使用 NoMoreSplits 来响应请求.</li>
+<li>SourceReader 则会请求分片,读取所分配的分片(文件或者文件区域),并使用给定的格式进行解析.<br>如果当前请求没有获得下一个分片,而是 NoMoreSplits,则会终止任务.</li>
+</ol>
+<h4 id="无界Streaming-File-Source"><a href="#无界Streaming-File-Source" class="headerlink" title="无界Streaming File Source"></a>无界Streaming File Source</h4><p>这个 source 的工作方式与上面描述的基本相同,除了 SplitEnumerator 从不会使用 NoMoreSplits 来响应 SourceReader 的请求,并且还会定期列出给定 URI/路径下的文件来检查是否有新文件.<br>一旦发现新文件,则生成对应的新分片,并将它们分配给空闲的 SourceReader.</p>
+<h4 id="无界-Streaming-Kafka-Source"><a href="#无界-Streaming-Kafka-Source" class="headerlink" title="无界 Streaming Kafka Source"></a>无界 Streaming Kafka Source</h4><p>Source 将具有 Kafka Topic(亦或者一系列 Topics 或者通过正则表达式匹配的 Topic)以及一个 解析器(Deserializer) 来解析记录(record).</p>
+<ol>
+<li>分片是一个 Kafka Topic Partition.</li>
+<li>SplitEnumerator 会连接到 broker 从而列举出已订阅的 Topics 中的所有 Topic Partitions.<br>枚举器可以重复此操作以检查是否有新的 Topics/Partitions.</li>
+<li>SourceReader 使用 KafkaConsumer 读取所分配的分片(Topic Partition),并使用提供的 解析器 反序列化记录.<br>由于流处理中分片(Topic Partition)大小是无限的,因此 reader 永远无法读取到数据的尾部.</li>
+</ol>
+<h4 id="有界-Kafka-Source"><a href="#有界-Kafka-Source" class="headerlink" title="有界 Kafka Source"></a>有界 Kafka Source</h4><p>这种情况下,除了每个分片(Topic Partition)都会有一个预定义的结束偏移量,其他与上述相同.<br>一旦 SourceReader 读取到分片的结束偏移量,整个分片的读取就会结束.<br>而一旦所有所分配的分片读取结束,SourceReader 也就终止任务了.</p>
+<h3 id="Data-Source-API"><a href="#Data-Source-API" class="headerlink" title="Data Source API"></a>Data Source API</h3><h4 id="Source"><a href="#Source" class="headerlink" title="Source"></a>Source</h4><p>Source API 是一个工厂模式的接口,用于创建以下组件.</p>
+<ol>
+<li>Split Enumerator</li>
+<li>Source Reader</li>
+<li>Split Serializer</li>
+<li>Enumerator Checkpoint Serializer</li>
+</ol>
+<p>除此之外,Source 还提供了 Boundedness 的特性,从而使得 Flink 可以选择合适的模式来运行 Flink 任务.<br>Source 实现应该是可序列化的,因为 Source 实例会在运行时被序列化并上传到 Flink 集群.</p>
+<h4 id="SplitEnumerator"><a href="#SplitEnumerator" class="headerlink" title="SplitEnumerator"></a>SplitEnumerator</h4><p>SplitEnumerator 被认为是整个 Source 的&quot;大脑&quot;.<br>SplitEnumerator 的典型实现如下:</p>
+<ol>
+<li><p>SourceReader 的注册处理</p>
+</li>
+<li><p>SourceReader 的失败处理<br>SourceReader 失败时会调用 addSplitsBack() 方法.<br>SplitEnumerator应当收回已经被分配,但尚未被该 SourceReader 确认(acknowledged)的分片.</p>
+</li>
+<li><p>SourceEvent 的处理<br>SourceEvents 是 SplitEnumerator 和 SourceReader 之间来回传递的自定义事件.<br>可以利用此机制来执行复杂的协调任务.</p>
+</li>
+<li><p>分片的发现以及分配<br>SplitEnumerator 可以将分片分配到 SourceReader 从而响应各种事件,包括发现新的分片,新 SourceReader 的注册,SourceReader 的失败处理等.</p>
+</li>
+</ol>
+<p>SplitEnumerator 可以在 SplitEnumeratorContext 的帮助下完成所有上述工作,其会在 SplitEnumerator 的创建或者恢复的时候提供给 Source.<br>SplitEnumeratorContext 允许 SplitEnumerator 检索到 reader 的必要信息并执行协调操作.<br>而在 Source 的实现中会将 SplitEnumeratorContext 传递给 SplitEnumerator 实例.</p>
+<p>SplitEnumerator 的实现可以仅采用被动工作方式,即仅在其方法被调用时采取协调操作,但是一些 SplitEnumerator 的实现会采取主动性的工作方式.<br>例如,SplitEnumerator 定期寻找分片并分配给 SourceReader.<br>这类问题使用 SplitEnumeratorContext 类中的 callAsync() 方法比较方便.<br>下面的代码片段展示了如何在 SplitEnumerator 不需要自己维护线程的条件下实现这一点.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">class MySplitEnumerator implements SplitEnumerator&lt;MySplit&gt; &#123;</span><br><span class="line">    private final long DISCOVER_INTERVAL &#x3D; 60_000L;</span><br><span class="line"></span><br><span class="line">    &#x2F;**</span><br><span class="line">     * 一种发现分片的方法</span><br><span class="line">     *&#x2F;</span><br><span class="line">    private List&lt;MySplit&gt; discoverSplits() &#123;...&#125;</span><br><span class="line">    </span><br><span class="line">    @Override</span><br><span class="line">    public void start() &#123;</span><br><span class="line">        ...</span><br><span class="line">        enumContext.callAsync(this::discoverSplits, splits -&gt; &#123;</span><br><span class="line">            Map&lt;Integer, List&lt;MockSourceSplit&gt;&gt; assignments &#x3D; new HashMap&lt;&gt;();</span><br><span class="line">            int parallelism &#x3D; enumContext.currentParallelism();</span><br><span class="line">            for (MockSourceSplit split : splits) &#123;</span><br><span class="line">                int owner &#x3D; split.splitId().hashCode() % parallelism;</span><br><span class="line">                assignments.computeIfAbsent(owner, new ArrayList&lt;&gt;()).add(split);</span><br><span class="line">            &#125;</span><br><span class="line">            enumContext.assignSplits(new SplitsAssignment&lt;&gt;(assignments));</span><br><span class="line">        &#125;, 0L, DISCOVER_INTERVAL);</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="SourceReader"><a href="#SourceReader" class="headerlink" title="SourceReader"></a>SourceReader</h4><p>SourceReader 是一个运行在Task Manager上的组件,用于处理来自分片的记录.</p>
+<p>SourceReader 提供了一个拉动式(pull-based)处理接口.<br>Flink 任务会在循环中不断调用 pollNext(ReaderOutput) 轮询来自 SourceReader 的记录.<br>pollNext(ReaderOutput) 方法的返回值指示 SourceReader 的状态.</p>
+<ol>
+<li>MORE_AVAILABLE: SourceReader 有可用的记录.</li>
+<li>NOTHING_AVAILABLE: SourceReader 现在没有可用的记录,但是将来可能会有记录可用.</li>
+<li>END_OF_INPUT: SourceReader 已经处理完所有记录,到达数据的尾部.<br>这意味着 SourceReader 可以终止任务了.</li>
+</ol>
+<p>pollNext(ReaderOutput) 会使用 ReaderOutput 作为参数,为了提高性能且在必要情况下,SourceReader 可以在一次 pollNext() 调用中返回多条记录.<br>例如,有时外部系统的工作粒度为块.<br>而一个块可以包含多个记录,但是 source 只能在块的边界处设置 Checkpoint.<br>在这种情况下,SourceReader 可以一次将一个块中的所有记录通过 ReaderOutput 发送至下游.</p>
+<blockquote>
+<p>然而,除非有必要,SourceReader 的实现应该避免在一次 pollNext(ReaderOutput) 的调用中发送多个记录.<br>这是因为对 SourceReader 轮询的任务线程工作在一个事件循环(event-loop)中,且不能阻塞.</p>
+</blockquote>
+<p>在创建 SourceReader 时,相应的 SourceReaderContext 会提供给 Source,而 Source 则会将相应的上下文传递给 SourceReader 实例.<br>SourceReader 可以通过 SourceReaderContext 将 SourceEvent 传递给相应的 SplitEnumerator .<br>Source 的一个典型设计模式是让 SourceReader 发送它们的本地信息给 SplitEnumerator,后者则会全局性地做出决定.</p>
+<p>SourceReader API 是一个底层(low-level) API,允许用户自行处理分片,并使用自己的线程模型来获取和移交记录.<br>为了帮助实现 SourceReader,Flink 提供了 SourceReaderBase 类,可以显著减少编写 SourceReader 所需要的工作量.</p>
+<p>强烈建议连接器开发人员充分利用 SourceReaderBase 而不是从头开始编写 SourceReader.</p>
+<h4 id="Source-使用方法"><a href="#Source-使用方法" class="headerlink" title="Source 使用方法"></a>Source 使用方法</h4><p>为了通过 Source 创建 DataStream,需要将 Source 传递给 StreamExecutionEnvironment.<br>例如,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">final StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line"></span><br><span class="line">Source mySource &#x3D; new MySource(...);</span><br><span class="line"></span><br><span class="line">DataStream&lt;Integer&gt; stream &#x3D; env.fromSource(</span><br><span class="line">        mySource,</span><br><span class="line">        WatermarkStrategy.noWatermarks(),</span><br><span class="line">        &quot;MySourceName&quot;);</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<h3 id="SplitReader-API"><a href="#SplitReader-API" class="headerlink" title="SplitReader API"></a>SplitReader API</h3><p>核心的 SourceReader API 是完全异步的, 但实际上,大多数 Sources 都会使用阻塞的操作,例如客户端(如 KafkaConsumer)的 poll() 阻塞调用,或者分布式文件系统(HDFS, S3等)的阻塞I/O操作.<br>为了使其与异步 Source API 兼容,这些阻塞(同步)操作需要在单独的线程中进行,并在之后将数据提交给 reader 的异步线程.</p>
+<p>SplitReader 是基于同步读取/轮询的 Source 的高级(high-level)API,例如 file source 和 Kafka source 的实现等.</p>
+<p>核心是上面提到的 SourceReaderBase 类,其使用 SplitReader 并创建提取器(fetcher)线程来运行 SplitReader,该实现支持不同的线程处理模型.</p>
+<h4 id="SplitReader"><a href="#SplitReader" class="headerlink" title="SplitReader"></a>SplitReader</h4><p>SplitReader API 只有以下三个方法:</p>
+<ol>
+<li>阻塞式的提取 fetch() 方法,返回值为 RecordsWithSplitIds.</li>
+<li>非阻塞式处理分片变动 handleSplitsChanges() 方法.</li>
+<li>非阻塞式的唤醒 wakeUp() 方法,用于唤醒阻塞中的提取操作.</li>
+</ol>
+<p>SplitReader 仅需要关注从外部系统读取记录,因此比 SourceReader 简单得多.</p>
+<h4 id="SourceReaderBase"><a href="#SourceReaderBase" class="headerlink" title="SourceReaderBase"></a>SourceReaderBase</h4><p>常见的 SourceReader 实现方式如下:</p>
+<ol>
+<li>有一个线程池以阻塞的方式从外部系统提取分片.</li>
+<li>解决内部提取线程与其他方法调用(如 pollNext(ReaderOutput))之间的同步.</li>
+<li>维护每个分片的水印(watermark)以保证水印对齐.</li>
+<li>维护每个分片的状态以进行 Checkpoint.</li>
+</ol>
+<p>为了减少开发新的 SourceReader 所需的工作,Flink 提供了 SourceReaderBase 类作为 SourceReader 的基本实现.<br>SourceReaderBase 已经实现了上述需求.<br>要重新编写新的 SourceReader,只需要让 SourceReader 继承 SourceReaderBase,而后完善一些方法并实现 SplitReader.</p>
+<h4 id="SplitFetcherManager"><a href="#SplitFetcherManager" class="headerlink" title="SplitFetcherManager"></a>SplitFetcherManager</h4><p>SourceReaderBase 支持几个开箱即用(out-of-the-box)的线程模型,取决于 SplitFetcherManager 的行为模式.<br>SplitFetcherManager 创建和维护一个分片提取器(SplitFetchers)池,同时每个分片提取器使用一个 SplitReader 进行提取.<br>它还决定如何分配分片给分片提取器.</p>
+<p>例如,如下所示,一个 SplitFetcherManager 可能有固定数量的线程,每个线程对分配给 SourceReader 的一些分片进行抓取.</p>
+<img src="/images/flgl34.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>以下代码片段实现了此线程模型.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;**</span><br><span class="line"> * 一个SplitFetcherManager,它具有固定数量的分片提取器,</span><br><span class="line"> * 并根据分片ID的哈希值将分片分配给分片提取器.</span><br><span class="line"> *&#x2F;</span><br><span class="line">public class FixedSizeSplitFetcherManager&lt;E, SplitT extends SourceSplit&gt; </span><br><span class="line">        extends SplitFetcherManager&lt;E, SplitT&gt; &#123;</span><br><span class="line">    private final int numFetchers;</span><br><span class="line"></span><br><span class="line">    public FixedSizeSplitFetcherManager(</span><br><span class="line">            int numFetchers,</span><br><span class="line">            FutureNotifier futureNotifier,</span><br><span class="line">            FutureCompletingBlockingQueue&lt;RecordsWithSplitIds&lt;E&gt;&gt; elementsQueue,</span><br><span class="line">            Supplier&lt;SplitReader&lt;E, SplitT&gt;&gt; splitReaderSupplier) &#123;</span><br><span class="line">        super(futureNotifier, elementsQueue, splitReaderSupplier);</span><br><span class="line">        this.numFetchers &#x3D; numFetchers;</span><br><span class="line">        &#x2F;&#x2F; 创建 numFetchers 个分片提取器.</span><br><span class="line">        for (int i &#x3D; 0; i &lt; numFetchers; i++) &#123;</span><br><span class="line">            startFetcher(createSplitFetcher());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void addSplits(List&lt;SplitT&gt; splitsToAdd) &#123;</span><br><span class="line">        &#x2F;&#x2F; 根据它们所属的提取器将分片聚集在一起.</span><br><span class="line">        Map&lt;Integer, List&lt;SplitT&gt;&gt; splitsByFetcherIndex &#x3D; new HashMap&lt;&gt;();</span><br><span class="line">        splitsToAdd.forEach(split -&gt; &#123;</span><br><span class="line">            int ownerFetcherIndex &#x3D; split.hashCode() % numFetchers;</span><br><span class="line">            splitsByFetcherIndex</span><br><span class="line">                    .computeIfAbsent(ownerFetcherIndex, s -&gt; new ArrayList&lt;&gt;())</span><br><span class="line">                    .add(split);</span><br><span class="line">        &#125;);</span><br><span class="line">        &#x2F;&#x2F; 将分片分配给它们所属的提取器.</span><br><span class="line">        splitsByFetcherIndex.forEach((fetcherIndex, splitsForFetcher) -&gt; &#123;</span><br><span class="line">            fetchers.get(fetcherIndex).addSplits(splitsForFetcher);</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用这种线程模型的SourceReader可以像下面这样创建:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">public class FixedFetcherSizeSourceReader&lt;E, T, SplitT extends SourceSplit, SplitStateT&gt;</span><br><span class="line">        extends SourceReaderBase&lt;E, T, SplitT, SplitStateT&gt; &#123;</span><br><span class="line"></span><br><span class="line">    public FixedFetcherSizeSourceReader(</span><br><span class="line">            FutureNotifier futureNotifier,</span><br><span class="line">            FutureCompletingBlockingQueue&lt;RecordsWithSplitIds&lt;E&gt;&gt; elementsQueue,</span><br><span class="line">            Supplier&lt;SplitReader&lt;E, SplitT&gt;&gt; splitFetcherSupplier,</span><br><span class="line">            RecordEmitter&lt;E, T, SplitStateT&gt; recordEmitter,</span><br><span class="line">            Configuration config,</span><br><span class="line">            SourceReaderContext context) &#123;</span><br><span class="line">        super(</span><br><span class="line">                futureNotifier,</span><br><span class="line">                elementsQueue,</span><br><span class="line">                new FixedSizeSplitFetcherManager&lt;&gt;(</span><br><span class="line">                        config.getInteger(SourceConfig.NUM_FETCHERS),</span><br><span class="line">                        futureNotifier,</span><br><span class="line">                        elementsQueue,</span><br><span class="line">                        splitFetcherSupplier),</span><br><span class="line">                recordEmitter,</span><br><span class="line">                config,</span><br><span class="line">                context);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    protected void onSplitFinished(Collection&lt;String&gt; finishedSplitIds) &#123;</span><br><span class="line">        &#x2F;&#x2F; 在回调过程中对完成的分片进行处理.</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    protected SplitStateT initializedState(SplitT split) &#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    protected SplitT toSplitType(String splitId, SplitStateT splitState) &#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>SourceReader 的实现还可以在 SplitFetcherManager 和 SourceReaderBase 的基础上编写自己的线程模型.</p>
+<h3 id="事件时间和水印"><a href="#事件时间和水印" class="headerlink" title="事件时间和水印"></a>事件时间和水印</h3><p>Source 的实现需要完成一部分事件时间分配和水印生成的工作.<br>离开 SourceReader 的事件流需要具有事件时间戳,并且(在流执行期间)包含水印.<br>有关事件时间和水印的介绍,请参见及时流处理.</p>
+<blockquote>
+<p>旧版 SourceFunction 的应用通常在之后的单独的一步中通过 stream.assignTimestampsAndWatermarks(WatermarkStrategy) 生成时间戳和水印.<br>这个函数不应该与新的 Sources 一起使用,因为此时时间戳应该已经被分配了,而且该函数会覆盖掉之前的分片(split-aware)水印.</p>
+</blockquote>
+<h4 id="API"><a href="#API" class="headerlink" title="API"></a>API</h4><p>在 DataStream API 创建期间, WatermarkStrategy 会被传递给 Source,并同时创建 TimestampAssigner 和 WatermarkGenerator.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">environment.fromSource(</span><br><span class="line">    Source&lt;OUT, ?, ?&gt; source,</span><br><span class="line">    WatermarkStrategy&lt;OUT&gt; timestampsAndWatermarks,</span><br><span class="line">    String sourceName);</span><br></pre></td></tr></table></figure>
+
+<p>TimestampAssigner 和 WatermarkGenerator 作为 ReaderOutput(或 SourceOutput)的一部分透明地运行,因此 Source 实现者不必实现任何时间戳提取和水印生成的代码.</p>
+<h4 id="事件时间戳"><a href="#事件时间戳" class="headerlink" title="事件时间戳"></a>事件时间戳</h4><p>事件时间戳的分配分为以下两步:</p>
+<ol>
+<li><p>SourceReader 通过调用 SourceOutput.collect(event, timestamp) 将 Source 记录的时间戳添加到事件中.<br>该实现只能用于含有记录并且拥有时间戳特性的数据源,例如 Kafka/Kinesis/Pulsar 或 Pravega.<br>因此,记录中不带有时间戳特性的数据源(如文件)也就无法实现这一步了.<br>此步骤是 Source 连接器实现的一部分,不由使用 Source 的应用程序进行参数化设定.</p>
+</li>
+<li><p>由应用程序配置的 TimestampAssigner 分配最终的时间戳.<br>TimestampAssigner 会查看原始的 Source 记录的时间戳和事件.<br>分配器可以直接使用 Source 记录的时间戳或者访问事件的某个字段获得最终的事件时间戳.</p>
+</li>
+</ol>
+<p>这种分两步的方法使用户既可以引用 Source 系统中的时间戳,也可以引用事件数据中的时间戳作为事件时间戳.</p>
+<blockquote>
+<p>注意<br>当使用没有 Source 记录的时间戳的数据源(如文件)并选择 Source 记录的时间戳作为最终的事件时间戳时,默认的事件时间戳等于 LONG_MIN (=-9,223,372,036,854,775,808).</p>
+</blockquote>
+<h4 id="水印生成"><a href="#水印生成" class="headerlink" title="水印生成"></a>水印生成</h4><p>水印生成器仅在流执行期间会被激活.<br>批处理执行则会停用水印生成器,则下文所述的所有相关操作实际上都变为无操作.</p>
+<p>数据 Source API 支持每个分片单独运行水印生成器.<br>这使得 Flink 可以分别观察每个分片的事件时间进度,这对于正确处理事件时间偏差和防止空闲分区阻碍整个应用程序的事件时间进度来说是很重要的.</p>
+<img src="/images/flgl35.svg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>使用 SplitReader API 实现源连接器时,将自动进行处理.<br>所有基于 SplitReader API 的实现都具有开箱即用(out-of-the-box)的分片水印.</p>
+<p>为了保证更底层的 SourceReader API 可以使用每个分片的水印生成,必须将不同分片的事件输送到不同的输出(outputs)中:<br>局部分片(Split-local) SourceOutputs.<br>通过 createOutputForSplit(splitId) 和 releaseOutputForSplit(splitId) 方法,可以在总 ReaderOutput 上创建并发布局部分片输出.</p>
+<h2 id="旁路输出"><a href="#旁路输出" class="headerlink" title="旁路输出"></a>旁路输出</h2><p>除了由 DataStream 操作产生的主要流之外,你还可以产生任意数量的旁路输出结果流.<br>结果流中的数据类型不必与主要流中的数据类型相匹配,并且不同旁路输出的类型也可以不同.<br>当你需要拆分数据流时,通常必须复制该数据流,然后从每个流中过滤掉不需要的数据,这个操作十分有用.</p>
+<p>使用旁路输出时,首先需要定义用于标识旁路输出流的 OutputTag:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; 这需要是一个匿名的内部类,以便我们分析类型</span><br><span class="line">OutputTag&lt;String&gt; outputTag &#x3D; new OutputTag&lt;String&gt;(&quot;side-output&quot;) &#123;&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>注意 OutputTag 是如何根据旁路输出流所包含的元素类型进行类型化的.</p>
+<p>可以通过以下方法将数据发送到旁路输出:</p>
+<ol>
+<li>ProcessFunction</li>
+<li>KeyedProcessFunction</li>
+<li>CoProcessFunction</li>
+<li>KeyedCoProcessFunction</li>
+<li>ProcessWindowFunction</li>
+<li>ProcessAllWindowFunction</li>
+</ol>
+<p>你可以使用在上述方法中向用户暴露的 Context 参数,将数据发送到由 OutputTag 标识的旁路输出.<br>这是从 ProcessFunction 发送数据到旁路输出的示例:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">DataStream&lt;Integer&gt; input &#x3D; ...;</span><br><span class="line"></span><br><span class="line">final OutputTag&lt;String&gt; outputTag &#x3D; new OutputTag&lt;String&gt;(&quot;side-output&quot;)&#123;&#125;;</span><br><span class="line"></span><br><span class="line">SingleOutputStreamOperator&lt;Integer&gt; mainDataStream &#x3D; input</span><br><span class="line">  .process(new ProcessFunction&lt;Integer, Integer&gt;() &#123;</span><br><span class="line"></span><br><span class="line">      @Override</span><br><span class="line">      public void processElement(</span><br><span class="line">          Integer value,</span><br><span class="line">          Context ctx,</span><br><span class="line">          Collector&lt;Integer&gt; out) throws Exception &#123;</span><br><span class="line">        &#x2F;&#x2F; 发送数据到主要的输出</span><br><span class="line">        out.collect(value);</span><br><span class="line"></span><br><span class="line">        &#x2F;&#x2F; 发送数据到旁路输出</span><br><span class="line">        ctx.output(outputTag, &quot;sideout-&quot; + String.valueOf(value));</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br></pre></td></tr></table></figure>
+
+<p>你可以在 DataStream 运算结果上使用 <code>getSideOutput(OutputTag)</code> 方法获取旁路输出流.<br>这将产生一个与旁路输出流结果类型一致的 DataStream:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">final OutputTag&lt;String&gt; outputTag &#x3D; new OutputTag&lt;String&gt;(&quot;side-output&quot;)&#123;&#125;;</span><br><span class="line">SingleOutputStreamOperator&lt;Integer&gt; mainDataStream &#x3D; ...;</span><br><span class="line">DataStream&lt;String&gt; sideOutputStream &#x3D; mainDataStream.getSideOutput(outputTag);</span><br></pre></td></tr></table></figure>
+
+<h2 id="应用程序参数处理"><a href="#应用程序参数处理" class="headerlink" title="应用程序参数处理"></a>应用程序参数处理</h2><p>几乎所有的批和流的 Flink 应用程序,都依赖于外部配置参数.<br>这些配置参数可以用于指定输入和输出源(如路径或地址)/系统参数(并行度,运行时配置)和特定的应用程序参数(通常使用在用户自定义函数).</p>
+<p>为解决以上问题,Flink 提供一个名为 <code>Parametertool</code> 的简单公共类,其中包含了一些基本的工具.<br>请注意,这里说的 Parametertool 并不是必须使用的.<br>Commons CLI 和 argparse4j 等其他框架也可以非常好地兼容 Flink.</p>
+<h3 id="用ParameterTool读取配置值"><a href="#用ParameterTool读取配置值" class="headerlink" title="用ParameterTool读取配置值"></a>用ParameterTool读取配置值</h3><p>ParameterTool 定义了一组静态方法,用于读取配置信息.<br>该工具类内部使用了 <code>Map&lt;string,string&gt;</code> 类型,这样使得它可以很容易地与你的配置集成在一起.</p>
+<h4 id="配置值来自-properties文件"><a href="#配置值来自-properties文件" class="headerlink" title="配置值来自.properties文件"></a>配置值来自<code>.properties</code>文件</h4><p>以下方法可以读取 Properties 文件并解析出键/值对:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">String propertiesFilePath &#x3D; &quot;&#x2F;home&#x2F;sam&#x2F;flink&#x2F;myjob.properties&quot;;</span><br><span class="line">ParameterTool parameter &#x3D; ParameterTool.fromPropertiesFile(propertiesFilePath);</span><br><span class="line"></span><br><span class="line">File propertiesFile &#x3D; new File(propertiesFilePath);</span><br><span class="line">ParameterTool parameter &#x3D; ParameterTool.fromPropertiesFile(propertiesFile);</span><br><span class="line"></span><br><span class="line">InputStream propertiesFileInputStream &#x3D; new FileInputStream(file);</span><br><span class="line">ParameterTool parameter &#x3D; ParameterTool.fromPropertiesFile(propertiesFileInputStream);</span><br></pre></td></tr></table></figure>
+
+<h4 id="配置值来自命令行"><a href="#配置值来自命令行" class="headerlink" title="配置值来自命令行"></a>配置值来自命令行</h4><p>以下方法可以从命令行中获取参数,如 <code>--input hdfs:///mydata --elements 42</code>.<br><strong>配置参数需放在最后</strong>.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">public static void main(String[] args) &#123;</span><br><span class="line">    ParameterTool parameter &#x3D; ParameterTool.fromArgs(args);</span><br><span class="line">    &#x2F;&#x2F; .. regular code ..</span><br></pre></td></tr></table></figure>
+
+<h4 id="配置值来自系统属性"><a href="#配置值来自系统属性" class="headerlink" title="配置值来自系统属性"></a>配置值来自系统属性</h4><p>启动 JVM 时,可以将系统属性传递给 JVM:<code>-Dinput=hdfs:///mydata</code>.<br>你也可以从这些系统属性初始化 ParameterTool:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ParameterTool parameter &#x3D; ParameterTool.fromSystemProperties();</span><br></pre></td></tr></table></figure>
+
+<h3 id="在-Flink-程序中使用参数"><a href="#在-Flink-程序中使用参数" class="headerlink" title="在 Flink 程序中使用参数"></a>在 Flink 程序中使用参数</h3><p>现在我们已经从某处获取了参数(见上文),可以以各种不同的方式使用它们.</p>
+<h4 id="直接从ParameterTool获取"><a href="#直接从ParameterTool获取" class="headerlink" title="直接从ParameterTool获取"></a>直接从ParameterTool获取</h4><p>ParameterTool 本身具有访问配置值的方法.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">ParameterTool parameters &#x3D; &#x2F;&#x2F; ...</span><br><span class="line">parameter.getRequired(&quot;input&quot;);</span><br><span class="line">parameter.get(&quot;output&quot;, &quot;myDefaultValue&quot;);</span><br><span class="line">parameter.getLong(&quot;expectedCount&quot;, -1L);</span><br><span class="line">parameter.getNumberOfParameters();</span><br><span class="line">&#x2F;&#x2F; .. there are more methods available.</span><br></pre></td></tr></table></figure>
+
+<p>你可以在提交应用程序时直接在客户端的 main() 方法中使用这些方法的返回值.<br>例如,你可以这样设置算子的并行度:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ParameterTool parameters &#x3D; ParameterTool.fromArgs(args);</span><br><span class="line">int parallelism &#x3D; parameters.get(&quot;mapParallelism&quot;, 2);</span><br><span class="line">DataStream&lt;Tuple2&lt;String, Integer&gt;&gt; counts &#x3D; text.flatMap(new Tokenizer()).setParallelism(parallelism);</span><br></pre></td></tr></table></figure>
+
+<p>由于 ParameterTool 是序列化的,你可以将其传递给函数本身:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ParameterTool parameters &#x3D; ParameterTool.fromArgs(args);</span><br><span class="line">DataStream&lt;Tuple2&lt;String, Integer&gt;&gt; counts &#x3D; text.flatMap(new Tokenizer(parameters));</span><br></pre></td></tr></table></figure>
+
+<p>然后在函数内使用它以获取命令行的传递的参数.</p>
+<h4 id="注册全局参数"><a href="#注册全局参数" class="headerlink" title="注册全局参数"></a>注册全局参数</h4><p>从 JobManager web 界面和用户定义的所有函数中可以以配置值的方式访问在 ExecutionConfig 中注册的全局作业参数.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ParameterTool parameters &#x3D; ParameterTool.fromArgs(args);</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; set up the execution environment</span><br><span class="line">final ExecutionEnvironment env &#x3D; ExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">env.getConfig().setGlobalJobParameters(parameters);</span><br></pre></td></tr></table></figure>
+
+<p>在任意富函数中访问参数:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">public static final class Tokenizer extends RichFlatMapFunction&lt;String, Tuple2&lt;String, Integer&gt;&gt; &#123;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void flatMap(String value, Collector&lt;Tuple2&lt;String, Integer&gt;&gt; out) &#123;</span><br><span class="line">        ParameterTool parameters &#x3D; (ParameterTool)</span><br><span class="line">                getRuntimeContext().getExecutionConfig().getGlobalJobParameters();</span><br><span class="line">        parameters.getRequired(&quot;input&quot;);</span><br><span class="line">        &#x2F;&#x2F; .. do more ..</span><br></pre></td></tr></table></figure>
+
+<h4 id="使用Configuration"><a href="#使用Configuration" class="headerlink" title="使用Configuration"></a>使用Configuration</h4><p>可以通过 Configuration 对象为函数传递参数.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">DataSet&lt;Tuple2&lt;String, Integer&gt;&gt; counts &#x3D; source</span><br><span class="line">    .flatMap(new RichFlatMapFunction&lt;String, Tuple2&lt;String, Integer&gt;&gt;() &#123;</span><br><span class="line">      @Override</span><br><span class="line">      public void open(Configuration conf) throws Exception &#123;</span><br><span class="line">        conf.getInteger(&quot;xx&quot;, -1);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      @Override</span><br><span class="line">      public void flatMap(String value, Collector&lt;Tuple2&lt;String, Integer&gt;&gt; out) throws Exception &#123;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;)</span><br><span class="line">    .withParameters(conf);</span><br></pre></td></tr></table></figure>
+
+<h2 id="并行执行"><a href="#并行执行" class="headerlink" title="并行执行"></a>并行执行</h2><p>一个 Flink 程序由多个任务 task 组成(转换/算子/数据源和数据接收器).<br>一个 task 包括多个并行执行的实例,且每一个实例都处理 task 输入数据的一个子集.<br>一个 task 的并行实例数被称为该 task 的 并行度 (parallelism).</p>
+<p>使用 savepoints 时,应该考虑设置最大并行度.<br>当作业从一个 savepoint 恢复时,你可以改变特定算子或整个程序的并行度,并且此设置会限定整个程序的并行度的上限.<br>由于在 Flink 内部将状态划分为了 key-groups,且性能所限不能无限制地增加 key-groups,因此设定最大并行度是有必要的.</p>
+<h3 id="设置并行度"><a href="#设置并行度" class="headerlink" title="设置并行度"></a>设置并行度</h3><p>一个 task 的并行度可以从多个层次指定.</p>
+<h4 id="算子层次"><a href="#算子层次" class="headerlink" title="算子层次"></a>算子层次</h4><p>单个算子/数据源和数据接收器的并行度可以通过调用 setParallelism()方法来指定.<br>如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">final StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line"></span><br><span class="line">DataStream&lt;String&gt; text &#x3D; [...];</span><br><span class="line">DataStream&lt;Tuple2&lt;String, Integer&gt;&gt; wordCounts &#x3D; text</span><br><span class="line">    .flatMap(new LineSplitter())</span><br><span class="line">    .keyBy(value -&gt; value.f0)</span><br><span class="line">    .window(TumblingEventTimeWindows.of(Time.seconds(5)))</span><br><span class="line">    .sum(1).setParallelism(5);</span><br><span class="line"></span><br><span class="line">wordCounts.print();</span><br><span class="line"></span><br><span class="line">env.execute(&quot;Word Count Example&quot;);</span><br></pre></td></tr></table></figure>
+
+<h4 id="执行环境层次"><a href="#执行环境层次" class="headerlink" title="执行环境层次"></a>执行环境层次</h4><p>如此节所描述,Flink 程序运行在执行环境的上下文中.<br>执行环境为所有执行的算子/数据源/数据接收器 (data sink) 定义了一个默认的并行度.<br>可以显式配置算子层次的并行度去覆盖执行环境的并行度.</p>
+<p>可以通过调用 setParallelism() 方法指定执行环境的默认并行度.<br>如果想以并行度3来执行所有的算子/数据源和数据接收器.<br>可以在执行环境上设置默认并行度,如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">final StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">env.setParallelism(3);</span><br><span class="line"></span><br><span class="line">DataStream&lt;String&gt; text &#x3D; [...];</span><br><span class="line">DataStream&lt;Tuple2&lt;String, Integer&gt;&gt; wordCounts &#x3D; [...];</span><br><span class="line">wordCounts.print();</span><br><span class="line"></span><br><span class="line">env.execute(&quot;Word Count Example&quot;);</span><br></pre></td></tr></table></figure>
+
+<h4 id="客户端层次"><a href="#客户端层次" class="headerlink" title="客户端层次"></a>客户端层次</h4><p>将作业提交到 Flink 时可在客户端设定其并行度.<br>客户端可以是 Java 或 Scala 程序,Flink 的命令行接口(CLI)就是一种典型的客户端.</p>
+<p>在 CLI 客户端中,可以通过 -p 参数指定并行度,例如:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;flink run -p 10 ..&#x2F;examples&#x2F;*WordCount-java*.jar</span><br></pre></td></tr></table></figure>
+
+<p>在 Java/Scala 程序中,可以通过如下方式指定并行度:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">try &#123;</span><br><span class="line">    PackagedProgram program &#x3D; new PackagedProgram(file, args);</span><br><span class="line">    InetSocketAddress jobManagerAddress &#x3D; RemoteExecutor.getInetFromHostport(&quot;localhost:6123&quot;);</span><br><span class="line">    Configuration config &#x3D; new Configuration();</span><br><span class="line"></span><br><span class="line">    Client client &#x3D; new Client(jobManagerAddress, config, program.getUserCodeClassLoader());</span><br><span class="line"></span><br><span class="line">    &#x2F;&#x2F; set the parallelism to 10 here</span><br><span class="line">    client.run(program, 10, true);</span><br><span class="line"></span><br><span class="line">&#125; catch (ProgramInvocationException e) &#123;</span><br><span class="line">    e.printStackTrace();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="系统层次"><a href="#系统层次" class="headerlink" title="系统层次"></a>系统层次</h4><p>可以通过设置 ./conf/flink-conf.yaml 文件中的 parallelism.default 参数,在系统层次来指定所有执行环境的默认并行度.</p>
+<h3 id="设置最大并行度"><a href="#设置最大并行度" class="headerlink" title="设置最大并行度"></a>设置最大并行度</h3><p>最大并行度可以在所有设置并行度的地方进行设定(客户端和系统层次除外).<br>与调用 setParallelism() 方法修改并行度相似,你可以通过调用 setMaxParallelism() 方法来设定最大并行度.</p>
+<p>默认的最大并行度等于将 operatorParallelism + (operatorParallelism / 2) 值四舍五入到大于等于该值的一个整型值,并且这个整型值是 2 的幂次方,注意默认最大并行度下限为 128,上限为 32768.</p>
+<blockquote>
+<p>为最大并行度设置一个非常大的值将会降低性能,因为一些 state backends 需要维持内部的数据结构,而这些数据结构将会随着 key-groups 的数目而扩张(key-group 是状态重新分配的最小单元).</p>
+</blockquote>
+<h2 id="执行配置"><a href="#执行配置" class="headerlink" title="执行配置"></a>执行配置</h2><p>StreamExecutionEnvironment 包含了 ExecutionConfig,它允许在运行时设置作业特定的配置值.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">StreamExecutionEnvironment env &#x3D; StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">ExecutionConfig executionConfig &#x3D; env.getConfig();</span><br></pre></td></tr></table></figure>
+
+<p>以下是可用的配置选项:(默认为粗体)</p>
+<ol>
+<li><p>setClosureCleanerLevel()<br>closure cleaner 的级别默认设置为 ClosureCleanerLevel.RECURSIVE.<br>closure cleaner 删除 Flink 程序中对匿名 function 的调用类的不必要引用.<br>禁用 closure cleaner 后,用户的匿名 function 可能正引用一些不可序列化的调用类.<br>这将导致序列化器出现异常.<br>可设置的值是,<br>NONE:完全禁用 closure cleaner ,<br>TOP_LEVEL:只清理顶级类而不递归到字段中,<br>RECURSIVE:递归清理所有字段.</p>
+</li>
+<li><p>getParallelism() / setParallelism(int parallelism)<br>为作业设置默认的并行度.</p>
+</li>
+<li><p>getMaxParallelism() / setMaxParallelism(int parallelism)<br>为作业设置默认的最大并行度.<br>此设置决定最大并行度并指定动态缩放的上限.</p>
+</li>
+<li><p>getNumberOfExecutionRetries() / setNumberOfExecutionRetries(int numberOfExecutionRetries)<br>设置失败任务重新执行的次数.<br>值为0会有效地禁用容错,-1 表示使用系统默认值(在配置中定义).<br>该配置已弃用,请改用重启策略.</p>
+</li>
+<li><p>getExecutionRetryDelay() / setExecutionRetryDelay(long executionRetryDelay)<br>设置系统在作业失败后重新执行之前等待的延迟(以毫秒为单位).<br>在 TaskManagers 上成功停止所有任务后,开始计算延迟,一旦延迟过去,任务会被重新启动.<br>此参数对于延迟重新执行的场景很有用,当尝试重新执行作业时,由于相同的问题,作业会立刻再次失败,该参数便于作业再次失败之前让某些超时相关的故障完全浮出水面(例如尚未完全超时的断开连接).<br>此参数仅在执行重试次数为一次或多次时有效.<br>该配置已被弃用,请改用重启策略 .</p>
+</li>
+<li><p>getExecutionMode() / setExecutionMode()<br>默认的执行模式是 PIPELINED.<br>设置执行模式以执行程序.<br>执行模式定义了数据交换是以批处理方式还是以流方式执行.</p>
+</li>
+<li><p>enableForceKryo() / <strong>disableForceKryo</strong><br>默认情况下不强制使用 Kryo.<br>强制 GenericTypeInformation 对 POJO 使用 Kryo 序列化器,即使我们可以将它们作为 POJO 进行分析.<br>在某些情况下,应该优先启用该配置.<br>例如,当 Flink 的内部序列化器无法正确处理 POJO 时.</p>
+</li>
+<li><p>enableForceAvro() / <strong>disableForceAvro</strong>()<br>默认情况下不强制使用 Avro.<br>强制 Flink AvroTypeInfo 使用 Avro 序列化器而不是 Kryo 来序列化 Avro 的 POJO.</p>
+</li>
+<li><p>enableObjectReuse() / <strong>disableObjectReuse</strong>()<br>默认情况下,Flink 中不重用对象.<br>启用对象重用模式会指示运行时重用用户对象以获得更好的性能.<br>请当心,当一个算子的用户代码 function 没有意识到这种行为时可能会导致bug.</p>
+</li>
+<li><p>getGlobalJobParameters() / setGlobalJobParameters()<br>此方法允许用户将自定义对象设置为作业的全局配置.<br>由于 ExecutionConfig 可在所有用户定义的 function 中访问,因此这是一种使配置在作业中全局可用的简单方法.</p>
+</li>
+<li><p>addDefaultKryoSerializer(Class<?> type, Serializer<?> serializer)<br>为指定的类型注册 Kryo 序列化器实例.</p>
+</li>
+<li><p>addDefaultKryoSerializer(Class<?> type, Class<? extends Serializer<?>&gt; serializerClass)<br>为指定的类型注册 Kryo 序列化器的类.</p>
+</li>
+<li><p>registerTypeWithKryoSerializer(Class<?> type, Serializer<?> serializer)<br>使用 Kryo 注册指定类型并为其指定序列化器.<br>通过使用 Kryo 注册类型,该类型的序列化将更加高效.</p>
+</li>
+<li><p>registerKryoType(Class&lt;?&gt; type)<br>如果类型最终被 Kryo 序列化,那么它将在 Kryo 中注册,以确保只有标记(整数 ID)被写入.<br>如果一个类型没有在 Kryo 注册,它的全限定类名将在每个实例中被序列化,从而导致更高的 I/O 成本.</p>
+</li>
+<li><p>registerPojoType(Class&lt;?&gt; type)<br>将指定的类型注册到序列化栈中.<br>如果该类型最终被序列化为 POJO,那么该类型将注册到 POJO 序列化器中.<br>如果该类型最终被 Kryo 序列化,那么它将在 Kryo 中注册,以确保只有标记被写入.<br>如果一个类型没有在 Kryo 注册,它的全限定类名将在每个实例中被序列化,从而导致更高的I/O成本.<br>注意:<br>用 registerKryoType() 注册的类型对 Flink 的 Kryo 序列化器实例来说是不可用的.</p>
+</li>
+<li><p>disableAutoTypeRegistration()<br>自动类型注册在默认情况下是启用的.<br>自动类型注册是将用户代码使用的所有类型(包括子类型)注册到 Kryo 和 POJO 序列化器.</p>
+</li>
+<li><p>setTaskCancellationInterval(long interval)<br>设置尝试连续取消正在运行任务的等待时间间隔(以毫秒为单位).<br>当一个任务被取消时,会创建一个新的线程,如果任务线程在一定时间内没有终止,新线程就会定期调用任务线程上的 interrupt() 方法.<br>这个参数是指连续调用 interrupt() 的时间间隔,默认设置为 <strong>30000 毫秒,或 30秒</strong> .</p>
+</li>
+</ol>
+<p>通过 getRuntimeContext() 方法在 Rich* function 中访问到的 RuntimeContext 也允许在所有用户定义的 function 中访问 ExecutionConfig.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/flink/" rel="tag"># flink</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/19/flink%E5%AE%9E%E8%B7%B5%E7%BB%83%E4%B9%A0/" rel="prev" title="flink实践练习">
+                  <i class="fa fa-chevron-left"></i> flink实践练习
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/19/flink%20datastream%20api-%E7%8A%B6%E6%80%81%E4%B8%8E%E5%AE%B9%E9%94%99/" rel="next" title="flink datastream api-状态与容错">
+                  flink datastream api-状态与容错 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

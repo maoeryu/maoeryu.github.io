@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="概述对 clickhouse 作为准实时数仓以下能力支持程度进行探索:">
+<meta property="og:type" content="article">
+<meta property="og:title" content="clickhouse准实时数仓能力探索">
+<meta property="og:url" content="https://maoeryu.github.io/2022/10/12/clickhouse%E5%87%86%E5%AE%9E%E6%97%B6%E6%95%B0%E4%BB%93%E8%83%BD%E5%8A%9B%E6%8E%A2%E7%B4%A2/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="概述对 clickhouse 作为准实时数仓以下能力支持程度进行探索:">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1006.webp">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1005.webp">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1007.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1008.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1009.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1010.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1011.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1012.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1013.png">
+<meta property="article:published_time" content="2022-10-11T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-10-13T03:31:57.579Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="clickhouse">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1006.webp">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/10/12/clickhouse%E5%87%86%E5%AE%9E%E6%97%B6%E6%95%B0%E4%BB%93%E8%83%BD%E5%8A%9B%E6%8E%A2%E7%B4%A2/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>clickhouse准实时数仓能力探索 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%BA%E6%99%AF%E4%B8%8E%E6%A8%A1%E5%9E%8B%E8%AE%BE%E8%AE%A1"><span class="nav-number">2.</span> <span class="nav-text">场景与模型设计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E8%B7%B5"><span class="nav-number">3.</span> <span class="nav-text">实践</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ods"><span class="nav-number">3.1.</span> <span class="nav-text">ods</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dwd"><span class="nav-number">3.2.</span> <span class="nav-text">dwd</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dws"><span class="nav-number">3.3.</span> <span class="nav-text">dws</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AE%BA"><span class="nav-number">4.</span> <span class="nav-text">结论</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/10/12/clickhouse%E5%87%86%E5%AE%9E%E6%97%B6%E6%95%B0%E4%BB%93%E8%83%BD%E5%8A%9B%E6%8E%A2%E7%B4%A2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          clickhouse准实时数仓能力探索
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-10-12 00:00:00" itemprop="dateCreated datePublished" datetime="2022-10-12T00:00:00+08:00">2022-10-12</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-10-13 11:31:57" itemprop="dateModified" datetime="2022-10-13T11:31:57+08:00">2022-10-13</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>对 clickhouse 作为准实时数仓以下能力支持程度进行探索:</p>
+<span id="more"></span>
+<ol>
+<li>数据复用性<br>为了解决数据重复建设的问题,对数据模型进行分层(ods 原始数据层/dwd 明细层/dim 维度层/dws 轻度汇总层/ads 应用层),提高数据复用性.</li>
+<li>分钟级数据时效性<br>数据从上游(flink/spark/kafka 等)同步到各层(ods/dwd/dim/dws)在一分钟内完成.<br>这里只探索理论上可能性,也就是使用 clickhouse 提供的 view,主要是 MATERIALIZED view 与 live view,还有 MergeTree Engine Family 的各种表引擎对提高数据时效可行性验证.</li>
+<li>快速查询响应<br>只探索理论上可能性,也就是使用 clickhouse 提供的 view,主要是 MATERIALIZED view 与 live view,还有 MergeTree Engine Family 的各种表引擎对数据预处理与折叠(cube),对提高查询响应速度可行性验证.</li>
+<li>实时数据写入<br>使用 CollapsingMergeTree 与 VersionedCollapsingMergeTree 表引擎承接上游(flink/spark/kafka 等)实时数据写入,ReplacingMergeTree 表引擎对实时数据写入存在数据丢失情况进行数据回补.</li>
+<li>维度缓慢变化解决方案可行性<br>使用快照表与历史拉链表解决不同场景的维度缓慢变化可行性.</li>
+</ol>
+<h2 id="场景与模型设计"><a href="#场景与模型设计" class="headerlink" title="场景与模型设计"></a>场景与模型设计</h2><p>这里使用一个简化的泛零售业务场景,参与业务主体只有门店与会员,产生业务活动是销售订单.<br>而且只是正向业务过程,不包括逆向业务过程.</p>
+<img src="/images/fly1006.webp" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>销售订单事实表是累积快照事实表,订单实体某个实例(某行)不断更新,同时一个实例存储多个业务过程日期如下表.</p>
+<img src="/images/fly1005.webp" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><h3 id="ods"><a href="#ods" class="headerlink" title="ods"></a>ods</h3><p>首先使用 VersionedCollapsingMergeTree 引擎创建 ods 层订单表承接上游(flink/spark/kafka 等)对源数据变更(binlog)实时捕获写入.</p>
+<blockquote>
+<p>订单事实表是累积快照事实表,订单数据不断更新,如订单状态在下单/成单/完成支付等多个状态之间变更.<br>使用 VersionedCollapsingMergeTree 引擎通过 Versione 属性(根据订单状态生成 Versione,如 1:下单;2:成单;3:完成支付 )解决因为上游实时数据写入 clickhouse 可能存在数据丢失与乱序问题.<br>导致数据不一致问题,如同一个订单因为下单状态数据后写入,覆盖掉成单状态数据(使用 CollapsingMergeTree 引擎就会存在这个问题).</p>
+</blockquote>
+<p>创建 ods 订单表.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> test.ods_real_time_order </span><br><span class="line">(</span><br><span class="line">    order_code String COMMENT <span class="string">&#x27;订单编码&#x27;</span>,</span><br><span class="line">    order_amt Decimal32(<span class="number">2</span>) COMMENT <span class="string">&#x27;订单金额&#x27;</span>,</span><br><span class="line">    order_status String COMMENT <span class="string">&#x27;订单状态&#x27;</span>,</span><br><span class="line">    order_date DateTime COMMENT <span class="string">&#x27;下单日期&#x27;</span>,</span><br><span class="line">    order_rec_date DateTime COMMENT <span class="string">&#x27;接单日期&#x27;</span>,</span><br><span class="line">    order_com_date DateTime COMMENT <span class="string">&#x27;成单日期&#x27;</span>,</span><br><span class="line">    shop_code String COMMENT <span class="string">&#x27;门店编码&#x27;</span>,</span><br><span class="line">    member_code String COMMENT <span class="string">&#x27;会员编码&#x27;</span>,</span><br><span class="line">    sign Int8,</span><br><span class="line">    version UInt8</span><br><span class="line">) ENGINE <span class="operator">=</span> VersionedCollapsingMergeTree(sign, version)</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> shop_code</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> order_code</span><br><span class="line">SETTINGS index_granularity <span class="operator">=</span> <span class="number">8192</span>;</span><br></pre></td></tr></table></figure>
+
+<p>会员 m_001 在 2022-10-01 00:00:00 在门店 s_0001 下一张订单号为 o_0001 的销售订单.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> test.ods_real_time_order <span class="keyword">Values</span> </span><br><span class="line">(<span class="string">&#x27;o_0001&#x27;</span>, <span class="number">10.05</span>,<span class="string">&#x27;下单&#x27;</span>,<span class="string">&#x27;2022-10-01 00:00:00&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>,<span class="string">&#x27;s_0001&#x27;</span>,<span class="string">&#x27;m_0001&#x27;</span>,<span class="number">1</span>,<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+<p>门店 s_0001 的商品库存充裕,订单号为 o_0001 订单在 2022-10-01 00:00:01,状态修改为&quot;成单&quot;.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> test.ods_real_time_order <span class="keyword">Values</span> </span><br><span class="line">(<span class="string">&#x27;o_0001&#x27;</span>, <span class="number">10.05</span>,<span class="string">&#x27;下单&#x27;</span>,<span class="string">&#x27;2022-10-01 00:00:00&#x27;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>,<span class="string">&#x27;s_0001&#x27;</span>,<span class="string">&#x27;m_0001&#x27;</span>,<span class="number">-1</span>,<span class="number">1</span>)</span><br><span class="line">,(<span class="string">&#x27;o_0001&#x27;</span>, <span class="number">10.05</span>,<span class="string">&#x27;成单&#x27;</span>,<span class="string">&#x27;2022-10-01 00:00:00&#x27;</span>,<span class="string">&#x27;2022-10-01 00:00:01&#x27;</span>,<span class="keyword">null</span>,<span class="string">&#x27;s_0001&#x27;</span>,<span class="string">&#x27;m_0001&#x27;</span>,<span class="number">1</span>,<span class="number">2</span>);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Sign = 1 这意味着该行是一个对象的状态(让我们把它称为 &quot;state&quot; 行).<br>如果 Sign = -1 它指示具有相同属性的对象的状态的取消(让我们称之为 &quot;cancel&quot; 行).<br>Version 列有助于正确折叠行,即使它们以错误的顺序插入,ClickHouse 合并数据部分时,它会删除具有相同主键和 Version 但 Sign 值不同的一对行, 行的顺序并不重要.<br>相比之下, CollapsingMergeTree 只允许严格连续插入.</p>
+</blockquote>
+<p>获取数据:</p>
+<img src="/images/fly1007.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>我们在这里看到了什么,我们使用两个insert创建了两个数据部分 INSERT 查询.<br>该 SELECT 查询是在两个线程中执行的,结果是行的随机顺序.<br>由于数据部分尚未合并,因此未发生折叠.<br>ClickHouse 在我们无法预测的未知时间点合并数据部分.</p>
+<p>可以使用集合方式.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line">    order_code,</span><br><span class="line">    <span class="built_in">sum</span>(order_amt <span class="operator">*</span> sign) <span class="keyword">AS</span> order_amt</span><br><span class="line"><span class="keyword">FROM</span> test.ods_real_time_order</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> order_code</span><br><span class="line"><span class="keyword">HAVING</span> <span class="built_in">sum</span>(sign) <span class="operator">&gt;</span> <span class="number">0</span>;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Query id: dc33d4cc-4ae5-445f-bed6-7ecba4bea63f</span><br><span class="line"></span><br><span class="line">┌─order_code─┬─order_amt─┐</span><br><span class="line">│ o_0001     │     10.05 │</span><br><span class="line">└────────────┴───────────┘</span><br><span class="line"></span><br><span class="line">1 row in set. Elapsed: 0.014 sec. </span><br></pre></td></tr></table></figure>
+
+<p>如果我们不需要聚合并想要强制进行折叠,我们可以在 FROM 从句中使用 FINAL 修饰语.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> test.ods_real_time_order</span><br><span class="line"><span class="keyword">FINAL</span>;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1008.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>或者使用 optimize 触发 merge.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OPTIMIZE <span class="keyword">TABLE</span> test.ods_real_time_order <span class="keyword">FINAL</span>;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1009.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>订单号为 o_0001 订单在 2022-10-01 00:00:02 完成支付后,上游在写入数据出现了数据丢失(可能是没有捕捉到 update 事务,也可能因为 bug),丢失了 version=2 的 sign=-1 数据数据,只写入 version=3 的 sign=1 数据.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> test.ods_real_time_order <span class="keyword">Values</span> </span><br><span class="line">(<span class="string">&#x27;o_0001&#x27;</span>, <span class="number">10.05</span>,<span class="string">&#x27;完成支付&#x27;</span>,<span class="string">&#x27;2022-10-01 00:00:00&#x27;</span>,<span class="string">&#x27;2022-10-01 00:00:01&#x27;</span>,<span class="string">&#x27;2022-10-01 00:00:02&#x27;</span>,<span class="string">&#x27;s_0001&#x27;</span>,<span class="string">&#x27;m_0001&#x27;</span>,<span class="number">1</span>,<span class="number">3</span>);</span><br></pre></td></tr></table></figure>
+
+<p>再看下数据.</p>
+<img src="/images/fly1010.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>此场景就算使用 optimize 触发 merge 后,还是会同个订单号有多条数据(订单状态不一致),这个问题我们放在 dwd 层解决.</p>
+<h3 id="dwd"><a href="#dwd" class="headerlink" title="dwd"></a>dwd</h3><p>使用 ReplacingMergeTree 引擎创建 dwd 订单表,主要是为了对 ods 层数据写入时因为各种情况导致订单数据重复进行兜底.<br>在使用 clickhouse 过程中,需要对很大情况进行兜底,如上面提到 merge 在不可预知情况发生.<br>再如 clickhouse 的 MATERIALIZED VIEW 的数据同步只发生在 insert 情况.<br>这些都会加大数据开发难道,同时也增加数据处理/分析复杂性.</p>
+<blockquote>
+<p>ENGINE = ReplacingMergeTree([ver]),在数据合并的时候,ReplacingMergeTree 从所有具有相同排序键的行中选择一行留下:如果 ver 列未指定,保留最后一条;如果 ver 列已指定,保留 ver 值最大的版本.<br>数据的去重只会在数据合并期间进行.<br>合并会在后台一个不确定的时间进行.<br>有一些数据可能仍未被处理.<br>尽管你可以调用 OPTIMIZE 语句发起计划外的合并,但请不要依靠它,因为 OPTIMIZE 语句会引发对数据的大量读写.</p>
+</blockquote>
+<p>创建 dwd 订单 MATERIALIZED VIEW:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> test.dwd_order </span><br><span class="line">(</span><br><span class="line">    order_code String COMMENT <span class="string">&#x27;订单编码&#x27;</span>,</span><br><span class="line">    order_amt Decimal32(<span class="number">2</span>) COMMENT <span class="string">&#x27;订单金额&#x27;</span>,</span><br><span class="line">    order_status String COMMENT <span class="string">&#x27;订单状态&#x27;</span>,</span><br><span class="line">    order_date DateTime COMMENT <span class="string">&#x27;下单日期&#x27;</span>,</span><br><span class="line">    order_rec_date DateTime COMMENT <span class="string">&#x27;接单日期&#x27;</span>,</span><br><span class="line">    order_com_date DateTime COMMENT <span class="string">&#x27;成单日期&#x27;</span>,</span><br><span class="line">    shop_code String COMMENT <span class="string">&#x27;门店编码&#x27;</span>,</span><br><span class="line">    member_code String COMMENT <span class="string">&#x27;会员编码&#x27;</span>,</span><br><span class="line">    sign Int8,</span><br><span class="line">    version UInt8</span><br><span class="line">) ENGINE <span class="operator">=</span> ReplacingMergeTree(version) </span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> shop_code</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> order_code</span><br><span class="line">SETTINGS index_granularity <span class="operator">=</span> <span class="number">8192</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> MATERIALIZED <span class="keyword">VIEW</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> test.dwd_order_v <span class="keyword">to</span> test.dwd_order</span><br><span class="line"><span class="keyword">as</span> <span class="keyword">select</span></span><br><span class="line">    order_code,</span><br><span class="line">    order_amt,</span><br><span class="line">    order_status,</span><br><span class="line">    order_date,</span><br><span class="line">    order_rec_date,</span><br><span class="line">    order_com_date,</span><br><span class="line">    shop_code,</span><br><span class="line">    member_code,</span><br><span class="line">    sign ,</span><br><span class="line">    version </span><br><span class="line"><span class="keyword">from</span> test.ods_real_time_order ;</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test.dwd_order </span><br><span class="line"><span class="keyword">select</span></span><br><span class="line">    order_code,</span><br><span class="line">    order_amt,</span><br><span class="line">    order_status,</span><br><span class="line">    order_date,</span><br><span class="line">    order_rec_date,</span><br><span class="line">    order_com_date,</span><br><span class="line">    shop_code,</span><br><span class="line">    member_code,</span><br><span class="line">    sign ,</span><br><span class="line">    version </span><br><span class="line"><span class="keyword">from</span> test.ods_real_time_order ;</span><br></pre></td></tr></table></figure>
+
+<p>这里使用带有 TO [db].[table]方式创建 MATERIALIZED VIEW,不能够使用 populate 初始化视图的数据,所以这种情况下,我们需要手动加载视图创建之前的源表中的数据.<br>因为在探索过程中发现如果 dwd 使用 without TO [db].[table] 创建 MATERIALIZED VIEW,dws 再基于这个 MATERIALIZED VIEW 创建 dws 的 MATERIALIZED VIEW,ods 写入的订单数据无法同步到 dws 的 MATERIALIZED VIEW,因此使用带有 TO [db].[table]方式创建 MATERIALIZED VIEW.</p>
+<p>查看下 dwd 订单数据,只剩下 version 最大的订单,解决了 ods 遗留下重复订单问题.</p>
+<img src="/images/fly1011.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>因为 clickhosue 的 Materialized views 存在以下局限,也就是 Materialized views 视图只在 inserted data 时触发执行同步数据.</p>
+<blockquote>
+<p>Materialized views in ClickHouse are implemented more like insert triggers. If there’s some aggregation in the view query, it’s applied only to the batch of freshly inserted data. Any changes to existing data of source table (like update, delete, drop partition, etc.) does not change the materialized view.Materialized views 的局限会导致以下问题</p>
+</blockquote>
+<p>ods 订单删除,dwd 层感知不到如 ods 删除订单号为 o_0001 订单,在分别对 ods/dwd 进行 OPTIMIZE.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> test.ods_real_time_order <span class="keyword">Values</span> </span><br><span class="line">(<span class="string">&#x27;o_0001&#x27;</span>, <span class="number">10.05</span>,<span class="string">&#x27;完成支付&#x27;</span>,<span class="string">&#x27;2022-10-01 00:00:00&#x27;</span>,<span class="string">&#x27;2022-10-01 00:00:01&#x27;</span>,<span class="string">&#x27;2022-10-01 00:00:02&#x27;</span>,<span class="string">&#x27;</span></span><br><span class="line"><span class="string">s_0001&#x27;</span>,<span class="string">&#x27;m_0001&#x27;</span>,<span class="number">-1</span>,<span class="number">3</span>);</span><br></pre></td></tr></table></figure>
+
+<p>查看 ods/dwd 订单数据,ods 已经删除 version=3 订单,但 dwd 还存在此订单.<br>此问题可以跟上游约定对 ods 数据物理 delete,改为逻辑 delete,如增加一条 version=4 订单,订单状态为&quot;取消单&quot;.<br>或者下游使用时过滤掉 sign=-1 数据.</p>
+<img src="/images/fly1012.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fly1013.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="dws"><a href="#dws" class="headerlink" title="dws"></a>dws</h3><p>在 dws 订单表首先使用 AggregatingMergeTree 引擎创建门店天汇总订单表,再使用 SummingMergeTree 引擎创建门店月汇总订单.<br>clickhosue 的 AggregatingMergeTree 引擎真的溜溜的,之前也使用过其他 olap 引擎设计 cube,通过预计算与层层折叠提高模型复用性与查询性能,但一直没法覆盖去重场景,如统计 uv 指标时,同一天内相同的客户端只被计算一次,clickhosue 的 AggregatingMergeTree 引擎就可以很好覆盖这类场景.</p>
+<blockquote>
+<p>AggregatingMergeTree 表来做增量数据的聚合统计,包括物化视图的数据聚合.<br>要插入数据,需使用带有 -State- 聚合函数的 INSERT SELECT 语句.<br>从 AggregatingMergeTree 表中查询数据时,需使用 GROUP BY 子句并且要使用与插入时相同的聚合函数,但后缀要改为 -Merge .</p>
+</blockquote>
+<p>创建 dws 门店天汇总订单表,计算门店每天成单金额与成单用户数(相同的用户只被计算一次).</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">table</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> test.dws_shop_order_daily </span><br><span class="line">(</span><br><span class="line">    order_date UInt32 COMMENT <span class="string">&#x27;下单日期&#x27;</span>,</span><br><span class="line">    shop_code String COMMENT <span class="string">&#x27;门店编码&#x27;</span>,</span><br><span class="line">    order_amt AggregateFunction(sum, Decimal32(<span class="number">2</span>)) <span class="keyword">DEFAULT</span> initializeAggregation(<span class="string">&#x27;sumState&#x27;</span>, toDecimal32(<span class="number">0</span>,<span class="number">2</span>)) COMMENT <span class="string">&#x27;成单金额&#x27;</span>,</span><br><span class="line">    uv AggregateFunction(uniq, String) COMMENT <span class="string">&#x27;成单用户数&#x27;</span></span><br><span class="line">)</span><br><span class="line">ENGINE <span class="operator">=</span> AggregatingMergeTree()</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> order_date</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> (shop_code);</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> MATERIALIZED <span class="keyword">VIEW</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> test.dws_shop_order_daily_v <span class="keyword">to</span> test.dws_shop_order_daily </span><br><span class="line"><span class="keyword">as</span> <span class="keyword">select</span></span><br><span class="line">    toYYYYMMDD(a.order_date) <span class="keyword">AS</span> order_date,</span><br><span class="line">    a.shop_code,</span><br><span class="line">    sumState(a.order_amt) <span class="keyword">AS</span> order_amt,</span><br><span class="line">    uniqState(member_code) <span class="keyword">AS</span> uv</span><br><span class="line"><span class="keyword">from</span> test.dwd_order a <span class="keyword">where</span> a.order_status<span class="operator">=</span><span class="string">&#x27;成单&#x27;</span> <span class="keyword">group</span> <span class="keyword">by</span> a.shop_code,toYYYYMMDD(a.order_date);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test.dws_shop_order_daily </span><br><span class="line"><span class="keyword">select</span></span><br><span class="line">    toYYYYMMDD(a.order_date) <span class="keyword">AS</span> order_date,</span><br><span class="line">    a.shop_code,</span><br><span class="line">    sumState(a.order_amt) <span class="keyword">AS</span> order_amt,</span><br><span class="line">    uniqState(member_code) <span class="keyword">AS</span> uv</span><br><span class="line"><span class="keyword">from</span> test.dwd_order a <span class="keyword">where</span> a.order_status<span class="operator">=</span><span class="string">&#x27;成单&#x27;</span> <span class="keyword">group</span> <span class="keyword">by</span> a.shop_code,toYYYYMMDD(a.order_date);</span><br></pre></td></tr></table></figure>
+
+<p>查看下 dws 门店天汇总订单数据.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line">    order_date,</span><br><span class="line">    shop_code,</span><br><span class="line">    sumMerge(order_amt),</span><br><span class="line">    uniqMerge(uv)</span><br><span class="line"><span class="keyword">FROM</span> test.dws_shop_order_daily</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span></span><br><span class="line">    shop_code,</span><br><span class="line">    order_date</span><br><span class="line">;</span><br></pre></td></tr></table></figure>
+
+<p>会员 m_002 在 2022-10-01 01:00:03 在门店 s_0001 完成订单 o_0002 支付.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> test.ods_real_time_order <span class="keyword">Values</span> </span><br><span class="line">(<span class="string">&#x27;o_0002&#x27;</span>, <span class="number">10.05</span>,<span class="string">&#x27;完成支付&#x27;</span>,<span class="string">&#x27;2022-10-01 01:00:00&#x27;</span>,<span class="string">&#x27;2022-10-01 01:00:01&#x27;</span>,<span class="string">&#x27;2022-10-01 01:00:02&#x27;</span>,<span class="string">&#x27;s_0001&#x27;</span>,<span class="string">&#x27;m_0002&#x27;</span>,<span class="number">1</span>,<span class="number">3</span>);</span><br></pre></td></tr></table></figure>
+
+<p>再查看 dws 门店天汇总订单数据.</p>
+<p>创建 dws 门店月汇总订单表,计算每月门店成单金额.</p>
+<blockquote>
+<p>合并 SummingMergeTree 表的数据片段时,ClickHouse 会把所有具有相同主键的行合并为一行,该行包含了被合并的行中具有数值数据类型的列的汇总值.<br>列中数值类型的值会被汇总.<br>这些列的集合在参数 columns 中被定义.<br>如果用于汇总的所有列中的值均为 0,则该行会被删除.<br>如果列不在主键中且无法被汇总,则会在现有的值中任选一个.<br>主键所在的列中的值不会被汇总.</p>
+</blockquote>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> test.dws_shop_order_monthly</span><br><span class="line">(</span><br><span class="line">    order_date UInt32 COMMENT <span class="string">&#x27;下单年月&#x27;</span>,</span><br><span class="line">    shop_code String COMMENT <span class="string">&#x27;门店编码&#x27;</span>,</span><br><span class="line">    order_amt Decimal32(<span class="number">2</span>) COMMENT <span class="string">&#x27;成单金额&#x27;</span></span><br><span class="line">)</span><br><span class="line">ENGINE <span class="operator">=</span> SummingMergeTree(order_amt)</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> order_date</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> (shop_code,order_date);</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> MATERIALIZED <span class="keyword">VIEW</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> test.dws_shop_order_monthly_v <span class="keyword">to</span> test.dws_shop_order_monthly</span><br><span class="line"><span class="keyword">as</span> </span><br><span class="line"><span class="keyword">with</span> t <span class="keyword">as</span> </span><br><span class="line">(</span><br><span class="line">  <span class="keyword">SELECT</span></span><br><span class="line">    order_date,</span><br><span class="line">    shop_code,</span><br><span class="line">    sumMerge ( order_amt ) <span class="keyword">as</span> order_amt,</span><br><span class="line">    uniqMerge ( uv ) <span class="keyword">as</span> uv </span><br><span class="line">  <span class="keyword">FROM</span></span><br><span class="line">    test.dws_shop_order_daily</span><br><span class="line">  <span class="keyword">GROUP</span> <span class="keyword">BY</span></span><br><span class="line">    shop_code,</span><br><span class="line">    order_date</span><br><span class="line">)</span><br><span class="line"><span class="keyword">select</span> </span><br><span class="line">    toYYYYMM(toDate(toString(order_date))) <span class="keyword">as</span> order_date,</span><br><span class="line">    shop_code,</span><br><span class="line">    <span class="built_in">sum</span>(order_amt) <span class="keyword">AS</span> order_amt</span><br><span class="line"><span class="keyword">from</span> t <span class="keyword">group</span> <span class="keyword">by</span> shop_code,order_date;</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test.dws_shop_order_monthly</span><br><span class="line"><span class="keyword">with</span> t <span class="keyword">as</span> </span><br><span class="line">(</span><br><span class="line">  <span class="keyword">SELECT</span></span><br><span class="line">    order_date,</span><br><span class="line">    shop_code,</span><br><span class="line">    sumMerge ( order_amt ) <span class="keyword">as</span> order_amt,</span><br><span class="line">    uniqMerge ( uv ) <span class="keyword">as</span> uv </span><br><span class="line">  <span class="keyword">FROM</span></span><br><span class="line">    test.dws_shop_order_daily</span><br><span class="line">  <span class="keyword">GROUP</span> <span class="keyword">BY</span></span><br><span class="line">    shop_code,</span><br><span class="line">    order_date</span><br><span class="line">)</span><br><span class="line"><span class="keyword">select</span> </span><br><span class="line">    toYYYYMM(toDate(toString(order_date))) <span class="keyword">as</span> order_date,</span><br><span class="line">    shop_code,</span><br><span class="line">    <span class="built_in">sum</span>(order_amt) <span class="keyword">AS</span> order_amt</span><br><span class="line"><span class="keyword">from</span> t <span class="keyword">group</span> <span class="keyword">by</span> shop_code,order_date;</span><br></pre></td></tr></table></figure>
+
+<p>查看下 dws 门店月汇总订单数据.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line">    order_date,</span><br><span class="line">    shop_code,</span><br><span class="line">    <span class="built_in">sum</span>(order_amt)</span><br><span class="line"><span class="keyword">FROM</span> test.dws_shop_order_monthly</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span></span><br><span class="line">    shop_code,</span><br><span class="line">    order_date</span><br><span class="line">;</span><br></pre></td></tr></table></figure>
+
+<p>会员 m_003 在 2022-10-02 01:00:03 在门店 s_0001 完成订单 o_0003 支付.<br>会员 m_004 在 2022-11-01 01:00:03 在门店 s_0001 完成订单 o_0004 支付.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> test.ods_real_time_order <span class="keyword">Values</span> </span><br><span class="line">(<span class="string">&#x27;o_0003&#x27;</span>, <span class="number">10.05</span>,<span class="string">&#x27;完成支付&#x27;</span>,<span class="string">&#x27;2022-10-02 01:00:00&#x27;</span>,<span class="string">&#x27;2022-10-01 01:00:01&#x27;</span>,<span class="string">&#x27;2022-10-01 01:00:02&#x27;</span>,<span class="string">&#x27;s_0001&#x27;</span>,<span class="string">&#x27;m_0003&#x27;</span>,<span class="number">1</span>,<span class="number">3</span>)</span><br><span class="line">,(<span class="string">&#x27;o_0004&#x27;</span>, <span class="number">10.05</span>,<span class="string">&#x27;完成支付&#x27;</span>,<span class="string">&#x27;2022-11-01 01:00:00&#x27;</span>,<span class="string">&#x27;2022-11-01 01:00:01&#x27;</span>,<span class="string">&#x27;2022-11-01 01:00:02&#x27;</span>,<span class="string">&#x27;s_0001&#x27;</span>,<span class="string">&#x27;m_0004&#x27;</span>,<span class="number">1</span>,<span class="number">3</span>);</span><br></pre></td></tr></table></figure>
+
+<p>查看下 dws 门店月汇总订单数据.</p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>通过实践结果对 clickhouse 作为准实时数仓能力进行总结.</p>
+<ol>
+<li>数据复用性<br>通过对数据分层与 clickhosue 提供的 MATERIALIZED view 能力,可以解决数据重复建设,提高数据复用性,同时简化数据处理(不用配置与维护任务调度).</li>
+<li>分钟级数据时效性<br>clickhosue 提供的 MATERIALIZED view 能力可以提高数据在各层同步时效 .</li>
+<li>快速查询响应<br>MergeTree Engine Family 引擎通过预计算与增量计算可以提高数据处理性能.</li>
+<li>实时数据写入<br>使用 CollapsingMergeTree 与 VersionedCollapsingMergeTree 表引擎可以实现数据实时写入.</li>
+</ol>
+<p>同时 clickhouse 存在的以下局限会因为数据分层,特别是层出引用之后问题被放大,同时增加数据开放成本(需要各种兜底方案),增加运维复杂性(问题定位复杂).</p>
+<p>merge 在不可预知情况发生,MATERIALIZED VIEW 的数据同步只发生在 insert.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/clickhouse/" rel="tag"># clickhouse</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/10/12/flume%20monitor/" rel="prev" title="flume monitor">
+                  <i class="fa fa-chevron-left"></i> flume monitor
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/10/13/hudi%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98/" rel="next" title="hudi常见问题">
+                  hudi常见问题 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

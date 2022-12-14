@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="https:&#x2F;&#x2F;tez.apache.org&#x2F;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hive on tez">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/29/hive%20on%20tez/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="https:&#x2F;&#x2F;tez.apache.org&#x2F;">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/tez1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/tez2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/tez4.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/tez3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/tez5.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/tez6.png">
+<meta property="article:published_time" content="2022-08-28T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-06T03:01:49.456Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hive">
+<meta property="article:tag" content="tez">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/tez1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/29/hive%20on%20tez/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hive on tez | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#tez%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">tez简介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%93%E6%9E%84%E7%BB%84%E6%88%90"><span class="nav-number">1.1.</span> <span class="nav-text">结构组成</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85"><span class="nav-number">2.</span> <span class="nav-text">安装</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8B%E8%BD%BDtez"><span class="nav-number">2.1.</span> <span class="nav-text">下载tez</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8A%E4%BC%A0tez%E5%8C%85%E5%88%B0hdfs"><span class="nav-number">2.2.</span> <span class="nav-text">上传tez包到hdfs</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">3.</span> <span class="nav-text">配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#tez-site-xml"><span class="nav-number">3.1.</span> <span class="nav-text">tez-site.xml</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mapred-site-xml"><span class="nav-number">3.2.</span> <span class="nav-text">mapred-site.xml</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hadoop-env-sh"><span class="nav-number">3.3.</span> <span class="nav-text">hadoop-env.sh</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E5%90%AFhadoop%E9%9B%86%E7%BE%A4"><span class="nav-number">3.4.</span> <span class="nav-text">重启hadoop集群</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95tez"><span class="nav-number">4.</span> <span class="nav-text">测试tez</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tez-ui"><span class="nav-number">5.</span> <span class="nav-text">tez-ui</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8B%E8%BD%BDtomcat"><span class="nav-number">5.1.</span> <span class="nav-text">下载tomcat</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#yarn-site-xml"><span class="nav-number">5.2.</span> <span class="nav-text">yarn-site.xml</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tez-site-xml-1"><span class="nav-number">5.3.</span> <span class="nav-text">tez-site.xml</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E5%90%AFhadoop%E9%9B%86%E7%BE%A4-hive"><span class="nav-number">5.4.</span> <span class="nav-text">重启hadoop集群&#x2F;hive</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8Bui"><span class="nav-number">5.5.</span> <span class="nav-text">查看ui</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/29/hive%20on%20tez/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hive on tez
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-29 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-29T00:00:00+08:00">2022-08-29</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-06 11:01:49" itemprop="dateModified" datetime="2022-09-06T11:01:49+08:00">2022-09-06</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+          , 
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p><a target="_blank" rel="noopener" href="https://tez.apache.org/">https://tez.apache.org/</a></p>
+<span id="more"></span>
+<h2 id="tez简介"><a href="#tez简介" class="headerlink" title="tez简介"></a>tez简介</h2><p>Tez 是支持 DAG 作业的开源计算框架,它可以将多个有依赖的作业转换为一个作业从而大幅提升 DAG 作业的性能.</p>
+<p>从本质上讲,Tez 组成非常简单,只有两个组成部分:</p>
+<ol>
+<li>数据处理管道引擎,其中一个引擎可以输入,处理和输出实现以执行任意数据处理.</li>
+<li>数据处理应用程序的主机,通过它可以将上述任意数据处理&quot;任务&quot;组合到任务 DAG 中,以根据需要处理数据.</li>
+</ol>
+<p>总的来说MR任务在map和reduce阶段都会产生I/O落盘,但是Tez就不要这一步骤了.<br>Tez采用了DAG(有向无环图)来组织MR任务.<br>核心思想:<br>将Map任务和Reduce任务进一步拆分,Map任务拆分为<code>Input-Processor-Sort-Merge-Output</code>,Reduce任务拆分为<code>Input-Shuffer-Sort-Merge-Process-output</code>,Tez将若干小任务灵活重组,形成一个大的DAG作业.</p>
+<p>通过允许诸如 Apache Hive之类的项目运行复杂的 DAG 任务,Tez 可以用于处理数据,该数据以前需要执行多个 MR 作业,而现在在单个 Tez 作业中.</p>
+<h3 id="结构组成"><a href="#结构组成" class="headerlink" title="结构组成"></a>结构组成</h3><p>Tez 计算引擎结构更加类似于Spark,但却有所区别,Tez包含的组件:</p>
+<ol>
+<li>有向无环图(DAG)<br>定义整体任务.<br>一个DAG对象对应一个任务.</li>
+<li>节点(Vertex)<br>定义用户逻辑以及执行用户逻辑所需的资源和环境.<br>一个节点对应任务中的一个步骤.</li>
+<li>边(Edge)<br>定义生产者和消费者节点之间的连接.<br>边需要分配属性,对Tez而言这些属性是必须的,有了它们才能在运行时将逻辑图展开为能够在集群上并行执行的物理任务集合.</li>
+</ol>
+<p>Tez对外提供了6种可编程组件:</p>
+<ol>
+<li>Input:对输入数据源的抽象,它解析输入数据格式,并吐出一个个Key/value</li>
+<li>Output:对输出数据源的抽象,它将用户程序产生的Key/value写入文件系统</li>
+<li>Paritioner:对数据进行分片,类似于MR中的Partitioner</li>
+<li>Processor:对计算的抽象,它从一个Input中获取数据,经处理后,通过Output输出</li>
+<li>Task:对任务的抽象,每个Task由一个Input、Ouput和Processor组成</li>
+<li>Master:管理各个Task的依赖关系,并按顺依赖关系执行他们</li>
+</ol>
+<p>除了以上6种组件,Tez还提供了两种算子,分别是Sort(排序)和Shuffle(混洗),为了用户使用方便,它还提供了多种Input、Output、Task和Sort的实现.</p>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><h3 id="下载tez"><a href="#下载tez" class="headerlink" title="下载tez"></a>下载tez</h3><p><a target="_blank" rel="noopener" href="https://tez.apache.org/install.html">https://tez.apache.org/install.html</a>.<br>下载对应hadoop版本的tez包.</p>
+<p>解压,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tar xzf apache-tez-0.8.5-bin.tar.gz</span><br><span class="line">ln -s apache-tez-0.8.5-bin tez</span><br></pre></td></tr></table></figure>
+
+<h3 id="上传tez包到hdfs"><a href="#上传tez包到hdfs" class="headerlink" title="上传tez包到hdfs"></a>上传tez包到hdfs</h3><p>将tez文件夹里share文件夹下的<code>tez.tar.gz</code>上传上去.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hdfs dfs -mkdir -p &#x2F;tez</span><br><span class="line">cd &#x2F;opt&#x2F;tez&#x2F;</span><br><span class="line">hdfs dfs -put share&#x2F;tez.tar.gz &#x2F;tez&#x2F;</span><br></pre></td></tr></table></figure>
+
+<p>更正tez对应的hadoop jar包,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd &#x2F;opt&#x2F;tez&#x2F;lib</span><br><span class="line">rm -f .&#x2F;hadoop-mapreduce-client-co*-2.6.0.jar</span><br><span class="line">ln -s &#x2F;opt&#x2F;hadoop&#x2F;share&#x2F;hadoop&#x2F;mapreduce&#x2F;hadoop-mapreduce-client-co* .</span><br></pre></td></tr></table></figure>
+
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><h3 id="tez-site-xml"><a href="#tez-site-xml" class="headerlink" title="tez-site.xml"></a>tez-site.xml</h3><p>在hadoop配置目录下,创建一个tez-site.xml文件,添加配置,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cd &#x2F;opt&#x2F;hadoop&#x2F;etc&#x2F;hadoop</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;tez.lib.uris&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;$&#123;fs.defaultFS&#125;&#x2F;tez&#x2F;tez.tar.gz&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;tez.container.max.java.heap.fraction&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;0.2&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;&#x2F;configuration&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="mapred-site-xml"><a href="#mapred-site-xml" class="headerlink" title="mapred-site.xml"></a>mapred-site.xml</h3><p>修改mapred-site.xml文件,将<code>mapreduce.framework.name</code>配置为<code>yarn-tez</code>.</p>
+<h3 id="hadoop-env-sh"><a href="#hadoop-env-sh" class="headerlink" title="hadoop-env.sh"></a>hadoop-env.sh</h3><p>修改hadoop-env.sh文件,在文件末尾添加以下内容,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">TEZ_CONF_DIR&#x3D;&#x2F;opt&#x2F;hadoop&#x2F;etc&#x2F;hadoop&#x2F;tez-site.xml</span><br><span class="line">TEZ_JARS&#x3D;&#x2F;opt&#x2F;tez</span><br><span class="line">export HADOOP_CLASSPATH&#x3D;$&#123;HADOOP_CLASSPATH&#125;:$&#123;TEZ_CONF_DIR&#125;:$&#123;TEZ_JARS&#125;&#x2F;*:$&#123;TEZ_JARS&#125;&#x2F;lib&#x2F;*</span><br></pre></td></tr></table></figure>
+
+<h3 id="重启hadoop集群"><a href="#重启hadoop集群" class="headerlink" title="重启hadoop集群"></a>重启hadoop集群</h3><p>以上内容在集群每个节点上操作.<br>重启hadoop集群/hive.</p>
+<h2 id="测试tez"><a href="#测试tez" class="headerlink" title="测试tez"></a>测试tez</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#set hive.execution.engine&#x3D;mr;</span><br><span class="line">set hive.execution.engine&#x3D;tez;</span><br><span class="line">select count(*) from xxx;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/tez1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/tez2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="tez-ui"><a href="#tez-ui" class="headerlink" title="tez-ui"></a>tez-ui</h2><h3 id="下载tomcat"><a href="#下载tomcat" class="headerlink" title="下载tomcat"></a>下载tomcat</h3><p>tomcat默认端口8080.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">tar xzf apache-tomcat-8.5.50.tar.gz</span><br><span class="line">ln -s apache-tomcat-8.5.50 tomcat</span><br><span class="line">cd &#x2F;opt&#x2F;tomcat&#x2F;webapps&#x2F;</span><br><span class="line">rm -rf .&#x2F;*</span><br><span class="line">mkdir tez-ui</span><br><span class="line">cd tez-ui&#x2F;</span><br><span class="line">cp &#x2F;opt&#x2F;tez&#x2F;tez-ui-0.8.5.war .</span><br><span class="line">unzip tez-ui-0.8.5.war</span><br></pre></td></tr></table></figure>
+
+<p>修改scripts/configs.js,或使用tez-ui2下的config/configs.env,</p>
+<img src="/images/tez4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/tez3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="yarn-site-xml"><a href="#yarn-site-xml" class="headerlink" title="yarn-site.xml"></a>yarn-site.xml</h3><p>修改yarn-site.xml,增加以下配置,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;yarn.timeline-service.enabled&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;true&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;yarn.timeline-service.hostname&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;master1&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;yarn.timeline-service.http-cross-origin.enabled&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;true&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt; yarn.resourcemanager.system-metrics-publisher.enabled&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;true&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="tez-site-xml-1"><a href="#tez-site-xml-1" class="headerlink" title="tez-site.xml"></a>tez-site.xml</h3><p>修改tez-site.xml,增加以下配置,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;tez.history.logging.service.class&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;org.apache.tez.dag.history.logging.ats.ATSHistoryLoggingService&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;tez.tez-ui.history-url.base&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;http:&#x2F;&#x2F;hadoop-sh1-core1:8080&#x2F;tez-ui&#x2F;&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="重启hadoop集群-hive"><a href="#重启hadoop集群-hive" class="headerlink" title="重启hadoop集群/hive"></a>重启hadoop集群/hive</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">stop-dfs.sh</span><br><span class="line">stop-yarn.sh</span><br><span class="line"></span><br><span class="line">start-dfs.sh</span><br><span class="line">start-yarn.sh</span><br></pre></td></tr></table></figure>
+
+<p>启动historyserver/timelineserver,进程名称分别为JobHistoryServer/ApplicationHistoryServer.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cd &#x2F;opt&#x2F;hadoop&#x2F;</span><br><span class="line">.&#x2F;sbin&#x2F;mr-jobhistory-daemon.sh start historyserver</span><br><span class="line">#timelineserver服务</span><br><span class="line">.&#x2F;sbin&#x2F;yarn-daemon.sh start timelineserver</span><br></pre></td></tr></table></figure>
+
+<p>启动tomcat.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd &#x2F;opt&#x2F;tomcat</span><br><span class="line">.&#x2F;bin&#x2F;startup.sh</span><br></pre></td></tr></table></figure>
+
+<h3 id="查看ui"><a href="#查看ui" class="headerlink" title="查看ui"></a>查看ui</h3><p><code>http://hadoop-sh1-core1:8080/tez-ui/</code><br><img src="/images/tez5.png" style="margin-left: 0px; padding-bottom: 10px;"></p>
+<p><code>http://hadoop-sh1-core1:8188/applicationhistory</code><br><img src="/images/tez6.png" style="margin-left: 0px; padding-bottom: 10px;"></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hive/" rel="tag"># hive</a>
+              <a href="/tags/tez/" rel="tag"># tez</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/26/flink%20try/" rel="prev" title="flink try">
+                  <i class="fa fa-chevron-left"></i> flink try
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/30/spark%20question/" rel="next" title="spark question">
+                  spark question <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

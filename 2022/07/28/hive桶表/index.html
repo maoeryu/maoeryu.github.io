@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="对于每一个表或者分区,Hive可以进一步组织成桶,也就是说桶是更为细粒度的数据范围划分.Hive也是针对某一列进行桶的组织.Hive采用对列值哈希,然后除以桶的个数求余的方式决定该条记录存放在哪个桶当中.所谓Hive中的分桶,实际就是指的MapReduce中的分区.根据Reduce的数量,分成不同个数的文件.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hive桶表">
+<meta property="og:url" content="https://maoeryu.github.io/2022/07/28/hive%E6%A1%B6%E8%A1%A8/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="对于每一个表或者分区,Hive可以进一步组织成桶,也就是说桶是更为细粒度的数据范围划分.Hive也是针对某一列进行桶的组织.Hive采用对列值哈希,然后除以桶的个数求余的方式决定该条记录存放在哪个桶当中.所谓Hive中的分桶,实际就是指的MapReduce中的分区.根据Reduce的数量,分成不同个数的文件.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-07-27T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-08-25T03:20:59.124Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hive">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/07/28/hive%E6%A1%B6%E8%A1%A8/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hive桶表 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE"><span class="nav-number">1.</span> <span class="nav-text">测试数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95sql"><span class="nav-number">2.</span> <span class="nav-text">测试sql</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A1%B6%E8%A1%A8%E4%BC%98%E7%82%B9"><span class="nav-number">3.</span> <span class="nav-text">桶表优点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/07/28/hive%E6%A1%B6%E8%A1%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hive桶表
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-07-28 00:00:00" itemprop="dateCreated datePublished" datetime="2022-07-28T00:00:00+08:00">2022-07-28</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-08-25 11:20:59" itemprop="dateModified" datetime="2022-08-25T11:20:59+08:00">2022-08-25</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>对于每一个表或者分区,Hive可以进一步组织成桶,也就是说桶是更为细粒度的数据范围划分.<br>Hive也是针对某一列进行桶的组织.<br>Hive采用对列值哈希,然后除以桶的个数求余的方式决定该条记录存放在哪个桶当中.<br>所谓Hive中的分桶,实际就是指的MapReduce中的分区.<br>根据Reduce的数量,分成不同个数的文件.</p>
+<span id="more"></span>
+
+<h3 id="测试数据"><a href="#测试数据" class="headerlink" title="测试数据"></a>测试数据</h3><p>1 jack  2016/11/11<br>2 michael 2016/11/12<br>3 summer  2016/11/13<br>4 spring  2016/11/14<br>5 nero  2016/11/15<br>6 book  2016/12/21<br>7 node  2016/12/22<br>8 tony  2016/12/23<br>9 green 2016/12/24<br>10  andy  2016/12/25<br>11  kaith 2016/12/26<br>12  spring  2016/12/27<br>13  andy  2016/12/28<br>14  tony  2016/12/29<br>15  green 2016/12/30<br>16  andy  2016/12/31<br>17  kaith 2017/1/1<br>18  xiaoming  2017/1/2</p>
+<h3 id="测试sql"><a href="#测试sql" class="headerlink" title="测试sql"></a>测试sql</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t_temp(</span><br><span class="line">id <span class="type">int</span>,</span><br><span class="line">name string</span><br><span class="line">)</span><br><span class="line">partitioned <span class="keyword">by</span> (dt string)</span><br><span class="line"><span class="type">row</span> format delimited</span><br><span class="line">fields terminated <span class="keyword">by</span> <span class="string">&#x27;,&#x27;</span></span><br><span class="line">collection items terminated <span class="keyword">by</span> <span class="string">&#x27;,&#x27;</span></span><br><span class="line">map keys terminated <span class="keyword">by</span> <span class="string">&#x27;:&#x27;</span></span><br><span class="line">lines terminated <span class="keyword">by</span> <span class="string">&#x27;\n&#x27;</span></span><br><span class="line">stored <span class="keyword">as</span> textfile;</span><br><span class="line"></span><br><span class="line">load data <span class="keyword">local</span> inpath <span class="string">&#x27;/data/wangwei/aaa.txt&#x27;</span> <span class="keyword">into</span> <span class="keyword">table</span> t_temp <span class="keyword">partition</span> (dt<span class="operator">=</span><span class="string">&#x27;20220728&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t_bucket(</span><br><span class="line">id <span class="type">int</span>,</span><br><span class="line">name string</span><br><span class="line">)</span><br><span class="line">partitioned <span class="keyword">by</span> (dt string)</span><br><span class="line">clustered <span class="keyword">by</span>(id) <span class="keyword">into</span> <span class="number">4</span> buckets</span><br><span class="line">stored <span class="keyword">as</span> orc;</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> hive.enforce.bucketing <span class="operator">=</span> <span class="literal">true</span>;</span><br><span class="line"><span class="keyword">set</span> hive.exec.dynamic.partition.mode <span class="operator">=</span> nonstrict;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> t_bucket <span class="keyword">partition</span>(dt)</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">from</span> t_temp</span><br><span class="line">cluster <span class="keyword">by</span> id;</span><br><span class="line"></span><br><span class="line">dfs <span class="operator">-</span>lsr <span class="operator">/</span><span class="keyword">user</span><span class="operator">/</span>hive<span class="operator">/</span>warehouse<span class="operator">/</span>t_bucket<span class="operator">/</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t_temp2(</span><br><span class="line">id <span class="type">int</span>,</span><br><span class="line">birthday string</span><br><span class="line">)</span><br><span class="line">partitioned <span class="keyword">by</span> (dt string)</span><br><span class="line"><span class="type">row</span> format delimited</span><br><span class="line">fields terminated <span class="keyword">by</span> <span class="string">&#x27;,&#x27;</span></span><br><span class="line">collection items terminated <span class="keyword">by</span> <span class="string">&#x27;,&#x27;</span></span><br><span class="line">map keys terminated <span class="keyword">by</span> <span class="string">&#x27;:&#x27;</span></span><br><span class="line">lines terminated <span class="keyword">by</span> <span class="string">&#x27;\n&#x27;</span></span><br><span class="line">stored <span class="keyword">as</span> textfile;</span><br><span class="line"></span><br><span class="line">load data <span class="keyword">local</span> inpath <span class="string">&#x27;/data/wangwei/aaa2.txt&#x27;</span> <span class="keyword">into</span> <span class="keyword">table</span> t_temp2 <span class="keyword">partition</span> (dt<span class="operator">=</span><span class="string">&#x27;20220728&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t_bucket2(</span><br><span class="line">id <span class="type">int</span>,</span><br><span class="line">birthday string</span><br><span class="line">)</span><br><span class="line">partitioned <span class="keyword">by</span> (dt string)</span><br><span class="line">clustered <span class="keyword">by</span>(id) <span class="keyword">into</span> <span class="number">2</span> buckets</span><br><span class="line">stored <span class="keyword">as</span> orc;</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span> hive.enforce.bucketing <span class="operator">=</span> <span class="literal">true</span>;</span><br><span class="line"><span class="keyword">set</span> hive.exec.dynamic.partition.mode <span class="operator">=</span> nonstrict;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> t_bucket2 <span class="keyword">partition</span>(dt)</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">from</span> t_temp2</span><br><span class="line">cluster <span class="keyword">by</span> id;</span><br><span class="line"></span><br><span class="line">dfs <span class="operator">-</span>lsr <span class="operator">/</span><span class="keyword">user</span><span class="operator">/</span>hive<span class="operator">/</span>warehouse<span class="operator">/</span>t_bucket2<span class="operator">/</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> a.id,a.name,b.birthday <span class="keyword">from</span> t_bucket a <span class="keyword">join</span> t_bucket2 b <span class="keyword">on</span> (a.id <span class="operator">=</span> b.id <span class="keyword">and</span> a.dt<span class="operator">=</span><span class="string">&#x27;20220728&#x27;</span> <span class="keyword">and</span> b.dt<span class="operator">=</span><span class="string">&#x27;20220728&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> a.id,a.name,b.birthday <span class="keyword">from</span> t_temp a <span class="keyword">join</span> t_temp2 b <span class="keyword">on</span> (a.id <span class="operator">=</span> b.id <span class="keyword">and</span> a.dt<span class="operator">=</span><span class="string">&#x27;20220728&#x27;</span> <span class="keyword">and</span> b.dt<span class="operator">=</span><span class="string">&#x27;20220728&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> a.id,a.name,b.birthday <span class="keyword">from</span> t_temp a <span class="keyword">join</span> t_temp2 b <span class="keyword">on</span> a.id <span class="operator">=</span> b.id <span class="keyword">where</span> a.dt<span class="operator">=</span><span class="string">&#x27;20220728&#x27;</span> <span class="keyword">and</span> b.dt<span class="operator">=</span><span class="string">&#x27;20220728&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="桶表优点"><a href="#桶表优点" class="headerlink" title="桶表优点"></a>桶表优点</h3><p>获得更高的查询处理效率,分桶加快了join查询的速度.<br>对于map端连接的情况,两个表以相同方式划分桶,处理左边表内某个桶的mapper知道右边表内相匹配的行在对应的桶内.<br>因此,mapper只需要获取那个桶(这只是右边表内存储数据的一小部分)即可进行连接.<br>这一优化方法并不一定要求两个表必须桶的个数相同,两个表的桶个数是倍数关系也可以.<br>这样便采用了Map-side join的方式,避免全表进行笛卡尔积的操作.</p>
+<p>桶为表加上了额外的结构,Hive在处理有些查询时能利用这个结构.<br>具体而言,连接两个在(包含连接列的)相同列上划分了桶的表,可以使用Map端连接(Map-side join)高效的实现,比如JOIN操作.<br>对于JOIN操作两个表有一个相同的列,如果对这两个表都进行了桶操作.<br>那么将保存相同列值的桶进行JOIN操作就可以,可以大大较少JOIN的数据量.</p>
+<blockquote>
+<p>桶内排序<br>桶中的数据可以根据一个或多个列进行排序.<br>由于这样对每个桶的连接变成了高效的归并排序(merge-sort),因此可以进一步提升map端连接的效率.</p>
+</blockquote>
+<blockquote>
+<p>分桶个数<br>如果两个表的分桶个数之间没有什么倍数的关系,这样分桶表在做join时并不会提升效率,因为数据随机分发,桶和桶之间并没有对应关系.</p>
+</blockquote>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>1/order by会对输入做全局排序,因此只有一个reducer,会导致当输入规模较大时,需要较长的计算时间.<br>2/sort by不是全局排序,其在数据进入reducer前完成排序.<br>因此,如果用sort by进行排序,并且设置<code>mapred.reduce.tasks</code> &gt; 1,则sort by只保证每个reducer的输出有序,不保证全局有序.</p>
+<p>3/distribute by(字段)根据指定的字段将数据分到不同的reducer,且分发算法是hash散列.<br>4/Cluster by(字段)除了具有Distribute by的功能外,还会对该字段进行排序.<br>5/创建分桶表并不意味着load进数据也是分桶的,必须先分好桶,然后再放到表中.<br>因此,如果分桶和sort字段是同一个时,此时,cluster by = distribute by + sort by.</p>
+<blockquote>
+<p>分桶表的作用<br>最大的作用是用来提高join操作的效率,但是两者的分桶数要相同或者成倍数.<br>为什么可以提高join操作的效率呢？<br>因为按照MapReduce的分区算法,是Id的HashCode值模上ReduceTaskNumbers,所以一个ID会分到同一个桶中.<br>这样合并就不用整个表遍历求笛卡尔积了,对应的桶合并就可以了.</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hive/" rel="tag"># hive</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/07/27/java%20try/" rel="prev" title="java try">
+                  <i class="fa fa-chevron-left"></i> java try
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/07/28/hive%E5%85%83%E6%95%B0%E6%8D%AE%E8%A1%A8/" rel="next" title="hive元数据表">
+                  hive元数据表 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

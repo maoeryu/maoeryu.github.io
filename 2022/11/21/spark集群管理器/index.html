@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="spark yarn&#x2F;standalone.  table th:first-of-type {   width: 40%; } table th:nth-of-type(2) {   width: 60%; }">
+<meta property="og:type" content="article">
+<meta property="og:title" content="spark集群管理器">
+<meta property="og:url" content="https://maoeryu.github.io/2022/11/21/spark%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E5%99%A8/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="spark yarn&#x2F;standalone.  table th:first-of-type {   width: 40%; } table th:nth-of-type(2) {   width: 60%; }">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1340.png">
+<meta property="article:published_time" content="2022-11-20T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-11-21T08:54:16.652Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="spark">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1340.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/11/21/spark%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E5%99%A8/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>spark集群管理器 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8F%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">集群模式概述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Components"><span class="nav-number">1.1.</span> <span class="nav-text">Components</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E5%99%A8%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.2.</span> <span class="nav-text">集群管理器类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Submitting-Applications"><span class="nav-number">1.3.</span> <span class="nav-text">Submitting Applications</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8D%86%E7%BB%91%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E7%9A%84%E4%BE%9D%E8%B5%96%E9%A1%B9"><span class="nav-number">1.3.1.</span> <span class="nav-text">捆绑应用程序的依赖项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-spark-submit-%E5%90%AF%E5%8A%A8%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F"><span class="nav-number">1.3.2.</span> <span class="nav-text">使用 spark-submit 启动应用程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Master-URLs"><span class="nav-number">1.3.3.</span> <span class="nav-text">Master URLs</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8E%E6%96%87%E4%BB%B6%E5%8A%A0%E8%BD%BD%E9%85%8D%E7%BD%AE"><span class="nav-number">1.3.4.</span> <span class="nav-text">从文件加载配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E7%BA%A7%E4%BE%9D%E8%B5%96%E7%AE%A1%E7%90%86"><span class="nav-number">1.3.5.</span> <span class="nav-text">高级依赖管理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%91%E6%8E%A7"><span class="nav-number">1.4.</span> <span class="nav-text">监控</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%9C%E4%B8%9A%E8%B0%83%E5%BA%A6"><span class="nav-number">1.5.</span> <span class="nav-text">作业调度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%8D%E6%B1%87%E8%A1%A8"><span class="nav-number">1.6.</span> <span class="nav-text">词汇表</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Application"><span class="nav-number">1.6.1.</span> <span class="nav-text">Application</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Application-jar"><span class="nav-number">1.6.2.</span> <span class="nav-text">Application jar</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Driver-program"><span class="nav-number">1.6.3.</span> <span class="nav-text">Driver program</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Cluster-manager-%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E5%99%A8"><span class="nav-number">1.6.4.</span> <span class="nav-text">Cluster manager(集群管理器)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Deploy-mode-%E9%83%A8%E7%BD%B2%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.6.5.</span> <span class="nav-text">Deploy mode(部署模式)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Worker-node-%E5%B7%A5%E4%BD%9C%E8%8A%82%E7%82%B9"><span class="nav-number">1.6.6.</span> <span class="nav-text">Worker node(工作节点)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Executor-%E6%89%A7%E8%A1%8C%E8%80%85"><span class="nav-number">1.6.7.</span> <span class="nav-text">Executor(执行者)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Task-%E4%BB%BB%E5%8A%A1"><span class="nav-number">1.6.8.</span> <span class="nav-text">Task(任务)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Job-%E5%B7%A5%E4%BD%9C"><span class="nav-number">1.6.9.</span> <span class="nav-text">Job(工作)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Stage-%E9%98%B6%E6%AE%B5"><span class="nav-number">1.6.10.</span> <span class="nav-text">Stage(阶段)</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E5%99%A8"><span class="nav-number">2.</span> <span class="nav-text">集群管理器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#yarn"><span class="nav-number">2.1.</span> <span class="nav-text">yarn</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E5%85%A8"><span class="nav-number">2.1.1.</span> <span class="nav-text">安全</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%A8-YARN-%E4%B8%8A%E5%90%AF%E5%8A%A8-Spark"><span class="nav-number">2.1.2.</span> <span class="nav-text">在 YARN 上启动 Spark</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E5%85%B6%E4%BB%96-JAR"><span class="nav-number">2.1.2.1.</span> <span class="nav-text">添加其他 JAR</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C"><span class="nav-number">2.1.3.</span> <span class="nav-text">准备工作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">2.1.4.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E8%AF%95%E6%82%A8%E7%9A%84%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F"><span class="nav-number">2.1.5.</span> <span class="nav-text">调试您的应用程序</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%81%AB%E8%8A%B1%E5%B1%9E%E6%80%A7"><span class="nav-number">2.1.5.1.</span> <span class="nav-text">火花属性</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E8%A6%81%E7%AC%94%E8%AE%B0"><span class="nav-number">2.1.6.</span> <span class="nav-text">重要笔记</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Kerberos"><span class="nav-number">2.1.7.</span> <span class="nav-text">Kerberos</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#YARN-%E7%89%B9%E5%AE%9A%E7%9A%84-Kerberos-%E9%85%8D%E7%BD%AE"><span class="nav-number">2.1.7.1.</span> <span class="nav-text">YARN 特定的 Kerberos 配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Kerberos-%E6%95%85%E9%9A%9C%E6%8E%92%E9%99%A4"><span class="nav-number">2.1.7.2.</span> <span class="nav-text">Kerberos 故障排除</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%A4%96%E9%83%A8Shuffle%E6%9C%8D%E5%8A%A1"><span class="nav-number">2.1.8.</span> <span class="nav-text">配置外部Shuffle服务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-Apache-Oozie-%E5%90%AF%E5%8A%A8%E6%82%A8%E7%9A%84%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F"><span class="nav-number">2.1.9.</span> <span class="nav-text">使用 Apache Oozie 启动您的应用程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-Spark-History-Server-%E6%9B%BF%E6%8D%A2-Spark-Web-UI"><span class="nav-number">2.1.10.</span> <span class="nav-text">使用 Spark History Server 替换 Spark Web UI</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#standalone"><span class="nav-number">2.2.</span> <span class="nav-text">standalone</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E5%85%A8-1"><span class="nav-number">2.2.1.</span> <span class="nav-text">安全</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Spark-Standalone%E9%9B%86%E7%BE%A4"><span class="nav-number">2.2.2.</span> <span class="nav-text">安装Spark Standalone集群</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%8B%E5%8A%A8%E5%90%AF%E5%8A%A8%E9%9B%86%E7%BE%A4"><span class="nav-number">2.2.3.</span> <span class="nav-text">手动启动集群</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E5%90%AF%E5%8A%A8%E8%84%9A%E6%9C%AC"><span class="nav-number">2.2.4.</span> <span class="nav-text">集群启动脚本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%86%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E8%BF%9E%E6%8E%A5%E5%88%B0%E9%9B%86%E7%BE%A4"><span class="nav-number">2.2.5.</span> <span class="nav-text">将应用程序连接到集群</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8-Spark-%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F"><span class="nav-number">2.2.6.</span> <span class="nav-text">启动 Spark 应用程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B5%84%E6%BA%90%E8%B0%83%E5%BA%A6"><span class="nav-number">2.2.7.</span> <span class="nav-text">资源调度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E8%80%85%E8%B0%83%E5%BA%A6"><span class="nav-number">2.2.8.</span> <span class="nav-text">执行者调度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%91%E6%8E%A7%E5%92%8C%E8%AE%B0%E5%BD%95"><span class="nav-number">2.2.9.</span> <span class="nav-text">监控和记录</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8E-Hadoop-%E4%B8%80%E8%B5%B7%E8%BF%90%E8%A1%8C"><span class="nav-number">2.2.10.</span> <span class="nav-text">与 Hadoop 一起运行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E9%85%8D%E7%BD%AE%E7%AB%AF%E5%8F%A3"><span class="nav-number">2.2.11.</span> <span class="nav-text">为网络安全配置端口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E5%8F%AF%E7%94%A8%E6%80%A7"><span class="nav-number">2.2.12.</span> <span class="nav-text">高可用性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ZooKeeper-%E7%9A%84%E5%A4%87%E7%94%A8%E4%B8%BB%E6%9C%BA"><span class="nav-number">2.2.12.1.</span> <span class="nav-text">ZooKeeper 的备用主机</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">2.2.12.1.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.2.12.1.2.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%BB%86%E8%8A%82"><span class="nav-number">2.2.12.1.3.</span> <span class="nav-text">细节</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E6%9C%AC%E5%9C%B0%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%8D%95%E8%8A%82%E7%82%B9%E6%81%A2%E5%A4%8D"><span class="nav-number">2.2.12.2.</span> <span class="nav-text">使用本地文件系统的单节点恢复</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0-1"><span class="nav-number">2.2.12.2.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-2"><span class="nav-number">2.2.12.2.2.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%BB%86%E8%8A%82-1"><span class="nav-number">2.2.12.2.3.</span> <span class="nav-text">细节</span></a></li></ol></li></ol></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/11/21/spark%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E5%99%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          spark集群管理器
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2022-11-21 00:00:00 / Modified: 16:54:16" itemprop="dateCreated datePublished" datetime="2022-11-21T00:00:00+08:00">2022-11-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>spark yarn/standalone.</p>
+<style>
+table th:first-of-type {
+  width: 40%;
+}
+table th:nth-of-type(2) {
+  width: 60%;
+}
+</style>
+
+<span id="more"></span>
+<h1 id="集群模式概述"><a href="#集群模式概述" class="headerlink" title="集群模式概述"></a>集群模式概述</h1><h2 id="Components"><a href="#Components" class="headerlink" title="Components"></a>Components</h2><p>Spark 应用程序在集群上作为独立的进程集运行,由SparkContext 主程序(称为驱动程序)中的对象协调.</p>
+<p>具体来说,要在集群上运行,SparkContext 可以连接到多种类型的集群管理器 (Spark 自己的独立集群管理器、Mesos 或 YARN),这些集群管理器跨应用程序分配资源.<br>连接后,Spark 会在集群中的节点上获取执行程序,这些执行程序是为您的应用程序运行计算和存储数据的进程.<br>接下来,它将您的应用程序代码(由传递给 SparkContext 的 JAR 或 Python 文件定义)发送给执行器.<br>最后,SparkContext 将任务发送给执行器运行.</p>
+<img src="/images/fly1340.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>关于此架构,有几个有用的事项需要注意:</p>
+<ol>
+<li>每个应用程序都有自己的执行程序进程,这些进程在整个应用程序的持续时间内保持运行,并在多个线程中运行任务.<br>这有利于在调度端(每个驱动程序调度自己的任务)和执行器端(来自不同应用程序的任务在不同的 JVM 中运行)相互隔离应用程序.<br>但是,这也意味着如果不将数据写入外部存储系统,则无法在不同的 Spark 应用程序(SparkContext 的实例)之间共享数据.</li>
+<li>Spark 对底层集群管理器是不可知的.<br>只要它可以获取执行程序进程,并且这些进程相互通信,即使在也支持其他应用程序(例如 Mesos/YARN)的集群管理器上运行它也相对容易.</li>
+<li>驱动程序必须在其整个生命周期中监听并接受来自其执行程序的传入连接(例如,请参阅网络配置部分中的 spark.driver.port).<br>因此,驱动程序必须可以从工作节点进行网络寻址.</li>
+<li>因为驱动程序在集群上调度任务,所以它应该靠近工作节点运行,最好在同一个局域网上.<br>如果您想远程向集群发送请求,最好为驱动程序打开一个 RPC 并让它从附近提交操作,而不是在远离工作节点的地方运行驱动程序.</li>
+</ol>
+<h2 id="集群管理器类型"><a href="#集群管理器类型" class="headerlink" title="集群管理器类型"></a>集群管理器类型</h2><p>系统目前支持几种集群管理器:</p>
+<ol>
+<li>Standalone: 一个简单的集群管理器,包含在 Spark 中,可以很容易地设置一个集群.</li>
+<li>Apache Mesos: 一个通用的集群管理器,也可以运行 Hadoop MapReduce 和服务应用程序.</li>
+<li>Hadoop YARN: Hadoop 2 中的资源管理器.</li>
+<li>Kubernetes: 一个用于自动化部署、扩展和管理容器化应用程序的开源系统.</li>
+</ol>
+<p>存在一个第三方项目(不受 Spark 项目支持)以添加对 Nomad作为集群管理器的支持.</p>
+<h2 id="Submitting-Applications"><a href="#Submitting-Applications" class="headerlink" title="Submitting Applications"></a>Submitting Applications</h2><p>spark-submit可以使用脚本将应用程序提交到任何类型的集群.<br>Spark bin目录中的spark-submit脚本用于在集群上启动应用程序.<br>它可以通过统一的界面使用 Spark 支持的所有集群管理器,因此您不必为每个集群管理器专门配置应用程序.</p>
+<h3 id="捆绑应用程序的依赖项"><a href="#捆绑应用程序的依赖项" class="headerlink" title="捆绑应用程序的依赖项"></a>捆绑应用程序的依赖项</h3><p>如果您的代码依赖于其他项目,则需要将它们与您的应用程序一起打包,以便将代码分发到 Spark 集群.<br>为此,请创建一个包含您的代码及其依赖项的程序集 jar(或&quot;uber&quot;jar).</p>
+<p>创建程序集 jar 时,将 Spark 和 Hadoop 列为provided依赖项.<br>这些不需要捆绑,因为它们由集群管理器在运行时提供.<br>组装好 jar 后,您可以在传递 jar 时调用此处所示的脚本bin/spark-submit.</p>
+<p>对于 Python,您可以使用 的--py-files参数spark-submit来添加.py或要随您的应用程序分发.zip的.egg 文件.<br>如果您依赖多个 Python 文件,我们建议将它们打包成一个.zip或.egg.</p>
+<h3 id="使用-spark-submit-启动应用程序"><a href="#使用-spark-submit-启动应用程序" class="headerlink" title="使用 spark-submit 启动应用程序"></a>使用 spark-submit 启动应用程序</h3><p>一旦捆绑了用户应用程序,就可以使用bin/spark-submit脚本启动它.<br>该脚本负责使用 Spark 及其依赖项设置类路径,并且可以支持 Spark 支持的不同集群管理器和部署模式:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">./bin/spark-submit \</span><br><span class="line">--class &lt;main-class&gt; \</span><br><span class="line">--master &lt;master-url&gt; \</span><br><span class="line">--deploy-mode &lt;deploy-mode&gt; \</span><br><span class="line">--conf &lt;key&gt;=&lt;value&gt; \</span><br><span class="line">... # other options</span><br><span class="line">&lt;application-jar&gt; \</span><br><span class="line">[application-arguments]</span><br></pre></td></tr></table></figure>
+
+<p>一些常用的选项是:</p>
+<ol>
+<li><font color="red">--class</font>: 您的应用程序的入口点(例如org.apache.spark.examples.SparkPi)</li>
+<li><font color="red">--master</font>: 集群的主 URL(例如spark://23.195.26.187:7077)</li>
+<li><font color="red">--deploy-mode</font>: 是在工作节点上部署你的驱动程序 (cluster) 还是在本地作为外部客户端 (client) (默认: client)</li>
+<li><font color="red">--conf</font>: key=value格式的任意 Spark 配置属性.<br>对于包含空格的值,将&quot;key=value&quot;括在引号中.</li>
+<li><font color="red">application-jar</font>: 包含您的应用程序和所有依赖项的捆绑 jar 的路径.<br>该 URL 必须在您的集群内全局可见,例如,hdfs://path 或file://path 存在于所有节点上的.</li>
+<li><font color="red">application-arguments</font>: 传递给主类的主要方法的参数,如果有的话</li>
+</ol>
+<p>一种常见的部署策略是从与您的工作机器物理上位于同一位置的网关机器提交您的应用程序(例如,独立 EC2 集群中的主节点).<br>在此设置中,client模式是合适的.<br>在client模式下,驱动程序直接在spark-submit充当集群客户端的进程中启动.<br>应用程序的输入和输出连接到控制台.<br>因此,这种模式特别适合涉及REPL的应用(例如Spark shell).</p>
+<p>或者,如果您的应用程序是从远离工作机器的机器提交的(例如,在本地笔记本电脑上),通常使用cluster模式来最小化驱动程序和执行程序之间的网络延迟.<br>目前standalone模式不支持Python应用的集群模式.</p>
+<p>对于 Python 应用程序,只需传递一个.py文件<code>&lt;application-jar&gt;</code>代替 JAR,然后将 Python.zip或.egg文件添加.py到带有--py-files.</p>
+<p>有几个选项特定于正在使用的集群管理器.<br>例如,对于具有部署模式的Spark 独立集群cluster,您还可以指定<font color="red">--supervise</font>以确保驱动程序在失败并返回非零退出代码时自动重新启动.<br>要枚举可用于spark-submit的所有此类选项,请使用 运行它<font color="blue">--help</font>.<br>以下是一些常用选项的示例:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> Run application locally on 8 cores</span></span><br><span class="line">./bin/spark-submit \</span><br><span class="line">--class org.apache.spark.examples.SparkPi \</span><br><span class="line">--master local[8] \</span><br><span class="line">/path/to/examples.jar \</span><br><span class="line">100</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> Run on a Spark standalone cluster <span class="keyword">in</span> client deploy mode</span></span><br><span class="line">./bin/spark-submit \</span><br><span class="line">--class org.apache.spark.examples.SparkPi \</span><br><span class="line">--master spark://xxx:7077 \</span><br><span class="line">--executor-memory 20G \</span><br><span class="line">--total-executor-cores 100 \</span><br><span class="line">/path/to/examples.jar \</span><br><span class="line">1000</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> Run on a Spark standalone cluster <span class="keyword">in</span> cluster deploy mode with supervise</span></span><br><span class="line">./bin/spark-submit \</span><br><span class="line">--class org.apache.spark.examples.SparkPi \</span><br><span class="line">--master spark://xxx:7077 \</span><br><span class="line">--deploy-mode cluster \</span><br><span class="line">--supervise \</span><br><span class="line">--executor-memory 20G \</span><br><span class="line">--total-executor-cores 100 \</span><br><span class="line">/path/to/examples.jar \</span><br><span class="line">1000</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> Run on a YARN cluster</span></span><br><span class="line">export HADOOP_CONF_DIR=XXX</span><br><span class="line">./bin/spark-submit \</span><br><span class="line">--class org.apache.spark.examples.SparkPi \</span><br><span class="line">--master yarn \</span><br><span class="line">--deploy-mode cluster \  # can be client for client mode</span><br><span class="line">--executor-memory 20G \</span><br><span class="line">--num-executors 50 \</span><br><span class="line">/path/to/examples.jar \</span><br><span class="line">1000</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> Run a Python application on a Spark standalone cluster</span></span><br><span class="line">./bin/spark-submit \</span><br><span class="line">--master spark://xxx:7077 \</span><br><span class="line">examples/src/main/python/pi.py \</span><br><span class="line">1000</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> Run on a Mesos cluster <span class="keyword">in</span> cluster deploy mode with supervise</span></span><br><span class="line">./bin/spark-submit \</span><br><span class="line">--class org.apache.spark.examples.SparkPi \</span><br><span class="line">--master mesos://xxx:7077 \</span><br><span class="line">--deploy-mode cluster \</span><br><span class="line">--supervise \</span><br><span class="line">--executor-memory 20G \</span><br><span class="line">--total-executor-cores 100 \</span><br><span class="line">http://path/to/examples.jar \</span><br><span class="line">1000</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> Run on a Kubernetes cluster <span class="keyword">in</span> cluster deploy mode</span></span><br><span class="line">./bin/spark-submit \</span><br><span class="line">--class org.apache.spark.examples.SparkPi \</span><br><span class="line">--master k8s://xx.yy.zz.ww:443 \</span><br><span class="line">--deploy-mode cluster \</span><br><span class="line">--executor-memory 20G \</span><br><span class="line">--num-executors 50 \</span><br><span class="line">http://path/to/examples.jar \</span><br><span class="line">1000</span><br></pre></td></tr></table></figure>
+
+<h3 id="Master-URLs"><a href="#Master-URLs" class="headerlink" title="Master URLs"></a>Master URLs</h3><p>传递给 Spark 的主 URL 可以采用以下格式之一:</p>
+<table>
+<thead>
+<tr>
+<th align="left">Master URL</th>
+<th align="left">意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>local</code></td>
+<td align="left">使用一个工作线程在本地运行 Spark(即完全没有并行性).</td>
+</tr>
+<tr>
+<td align="left"><code>local[K]</code></td>
+<td align="left">使用 K 个工作线程在本地运行 Spark(理想情况下,将其设置为您机器上的内核数).</td>
+</tr>
+<tr>
+<td align="left"><code>local[K,F]</code></td>
+<td align="left">使用 K 个工作线程和 F maxFailures 在本地运行 Spark(有关此变量的解释,请参阅spark.task.maxFailures )</td>
+</tr>
+<tr>
+<td align="left"><code>local[*]</code></td>
+<td align="left">在本地运行 Spark,工作线程数与机器上的逻辑内核数一样多.</td>
+</tr>
+<tr>
+<td align="left"><code>local[*,F]</code></td>
+<td align="left">在本地运行 Spark,使用与机器上的逻辑核心一样多的工作线程和 F maxFailures.</td>
+</tr>
+<tr>
+<td align="left"><code>spark://HOST:PORT</code></td>
+<td align="left">连接到给定的Spark 独立集群主机.该端口必须是您的主机配置使用的端口,默认情况下为 7077.</td>
+</tr>
+<tr>
+<td align="left"><code>spark://HOST1:PORT1,HOST2:PORT2</code></td>
+<td align="left">使用 Zookeeper连接到具有备用主机的给定Spark 独立集群.该列表必须包含使用 Zookeeper 设置的高可用性集群中的所有主控主机.端口必须是每个主站配置使用的端口,默认为 7077.</td>
+</tr>
+<tr>
+<td align="left"><code>mesos://HOST:PORT</code></td>
+<td align="left">连接到给定的Mesos集群.该端口必须是您配置使用的端口,默认情况下为 5050.或者,对于使用 ZooKeeper 的 Mesos 集群,使用mesos://zk://.... 要使用 提交--deploy-mode cluster,HOST:PORT 应配置为连接到MesosClusterDispatcher.</td>
+</tr>
+<tr>
+<td align="left"><code>yarn</code></td>
+<td align="left">根据--deploy-mode的值以client或cluster模式连接到YARN集群.集群位置将根据或变量HADOOP_CONF_DIR/YARN_CONF_DIR找到.</td>
+</tr>
+<tr>
+<td align="left"><code>k8s://HOST:PORT</code></td>
+<td align="left">cluster模式下连接到Kubernetes集群.目前不支持客户端模式,将在未来版本中支持.HOST和PORT指的是Kubernetes API Server.它默认使用 TLS 连接.为了强制它使用不安全的连接,您可以使用 k8s://<a href="http://HOST:PORT">http://HOST:PORT</a>.</td>
+</tr>
+</tbody></table>
+<h3 id="从文件加载配置"><a href="#从文件加载配置" class="headerlink" title="从文件加载配置"></a>从文件加载配置</h3><p>该spark-submit脚本可以从属性文件加载默认的Spark 配置值并将它们传递给您的应用程序.<br>默认情况下,它将从Spark 目录中conf/spark-defaults.conf读取选项.<br>有关更多详细信息,请参阅有关 加载默认配置的部分.</p>
+<p>以这种方式加载默认的 Spark 配置可以避免对某些标志的需要 spark-submit.<br>例如,如果spark.master设置了该属性,您可以安全地省略 --master标志 from spark-submit.<br>通常,在<font color="blue">SparkConf</font>上显式设置的配置值具有最高优先级,然后是传递给<font color="blue">spark-submit</font>的标志,然后是默认文件中的值.</p>
+<blockquote>
+<p>如果您不清楚配置选项的来源,您可以通过运行spark-submit该选项来打印出细粒度的调试信息--verbose.</p>
+</blockquote>
+<h3 id="高级依赖管理"><a href="#高级依赖管理" class="headerlink" title="高级依赖管理"></a>高级依赖管理</h3><p>使用spark-submit时,应用程序 jar 以及--jars选项中包含的任何 jar将自动传输到集群.<br>--jars后面提供的 URL必须用逗号分隔.<br>该列表包含在驱动程序和执行程序类路径中.<br>目录扩展不适用于--jars.</p>
+<p>Spark 使用以下 URL 方案来允许传播 jar 的不同策略:</p>
+<ol>
+<li>file: 绝对路径和file:/URI 由驱动程序的 HTTP 文件服务器提供,每个执行程序从驱动程序 HTTP 服务器中提取文件.</li>
+<li>hdfs:, http:, https:, ftp: 这些按预期从 URI 中提取文件和 JAR</li>
+<li>local: 以 local:/ 开头的 URI 应作为本地文件存在于每个工作节点上.<br>这意味着不会产生网络 IO,并且适用于推送给每个工作人员或通过 NFS、GlusterFS 等共享的大文件/JAR.</li>
+</ol>
+<p>请注意,JAR 和文件被复制到执行程序节点上每个 SparkContext 的工作目录中.<br>随着时间的推移,这会占用大量空间,需要清理.<br>使用 YARN,清理是自动处理的,而使用 Spark standalone,可以使用 <code>spark.worker.cleanup.appDataTtl</code>属性配置自动清理.</p>
+<p>用户还可以通过提供以<font color="blue">--packages</font>逗号分隔的 Maven 坐标列表来包含任何其他依赖项.<br>使用此命令时将处理所有传递依赖项.<br>可以使用--repositories标志以逗号分隔的方式添加其他存储库(或 SBT 中的解析器).<br>(请注意,在某些情况下,可以在存储库 URI 中提供受密码保护的存储库的凭据,例如在 中<a target="_blank" rel="noopener" href="https://user:password@host/">https://user:password@host/</a>....<br>以这种方式提供凭据时要小心.<br>)这些命令可以与pyspark、spark-shell和一起使用spark-submit以包含 Spark 包.</p>
+<p>对于 Python,等效--py-files选项可用于将.egg,.zip和.py库分发给执行程序.</p>
+<h2 id="监控"><a href="#监控" class="headerlink" title="监控"></a>监控</h2><p>每个驱动程序都有一个 Web UI,通常在端口 4040 上,显示有关正在运行的任务、执行程序和存储使用情况的信息.<br>只需在 Web 浏览器中转到即可访问此<code>http://&lt;driver-node&gt;:4040</code> UI.<br>监控指南还描述了其他监控选项.</p>
+<h2 id="作业调度"><a href="#作业调度" class="headerlink" title="作业调度"></a>作业调度</h2><p>Spark 可以控制跨应用程序(在集群管理器级别)和应用程序内部(如果多个计算发生在同一个 SparkContext 上)的资源分配.<br>作业调度概述对此进行了更详细的描述.</p>
+<h2 id="词汇表"><a href="#词汇表" class="headerlink" title="词汇表"></a>词汇表</h2><p>下表总结了您将看到的用于指代集群概念的术语:</p>
+<h3 id="Application"><a href="#Application" class="headerlink" title="Application"></a>Application</h3><p>基于 Spark 构建的用户程序.<br>由集群上的驱动程序和执行程序组成.</p>
+<h3 id="Application-jar"><a href="#Application-jar" class="headerlink" title="Application jar"></a>Application jar</h3><p>包含用户的 Spark 应用程序的 jar.<br>在某些情况下,用户会希望创建一个包含他们的应用程序及其依赖项的&quot;超级 jar&quot;.<br>用户的 jar 不应包含 Hadoop 或 Spark 库,但是,这些将在运行时添加.</p>
+<h3 id="Driver-program"><a href="#Driver-program" class="headerlink" title="Driver program"></a>Driver program</h3><p>运行应用程序的 main() 函数并创建 SparkContext 的进程.</p>
+<h3 id="Cluster-manager-集群管理器"><a href="#Cluster-manager-集群管理器" class="headerlink" title="Cluster manager(集群管理器)"></a>Cluster manager(集群管理器)</h3><p>用于获取集群上资源的外部服务(例如独立管理器、Mesos、YARN)</p>
+<h3 id="Deploy-mode-部署模式"><a href="#Deploy-mode-部署模式" class="headerlink" title="Deploy mode(部署模式)"></a>Deploy mode(部署模式)</h3><p>区分驱动程序进程运行的位置.<br>在&quot;cluster&quot;模式下,框架在集群内部启动驱动程序.<br>在&quot;client&quot;模式下,提交者在集群外部启动驱动程序.</p>
+<h3 id="Worker-node-工作节点"><a href="#Worker-node-工作节点" class="headerlink" title="Worker node(工作节点)"></a>Worker node(工作节点)</h3><p>任何可以在集群中运行应用程序代码的节点</p>
+<h3 id="Executor-执行者"><a href="#Executor-执行者" class="headerlink" title="Executor(执行者)"></a>Executor(执行者)</h3><p>为工作节点上的应用程序启动的进程,它运行任务并将数据保存在内存或磁盘存储中.<br>每个应用程序都有自己的执行器.</p>
+<h3 id="Task-任务"><a href="#Task-任务" class="headerlink" title="Task(任务)"></a>Task(任务)</h3><p>将发送给一个执行者的工作单元</p>
+<h3 id="Job-工作"><a href="#Job-工作" class="headerlink" title="Job(工作)"></a>Job(工作)</h3><p>由多个任务组成的并行计算,这些任务是为响应 Spark 操作而产生的(例如save,collect).<br>您会在驱动程序日志中看到该术语.</p>
+<h3 id="Stage-阶段"><a href="#Stage-阶段" class="headerlink" title="Stage(阶段)"></a>Stage(阶段)</h3><p>每个作业被分成更小的任务集,称为阶段,这些任务相互依赖(类似于 MapReduce 中的映射和减少阶段).<br>您会在驱动程序日志中看到该术语.</p>
+<h1 id="集群管理器"><a href="#集群管理器" class="headerlink" title="集群管理器"></a>集群管理器</h1><h2 id="yarn"><a href="#yarn" class="headerlink" title="yarn"></a>yarn</h2><h3 id="安全"><a href="#安全" class="headerlink" title="安全"></a>安全</h3><p>默认情况下,Spark 中的安全性是关闭的.<br>这可能意味着默认情况下您很容易受到攻击.<br>在运行 Spark 之前,请参阅本文档中的Spark 安全和特定安全部分.</p>
+<h3 id="在-YARN-上启动-Spark"><a href="#在-YARN-上启动-Spark" class="headerlink" title="在 YARN 上启动 Spark"></a>在 YARN 上启动 Spark</h3><p>确保<font color="green">HADOOP_CONF_DIR</font>或<font color="green">YARN_CONF_DIR</font>指向包含 Hadoop 集群的(客户端)配置文件的目录.<br>这些配置用于写入 HDFS 并连接到 YARN ResourceManager.<br>该目录中包含的配置将分发到 YARN 集群,以便应用程序使用的所有容器都使用相同的配置.<br>如果配置引用了不受 YARN 管理的 Java 系统属性或环境变量,它们也应该在 Spark 应用程序的配置中设置(驱动程序/执行程序和在客户端模式下运行时的 AM).</p>
+<p>有两种部署模式可用于在 YARN 上启动 Spark 应用程序.</p>
+<ol>
+<li>cluster模式下,Spark driver运行在一个application master进程中,这个master进程由集群上的YARN管理,client在启动application后就可以离开了.</li>
+<li>client模式下,driver运行在client进程中,application master仅用于向YARN请求资源.</li>
+</ol>
+<p>与 Spark 支持的其他集群管理器在参数--master中指定 master 的地址不同,在 YARN 模式下,ResourceManager 的地址是从 Hadoop 配置中获取的.因此,<font color="green">--master参数为yarn</font>.</p>
+<p>要以cluster模式启动 Spark 应用程序:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/spark-submit --class path.to.your.Class --master yarn --deploy-mode cluster [options] &lt;app jar&gt; [app options]</span><br></pre></td></tr></table></figure>
+
+<p>例如:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">./bin/spark-submit --class org.apache.spark.examples.SparkPi \</span><br><span class="line">--master yarn \</span><br><span class="line">--deploy-mode cluster \</span><br><span class="line">--driver-memory 4g \</span><br><span class="line">--executor-memory 2g \</span><br><span class="line">--executor-cores 1 \</span><br><span class="line">--queue thequeue \</span><br><span class="line">examples/jars/spark-examples*.jar \</span><br><span class="line">10</span><br></pre></td></tr></table></figure>
+
+<p>上面启动了一个 YARN 客户端程序,该程序启动了默认的 Application Master.<br>然后 SparkPi 将作为 Application Master 的子线程运行.<br>客户端将定期轮询 Application Master 以获取状态更新并将它们显示在控制台中.<br>一旦您的应用程序完成运行,客户端将退出.<br>请参阅下面的调试您的应用程序部分,了解如何查看驱动程序和执行程序日志.</p>
+<p>要以client模式启动 Spark 应用程序,执行相同操作,但替换cluster为client.下面显示了如何spark-shell在client模式下运行:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/spark-shell --master yarn --deploy-mode client</span><br></pre></td></tr></table></figure>
+
+<h4 id="添加其他-JAR"><a href="#添加其他-JAR" class="headerlink" title="添加其他 JAR"></a>添加其他 JAR</h4><p>在cluster模式下,驱动程序在与客户端不同的机器上运行,因此SparkContext.addJar不能直接使用客户端本地的文件.<br>要使客户端上的文件对<font color="green">SparkContext.addJar</font>可用,请将它们与<font color="green">--jars</font>启动命令中的选项一起包含在内.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">./bin/spark-submit --class my.main.Class \</span><br><span class="line">--master yarn \</span><br><span class="line">--deploy-mode cluster \</span><br><span class="line">--jars my-other-jar.jar,my-other-other-jar.jar \</span><br><span class="line">my-main-jar.jar \</span><br><span class="line">app_arg1 app_arg2</span><br></pre></td></tr></table></figure>
+
+<h3 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h3><p>在 YARN 上运行 Spark 需要使用 YARN 支持构建的 Spark 二进制分发版.<br>二进制发行版可以从项目网站的下载页面下载.<br>要自己构建 Spark,请参阅构建 Spark.</p>
+<p>要使 Spark 运行时 jar 可以从 YARN 端访问,您可以指定<font color="green">spark.yarn.archive</font>或<font color="green">spark.yarn.jars</font>.详情请参考Spark 属性.<br>如果既未指定spark.yarn.archive也未指定spark.yarn.jars,Spark 将创建一个包含所有 jar 的 zip 文件$SPARK_HOME/jars并将其上传到分布式缓存.</p>
+<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p>Spark on YARN 的大部分配置与其他部署模式相同.<br>有关这些的更多信息,请参阅配置页面.<br>这些是特定于 Spark on YARN 的配置.</p>
+<h3 id="调试您的应用程序"><a href="#调试您的应用程序" class="headerlink" title="调试您的应用程序"></a>调试您的应用程序</h3><p>在 YARN 术语中,执行器和应用程序主机在&quot;容器&quot;中运行.<br>在应用程序完成后,YARN 有两种处理容器日志的模式.</p>
+<ol>
+<li>如果打开日志聚合(使用<font color="green">yarn.log-aggregation-enable</font>配置),容器日志将复制到 HDFS 并在本地机器上删除.<br>可以使用yarn logs命令从集群的任何位置查看这些日志.<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yarn logs -applicationId &lt;app ID&gt;</span><br></pre></td></tr></table></figure>
+将从给定应用程序的所有容器中打印出所有日志文件的内容.</li>
+<li>您还可以使用 HDFS shell 或 API 直接在 HDFS 中查看容器日志文件.<br>可以通过查看 YARN 配置(<font color="green">yarn.nodemanager.remote-app-log-dir</font>和<font color="green">yarn.nodemanager.remote-app-log-dir-suffix</font>)找到它们所在的目录.<br>这些日志也可以在 Executors 选项卡下的 Spark Web UI 上找到.<br>您需要让 Spark 历史服务器和 MapReduce 历史服务器同时运行并正确配置<font color="green">yarn.log.server.url.<br>yarn-site.xmlSpark</font> 历史服务器 UI 上的日志 URL 会将您重定向到 MapReduce 历史服务器以显示聚合日志.</li>
+</ol>
+<p>当日志聚合未打开时,日志将保留在每台机器的本地<font color="green">YARN_APP_LOGS_DIR</font>,通常配置为<font color="green">/tmp/logs</font>或<font color="green">$HADOOP_HOME/logs/userlogs</font>取决于 Hadoop 版本和安装.<br>查看容器的日志需要转到包含它们的主机并查看此目录.<br>子目录按应用程序 ID 和容器 ID 组织日志文件.<br>日志也可以在 Executors 选项卡下的 Spark Web UI 上获得,不需要运行 MapReduce 历史服务器.</p>
+<p>要查看每个容器的启动环境,请增加到<font color="green">yarn.nodemanager.delete.debug-delay-sec</font>一个较大的值(例如36000),然后通过<font color="green">yarn.nodemanager.local-dirs</font> 启动容器的节点访问应用程序缓存.<br>此目录包含用于启动每个容器的启动脚本/JAR/所有环境变量.<br>这个过程对于调试类路径问题特别有用.<br>(请注意,启用此功能需要集群设置的管理员权限并重新启动所有节点管理器.因此,这不适用于托管集群).</p>
+<p>要为应用程序管理器或执行器使用自定义 log4j 配置,以下是选项:</p>
+<ol>
+<li>使用spark-submit上传自定义log4j.properties,方法是将其添加<font color="green">--files</font>到要随应用程序上传的文件列表中.</li>
+<li>添加<font color="green">-Dlog4j.configuration=<location of configuration file></font>到<font color="green">spark.driver.extraJavaOptions</font>(对于驱动程序)或<font color="green">spark.executor.extraJavaOptions</font>(对于执行程序).<br>请注意,<font color="green">如果使用文件,file:则应明确提供协议,并且该文件需要在所有节点上本地存在</font>.</li>
+<li>更新<font color="green">$SPARK_CONF_DIR/log4j.properties</font>文件,它将与其他配置一起自动上传.<br>请注意,如果指定多个选项,其他 2 个选项的优先级高于此选项.</li>
+</ol>
+<blockquote>
+<p>请注意,对于第一个选项,执行程序和应用程序主机将共享相同的 log4j 配置,当它们在同一节点上运行时(例如,尝试写入同一日志文件),这可能会导致问题.</p>
+</blockquote>
+<p>如果您需要引用正确的位置以将日志文件放入 YARN 中,以便 YARN 可以正确显示和聚合它们,请在您的log4j.properties使用<code>spark.yarn.app.container.log.dir</code>. 例如,<code>log4j.appender.file_appender.File=$&#123;spark.yarn.app.container.log.dir&#125;/spark.log</code>.<br>对于流式应用程序,配置RollingFileAppender和设置文件位置到 YARN 的日志目录将避免大日志文件导致磁盘溢出,并且可以使用 YARN 的日志实用程序访问日志.</p>
+<blockquote>
+<p>要为 application master 和 executor 使用自定义 metrics.properties,请更新$SPARK_CONF_DIR/metrics.properties文件.<br>它会自动与其他配置一起上传,因此您无需手动指定它--files.</p>
+</blockquote>
+<h4 id="火花属性"><a href="#火花属性" class="headerlink" title="火花属性"></a>火花属性</h4><p>spark.yarn.am.memory<br>512m<br>在客户端模式下用于 YARN Application Master 的内存量,格式与 JVM 内存字符串相同(例如512m, 2g).在集群模式下,改用<font color="green">spark.driver.memory</font>.对 kibi-/mebi-/gibi-/tebi-/pebibytes 使用小写后缀,例如k/m/g/t/p.</p>
+<p>spark.yarn.am.cores<br>1<br>在客户端模式下用于 YARN Application Master 的核心数.在集群模式下,改用<font color="green">spark.driver.cores</font>.</p>
+<p>spark.yarn.am.waitTime<br>100s<br>仅在cluster模式中使用.YARN Application Master 等待 SparkContext 初始化的时间.</p>
+<p>spark.yarn.submit.file.replication<br>The default HDFS replication (usually 3)<br>为应用程序上传到 HDFS 的文件的 HDFS 复制级别.这些包括诸如 Spark jar, the app jar, and any distributed cache files/archives.</p>
+<p>spark.yarn.stagingDir<br>Current user&#39;s home directory in the filesystem<br>提交申请时使用的暂存目录.</p>
+<p>spark.yarn.preserve.staging.files<br>FALSE<br>设置为true在作业结束时保留暂存文件(Spark jar/app jar/distributed cache files)而不是删除它们.</p>
+<p>spark.yarn.scheduler.heartbeat.interval-ms<br>3000<br>Spark 应用程序主机心跳进入 YARN ResourceManager 的时间间隔(以毫秒为单位).该值的上限为 YARN 的到期间隔配置值的一半,即 yarn.am.liveness-monitor.expiry-interval-ms.</p>
+<p>spark.yarn.scheduler.initial-allocation.interval<br>200ms<br>当有待处理的容器分配请求时,Spark 应用程序主机急切地向 YARN ResourceManager 发送心跳的初始时间间隔.它不应大于 spark.yarn.scheduler.heartbeat.interval-ms. 如果挂起的容器仍然存在,分配间隔将在连续的急切心跳上加倍,直到 spark.yarn.scheduler.heartbeat.interval-ms达到.</p>
+<p>spark.yarn.max.executor.failures<br>numExecutors * 2, with minimum of 3<br>应用程序失败之前执行程序失败的最大次数.</p>
+<p>spark.yarn.historyServer.address<br>(none)<br>Spark 历史服务器的地址,例如host.com:18080. 地址不应包含scheme(http://).默认为未设置,因为历史服务器是一项可选服务.当 Spark 应用程序完成将应用程序从 ResourceManager UI 链接到 Spark 历史服务器 UI 时,此地址将提供给 YARN ResourceManager.对于这个属性,YARN 属性可以用作变量,这些在运行时由 Spark 代替.例如,如果 Spark 历史服务器与 YARN ResourceManager 在同一节点上运行,则可以将其设置为<code>$&#123;hadoopconf-yarn.resourcemanager.hostname&#125;:18080</code>.</p>
+<p>spark.yarn.dist.archives<br>(none)<br>要提取到每个执行程序的工作目录中的逗号分隔的存档列表.</p>
+<p>spark.yarn.dist.files<br>(none)<br>要放置在每个执行程序的工作目录中的以逗号分隔的文件列表.</p>
+<p>spark.yarn.dist.jars<br>(none)<br>要放置在每个执行程序的工作目录中的以逗号分隔的 jar 列表.</p>
+<p>spark.yarn.dist.forceDownloadSchemes<br>(none)<br>以逗号分隔的方案列表,在将资源添加到 YARN 的分布式缓存之前,这些方案的资源将被下载到本地磁盘.用于 YARN 服务不支持 Spark 支持的方案的情况,例如 http/https 和 ftp,或者需要位于本地 YARN 客户端类路径中的 jars.通配符&#39;*&#39;表示为所有方案下载资源.</p>
+<p>spark.executor.instances<br>2<br>静态分配的执行者数量.有了<font color="blue">spark.dynamicAllocation.enabled</font>,最初的一组执行者至少会有这么大.</p>
+<p>spark.yarn.am.memoryOverhead<br>AM memory * 0.10, with minimum of 384<br>与spark.driver.memoryOverhead相同,但适用于客户端模式下的 YARN Application Master.</p>
+<p>spark.yarn.queue<br>default<br>应用程序提交到的 YARN 队列的名称.</p>
+<p>spark.yarn.jars<br>(none)<br>包含要分发到 YARN 容器的 Spark 代码的库列表.默认情况下,YARN 上的 Spark 将使用本地安装的 Spark jar,但 Spark jar 也可以位于 HDFS 上的世界可读位置.这允许 YARN 将其缓存在节点上,这样就不需要在每次应用程序运行时都分发它.例如,要指向 HDFS 上的 jar,请将此配置设置为hdfs:///some/path. 允许使用 Glob.</p>
+<p>spark.yarn.archive<br>(none)<br>包含分发到 YARN 缓存所需的 Spark jar 的存档.如果设置,此配置将替换spark.yarn.jars并且存档将用于所有应用程序的容器.存档应在其根目录中包含 jar 文件.与前面的选项一样,存档也可以托管在 HDFS 上以加速文件分发.</p>
+<p><code>spark.yarn.appMasterEnv.[EnvironmentVariableName]</code><br>(none)<br>将指定的环境变量添加EnvironmentVariableName到在 YARN 上启动的 Application Master 进程.用户可以指定其中的多个并设置多个环境变量.在cluster模式下,它控制 Spark 驱动程序的环境,在client模式下,它仅控制执行程序启动器的环境.</p>
+<p>spark.yarn.containerLauncherMaxThreads<br>25<br>YARN Application Master 中用于启动执行程序容器的最大线程数.</p>
+<p>spark.yarn.am.extraJavaOptions<br>(none)<br>在客户端模式下传递给 YARN Application Master 的一串额外的 JVM 选项.在集群模式下,改用spark.driver.extraJavaOptions.请注意,使用此选项设置最大堆大小 (-Xmx) 设置是非法的.可以设置最大堆大小设置spark.yarn.am.memory</p>
+<p>spark.yarn.am.extraLibraryPath<br>(none)<br>设置在客户端模式下启动 YARN Application Master 时要使用的特殊库路径.</p>
+<p>spark.yarn.populateHadoopClasspath<br>TRUE<br>是否从yarn.application.classpath和mapreduce.application.classpath填充 Hadoop 类路径请注意,如果设置为false,则需要with-Hadoop捆绑 Hadoop 运行时的 Spark 发行版,否则用户必须单独提供 Hadoop 安装.</p>
+<p>spark.yarn.maxAppAttempts<br>yarn.resourcemanager.am.max-attempts in YARN<br>提交申请的最大尝试次数.它不应大于 YARN 配置中的全局最大尝试次数.</p>
+<p>spark.yarn.am.attemptFailuresValidityInterval<br>(none)<br>定义 AM 故障跟踪的有效时间间隔.如果 AM 已运行至少定义的时间间隔,则 AM 故障计数将被重置.如果未配置,则不会启用此功能.</p>
+<p>spark.yarn.executor.failuresValidityInterval<br>(none)<br>定义执行器故障跟踪的有效时间间隔.早于有效间隔的执行器故障将被忽略.</p>
+<p>spark.yarn.submit.waitAppCompletion<br>TRUE<br>在 YARN 集群模式下,控制客户端是否等待应用程序完成后退出.如果设置为true,客户端进程将保持活动状态并报告应用程序的状态.否则,客户端进程提交后退出.</p>
+<p>spark.yarn.am.nodeLabelExpression<br>(none)<br>YARN 节点标签表达式限制了 AM 将被调度的节点集.只有大于或等于 2.6 的 YARN 版本支持节点标签表达式,因此在针对早期版本运行时,该属性将被忽略.</p>
+<p>spark.yarn.executor.nodeLabelExpression<br>(none)<br>一个 YARN 节点标签表达式,它限制了将被调度的节点集.只有大于或等于 2.6 的 YARN 版本支持节点标签表达式,因此在针对早期版本运行时,该属性将被忽略.</p>
+<p>spark.yarn.tags<br>(none)<br>以逗号分隔的字符串列表作为 YARN 应用程序标签传递,出现在 YARN ApplicationReports 中,可用于在查询 YARN 应用程序时进行过滤.</p>
+<p>spark.yarn.config.gatewayPath<br>(none)<br>在网关主机(启动 Spark 应用程序的主机)上有效但对于集群中其他节点中相同资源的路径可能不同的路径.再加上 spark.yarn.config.replacementPath,这是用来支持异构配置的集群,让Spark可以正确的启动远程进程.替换路径通常将包含对 YARN 导出的某些环境变量的引用(因此对 Spark 容器可见).例如,如果网关节点安装了 Hadoop 库/disk1/hadoop,并且 Hadoop 安装的位置由 YARN 作为 HADOOP_HOME 环境变量导出,将此值设置为/disk1/hadoop和替换路径 $HADOOP_HOME将确保用于启动远程进程的路径正确引用本地 YARN 配置.</p>
+<p>spark.yarn.config.replacementPath<br>(none)<br>看spark.yarn.config.gatewayPath.</p>
+<p>spark.yarn.rolledLog.includePattern<br>(none)<br>Java Regex 过滤与定义的包含模式匹配的日志文件,这些日志文件将以滚动方式聚合.这将与 YARN 的滚动日志聚合一起使用,要在 YARN 端启用此功能,应在 yarn-site.xml 中进行配置<font color="blue">yarn.nodemanager.log-aggregation.roll-monitoring-interval-seconds</font>.此功能只能与 Hadoop 2.6.4+ 一起使用.Spark log4j appender 需要更改为使用 FileAppender 或其他可以处理在运行时删除的文件的 appender.根据 log4j 配置中配置的文件名(如 spark.log),用户应设置正则表达式 (spark*) 以包含所有需要聚合的日志文件.</p>
+<p>spark.yarn.rolledLog.excludePattern<br>(none)<br>Java Regex 过滤与定义的排除模式匹配的日志文件,这些日志文件不会以滚动方式聚合.如果日志文件名同时匹配包含和排除模式,则该文件最终将被排除.</p>
+<p>spark.yarn.blacklist.executor.launch.blacklisting.enabled<br>FALSE<br>启用将有 YARN 资源分配问题的节点列入黑名单的标志.黑名单的错误限制可以通过配置 spark.blacklist.application.maxFailedExecutorsPerNode.</p>
+<p>spark.yarn.metrics.namespace<br>(none)<br>AM 指标报告的根命名空间.如果未设置,则使用 YARN 应用程序 ID.</p>
+<h3 id="重要笔记"><a href="#重要笔记" class="headerlink" title="重要笔记"></a>重要笔记</h3><p>在调度决策中是否尊重核心请求取决于正在使用的调度程序及其配置方式.</p>
+<p>在cluster模式下,Spark 执行器和 Spark 驱动程序使用的本地目录将是为 YARN 配置的本地目录(Hadoop YARN config <font color="blue">yarn.nodemanager.local-dirs</font>).<br>如果用户指定spark.local.dir,它将被忽略.<br>在client模式下,Spark 执行器将使用为 YARN 配置的本地目录,而 Spark 驱动程序将使用spark.local.dir. 这是因为 Spark 驱动程序不在 YARN 集群client模式下运行,只有 Spark 执行程序运行.</p>
+<p>和选项支持用#指定文件名--files,--archives类似于Hadoop.<br>例如,您可以指定:--files localtest.txt#appSees.txt这会将您在本地命名的文件上传localtest.txt到 HDFS,但这将通过名称链接到appSees.txt,并且您的应用程序在 YARN 上运行时应使用名称作为appSees.txt引用它.</p>
+<p>如果您将它与本地文件一起使用并以模式运行,则该--jars选项允许该SparkContext.addJarcluster函数工作.<br>如果您将它用于 HDFS/HTTP/HTTPS 或 FTP 文件,则不需要使用它.</p>
+<h3 id="Kerberos"><a href="#Kerberos" class="headerlink" title="Kerberos"></a>Kerberos</h3><h4 id="YARN-特定的-Kerberos-配置"><a href="#YARN-特定的-Kerberos-配置" class="headerlink" title="YARN 特定的 Kerberos 配置"></a>YARN 特定的 Kerberos 配置</h4><h4 id="Kerberos-故障排除"><a href="#Kerberos-故障排除" class="headerlink" title="Kerberos 故障排除"></a>Kerberos 故障排除</h4><h3 id="配置外部Shuffle服务"><a href="#配置外部Shuffle服务" class="headerlink" title="配置外部Shuffle服务"></a>配置外部Shuffle服务</h3><p>要在 YARN 集群中的每一个NodeManager上启动 Spark Shuffle 服务,请按照以下说明操作:</p>
+<ol>
+<li>使用YARN 配置文件构建 Spark .如果您使用的是预先打包的发行版,请跳过此步骤.</li>
+<li>找到spark-<version>-yarn-shuffle.jar. 如果你自己构建 Spark, 这应该在下面 ,yarn如果你使用的是发行版,这应该在$SPARK_HOME/common/network-yarn/target/scala-<version>下面.<br>将这个 jar 添加到集群中所有NodeManagers 的类路径中.</li>
+<li>在每个节点上yarn-site.xml,添加spark_shuffle到<font color="blue">yarn.nodemanager.aux-services</font>,然后设置<font color="blue">yarn.nodemanager.aux-services.spark_shuffle.class</font>为 org.apache.spark.network.yarn.YarnShuffleService.</li>
+<li>通过etc/hadoop/yarn-env.sh设置YARN_HEAPSIZE(默认为 1000)来增加NodeManager&#39;s堆大小, 以避免在随机播放期间出现垃圾回收问题.</li>
+<li>重启集群中的所有NodeManagers.</li>
+</ol>
+<p>当 shuffle 服务在 YARN 上运行时,可以使用以下额外的配置选项:<br>spark.yarn.shuffle.stopOnFailure<br>false<br>Spark Shuffle Service 初始化失败时是否停止 NodeManager.<br>这可以防止在 Spark Shuffle 服务未运行的 NodeManager 上运行容器导致应用程序失败.</p>
+<h3 id="使用-Apache-Oozie-启动您的应用程序"><a href="#使用-Apache-Oozie-启动您的应用程序" class="headerlink" title="使用 Apache Oozie 启动您的应用程序"></a>使用 Apache Oozie 启动您的应用程序</h3><h3 id="使用-Spark-History-Server-替换-Spark-Web-UI"><a href="#使用-Spark-History-Server-替换-Spark-Web-UI" class="headerlink" title="使用 Spark History Server 替换 Spark Web UI"></a>使用 Spark History Server 替换 Spark Web UI</h3><p>当应用程序 UI 被禁用时,可以使用 Spark History Server 应用程序页面作为运行应用程序的跟踪 URL.<br>这在安全集群上可能是可取的,或者减少 Spark 驱动程序的内存使用.<br>要通过 Spark History Server 设置跟踪,请执行以下操作:</p>
+<ol>
+<li>在应用端,在Spark的配置中设置<font color="blue">spark.yarn.historyServer.allowTracking=true</font>.<br>如果应用程序的 UI 被禁用,这将告诉 Spark 使用历史服务器的 URL 作为跟踪 URL.</li>
+<li>在 Spark History Server 上,添加org.apache.spark.deploy.yarn.YarnProxyRedirectFilter 到spark.ui.filters配置中的筛选器列表.</li>
+</ol>
+<p>请注意,历史服务器信息可能不是应用程序状态的最新信息.</p>
+<h2 id="standalone"><a href="#standalone" class="headerlink" title="standalone"></a>standalone</h2><h3 id="安全-1"><a href="#安全-1" class="headerlink" title="安全"></a>安全</h3><p>默认情况下,Spark 中的安全性是关闭的.<br>这可能意味着默认情况下您很容易受到攻击.<br>在运行 Spark 之前,请参阅本文档中的Spark 安全和特定安全部分.</p>
+<h3 id="安装Spark-Standalone集群"><a href="#安装Spark-Standalone集群" class="headerlink" title="安装Spark Standalone集群"></a>安装Spark Standalone集群</h3><p>要安装 Spark Standalone 模式,您只需在集群的每个节点上放置一个编译版本的 Spark.<br>您可以在每次发布时获得 Spark 的预构建版本,也可以自己构建.</p>
+<h3 id="手动启动集群"><a href="#手动启动集群" class="headerlink" title="手动启动集群"></a>手动启动集群</h3><p>您可以通过执行以下命令启动独立的主服务器:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./sbin/start-master.sh</span><br></pre></td></tr></table></figure>
+
+<p>一旦启动,master 会为自己打印出一个<font color="blue">spark://HOST:PORT</font> URL,您可以使用它来将 worker 连接到它,或者作为&quot;master&quot;参数传递给SparkContext. 你也可以在 master 的 web UI 上找到这个 URL,默认是<font color="blue"><a target="_blank" rel="noopener" href="http://localhost:8080/">http://localhost:8080</a></font>.</p>
+<p>同样,您可以启动一个或多个 worker 并通过以下方式将它们连接到 master:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./sbin/start-slave.sh &lt;master-spark-URL&gt;</span><br></pre></td></tr></table></figure>
+
+<p>启动一个 worker 后,查看 master 的 web UI(默认为<a target="_blank" rel="noopener" href="http://localhost:8080/">http://localhost:8080</a>).<br>您应该会在此处看到列出的新节点及其 CPU 和内存数量(减去操作系统剩余的 1 GB).</p>
+<p>最后,可以将以下配置选项传递给 master 和 worker:</p>
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">-h HOST,--host HOST</td>
+<td align="left">要监听的主机名</td>
+</tr>
+<tr>
+<td align="left">-i HOST,--ip HOST</td>
+<td align="left">要监听的主机名(不推荐使用,使用 -h 或 --host)</td>
+</tr>
+<tr>
+<td align="left">-p PORT,--port PORT</td>
+<td align="left">监听服务的端口(默认:master 7077,worker 随机)</td>
+</tr>
+<tr>
+<td align="left">--webui-port PORT</td>
+<td align="left">Web UI 的端口(默认:master 8080,worker 8081)</td>
+</tr>
+<tr>
+<td align="left">-c CORES,--cores CORES</td>
+<td align="left">允许 Spark 应用程序在机器上使用的 CPU 内核总数(默认值:全部可用).仅在worker</td>
+</tr>
+<tr>
+<td align="left">-m MEM,--memory MEM</td>
+<td align="left">允许 Spark 应用程序在机器上使用的内存总量,格式为 1000M 或 2G(默认:您机器的总 RAM 减去 1 GB).仅在worker</td>
+</tr>
+<tr>
+<td align="left">-d DIR,--work-dir DIR</td>
+<td align="left">用于暂存空间和作业输出日志的目录(默认:SPARK_HOME/work).仅在worker</td>
+</tr>
+<tr>
+<td align="left">--properties-file FILE</td>
+<td align="left">要加载的自定义 Spark 属性文件的路径(默认值:conf/spark-defaults.conf)</td>
+</tr>
+</tbody></table>
+<h3 id="集群启动脚本"><a href="#集群启动脚本" class="headerlink" title="集群启动脚本"></a>集群启动脚本</h3><p>要使用启动脚本启动 Spark 独立集群,您应该在 Spark 目录中创建一个名为 <font color="red">conf/slaves</font> 的文件,该文件必须包含您打算启动 Spark worker 的所有机器的主机名,每行一个.<br>如果 conf/slaves 不存在,启动脚本默认为一台机器(本地主机),这对测试很有用.<br>请注意,master 机器通过 ssh 访问每个 worker 机器.<br>默认情况下,ssh 并行运行并且需要设置无密码(使用私钥)访问.<br>如果您没有无密码设置,则可以设置环境变量 SPARK_SSH_FOREGROUND 并连续为每个工作人员提供密码.</p>
+<p>设置此文件后,您可以使用以下 shell 脚本启动或停止集群,这些脚本基于 Hadoop 的部署脚本,可用于SPARK_HOME/sbin:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">sbin/start-master.sh //在执行脚本的机器上启动主实例.</span><br><span class="line">sbin/start-slaves.sh //在指定的conf/slaves文件中每台机器上启动一个从属实例.</span><br><span class="line">sbin/start-slave.sh //在执行脚本的机器上启动一个从属实例.</span><br><span class="line">sbin/start-all.sh //如上所述启动一个主站和多个从站.</span><br><span class="line">sbin/stop-master.sh //停止通过sbin/start-master.sh脚本启动的主机.</span><br><span class="line">sbin/stop-slaves.sh //停止conf/slaves文件中指定机器上的所有从属实例.</span><br><span class="line">sbin/stop-all.sh //如上所述停止master 和slaves.</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>请注意,这些脚本必须在您要运行 Spark master 的机器上执行,而不是您的本地机器.</p>
+</blockquote>
+<p>您可以选择通过在conf/spark-env.sh中设置环境变量来进一步配置集群.<br>以conf/spark-env.sh.template开头创建此文件,并将其复制到所有工作机器以使设置生效.<br>以下设置可用:</p>
+<table>
+<thead>
+<tr>
+<th align="left">环境变量</th>
+<th align="left">意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">SPARK_MASTER_HOST</td>
+<td align="left">将 master 绑定到特定的主机名或 IP 地址,例如公共地址.</td>
+</tr>
+<tr>
+<td align="left">SPARK_MASTER_PORT</td>
+<td align="left">在不同的端口上启动主机(默认值:7077).</td>
+</tr>
+<tr>
+<td align="left">SPARK_MASTER_WEBUI_PORT</td>
+<td align="left">主 Web UI 的端口(默认值:8080).</td>
+</tr>
+<tr>
+<td align="left">SPARK_MASTER_OPTS</td>
+<td align="left">仅适用于&quot;-Dx=y&quot;形式的主站的配置属性(默认值:none).请参阅下面的可能选项列表.</td>
+</tr>
+<tr>
+<td align="left">SPARK_LOCAL_DIRS</td>
+<td align="left">用于 Spark 中&quot;暂存&quot;空间的目录,包括映射输出文件和存储在磁盘上的 RDD.这应该在您系统中的快速本地磁盘上.它也可以是不同磁盘上多个目录的逗号分隔列表.</td>
+</tr>
+<tr>
+<td align="left">SPARK_WORKER_CORES</td>
+<td align="left">允许 Spark 应用程序在机器上使用的内核总数(默认值:所有可用内核).</td>
+</tr>
+<tr>
+<td align="left">SPARK_WORKER_MEMORY</td>
+<td align="left">允许 Spark 应用程序在机器上使用的内存总量,例如1000m,2g(默认:总内存减去 1 GB).请注意,每个应用程序的单独内存都是使用其spark.executor.memory属性配置的.</td>
+</tr>
+<tr>
+<td align="left">SPARK_WORKER_PORT</td>
+<td align="left">在特定端口上启动 Spark worker(默认值:随机).</td>
+</tr>
+<tr>
+<td align="left">SPARK_WORKER_WEBUI_PORT</td>
+<td align="left">工作器 Web UI 的端口(默认值:8081).</td>
+</tr>
+<tr>
+<td align="left">SPARK_WORKER_DIR</td>
+<td align="left">运行应用程序的目录,包括日志和暂存空间(默认:SPARK_HOME/work).</td>
+</tr>
+<tr>
+<td align="left">SPARK_WORKER_OPTS</td>
+<td align="left">仅适用于&quot;-Dx=y&quot;形式的工作人员的配置属性(默认值:无).请参阅下面的可能选项列表.</td>
+</tr>
+<tr>
+<td align="left">SPARK_DAEMON_MEMORY</td>
+<td align="left">分配给 Spark master 和 worker 守护进程本身的内存(默认值:1g).</td>
+</tr>
+<tr>
+<td align="left">SPARK_DAEMON_JAVA_OPTS</td>
+<td align="left">Spark master 和 worker 守护进程本身的 JVM 选项,格式为&quot;-Dx=y&quot;(默认值:无).</td>
+</tr>
+<tr>
+<td align="left">SPARK_DAEMON_CLASSPATH</td>
+<td align="left">Spark master 和 worker 守护进程本身的类路径(默认值:无).</td>
+</tr>
+<tr>
+<td align="left">SPARK_PUBLIC_DNS</td>
+<td align="left">Spark master 和 workers 的公共 DNS 名称(默认值:无).</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>注意:启动脚本目前不支持 Windows.<br>要在 Windows 上运行 Spark 集群,请手动启动 master 和 workers.</p>
+</blockquote>
+<p><font color="blue">SPARK_MASTER_OPTS</font> 支持以下系统属性:</p>
+<table>
+<thead>
+<tr>
+<th align="left">属性</th>
+<th align="left">默认</th>
+<th align="left">意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">spark.deploy.retainedApplications</td>
+<td align="left">200</td>
+<td align="left">要显示的已完成应用程序的最大数量.较旧的应用程序将从 UI 中删除以维持此限制.</td>
+</tr>
+<tr>
+<td align="left">spark.deploy.retainedDrivers</td>
+<td align="left">200</td>
+<td align="left">要显示的已完成驱动程序的最大数量.较旧的驱动程序将从 UI 中删除以维持此限制.</td>
+</tr>
+<tr>
+<td align="left">spark.deploy.spreadOut</td>
+<td align="left">true</td>
+<td align="left">独立的集群管理器是否应该将应用程序分散到节点之间,或者尝试将它们整合到尽可能少的节点上.分散通常更适合 HDFS 中的数据局部性,但合并对于计算密集型工作负载更有效.</td>
+</tr>
+<tr>
+<td align="left">spark.deploy.defaultCores</td>
+<td align="left">infinite</td>
+<td align="left">如果未设置,则在 Spark 的独立模式下为应用程序提供的默认内核数spark.cores.max.如果未设置,应用程序将始终获得所有可用内核,除非它们spark.cores.max自行配置.在共享集群上将其设置得较低,以防止用户默认获取整个集群.</td>
+</tr>
+<tr>
+<td align="left">spark.deploy.maxExecutorRetries</td>
+<td align="left">10</td>
+<td align="left">限制在独立集群管理器删除故障应用程序之前可能发生的背靠背执行器故障的最大数量.如果应用程序有任何正在运行的执行程序,它将永远不会被删除.如果应用程序连续经历多于spark.deploy.maxExecutorRetries失败,并且在这些失败之间没有执行程序成功开始运行,并且应用程序没有正在运行的执行程序,那么独立集群管理器将删除该应用程序并将其标记为失败.要禁用此自动删除,请设置spark.deploy.maxExecutorRetries为 -1.</td>
+</tr>
+<tr>
+<td align="left">spark.worker.timeout</td>
+<td align="left">60</td>
+<td align="left">如果没有收到心跳,独立部署主机认为工作人员丢失的秒数.</td>
+</tr>
+</tbody></table>
+<p><font color="blue">SPARK_WORKER_OPTS</font> 支持以下系统属性:</p>
+<table>
+<thead>
+<tr>
+<th align="left">属性</th>
+<th align="left">默认</th>
+<th align="left">意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">spark.worker.cleanup.enabled</td>
+<td align="left">false</td>
+<td align="left">启用定期清理工作程序/应用程序目录.请注意,这只会影响独立模式,因为 YARN 的工作方式不同.仅清理已停止应用程序的目录.</td>
+</tr>
+<tr>
+<td align="left">spark.worker.cleanup.interval</td>
+<td align="left">1800(30 minutes)</td>
+<td align="left">控制工作人员清理本地计算机上旧应用程序工作目录的时间间隔(以秒为单位).</td>
+</tr>
+<tr>
+<td align="left">spark.worker.cleanup.appDataTtl</td>
+<td align="left">604800(7 days, 7 * 24 * 3600)</td>
+<td align="left">在每个 worker 上保留应用程序工作目录的秒数.这是生存时间,应该取决于您拥有的可用磁盘空间量.应用程序日志和 jar 下载到每个应用程序工作目录.随着时间的推移,工作目录会很快填满磁盘空间,尤其是当您非常频繁地运行作业时.</td>
+</tr>
+<tr>
+<td align="left">spark.storage.cleanupFilesAfterExecutorExit</td>
+<td align="left">true</td>
+<td align="left">在执行程序退出后启用工作目录的清理非随机文件(例如临时随机文件块、缓存的 RDD/广播块、溢出文件等).请注意,这与 spark.worker.cleanup.enabled 不重叠,因为这可以清除死执行程序本地目录中的非混洗文件,而 spark.worker.cleanup.enabled 可以清除所有文件/ 已停止和超时应用程序的子目录.这只影响独立模式,将来可以添加对其他集群管理器的支持.</td>
+</tr>
+<tr>
+<td align="left">spark.worker.ui.compressedLogFileLengthCacheSize</td>
+<td align="left">100</td>
+<td align="left">对于压缩日志文件,解压后的文件只能通过解压文件来计算.Spark 缓存压缩日志文件的未压缩文件大小.此属性控制缓存大小.</td>
+</tr>
+</tbody></table>
+<h3 id="将应用程序连接到集群"><a href="#将应用程序连接到集群" class="headerlink" title="将应用程序连接到集群"></a>将应用程序连接到集群</h3><p>要在 Spark 集群上运行应用程序,只需将spark://IP:PORT master 的 URL 传递给SparkContext 构造函数即可.<br>要针对集群运行交互式 Spark shell,请运行以下命令:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/spark-shell --master spark://IP:PORT</span><br></pre></td></tr></table></figure>
+
+<p>您还可以传递一个选项<code>--total-executor-cores &lt;numCores&gt;</code>来控制 spark-shell 在集群上使用的核心数.</p>
+<h3 id="启动-Spark-应用程序"><a href="#启动-Spark-应用程序" class="headerlink" title="启动 Spark 应用程序"></a>启动 Spark 应用程序</h3><p>该spark-submit脚本提供了将已编译的 Spark 应用程序提交到集群的最直接方式.<br>对于独立集群,Spark 目前支持两种部署模式.</p>
+<ol>
+<li>在client模式下,驱动程序与提交应用程序的客户端在同一进程中启动.</li>
+<li>在cluster模式下,驱动程序从集群内的一个工作进程启动,客户端进程在完成提交应用程序的责任后立即退出,而无需等待应用程序完成.</li>
+</ol>
+<p>如果您的应用程序是通过 Spark 提交启动的,那么应用程序 jar 会自动分发到所有工作节点.<br>对于您的应用程序依赖的任何其他 jar,您应该使用逗号作为分隔符(例如--jars jar1,jar2)通过<code>--jars</code>标志指定它们.<br>要控制应用程序的配置或执行环境,请参阅 Spark 配置.</p>
+<p>此外,独立cluster模式支持在应用程序以非零退出代码退出时自动重新启动应用程序.<br>要使用此功能,您可以在启动应用程序时将<font color="red">--supervise</font>标志传递给spark-submit.<br>然后,如果你想杀死一个反复失败的应用程序,你可以通过:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/spark-class org.apache.spark.deploy.Client kill &lt;master url&gt; &lt;driver ID&gt;</span><br></pre></td></tr></table></figure>
+<p>您可以通过独立的 Master Web UI 在 <code>http://&lt;master url&gt;:8080</code> 找到驱动程序 ID.</p>
+<h3 id="资源调度"><a href="#资源调度" class="headerlink" title="资源调度"></a>资源调度</h3><p>standalone 集群模式目前只支持跨应用的简单 FIFO 调度器.<br>但是,要允许多个并发用户,您可以控制每个应用程序将使用的最大资源数.<br>默认情况下,它将获取集群中的所有核心,这只有在您一次只运行一个应用程序时才有意义.<br>您可以通过spark.cores.max在 SparkConf中设置来限制核心数量.<br>例如:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">val conf = new SparkConf()</span><br><span class="line">  .setMaster(...)</span><br><span class="line">  .setAppName(...)</span><br><span class="line">  .set(&quot;spark.cores.max&quot;, &quot;10&quot;)</span><br><span class="line">val sc = new SparkContext(conf)</span><br></pre></td></tr></table></figure>
+
+<p>此外,您可以在集群主进程上进行配置spark.deploy.defaultCores,以更改未设置spark.cores.max为小于无限的应用程序的默认值.<br>通过将以下内容添加到conf/spark-env.sh:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">export SPARK_MASTER_OPTS=&quot;-Dspark.deploy.defaultCores=&lt;value&gt;&quot;</span><br></pre></td></tr></table></figure>
+
+<p>这在用户可能没有单独配置最大核心数的共享集群上很有用.</p>
+<h3 id="执行者调度"><a href="#执行者调度" class="headerlink" title="执行者调度"></a>执行者调度</h3><p>分配给每个执行器的核心数是可配置的.<br>当spark.executor.cores明确设置时,如果工作人员有足够的核心和内存,则可以在同一个工作人员上启动同一应用程序的多个执行程序.<br>否则,默认情况下,每个执行程序都会获取工作程序上所有可用的核心,在这种情况下,在一次调度迭代期间,每个应用程序只能在每个工作程序上启动一个执行程序.</p>
+<h3 id="监控和记录"><a href="#监控和记录" class="headerlink" title="监控和记录"></a>监控和记录</h3><p>Spark 的独立模式提供了一个基于 Web 的用户界面来监控集群.<br>master 和每个 worker 都有自己的 web UI,显示集群和作业统计信息.<br>默认情况下,您可以在端口 8080 访问 master 的 Web UI.<br>可以在配置文件中或通过命令行选项更改端口.</p>
+<p>此外,每个作业的详细日志输出也会写入每个从节点的工作目录(SPARK_HOME/work默认情况下).<br>您将看到每个作业有两个文件,stdout和stderr,以及它写入控制台的所有输出.</p>
+<h3 id="与-Hadoop-一起运行"><a href="#与-Hadoop-一起运行" class="headerlink" title="与 Hadoop 一起运行"></a>与 Hadoop 一起运行</h3><p>您只需将 Spark 作为单独的服务在同一台机器上启动,即可与现有的 Hadoop 集群一起运行.<br>要从 Spark 访问 Hadoop 数据,只需使用 hdfs:// URL(通常是<code>hdfs://&lt;namenode&gt;:9000/path</code>,但您可以在 Hadoop Namenode 的 Web UI 上找到正确的 URL).<br>或者,您可以为 Spark 设置一个单独的集群,并仍然让它通过网络访问 HDFS.这将比磁盘本地访问慢,但如果您仍在同一局域网中运行(例如,您在每个装有 Hadoop 的机架上放置几台 Spark 机器),则可能不是问题.</p>
+<h3 id="为网络安全配置端口"><a href="#为网络安全配置端口" class="headerlink" title="为网络安全配置端口"></a>为网络安全配置端口</h3><p>一般来说,Spark 集群及其服务不会部署在公共互联网上.<br>它们通常是私有服务,只能在部署 Spark 的组织的网络内访问.<br>对 Spark 服务使用的主机和端口的访问应仅限于需要访问服务的源主机.</p>
+<p>这对于使用独立资源管理器的集群尤为重要,因为它们不像其他资源管理器那样支持细粒度访问控制.<br>有关要配置的端口的完整列表,请参阅 安全页面.</p>
+<h3 id="高可用性"><a href="#高可用性" class="headerlink" title="高可用性"></a>高可用性</h3><p>默认情况下,独立调度集群对 Worker 故障具有弹性(只要 Spark 本身可以通过将工作转移到其他 worker 来恢复丢失工作).<br>但是,调度程序使用 Master 来做出调度决策,这(默认情况下)会造成单点故障:如果 Master 崩溃,则无法创建新的应用程序.<br>为了避免这种情况,我们有两种高可用性方案,详见下文.</p>
+<h4 id="ZooKeeper-的备用主机"><a href="#ZooKeeper-的备用主机" class="headerlink" title="ZooKeeper 的备用主机"></a>ZooKeeper 的备用主机</h4><h5 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h5><p>利用 ZooKeeper 提供领导者选举和一些状态存储,您可以在连接到同一个 ZooKeeper 实例的集群中启动多个主节点.<br>一个将被选为&quot;领导者&quot;,其他人将保持待机状态.<br>如果当前的leader死了,会选举出另一个Master,恢复旧Master的状态,然后重新开始调度.<br>整个恢复过程(从第一个领导者宕机开始)应该需要 1 到 2 分钟.<br>请注意,此延迟仅影响新应用程序的调度——在 Master 故障转移期间已经运行的应用程序不受影响.<br>在此处了解有关开始使用 ZooKeeper 的更多信息.</p>
+<h5 id="配置-1"><a href="#配置-1" class="headerlink" title="配置"></a>配置</h5><p>为了启用此恢复模式,您可以通过配置<code>spark.deploy.recoveryMode</code>和相关的 <code>spark.deploy.zookeeper.*</code> 配置在 spark-env 中设置 <font color="blue">SPARK_DAEMON_JAVA_OPTS</font>.<br>有关这些配置的更多信息,请参阅配置文档</p>
+<blockquote>
+<p>可能的陷阱:如果您的集群中有多个 Master,但未能正确配置 Master 以使用 ZooKeeper,Master 将无法发现彼此并认为它们都是领导者.<br>这不会导致集群处于健康状态(因为所有 Master 都将独立调度).</p>
+</blockquote>
+<h5 id="细节"><a href="#细节" class="headerlink" title="细节"></a>细节</h5><p>设置 ZooKeeper 集群后,启用高可用性非常简单.<br>只需在具有相同 ZooKeeper 配置(ZooKeeper URL 和目录)的不同节点上启动多个主进程.<br>可以随时添加和删除Masters.</p>
+<p>为了调度新的应用程序或将 Workers 添加到集群中,他们需要知道当前领导者的 IP 地址.<br>这可以通过简单地传递一个 Master 列表来实现,而您过去只传递一个 Master.<br>例如,您可能会启动 SparkContext 指向spark://host1:port1,host2:port2. 这将导致您的 SparkContext 尝试向两个主节点注册——如果host1出现故障,此配置仍然正确,因为我们会找到新的领导者,host2.</p>
+<p>&quot;向 Master 注册&quot;和正常操作之间有一个重要的区别.<br>启动时,应用程序或 Worker 需要能够找到并注册到当前的 lead Master.<br>但是,一旦成功注册,它就&quot;在系统中&quot;(即存储在 ZooKeeper 中).<br>如果发生故障转移,新的 leader 将联系所有以前注册的应用程序和 Workers 以通知他们领导层的变化,因此他们甚至不需要在启动时知道新 Master 的存在.</p>
+<p>由于这个属性,可以随时创建新的 Master,你唯一需要担心的是新的应用程序和 Worker 可以找到它注册,以防它成为领导者.<br>一旦注册,您就会得到照顾.</p>
+<h4 id="使用本地文件系统的单节点恢复"><a href="#使用本地文件系统的单节点恢复" class="headerlink" title="使用本地文件系统的单节点恢复"></a>使用本地文件系统的单节点恢复</h4><h5 id="概述-1"><a href="#概述-1" class="headerlink" title="概述"></a>概述</h5><p>ZooKeeper 是实现生产级高可用性的最佳方式,但如果您只想在 Master 出现故障时能够重新启动它,FILESYSTEM 模式可以解决它.<br>当应用程序和 Workers 注册时,它们有足够的状态写入提供的目录,以便它们可以在 Master 进程重新启动时恢复.</p>
+<h5 id="配置-2"><a href="#配置-2" class="headerlink" title="配置"></a>配置</h5><p>为了启用此恢复模式,您可以使用以下配置在 spark-env 中设置 SPARK_DAEMON_JAVA_OPTS:</p>
+<table>
+<thead>
+<tr>
+<th align="left">系统属性</th>
+<th align="left">意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">spark.deploy.recoveryMode</td>
+<td align="left">设置为 FILESYSTEM 以启用单节点恢复模式(默认值:NONE).</td>
+</tr>
+<tr>
+<td align="left">spark.deploy.recoveryDirectory</td>
+<td align="left">Spark 将存储恢复状态的目录,可以从 Master 的角度访问.</td>
+</tr>
+</tbody></table>
+<h5 id="细节-1"><a href="#细节-1" class="headerlink" title="细节"></a>细节</h5><p>该解决方案可以与进程监控器/管理器(如monit )结合使用,或者仅用于通过重启启用手动恢复.</p>
+<p>虽然文件系统恢复似乎比根本不进行任何恢复要好,但对于某些开发或实验目的,这种模式可能不是最佳选择.<br>特别是,通过 stop-master.sh 杀死一个 master 并不会清除它的恢复状态,所以每当你启动一个新的 Master 时,它都会进入恢复模式.<br>如果需要等待所有先前注册的 Worker/clients 超时,这可能会将启动时间增加最多 1 分钟.</p>
+<p>虽然它不受官方支持,但您可以将 NFS 目录挂载为恢复目录.<br>如果原始 Master 节点完全挂掉,您可以在不同的节点上启动一个 Master,这将正确恢复所有以前注册的 Worker/应用程序(相当于 ZooKeeper 恢复).<br>然而,未来的应用程序必须能够找到新的 Master 才能注册.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/spark/" rel="tag"># spark</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/11/18/spark%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/" rel="prev" title="spark默认配置参数">
+                  <i class="fa fa-chevron-left"></i> spark默认配置参数
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/11/21/spark%E8%B0%83%E4%BC%98%E6%8C%87%E5%8D%97/" rel="next" title="spark调优指南">
+                  spark调优指南 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="jmxtrans用于收集服务的jmx信息(通过配置json文件),然后入库到influxDB.通过配置Grafana,把influxDB里面的数据通过web展示出来.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="jmxtrans-influxdb-grafana监控套件">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/08/jmxtrans-influxdb-grafana%E7%9B%91%E6%8E%A7%E5%A5%97%E4%BB%B6/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="jmxtrans用于收集服务的jmx信息(通过配置json文件),然后入库到influxDB.通过配置Grafana,把influxDB里面的数据通过web展示出来.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg7.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg8.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg4.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg5.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg6.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg13.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg9.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg11.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg12.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg14.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg15.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg16.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg17.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg18.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg19.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg21.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg22.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg23.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/jg24.png">
+<meta property="article:published_time" content="2022-08-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-20T06:03:08.406Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="influxdb">
+<meta property="article:tag" content="jmxtrans">
+<meta property="article:tag" content="grafana">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/jg1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/08/jmxtrans-influxdb-grafana%E7%9B%91%E6%8E%A7%E5%A5%97%E4%BB%B6/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>jmxtrans-influxdb-grafana监控套件 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#influxDB"><span class="nav-number">1.</span> <span class="nav-text">influxDB</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85"><span class="nav-number">1.1.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">1.2.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF"><span class="nav-number">1.3.</span> <span class="nav-text">客户端</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#jmxtrans"><span class="nav-number">2.</span> <span class="nav-text">jmxtrans</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85-1"><span class="nav-number">2.1.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.2.</span> <span class="nav-text">配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#grafana"><span class="nav-number">3.</span> <span class="nav-text">grafana</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85-2"><span class="nav-number">3.1.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-2"><span class="nav-number">3.2.</span> <span class="nav-text">配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%B6%E9%9B%86Jmx"><span class="nav-number">4.</span> <span class="nav-text">收集Jmx</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#hbase"><span class="nav-number">4.1.</span> <span class="nav-text">hbase</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-3"><span class="nav-number">4.1.1.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B1%95%E7%A4%BA"><span class="nav-number">4.1.2.</span> <span class="nav-text">展示</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kafka"><span class="nav-number">4.2.</span> <span class="nav-text">kafka</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-4"><span class="nav-number">4.2.1.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B1%95%E7%A4%BA-1"><span class="nav-number">4.2.2.</span> <span class="nav-text">展示</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zookeeper"><span class="nav-number">4.3.</span> <span class="nav-text">zookeeper</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-5"><span class="nav-number">4.3.1.</span> <span class="nav-text">配置</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#flume"><span class="nav-number">4.4.</span> <span class="nav-text">flume</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#json"><span class="nav-number">4.4.1.</span> <span class="nav-text">json</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#jmx"><span class="nav-number">4.4.2.</span> <span class="nav-text">jmx</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hadoop"><span class="nav-number">4.5.</span> <span class="nav-text">hadoop</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/08/jmxtrans-influxdb-grafana%E7%9B%91%E6%8E%A7%E5%A5%97%E4%BB%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          jmxtrans-influxdb-grafana监控套件
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-08-08 00:00:00" itemprop="dateCreated datePublished" datetime="2022-08-08T00:00:00+08:00">2022-08-08</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-20 14:03:08" itemprop="dateModified" datetime="2022-09-20T14:03:08+08:00">2022-09-20</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E8%BF%90%E7%BB%B4/" itemprop="url" rel="index"><span itemprop="name">运维</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>jmxtrans用于收集服务的jmx信息(通过配置json文件),然后入库到influxDB.<br>通过配置Grafana,把influxDB里面的数据通过web展示出来.</p>
+<span id="more"></span>
+
+<h2 id="influxDB"><a href="#influxDB" class="headerlink" title="influxDB"></a>influxDB</h2><p>InfluxDB是一个时间序列数据库,用于处理海量写入与负载查询.<br>InfluxDB旨在用作涉及大量时间戳数据的任何用例(包括DevOps监控,应用程序指标,物联网传感器数据和实时分析)的后端存储.</p>
+<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># 下载地址 https:&#x2F;&#x2F;portal.influxdata.com&#x2F;downloads&#x2F;#influxdb</span><br><span class="line">wget https:&#x2F;&#x2F;dl.influxdata.com&#x2F;influxdb&#x2F;releases&#x2F;influxdb-1.7.9.x86_64.rpm</span><br><span class="line"></span><br><span class="line"># 安装</span><br><span class="line">rpm -ivh influxdb-1.7.9.x86_64.rpm</span><br><span class="line"></span><br><span class="line"># 启动</span><br><span class="line">#service influxdb start</span><br><span class="line">#service influxdb status</span><br><span class="line">systemctl start influxdb</span><br><span class="line"></span><br><span class="line">ps -ef | grep influxdb</span><br><span class="line">netstat -anp|grep 8088</span><br></pre></td></tr></table></figure>
+
+<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p><a target="_blank" rel="noopener" href="https://docs.influxdata.com/influxdb/v1.2/administration/config/">https://docs.influxdata.com/influxdb/v1.2/administration/config/</a></p>
+<p>默认配置文件:<br>/etc/influxdb/influxdb.conf</p>
+<p>默认日志文件:<br>/var/log/influxdb/influxd.log</p>
+<h3 id="客户端"><a href="#客户端" class="headerlink" title="客户端"></a>客户端</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"># 启动influxDb shell</span><br><span class="line">influx</span><br><span class="line"># 查询数据库</span><br><span class="line"># 默认root&#x2F;root</span><br><span class="line">CREATE USER &quot;admin&quot; WITH PASSWORD &#39;admin&#39; WITH ALL PRIVILEGES</span><br><span class="line"></span><br><span class="line">show databases;</span><br><span class="line"># 创建数据库</span><br><span class="line">create database hbaseJmx;</span><br><span class="line"># 跳转数据库</span><br><span class="line">use hbaseJmx;</span><br><span class="line"># 查看表</span><br><span class="line">show measurements;</span><br><span class="line"># 查询表</span><br><span class="line">select * from test limit 1;</span><br><span class="line"></span><br><span class="line">create database kafkaJmx;</span><br><span class="line">create database flumeJmx;</span><br><span class="line">create database zookeeperJmx;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/jg1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="jmxtrans"><a href="#jmxtrans" class="headerlink" title="jmxtrans"></a>jmxtrans</h2><p><a target="_blank" rel="noopener" href="http://www.jmxtrans.org/">http://www.jmxtrans.org/</a></p>
+<p>Jmxtrans 组件会读取 /var/lib/jmxtrans 目录下所有数据源配置文件(json格式文件),实时从数据源中获取数据,解析数据后存储到目标源中.</p>
+<h3 id="安装-1"><a href="#安装-1" class="headerlink" title="安装"></a>安装</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"># 下载 270 版本</span><br><span class="line">wget https:&#x2F;&#x2F;repo1.maven.org&#x2F;maven2&#x2F;org&#x2F;jmxtrans&#x2F;jmxtrans&#x2F;272&#x2F;jmxtrans-272.rpm</span><br><span class="line"># 安装</span><br><span class="line">rpm -ivh jmxtrans-272.rpm --nodeps --force</span><br><span class="line"># 启动</span><br><span class="line">systemctl start jmxtrans</span><br></pre></td></tr></table></figure>
+
+<h3 id="配置-1"><a href="#配置-1" class="headerlink" title="配置"></a>配置</h3><p>配置文件:<br>/etc/jmxtrans/wrapper.conf</p>
+<p>日志文件:<br>/var/log/jmxtrans/jmxtrans.log</p>
+<h2 id="grafana"><a href="#grafana" class="headerlink" title="grafana"></a>grafana</h2><p>下载文档: <a target="_blank" rel="noopener" href="https://grafana.com/grafana/download?platform=linux">https://grafana.com/grafana/download?platform=linux</a></p>
+<h3 id="安装-2"><a href="#安装-2" class="headerlink" title="安装"></a>安装</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"># 下载</span><br><span class="line">wget https:&#x2F;&#x2F;dl.grafana.com&#x2F;oss&#x2F;release&#x2F;grafana-6.5.1-1.x86_64.rpm</span><br><span class="line">yum install fontconfig freetype* urw-fonts -y</span><br><span class="line"># 安装</span><br><span class="line">rpm -ivh grafana-6.5.1-1.x86_64.rpm</span><br><span class="line"># 启动</span><br><span class="line">systemctl start grafana-server</span><br></pre></td></tr></table></figure>
+
+<h3 id="配置-2"><a href="#配置-2" class="headerlink" title="配置"></a>配置</h3><p>配置文件:<br>/etc/sysconfig/grafana-server</p>
+<p>环境变量文件:<br>/etc/grafana/grafana.ini</p>
+<p>日志文件:<br>/var/log/grafana/grafana.log</p>
+<p>网页访问,端口号3000,账号密码都是admin.</p>
+<img src="/images/jg2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/jg3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="收集Jmx"><a href="#收集Jmx" class="headerlink" title="收集Jmx"></a>收集Jmx</h2><h3 id="hbase"><a href="#hbase" class="headerlink" title="hbase"></a>hbase</h3><h4 id="配置-3"><a href="#配置-3" class="headerlink" title="配置"></a>配置</h4><p>收集HBase里面的监控项,通过Jmxtrans写入到influxDB,然后通过grafana展示.<br>配置hbase,将hbase-env.sh中以下配置项的注释打开.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">export HBASE_JMX_BASE&#x3D;&quot;-Dcom.sun.management.jmxremote.ssl&#x3D;false -Dcom.sun.management.jmxremote.authenticate&#x3D;false&quot;</span><br><span class="line">export HBASE_MASTER_OPTS&#x3D;&quot;$HBASE_MASTER_OPTS $HBASE_JMX_BASE -Dcom.sun.management.jmxremote.port&#x3D;10101&quot;</span><br><span class="line">export HBASE_REGIONSERVER_OPTS&#x3D;&quot;$HBASE_REGIONSERVER_OPTS $HBASE_JMX_BASE -Dcom.sun.management.jmxremote.port&#x3D;10102&quot;</span><br><span class="line">export HBASE_THRIFT_OPTS&#x3D;&quot;$HBASE_THRIFT_OPTS $HBASE_JMX_BASE -Dcom.sun.management.jmxremote.port&#x3D;10103&quot;</span><br><span class="line">export HBASE_ZOOKEEPER_OPTS&#x3D;&quot;$HBASE_ZOOKEEPER_OPTS $HBASE_JMX_BASE -Dcom.sun.management.jmxremote.port&#x3D;10104&quot;</span><br><span class="line">export HBASE_REST_OPTS&#x3D;&quot;$HBASE_REST_OPTS $HBASE_JMX_BASE -Dcom.sun.management.jmxremote.port&#x3D;10105&quot;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>本地使用jconsole验证连接<br>cmd命令输入jconsole</p>
+</blockquote>
+<img src="/images/jg7.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/jg8.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>cdh集群在HBase RegionServer的Java配置选项的最后加了该配置,相应的是Master的配置就在HBase Master的Java配置选项添加.</p>
+<img src="/images/jg4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>在以下配置时,因$无法识别,不生效.<br><img src="/images/jg5.png" style="margin-left: 0px; padding-bottom: 10px;"></p>
+<p>重启 HBase 集群之后可以在服务器查看对应端口是否启动成功.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">netstat -lnp | grep 10102</span><br></pre></td></tr></table></figure>
+
+<p>在/var/lib/jmxtrans/目录下创建 hbaseJmx.json 配置文件,</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;servers&quot;</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="attr">&quot;port&quot;</span>: <span class="string">&quot;10102&quot;</span>,</span><br><span class="line">      <span class="attr">&quot;host&quot;</span>: <span class="string">&quot;172.18.250.101&quot;</span>,</span><br><span class="line">      <span class="attr">&quot;queries&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">          <span class="attr">&quot;obj&quot;</span>: <span class="string">&quot;Hadoop:service=HBase,name=JvmMetrics&quot;</span>,</span><br><span class="line">          <span class="attr">&quot;attr&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;GcCount&quot;</span></span><br><span class="line">          ],</span><br><span class="line">          <span class="attr">&quot;resultAlias&quot;</span>: <span class="string">&quot;GcCount&quot;</span>,</span><br><span class="line">          <span class="attr">&quot;outputWriters&quot;</span>: [</span><br><span class="line">            &#123;</span><br><span class="line">              <span class="attr">&quot;@class&quot;</span>: <span class="string">&quot;com.googlecode.jmxtrans.model.output.InfluxDbWriterFactory&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;url&quot;</span>: <span class="string">&quot;http://172.18.250.93:8086/&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;username&quot;</span>: <span class="string">&quot;admin&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;password&quot;</span>: <span class="string">&quot;admin&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;database&quot;</span>: <span class="string">&quot;hbaseJmx&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">          ]</span><br><span class="line">        &#125;</span><br><span class="line">      ]</span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>json参数说明<br>如果查询所有的属性,则在query子元素中不定义attr属性,influxdb 会将所有的attr属性作为表字段存储.</p>
+</blockquote>
+<p>启动jmxtrans,<code>/usr/share/jmxtrans/bin/jmxtrans start</code></p>
+<h4 id="展示"><a href="#展示" class="headerlink" title="展示"></a>展示</h4><img src="/images/jg6.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/jg13.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/jg9.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/jg11.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/jg12.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="kafka"><a href="#kafka" class="headerlink" title="kafka"></a>kafka</h3><h4 id="配置-4"><a href="#配置-4" class="headerlink" title="配置"></a>配置</h4><p>在${KAFKA_HOME}/bin/路径下修改kafka-server-start.sh脚本,添加以下配置,重启kafka,<br><code>export JMX_PORT=&quot;9999&quot;</code></p>
+<img src="/images/jg14.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/jg15.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;servers&quot;</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="attr">&quot;port&quot;</span>: <span class="string">&quot;9999&quot;</span>,</span><br><span class="line">      <span class="attr">&quot;host&quot;</span>: <span class="string">&quot;oceanbase004&quot;</span>,</span><br><span class="line">      <span class="attr">&quot;queries&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">          <span class="attr">&quot;obj&quot;</span>: <span class="string">&quot;java.lang:type=Memory&quot;</span>,</span><br><span class="line">          <span class="attr">&quot;attr&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;HeapMemoryUsage&quot;</span>,</span><br><span class="line">            <span class="string">&quot;NonHeapMemoryUsage&quot;</span></span><br><span class="line">          ],</span><br><span class="line">          <span class="attr">&quot;resultAlias&quot;</span>: <span class="string">&quot;jvmMemory&quot;</span>,</span><br><span class="line">          <span class="attr">&quot;outputWriters&quot;</span>: [</span><br><span class="line">            &#123;</span><br><span class="line">              <span class="attr">&quot;@class&quot;</span>: <span class="string">&quot;com.googlecode.jmxtrans.model.output.InfluxDbWriterFactory&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;url&quot;</span>: <span class="string">&quot;http://172.18.250.93:8086/&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;username&quot;</span>: <span class="string">&quot;admin&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;password&quot;</span>: <span class="string">&quot;admin&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;database&quot;</span>: <span class="string">&quot;kafkaJmx&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;tags&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;application&quot;</span>: <span class="string">&quot;kafka&quot;</span></span><br><span class="line">              &#125;</span><br><span class="line">            &#125;</span><br><span class="line">          ]</span><br><span class="line">        &#125;</span><br><span class="line">      ]</span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="展示-1"><a href="#展示-1" class="headerlink" title="展示"></a>展示</h4><p><strong>jmxtrans新添加配置文件后,不需要重启,自动发现并执行配置文件.</strong><br><code>/usr/share/jmxtrans/bin/jmxtrans restart</code></p>
+<img src="/images/jg16.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/jg17.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="zookeeper"><a href="#zookeeper" class="headerlink" title="zookeeper"></a>zookeeper</h3><h4 id="配置-5"><a href="#配置-5" class="headerlink" title="配置"></a>配置</h4><p>修改zkServer.sh脚本,<br><code>-Djava.rmi.server.hostname=$JMXHOSTNAME</code></p>
+<p>JMXLOCALONLY=false<br>JMXHOSTNAME=172.18.250.109<br>JMXPORT=21811<br>JMXSSL=false<br>JMXLOG4J=false</p>
+<img src="/images/jg18.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/jg19.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;servers&quot;</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="attr">&quot;port&quot;</span>: <span class="string">&quot;21811&quot;</span>,</span><br><span class="line">      <span class="attr">&quot;host&quot;</span>: <span class="string">&quot;oceanbase004&quot;</span>,</span><br><span class="line">      <span class="attr">&quot;queries&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">          <span class="attr">&quot;outputWriters&quot;</span>: [</span><br><span class="line">            &#123;</span><br><span class="line">              <span class="attr">&quot;@class&quot;</span>: <span class="string">&quot;com.googlecode.jmxtrans.model.output.InfluxDbWriterFactory&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;url&quot;</span>: <span class="string">&quot;http://172.18.250.93:8086/&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;database&quot;</span>: <span class="string">&quot;zookeeperJmx&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;username&quot;</span>: <span class="string">&quot;admin&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;password&quot;</span>: <span class="string">&quot;admin&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">          ],</span><br><span class="line">          <span class="attr">&quot;resultAlias&quot;</span>: <span class="string">&quot;zkxx1&quot;</span>,</span><br><span class="line">          <span class="attr">&quot;obj&quot;</span>: <span class="string">&quot;org.apache.ZooKeeperService:name0=StandaloneServer_port2181&quot;</span>,</span><br><span class="line">          <span class="attr">&quot;attr&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;MaxClientCnxnsPerHost&quot;</span>,</span><br><span class="line">            <span class="string">&quot;MaxRequestLatency&quot;</span>,</span><br><span class="line">            <span class="string">&quot;AvgRequestLatency&quot;</span>,</span><br><span class="line">            <span class="string">&quot;MinRequestLatency&quot;</span>,</span><br><span class="line">            <span class="string">&quot;MaxSessionTimeout&quot;</span>,</span><br><span class="line">            <span class="string">&quot;MinSessionTimeout&quot;</span>,</span><br><span class="line">            <span class="string">&quot;OutstandingRequests&quot;</span>,</span><br><span class="line">            <span class="string">&quot;PacketsReceived&quot;</span>,</span><br><span class="line">            <span class="string">&quot;PacketsSent&quot;</span>,</span><br><span class="line">            <span class="string">&quot;TickTime&quot;</span></span><br><span class="line">          ]</span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">          <span class="attr">&quot;outputWriters&quot;</span>: [</span><br><span class="line">            &#123;</span><br><span class="line">              <span class="attr">&quot;@class&quot;</span>: <span class="string">&quot;com.googlecode.jmxtrans.model.output.InfluxDbWriterFactory&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;url&quot;</span>: <span class="string">&quot;http://172.18.250.93:8086/&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;database&quot;</span>: <span class="string">&quot;zookeeperJmx&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;username&quot;</span>: <span class="string">&quot;admin&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;password&quot;</span>: <span class="string">&quot;admin&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">          ],</span><br><span class="line">          <span class="attr">&quot;resultAlias&quot;</span>: <span class="string">&quot;zkxx2&quot;</span>,</span><br><span class="line">          <span class="attr">&quot;obj&quot;</span>: <span class="string">&quot;org.apache.ZooKeeperService:name0=StandaloneServer_port2181,name1=InMemoryDataTree&quot;</span>,</span><br><span class="line">          <span class="attr">&quot;attr&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;NodeCount&quot;</span>,</span><br><span class="line">            <span class="string">&quot;WatchCount&quot;</span></span><br><span class="line">          ]</span><br><span class="line">        &#125;</span><br><span class="line">      ]</span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/jg21.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="flume"><a href="#flume" class="headerlink" title="flume"></a>flume</h3><h4 id="json"><a href="#json" class="headerlink" title="json"></a>json</h4><p>bin/flume-ng agent --conf-file example.conf --name a1 -Dflume.monitoring.type=http -Dflume.monitoring.port=5445</p>
+<p><code>http://&lt;hostname&gt;:&lt;port&gt;/metrics</code></p>
+<h4 id="jmx"><a href="#jmx" class="headerlink" title="jmx"></a>jmx</h4><p>修改conf目录下flume-env.sh,添加以下配置,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">export JAVA_OPTS&#x3D;&quot;-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port&#x3D;5445 -Dcom.sun.management.jmxremote.authenticate&#x3D;false -Dcom.sun.management.jmxremote.ssl&#x3D;false&quot;</span><br></pre></td></tr></table></figure>
+
+<p>启动flume命令,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin&#x2F;flume-ng agent -c conf -f conf&#x2F;kafka-testmonitor5.properties -n agent1 -Dflume.monitoring.type&#x3D;com.flume.test1.FlumeSinkMonitor -Dflume.monitoring.log4j.prop&#x3D;conf&#x2F;sink-monitor-testmonitor5.properties -Dflume.monitoring.interval&#x3D;12000 &gt;&gt; logs&#x2F;kafka-testmonitor5.log</span><br></pre></td></tr></table></figure>
+
+<img src="/images/jg22.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;servers&quot;</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="attr">&quot;port&quot;</span>: <span class="string">&quot;5445&quot;</span>,</span><br><span class="line">      <span class="attr">&quot;host&quot;</span>: <span class="string">&quot;oceanbase004&quot;</span>,</span><br><span class="line">      <span class="attr">&quot;queries&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">          <span class="attr">&quot;outputWriters&quot;</span>: [</span><br><span class="line">            &#123;</span><br><span class="line">              <span class="attr">&quot;@class&quot;</span>: <span class="string">&quot;com.googlecode.jmxtrans.model.output.InfluxDbWriterFactory&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;url&quot;</span>: <span class="string">&quot;http://172.18.250.93:8086/&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;database&quot;</span>: <span class="string">&quot;flumeJmx&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;username&quot;</span>: <span class="string">&quot;admin&quot;</span>,</span><br><span class="line">              <span class="attr">&quot;password&quot;</span>: <span class="string">&quot;admin&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">          ],</span><br><span class="line">          <span class="attr">&quot;resultAlias&quot;</span>: <span class="string">&quot;flumexx1&quot;</span>,</span><br><span class="line">          <span class="attr">&quot;obj&quot;</span>: <span class="string">&quot;org.apache.flume.sink:type=k1&quot;</span>,</span><br><span class="line">          <span class="attr">&quot;attr&quot;</span>: [</span><br><span class="line">            <span class="string">&quot;EventDrainSuccessCount&quot;</span></span><br><span class="line">          ]</span><br><span class="line">        &#125;</span><br><span class="line">      ]</span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/jg23.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="hadoop"><a href="#hadoop" class="headerlink" title="hadoop"></a>hadoop</h3><p><code>http://master2:50070/jmx</code></p>
+<p><a target="_blank" rel="noopener" href="https://hadoop.apache.org/docs/r2.6.5/hadoop-project-dist/hadoop-common/Metrics.html#rpc">https://hadoop.apache.org/docs/r2.6.5/hadoop-project-dist/hadoop-common/Metrics.html#rpc</a></p>
+<img src="/images/jg24.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/influxdb/" rel="tag"># influxdb</a>
+              <a href="/tags/jmxtrans/" rel="tag"># jmxtrans</a>
+              <a href="/tags/grafana/" rel="tag"># grafana</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/08/08/kafka%20pagecache%E5%8E%9F%E7%90%86/" rel="prev" title="kafka pagecache原理">
+                  <i class="fa fa-chevron-left"></i> kafka pagecache原理
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/08/08/influxdb%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/" rel="next" title="influxdb配置参数">
+                  influxdb配置参数 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

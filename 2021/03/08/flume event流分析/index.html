@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="查看flume源码,分析event流向,其中flume版本为1.7.0. 在华为云镜像或apache官网,下载apache-flume-1.7.0-src.tar.gz,解压后,使用idea打开.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="flume event流分析">
+<meta property="og:url" content="https://maoeryu.github.io/2021/03/08/flume%20event%E6%B5%81%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="查看flume源码,分析event流向,其中flume版本为1.7.0. 在华为云镜像或apache官网,下载apache-flume-1.7.0-src.tar.gz,解压后,使用idea打开.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre101.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre102.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre103.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre_class.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre105.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre106.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre107.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre108.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre109.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre1091.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre1092.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre110.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre111.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre112.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre113.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre114.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre115.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre1151.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre1152.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre116.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre119.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre117.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre118.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/app_stop.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/app_stop2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre_source.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre1201.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre120.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre1202.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre121.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre122.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre123.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre_channel.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre124.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre125.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre126.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre131.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre132.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre133.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre134.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre135.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre136.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre137.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre138.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre_sink.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre140.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre141.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre142.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre143.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre144.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/app1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/app2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/app22.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/app3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/event_1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/event_2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fre_event.png">
+<meta property="article:published_time" content="2021-03-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-07-26T02:52:24.647Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="flume">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fre101.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/03/08/flume%20event%E6%B5%81%E5%88%86%E6%9E%90/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>flume event流分析 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E6%A8%A1%E5%9D%97"><span class="nav-number">1.1.</span> <span class="nav-text">项目模块</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#flume%E5%85%A5%E5%8F%A3%E7%B1%BB"><span class="nav-number">1.2.</span> <span class="nav-text">flume入口类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E8%AF%91flume"><span class="nav-number">1.3.</span> <span class="nav-text">编译flume</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9C%E7%A8%8B%E8%B0%83%E8%AF%95"><span class="nav-number">1.4.</span> <span class="nav-text">远程调试</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%B0%83%E8%AF%95agent"><span class="nav-number">1.4.1.</span> <span class="nav-text">调试agent</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%84%E4%BB%B6%E5%90%AF%E5%8A%A8"><span class="nav-number">2.</span> <span class="nav-text">组件启动</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B1%BB%E5%9B%BE"><span class="nav-number">2.1.</span> <span class="nav-text">类图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E6%9E%90%E5%8F%82%E6%95%B0"><span class="nav-number">2.2.</span> <span class="nav-text">解析参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96application"><span class="nav-number">2.3.</span> <span class="nav-text">初始化application</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8application"><span class="nav-number">2.4.</span> <span class="nav-text">启动application</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#LifecycleAware"><span class="nav-number">2.4.1.</span> <span class="nav-text">LifecycleAware</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E9%85%8D%E7%BD%AE%E4%BF%A1%E6%81%AF"><span class="nav-number">2.5.</span> <span class="nav-text">获取配置信息</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96FlumeConfiguration"><span class="nav-number">2.5.1.</span> <span class="nav-text">获取FlumeConfiguration</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#AgentConfiguration"><span class="nav-number">2.5.2.</span> <span class="nav-text">AgentConfiguration</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BD%E9%85%8D%E7%BD%AE%E4%BF%A1%E6%81%AF"><span class="nav-number">2.6.</span> <span class="nav-text">加载配置信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MaterializedConfiguration"><span class="nav-number">2.7.</span> <span class="nav-text">MaterializedConfiguration</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E7%BB%84%E4%BB%B6"><span class="nav-number">2.8.</span> <span class="nav-text">启动组件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%92%A9%E5%AD%90%E5%87%BD%E6%95%B0"><span class="nav-number">2.9.</span> <span class="nav-text">钩子函数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%84%E4%BB%B6%E5%81%9C%E6%AD%A2"><span class="nav-number">3.</span> <span class="nav-text">组件停止</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%B6%E5%BA%8F%E5%9B%BE"><span class="nav-number">3.1.</span> <span class="nav-text">时序图</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%84%E4%BB%B6%E5%88%86%E6%9E%90"><span class="nav-number">4.</span> <span class="nav-text">组件分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#source"><span class="nav-number">4.1.</span> <span class="nav-text">source</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#exec-source"><span class="nav-number">4.1.1.</span> <span class="nav-text">exec source</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#taildir-source"><span class="nav-number">4.1.2.</span> <span class="nav-text">taildir source</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#channel"><span class="nav-number">4.2.</span> <span class="nav-text">channel</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#memory-channel"><span class="nav-number">4.2.1.</span> <span class="nav-text">memory channel</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#file-channel"><span class="nav-number">4.2.2.</span> <span class="nav-text">file channel</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sink"><span class="nav-number">4.3.</span> <span class="nav-text">sink</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#hdfs-sink"><span class="nav-number">4.3.1.</span> <span class="nav-text">hdfs sink</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#kafka-sink"><span class="nav-number">4.3.2.</span> <span class="nav-text">kafka sink</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%B6%E5%BA%8F%E5%9B%BE-1"><span class="nav-number">5.</span> <span class="nav-text">时序图</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#exec-memory-kafka"><span class="nav-number">5.1.</span> <span class="nav-text">exec-memory-kafka</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E5%81%9C%E6%AD%A2"><span class="nav-number">5.1.1.</span> <span class="nav-text">启动停止</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#event%E6%B5%81"><span class="nav-number">5.1.2.</span> <span class="nav-text">event流</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#taildir-file-hdfs"><span class="nav-number">5.2.</span> <span class="nav-text">taildir-file-hdfs</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#event%E6%B5%81-1"><span class="nav-number">5.2.1.</span> <span class="nav-text">event流</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">6.</span> <span class="nav-text">总结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/03/08/flume%20event%E6%B5%81%E5%88%86%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          flume event流分析
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-03-08 00:00:00" itemprop="dateCreated datePublished" datetime="2021-03-08T00:00:00+08:00">2021-03-08</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-07-26 10:52:24" itemprop="dateModified" datetime="2022-07-26T10:52:24+08:00">2022-07-26</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>查看flume源码,分析event流向,其中flume版本为1.7.0.</p>
+<p>在<a target="_blank" rel="noopener" href="https://mirrors.huaweicloud.com/apache/flume/1.7.0/">华为云镜像</a>或apache官网,下载<code>apache-flume-1.7.0-src.tar.gz</code>,解压后,使用idea打开.</p>
+<span id="more"></span>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><h3 id="项目模块"><a href="#项目模块" class="headerlink" title="项目模块"></a>项目模块</h3><table>
+<thead>
+<tr>
+<th align="left">module</th>
+<th align="left">描述</th>
+<th align="left">example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">flume-ng-core</td>
+<td align="left">核心方法模块</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">flume-ng-configuration</td>
+<td align="left">配置文件解析模块</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">flume-ng-sinks</td>
+<td align="left">sink组件</td>
+<td align="left">hdfs/kafka/hive/hbase/elasticsearch</td>
+</tr>
+<tr>
+<td align="left">flume-ng-channels</td>
+<td align="left">channel组件</td>
+<td align="left">file/jdbc/kafka/spillable-memory</td>
+</tr>
+<tr>
+<td align="left">flume-ng-sources</td>
+<td align="left">source组件</td>
+<td align="left">jms/kafka/taildir</td>
+</tr>
+<tr>
+<td align="left">flume-ng-node</td>
+<td align="left">agent启动入口</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">flume-tools</td>
+<td align="left">工具模块</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">flume-shared</td>
+<td align="left">共享</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">flume-ng-dist</td>
+<td align="left">打包后的文件位置</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">flume-ng-embedded-agent</td>
+<td align="left">应用程序嵌入flume agent所需要的api</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">flume-ng-legacy-sources</td>
+<td align="left"></td>
+<td align="left">avro/thrift</td>
+</tr>
+<tr>
+<td align="left">flume-ng-sdk</td>
+<td align="left">开发api</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">flume-ng-clients</td>
+<td align="left">客户端,目前只有日志功能</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">flume-ng-auth</td>
+<td align="left">认证</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">flume-ng-tests</td>
+<td align="left">测试</td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<h3 id="flume入口类"><a href="#flume入口类" class="headerlink" title="flume入口类"></a>flume入口类</h3><p>打开bin/flume-ng脚本,定位到main函数中,脚本运行流程大致如下,<br>1.解析第1个参数,判断是否非空/非0.<br>2.将剩余参数拼接成一个参数.<br>3.通过run_flume()函数运行flume.</p>
+<p>其中第1个参数对应的入口类如下,</p>
+<table>
+<thead>
+<tr>
+<th align="left">第1个参数</th>
+<th align="left">入口类</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">help</td>
+<td align="left"></td>
+<td align="left">打印帮助信息</td>
+</tr>
+<tr>
+<td align="left">agent</td>
+<td align="left">org.apache.flume.node.Application</td>
+<td align="left">agent</td>
+</tr>
+<tr>
+<td align="left">avro-client</td>
+<td align="left">org.apache.flume.client.avro.AvroCLIClient</td>
+<td align="left">avro</td>
+</tr>
+<tr>
+<td align="left">tool</td>
+<td align="left">org.apache.flume.tools.FlumeToolsMain</td>
+<td align="left">工具类</td>
+</tr>
+<tr>
+<td align="left">version</td>
+<td align="left">org.apache.flume.tools.VersionInfo</td>
+<td align="left">查看版本信息</td>
+</tr>
+</tbody></table>
+<h3 id="编译flume"><a href="#编译flume" class="headerlink" title="编译flume"></a>编译flume</h3><p>编译时,如果出现缺少jar包等问题,可将flume项目中不需要的模块在对应的pom中先注释掉,编译flume.</p>
+<p>因暂时使用不到,这里先把以下3个sinks模块注释掉了,<br>flume-ng-morphline-solr-sink<br>lume-dataset-sink<br>flume-hive-sink</p>
+<h3 id="远程调试"><a href="#远程调试" class="headerlink" title="远程调试"></a>远程调试</h3><p>在idea中依次选择run/debug configurations-&gt;remote jvm debug,<br>再选择attach to remote jvm-&gt;socket,<br>填写flume所在机器的ip,端口可自定义,<br>选择jdk版本/use module classpath,<br>复制远程调试命令,点击ok.</p>
+<img src="/images/fre101.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>在flume部署机器上,编辑bin/flume-ng,在JAVA_OPTS变量后面加上刚才复制的远程调试命令,</p>
+<img src="/images/fre102.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="调试agent"><a href="#调试agent" class="headerlink" title="调试agent"></a>调试agent</h4><p>在Application类main()中打上断点,先运行flume命令,然后快速启动idea远程调试.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/flume-1.7.0/bin/flume-ng agent -c /opt/flume-1.7.0/conf -f /opt/flume-1.7.0/conf/kafka-hdfs.properties -n agent1 -Dflume.root.logger=debug,console,LOGFILE</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fre103.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="组件启动"><a href="#组件启动" class="headerlink" title="组件启动"></a>组件启动</h2><h3 id="类图"><a href="#类图" class="headerlink" title="类图"></a>类图</h3><img src="/images/fre_class.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="解析参数"><a href="#解析参数" class="headerlink" title="解析参数"></a>解析参数</h3><p>创建option对象,对传入的flume命令参数进行解析,其中,</p>
+<ul>
+<li>no-reload-conf,带此参数时,表示不开启flume配置文件自动加载,默认开启.</li>
+<li>z,表示使用zookeeper,本次调试不使用.</li>
+</ul>
+<img src="/images/fre105.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="初始化application"><a href="#初始化application" class="headerlink" title="初始化application"></a>初始化application</h3><p>开启配置文件自动加载时,初始化PollingPropertiesFileConfigurationProvider对象.</p>
+<p>使用到了guava eventbus发布订阅模式,将application注册到eventbus,同时在handleConfigurationEvent方法上使用<code>@Subscribe</code>注解来订阅消息,当收到新消息后,自动重启flume agent组件.</p>
+<img src="/images/fre106.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>未开启时,初始化PropertiesFileConfigurationProvider对象,然后手动调用handleConfigurationEvent方法.</p>
+<img src="/images/fre107.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>PollingPropertiesFileConfigurationProvider依次调用父类PropertiesFileConfigurationProvider/AbstractConfigurationProvider的构造函数,初始化sourceFactory/channelFactory/sinkFactory,</p>
+<img src="/images/fre108.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fre109.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="启动application"><a href="#启动application" class="headerlink" title="启动application"></a>启动application</h3><p>所有核心组件都实现了<code>org.apache.flume.lifecycle.LifecycleAware</code>接口.<br>使用LifecycleSupervisor对实现了LifecycleAware接口的对象进行生命周期管理(start/stop/getLifecycleState),LifecycleSupervisor有一个MonitorRunnable内部类(线程),周期调度运行,每次执行完再延迟3秒.</p>
+<h4 id="LifecycleAware"><a href="#LifecycleAware" class="headerlink" title="LifecycleAware"></a>LifecycleAware</h4><blockquote>
+<p>exec-memory-kafka</p>
+</blockquote>
+<img src="/images/fre1091.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>taildir-file-hdfs</p>
+</blockquote>
+<img src="/images/fre1092.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>调用start方法,首先启动PollingPropertiesFileConfigurationProvider.<br>PollingPropertiesFileConfigurationProvider有一个内部类FileWatcherRunnable(线程),默认间隔30秒调度运行,负责监控配置文件,当配置文件修改后,将新的配置发布到eventbus中,从而重启agent.</p>
+<img src="/images/fre110.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="获取配置信息"><a href="#获取配置信息" class="headerlink" title="获取配置信息"></a>获取配置信息</h3><p>调用AbstractConfigurationProvider的getConfiguration方法来获取配置信息.</p>
+<img src="/images/fre111.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="获取FlumeConfiguration"><a href="#获取FlumeConfiguration" class="headerlink" title="获取FlumeConfiguration"></a>获取FlumeConfiguration</h4><p>调用PropertiesFileConfigurationProvider的getFlumeConfiguration方法,读取配置文件,生成FlumeConfiguration对象.</p>
+<img src="/images/fre112.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>在FlumeConfiguration构造函数中,完成对配置文件中key/value的检查.</p>
+<h4 id="AgentConfiguration"><a href="#AgentConfiguration" class="headerlink" title="AgentConfiguration"></a>AgentConfiguration</h4><p>从FlumeConfiguration中得到AgentConfiguration对象,AgentConfiguration是FlumeConfiguration的一个内部类,包含当前agent中sources/sinks/channels的属性和读取方法.</p>
+<h3 id="加载配置信息"><a href="#加载配置信息" class="headerlink" title="加载配置信息"></a>加载配置信息</h3><p>利用java反射和工厂方法模式,依次创建对应的channel/source/sink对象,并调用<code>Configurables.configure</code>进行配置.</p>
+<img src="/images/fre113.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fre114.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fre115.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="MaterializedConfiguration"><a href="#MaterializedConfiguration" class="headerlink" title="MaterializedConfiguration"></a>MaterializedConfiguration</h3><blockquote>
+<p>exec-memory-kafka</p>
+</blockquote>
+<img src="/images/fre1151.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>taildir-file-hdfs</p>
+</blockquote>
+<img src="/images/fre1152.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>初始化MaterializedConfiguration对象,将channel与source,channel与sink连接起来.</p>
+<img src="/images/fre116.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="启动组件"><a href="#启动组件" class="headerlink" title="启动组件"></a>启动组件</h3><p>调用LifecycleSupervisor中MonitorRunnable的run()方法,<br>启动channel/source/sink组件,启动metrics monitor.</p>
+<img src="/images/fre119.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="钩子函数"><a href="#钩子函数" class="headerlink" title="钩子函数"></a>钩子函数</h3><p>最后使用jvm钩子函数,因flume没有stop命令,当使用<code>ctrl + c</code>或<code>kill pid</code>命令来退出程序时,可以进行内存清理/对象销毁等操作,使用<code>kill -9</code>时不能触发该函数.</p>
+<img src="/images/fre117.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="组件停止"><a href="#组件停止" class="headerlink" title="组件停止"></a>组件停止</h2><p>在钩子函数中调用application.stop()方法.</p>
+<p>遍历由LifecycleSupervisor所管理的LifecycleAware,调用对应的stop().</p>
+<img src="/images/fre118.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="时序图"><a href="#时序图" class="headerlink" title="时序图"></a>时序图</h3><blockquote>
+<p>exec-memory-kafka</p>
+</blockquote>
+<img src="/images/app_stop.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>taildir-file-hdfs</p>
+</blockquote>
+<img src="/images/app_stop2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="组件分析"><a href="#组件分析" class="headerlink" title="组件分析"></a>组件分析</h2><h3 id="source"><a href="#source" class="headerlink" title="source"></a>source</h3><img src="/images/fre_source.png" style="margin-left: 0px; padding-bottom: 10px;">
+source有两种,如下,
+
+<table>
+<thead>
+<tr>
+<th align="left">source</th>
+<th align="left">描述</th>
+<th align="left">example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">PollableSource</td>
+<td align="left">轮询式数据源,需要额外的线程去拉取消息</td>
+<td align="left">taildir,kafka,jms</td>
+</tr>
+<tr>
+<td align="left">EventDrivenSource</td>
+<td align="left">事件驱动数据源,被动等待</td>
+<td align="left">exec,http</td>
+</tr>
+</tbody></table>
+<p>source的启动由SourceRunner来驱动.<br>启动时,初始化ChannelProcessor,初始化InterceptorChain/Interceptor.<br>虽然source和SourceRunner都实现了LifecycleAware接口,都有start和stop方法,但只有SourceRunner由LifecycleSupervisor管理.</p>
+<blockquote>
+<p>EventDrivenSourceRunner.start()</p>
+</blockquote>
+<img src="/images/fre1201.png" width="600"  style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>PollableSourceRunner.start()</p>
+</blockquote>
+<img src="/images/fre120.png" width="600"  style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fre1202.png" width="600"  style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="exec-source"><a href="#exec-source" class="headerlink" title="exec source"></a>exec source</h4><p>启动时,创建单例线程池ExecutorService,线程池中的线程为其子类ExecRunnable,ExecRunnable初始化时,会根据初始化配置,获取ChannelProcessor的实例.</p>
+<p>其中shell/command为flume配置文件中的属性值,例如,command对应的是<br><code>xxx.command = tail -F -n 200 xxx.log</code>.</p>
+<img src="/images/fre121.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>线程ExecRunnable的执行过程</p>
+</blockquote>
+<p>首先,初始化一个ScheduledExecutorService,将ExecRunnable的实例化线程加入其中,保证ExecRunnable可以定时执行,</p>
+<img src="/images/fre122.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>然后,初始化final类型的ArrayList<Event>(eventList实例),用来存放Source获取到的event,此处创建的Event都是SimpleEvent类型,headers为空.<br>如果需要根据headers进行业务标识,需要自定义实现Event.</p>
+<p>ExecSource中,Source获取外部数据是通过ProcessBuilder实现的.<br>ProcessBuilder使Java平台可以执行操作系统的Shell命令,并把Shell的输出数据流,输入到JVM,从而在Java平台可以获取到本地文件的数据.</p>
+<p>EventBuilder.withBody()创建event.<br>bufferCount和timeout为source的batchSize/batchTimeout配置.</p>
+<img src="/images/fre123.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>最后,将当前eventList实例传递到ChannelProcessor(执行flushEventBatch方法),并清空eventList.<br>由ChannelProcessor负责将eventList发送给Channel.</p>
+<p>在满足以下三种条件的任何一种,便会执行flushEventBatch方法,<br>1.达到ScheduledExecutorService的定时时间.<br>2.达到Flume配置文件中Source的batchSize/batchTimeout值.<br>3.以上代码执行完,eventList仍不为空.</p>
+<h4 id="taildir-source"><a href="#taildir-source" class="headerlink" title="taildir source"></a>taildir source</h4><h3 id="channel"><a href="#channel" class="headerlink" title="channel"></a>channel</h3><img src="/images/fre_channel.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>ChannelProcessor将eventList发送到Channel的过程如下,<br>1.将Event经过拦截链处理.</p>
+<img src="/images/fre124.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>2.获取对应的channel实例,并以key-value方式将Channel和eventList置入Map(由Replicating和Multiplexing的配置决定,默认为Replicating),从Channel实例中new一个Transaction子类.</p>
+<p>3.执行Channel的事务操作,将eventList发送到Channel.</p>
+<img src="/images/fre125.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fre126.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="memory-channel"><a href="#memory-channel" class="headerlink" title="memory channel"></a>memory channel</h4><p>ChannelProcessor只是调用了Channel的doPut和doCommit方法,数据传输的具体操作是在Channel完成的.<br>在每次实例化事务时,会初始化putList和takeList两个双向并发阻塞队列.</p>
+<img src="/images/fre131.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fre132.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fre133.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>doPut</p>
+</blockquote>
+<p>doPut是对Channel的put方法具体实现,将ChannelProcessor发送过来的Event临时放到putList.</p>
+<p>putList的初始化是指定了队列大小的transactionCapacity属性,默认值100,当出现以下异常时,需要将此处值调大一点,</p>
+<img src="/images/fre134.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>doTake</p>
+</blockquote>
+<p>doTake是对Channel的take方法具体实现,从queue中消费一个event,并将该event放入takeList,用作回滚时使用.</p>
+<img src="/images/fre135.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>doCommit</p>
+</blockquote>
+<p>doCommit是对Transaction的commit方法具体实现,在执行doCommit时,会判断当前Channel的所有putList中body字节是否超出指定大小和queue空间是否富裕,否则,抛出异常.</p>
+<img src="/images/fre136.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fre137.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>当满足空间时,会将putList中的event放入queue,同时从putList中移除event.</p>
+<p>在MemoryChannel中,doCommit是被ChannelProcessor和Sink公用的,只不过在Sink调用时,只用来清空实例,并未做其它操作.</p>
+<blockquote>
+<p>doRollback</p>
+</blockquote>
+<p>doRollback是对Transaction的rollback方法具体实现,用作commit失败时,回滚event.<br>在MemoryChannel中,doRollback只对Sink组件commit失败时有效.</p>
+<img src="/images/fre138.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="file-channel"><a href="#file-channel" class="headerlink" title="file channel"></a>file channel</h4><h3 id="sink"><a href="#sink" class="headerlink" title="sink"></a>sink</h3><img src="/images/fre_sink.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>由SinkRunner来完成具体Sink实现类的的启动,在SinkRunner中,调用了SinkProcessor的process方法,而在SinkProcessor的实现类中,会调用Sink的process方法.</p>
+<h4 id="hdfs-sink"><a href="#hdfs-sink" class="headerlink" title="hdfs sink"></a>hdfs sink</h4><h4 id="kafka-sink"><a href="#kafka-sink" class="headerlink" title="kafka sink"></a>kafka sink</h4><p>KafkaSink在启动时,就会事先创建好kafka的生产者.<br>在执行process时,先获取对应的Channel,根据Channel创建一个事务,在该事务中完成从Channel中take event,然后将event批量发送到kafka,最后提交完成事务.</p>
+<img src="/images/fre140.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fre141.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fre142.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fre143.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/fre144.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="时序图-1"><a href="#时序图-1" class="headerlink" title="时序图"></a>时序图</h2><h3 id="exec-memory-kafka"><a href="#exec-memory-kafka" class="headerlink" title="exec-memory-kafka"></a>exec-memory-kafka</h3><h4 id="启动停止"><a href="#启动停止" class="headerlink" title="启动停止"></a>启动停止</h4><img src="/images/app1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/app2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/app22.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/app3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="event流"><a href="#event流" class="headerlink" title="event流"></a>event流</h4><img src="/images/event_1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="taildir-file-hdfs"><a href="#taildir-file-hdfs" class="headerlink" title="taildir-file-hdfs"></a>taildir-file-hdfs</h3><h4 id="event流-1"><a href="#event流-1" class="headerlink" title="event流"></a>event流</h4><img src="/images/event_2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><img src="/images/fre_event.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>1.Source接收外部数据源,并将其转化为Event对象.<br>2.Source将Event传递给Channel Processor,在Channel Processor中完成Event的拦截处理.<br>3.Channel的选择器将Event put到Channel中.<br>4.Sink在process方法中,完成从Chanenel中取出Event,并将其发送到目标组件.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source -&gt; doPut() -&gt; putList -&gt; doCommit() -&gt; queue -&gt; doTake() -&gt; takeList -&gt; sink</span><br></pre></td></tr></table></figure>
+
+<p>source执行channel的doPut方法,将接收到的event先放入putList临时缓存起来,当达到一定量和时间时,会执行doCommit方法,将putlist中的Event放入channel的queue.</p>
+<p>sink执行process方法时,会调用channel的doTake方法,将取出的event放入takeList,同时将event发送到下游.并不是先把event放入takeList,再从takeList取数据发送到下游.而是为了事物回滚,当event发送到下游失败时,可以将takeList中的数据全部放回到queue.</p>
+<p>channel在执行doCommit时,会对存储容量进行判断.</p>
+<p>当takeList.size()-putList.size()&lt;0,表示放入的event比取出的多,如果在keepAlive的时间内,putList中所有event的body字节总数在byteCapacity的容量内没有可用的的空间时,则抛出异常.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/flume/" rel="tag"># flume</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/03/05/cdh%E9%83%A8%E7%BD%B2/" rel="prev" title="cdh部署">
+                  <i class="fa fa-chevron-left"></i> cdh部署
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/03/10/guava%20eventbus/" rel="next" title="guava eventbus(事件总线)">
+                  guava eventbus(事件总线) <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

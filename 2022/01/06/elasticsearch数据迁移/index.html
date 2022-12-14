@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="elasticsearch版本为6.8.2,测试迁移elasticsearch数据,包含mapping等信息. 1234567891011&#x2F;&#x2F;在浏览器中查看,索引模板user:password@host:port&#x2F;_templatehost:port&#x2F;_template&#x2F;&#x2F;索引xxx创建信息,包含settings&#x2F;mapping">
+<meta property="og:type" content="article">
+<meta property="og:title" content="elasticsearch数据迁移">
+<meta property="og:url" content="https://maoeryu.github.io/2022/01/06/elasticsearch%E6%95%B0%E6%8D%AE%E8%BF%81%E7%A7%BB/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="elasticsearch版本为6.8.2,测试迁移elasticsearch数据,包含mapping等信息. 1234567891011&#x2F;&#x2F;在浏览器中查看,索引模板user:password@host:port&#x2F;_templatehost:port&#x2F;_template&#x2F;&#x2F;索引xxx创建信息,包含settings&#x2F;mapping">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1266.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1267.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1268.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1269.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1270.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1271.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1272.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1273.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1274.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1275.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1276.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1277.png">
+<meta property="article:published_time" content="2022-01-05T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-11-23T08:13:13.136Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="elasticsearch">
+<meta property="article:tag" content="logstash">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1266.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/01/06/elasticsearch%E6%95%B0%E6%8D%AE%E8%BF%81%E7%A7%BB/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>elasticsearch数据迁移 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87"><span class="nav-number">1.</span> <span class="nav-text">环境准备</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%84%E4%BB%B6%E4%B8%8B%E8%BD%BD"><span class="nav-number">1.1.</span> <span class="nav-text">组件下载</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%84%E4%BB%B6%E5%AE%89%E8%A3%85"><span class="nav-number">1.2.</span> <span class="nav-text">组件安装</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#elasticserch"><span class="nav-number">1.2.1.</span> <span class="nav-text">elasticserch</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#linus%E5%B1%9E%E6%80%A7%E4%BF%AE%E6%94%B9"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">linus属性修改</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E5%AE%89%E8%A3%85"><span class="nav-number">1.2.1.2.</span> <span class="nav-text">集群安装</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E9%9B%86%E7%BE%A41"><span class="nav-number">1.2.1.2.1.</span> <span class="nav-text">测试集群1</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E9%9B%86%E7%BE%A42"><span class="nav-number">1.2.1.2.2.</span> <span class="nav-text">测试集群2</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kibana"><span class="nav-number">1.2.2.</span> <span class="nav-text">kibana</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#logstash"><span class="nav-number">1.2.3.</span> <span class="nav-text">logstash</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E9%85%8D%E7%BD%AE"><span class="nav-number">1.2.3.1.</span> <span class="nav-text">修改配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81logstash%E5%8A%9F%E8%83%BD"><span class="nav-number">1.2.3.2.</span> <span class="nav-text">验证logstash功能</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#elasticsearch-dump"><span class="nav-number">1.2.4.</span> <span class="nav-text">elasticsearch-dump</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%89%E8%A3%85node"><span class="nav-number">1.2.4.1.</span> <span class="nav-text">安装node</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%89%E8%A3%85elasticdump"><span class="nav-number">1.2.4.2.</span> <span class="nav-text">安装elasticdump</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%83%A8%E5%88%86%E5%91%BD%E4%BB%A4%E5%8F%82%E6%95%B0"><span class="nav-number">1.2.4.2.1.</span> <span class="nav-text">部分命令参数</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#example"><span class="nav-number">1.2.4.2.2.</span> <span class="nav-text">example</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E7%B4%A2%E5%BC%95"><span class="nav-number">1.3.</span> <span class="nav-text">创建索引</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E7%B4%A2%E5%BC%95%E6%A8%A1%E6%9D%BF"><span class="nav-number">1.3.1.</span> <span class="nav-text">创建索引模板</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E6%95%B0%E6%8D%AE"><span class="nav-number">1.3.2.</span> <span class="nav-text">写入数据</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95"><span class="nav-number">2.</span> <span class="nav-text">测试</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#reindex"><span class="nav-number">2.1.</span> <span class="nav-text">reindex</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">2.1.1.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E7%94%A8reindex-api"><span class="nav-number">2.1.2.</span> <span class="nav-text">调用reindex api</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E7%BB%93%E6%9E%9C"><span class="nav-number">2.1.3.</span> <span class="nav-text">测试结果</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#snapshot"><span class="nav-number">2.2.</span> <span class="nav-text">snapshot</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#elasticsearch-dump-1"><span class="nav-number">2.3.</span> <span class="nav-text">elasticsearch-dump</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%81%E7%A7%BB%E5%8D%95%E4%B8%AA%E7%B4%A2%E5%BC%95"><span class="nav-number">2.3.1.</span> <span class="nav-text">迁移单个索引</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%81%E7%A7%BB%E6%89%80%E6%9C%89%E7%B4%A2%E5%BC%95"><span class="nav-number">2.3.2.</span> <span class="nav-text">迁移所有索引</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#logstash-1"><span class="nav-number">2.4.</span> <span class="nav-text">logstash</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">2.4.1.</span> <span class="nav-text">配置文件</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%81%E7%A7%BB%E5%85%A8%E9%87%8F%E6%95%B0%E6%8D%AE"><span class="nav-number">2.4.1.1.</span> <span class="nav-text">迁移全量数据</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%81%E7%A7%BB%E5%A2%9E%E9%87%8F%E6%95%B0%E6%8D%AE"><span class="nav-number">2.4.1.2.</span> <span class="nav-text">迁移增量数据</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E7%BB%93%E6%9E%9C-1"><span class="nav-number">2.4.2.</span> <span class="nav-text">测试结果</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%99%84%E5%BD%95"><span class="nav-number">4.</span> <span class="nav-text">附录</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/01/06/elasticsearch%E6%95%B0%E6%8D%AE%E8%BF%81%E7%A7%BB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          elasticsearch数据迁移
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-01-06 00:00:00" itemprop="dateCreated datePublished" datetime="2022-01-06T00:00:00+08:00">2022-01-06</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-11-23 16:13:13" itemprop="dateModified" datetime="2022-11-23T16:13:13+08:00">2022-11-23</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>elasticsearch版本为6.8.2,测试迁移elasticsearch数据,包含mapping等信息.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;在浏览器中查看,索引模板</span><br><span class="line">user:password@host:port&#x2F;_template</span><br><span class="line">host:port&#x2F;_template</span><br><span class="line">&#x2F;&#x2F;索引xxx创建信息,包含settings&#x2F;mappings&#x2F;alias</span><br><span class="line">host:port&#x2F;xxx</span><br><span class="line">host:port&#x2F;xxx&#x2F;_alias</span><br><span class="line">host:port&#x2F;xxx&#x2F;_settings</span><br><span class="line">host:port&#x2F;xxx&#x2F;_mapping</span><br><span class="line">host:port&#x2F;_cat&#x2F;indices?v</span><br><span class="line">&#x2F;&#x2F;排序查看,默认升序</span><br><span class="line">host:port&#x2F;_cat&#x2F;indices?v&amp;s&#x3D;xxx:desc</span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+<h1 id="环境准备"><a href="#环境准备" class="headerlink" title="环境准备"></a>环境准备</h1><h2 id="组件下载"><a href="#组件下载" class="headerlink" title="组件下载"></a>组件下载</h2><p>下载elasticsearch/kibana/logstash/ik,版本为6.8.2.<br><a target="_blank" rel="noopener" href="https://repo.huaweicloud.com/elasticsearch/6.8.2/elasticsearch-6.8.2.tar.gz">https://repo.huaweicloud.com/elasticsearch/6.8.2/elasticsearch-6.8.2.tar.gz</a><br><a target="_blank" rel="noopener" href="https://repo.huaweicloud.com/kibana/6.8.2/kibana-6.8.2-linux-x86_64.tar.gz">https://repo.huaweicloud.com/kibana/6.8.2/kibana-6.8.2-linux-x86_64.tar.gz</a><br><a target="_blank" rel="noopener" href="https://repo.huaweicloud.com/logstash/6.8.2/logstash-6.8.2.tar.gz">https://repo.huaweicloud.com/logstash/6.8.2/logstash-6.8.2.tar.gz</a><br><a target="_blank" rel="noopener" href="https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v6.8.2/elasticsearch-analysis-ik-6.8.2.zip">https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v6.8.2/elasticsearch-analysis-ik-6.8.2.zip</a></p>
+<h2 id="组件安装"><a href="#组件安装" class="headerlink" title="组件安装"></a>组件安装</h2><h3 id="elasticserch"><a href="#elasticserch" class="headerlink" title="elasticserch"></a>elasticserch</h3><h4 id="linus属性修改"><a href="#linus属性修改" class="headerlink" title="linus属性修改"></a>linus属性修改</h4><p>所有节点均执行操作.</p>
+<p>1.创建hadoop用户,因es自我保护机制,不推荐直接使用root用户启动.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">adduser hadoop</span><br><span class="line">usermod -a -G hadoop hadoop</span><br></pre></td></tr></table></figure>
+
+<p>2.修改文件打开数和进程数为65536.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/security/limits.conf</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">hadoop  soft    nproc   65536</span><br><span class="line">hadoop  hard    nproc   65536</span><br><span class="line">hadoop  soft    nofile  65536</span><br><span class="line">hadoop  hard    nofile  65536</span><br></pre></td></tr></table></figure>
+
+<p>3.linux内核优化</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/sysctl.conf</span><br></pre></td></tr></table></figure>
+<p>加下以下内容,执行<code>sysctl -p</code>生效.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vm.max_map_count = 262144</span><br></pre></td></tr></table></figure>
+
+<h4 id="集群安装"><a href="#集群安装" class="headerlink" title="集群安装"></a>集群安装</h4><p>将elasticsearch-6.8.2.tar.gz/elasticsearch-analysis-ik-6.8.2.zip上传至各节点/opt/下,解压安装,使用hadoop用户.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">tar -zxvf elasticsearch-6.8.2.tar.gz</span><br><span class="line">ln -s elasticsearch-6.8.2 elasticsearch</span><br><span class="line"><span class="built_in">cd</span> /opt/elasticsearch/plugins</span><br><span class="line">mkdir ik</span><br><span class="line"><span class="built_in">cd</span> ik</span><br><span class="line">mv /opt/elasticsearch-analysis-ik-6.8.2.zip .</span><br><span class="line">unzip elasticsearch-analysis-ik-6.8.2.zip</span><br><span class="line">rm -f ./elasticsearch-analysis-ik-6.8.2.zip</span><br></pre></td></tr></table></figure>
+
+<h5 id="测试集群1"><a href="#测试集群1" class="headerlink" title="测试集群1"></a>测试集群1</h5><p>172.18.250.93   hadoop-sh1-core1<br>172.18.250.94   hadoop-sh1-core2<br>172.18.250.95   hadoop-sh1-core3</p>
+<p>3个节点的node.name分别配置为core1/core2/core3.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">cluster.name: estest001</span><br><span class="line">node.name: core1</span><br><span class="line">path.data: &#x2F;opt&#x2F;elasticsearch&#x2F;data</span><br><span class="line">path.logs: &#x2F;opt&#x2F;elasticsearch&#x2F;logs</span><br><span class="line">bootstrap.memory_lock: false</span><br><span class="line">bootstrap.system_call_filter: false</span><br><span class="line">network.host: 0.0.0.0</span><br><span class="line">http.port: 9200</span><br><span class="line">discovery.zen.ping.unicast.hosts: [&quot;172.18.250.93:9300&quot;,&quot;172.18.250.94:9300&quot;,&quot;172.18.250.95:9300&quot;]</span><br><span class="line">discovery.zen.minimum_master_nodes: 2</span><br><span class="line">discovery.zen.ping_timeout: 40s</span><br><span class="line">http.cors.enabled: true</span><br><span class="line">http.cors.allow-origin: &quot;*&quot;</span><br><span class="line">action.destructive_requires_name: true</span><br><span class="line">node.master: true</span><br><span class="line">node.data: true</span><br></pre></td></tr></table></figure>
+
+<h5 id="测试集群2"><a href="#测试集群2" class="headerlink" title="测试集群2"></a>测试集群2</h5><p>一台机器,另外复制2个文件夹,组成不同端口的3个节点.<br>172.18.250.103   node2<br>172.18.250.103   node2<br>172.18.250.103   node2</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cp -r elasticsearch-6.8.2 elasticsearch2</span><br><span class="line">cp -r elasticsearch-6.8.2 elasticsearch3</span><br></pre></td></tr></table></figure>
+
+<p>3个节点的node.name分别修改为node2-1/node2-2/node2-3.<br>path.data/path.log分别修改为对应的文件夹路径.<br>http.port分别为9200/9222/9233.<br>transport端口分别为9300/9322/9333.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">cluster.name: estest002</span><br><span class="line">node.name: node2-1</span><br><span class="line">path.data: &#x2F;opt&#x2F;elasticsearch&#x2F;data</span><br><span class="line">path.logs: &#x2F;opt&#x2F;elasticsearch&#x2F;logs</span><br><span class="line">bootstrap.memory_lock: false</span><br><span class="line">bootstrap.system_call_filter: false</span><br><span class="line">network.host: 0.0.0.0</span><br><span class="line">http.port: 9200</span><br><span class="line">transport.tcp.port: 9300</span><br><span class="line">discovery.zen.ping.unicast.hosts: [&quot;172.18.250.103:9300&quot;, &quot;172.18.250.103:9322&quot;,&quot;172.18.250.103:9333&quot;]</span><br><span class="line">discovery.zen.minimum_master_nodes: 1</span><br><span class="line">discovery.zen.ping_timeout: 40s</span><br><span class="line">http.cors.enabled: true</span><br><span class="line">http.cors.allow-origin: &quot;*&quot;</span><br><span class="line">action.destructive_requires_name: true</span><br><span class="line">node.master: true</span><br><span class="line">node.data: true</span><br></pre></td></tr></table></figure>
+
+<p>分别启动集群,查看集群运行状况.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">chown -R hadoop:hadoop /opt/elasticsearch*</span><br><span class="line">./bin/elasticsearch -d</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1266.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1267.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="kibana"><a href="#kibana" class="headerlink" title="kibana"></a>kibana</h3><p>两个测试集群分别安装kibana,使用root用户即可.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /opt/</span><br><span class="line">tar -zvxf kibana-6.8.2-linux-x86_64.tar.gz</span><br><span class="line">ln -s kibana-6.8.2-linux-x86_64 kibana</span><br></pre></td></tr></table></figure>
+
+<p>分别修改<code>config/kibana.yml</code>文件,<br>将<code>elasticsearch.hosts</code>修改为对应的节点.<br>将<code>server.host</code>修改为<code>0.0.0.0</code>.<br>分别启动kibana.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nohup .&#x2F;bin&#x2F;kibana &amp;</span><br><span class="line"># kill进程命令</span><br><span class="line">netstat -lnp | grep 5601</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1268.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1269.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="logstash"><a href="#logstash" class="headerlink" title="logstash"></a>logstash</h3><p>选一台能同时连接两个集群的节点.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">telnet hadoop-sh1-core1 9200</span><br><span class="line">telnet node2 9200</span><br></pre></td></tr></table></figure>
+
+<p>解压安装,使用root用户即可.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /opt</span><br><span class="line">tar -zvxf logstash-6.8.2.tar.gz</span><br><span class="line">ln -s logstash-6.8.2 logstash</span><br></pre></td></tr></table></figure>
+
+<h4 id="修改配置"><a href="#修改配置" class="headerlink" title="修改配置"></a>修改配置</h4><p>1.修改Logstash的堆内存使用.<br>Logstash默认的堆内存为1 GB,根据机器配置合适的内存大小,加快集群数据的迁移效率.<br>进入Logstash的安装目录下,修改Logstash配置文件<code>config/jvm.options</code>,修改为<code>-Xms8g</code>和<code>-Xmx8g</code>.</p>
+<p>2.修改Logstash批量写入记录条数.<br>每批量写入5~15 MB数据,可以加快集群数据的迁移效率.<br>修改Logstash配置文件<code>config/pipelines.yml</code>,将每批量写入记录条数<code>pipeline.batch.size</code>从125改为<code>5000</code>.</p>
+<img src="/images/fly1270.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="验证logstash功能"><a href="#验证logstash功能" class="headerlink" title="验证logstash功能"></a>验证logstash功能</h4><p>通过控制台输入输出收集数据.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/logstash -e <span class="string">&#x27;input &#123; stdin &#123; &#125; &#125; output &#123; stdout &#123;&#125; &#125;&#x27;</span></span><br></pre></td></tr></table></figure>
+<p>在控制台中输入&quot;Hello world!&quot;.<br>正常情况下,控制台会输出&quot;Hello world!&quot;</p>
+<img src="/images/fly1271.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="elasticsearch-dump"><a href="#elasticsearch-dump" class="headerlink" title="elasticsearch-dump"></a>elasticsearch-dump</h3><p>文档地址:<br><a target="_blank" rel="noopener" href="https://github.com/elasticsearch-dump/elasticsearch-dump">https://github.com/elasticsearch-dump/elasticsearch-dump</a></p>
+<h4 id="安装node"><a href="#安装node" class="headerlink" title="安装node"></a>安装node</h4><p>node 版本不低于 v10.0.0</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">wget https://nodejs.org/dist/v14.17.3/node-v14.17.3-linux-x64.tar.xz -O /opt/node-v14.17.3-linux-x64.tar.xz</span><br><span class="line">tar -xvf /opt/node-v14.17.3-linux-x64.tar.xz</span><br></pre></td></tr></table></figure>
+
+<p>配置环境变量.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">vim ~/.bashrc</span><br><span class="line"><span class="comment"># 追加以下内容</span></span><br><span class="line"><span class="comment"># node </span></span><br><span class="line"><span class="built_in">export</span> NODE_HOME=/opt/node-v14.17.3-linux-x64</span><br><span class="line"><span class="built_in">export</span> PATH=<span class="variable">$NODE_HOME</span>/bin:<span class="variable">$PATH</span></span><br><span class="line"><span class="comment"># 刷新</span></span><br><span class="line"><span class="built_in">source</span> ~/.bashrc</span><br></pre></td></tr></table></figure>
+
+<p>查看是否出现版本.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">node -v</span><br><span class="line">npm -v</span><br></pre></td></tr></table></figure>
+
+<h4 id="安装elasticdump"><a href="#安装elasticdump" class="headerlink" title="安装elasticdump"></a>安装elasticdump</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install elasticdump</span><br></pre></td></tr></table></figure>
+
+<p>安装成功提示.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+ elasticdump@6.94.0</span><br><span class="line">added 111 packages from 194 contributors in 26.061s</span><br><span class="line"></span><br><span class="line">6 packages are looking for funding</span><br><span class="line">  run &#96;npm fund&#96; for details</span><br></pre></td></tr></table></figure>
+
+<p>安装成功后会在<code>当前目录</code>生成node_modules目录,里面包含 elasticdump 主目录.<br>bin 目录下面有两个可执行文件 elasticdump(单索引操作)/multielasticdump(多索引操作)<br>为了方便使用最好配置个环境变量.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">vim ~/.bashrc</span><br><span class="line"><span class="comment"># 追加以下内容</span></span><br><span class="line"><span class="comment">#node </span></span><br><span class="line"><span class="built_in">export</span> DUMP_HOME=/xxx/node_modules/elasticdump</span><br><span class="line"><span class="built_in">export</span> PATH=<span class="variable">$DUMP_HOME</span>/bin:<span class="variable">$PATH</span></span><br><span class="line"><span class="comment"># 刷新</span></span><br><span class="line"><span class="built_in">source</span> ~/.bashrc</span><br></pre></td></tr></table></figure>
+
+<p>使用help查看命令帮助信息.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">./node_modules/elasticdump/bin/elasticdump --<span class="built_in">help</span></span><br><span class="line"></span><br><span class="line">Usage: elasticdump --input SOURCE --output DESTINATION [OPTIONS]</span><br></pre></td></tr></table></figure>
+
+<h5 id="部分命令参数"><a href="#部分命令参数" class="headerlink" title="部分命令参数"></a>部分命令参数</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">--input</span><br><span class="line">Source location (required)</span><br><span class="line"></span><br><span class="line">--input-index</span><br><span class="line">Source index and type</span><br><span class="line">(default: all, example: index&#x2F;type)</span><br><span class="line"></span><br><span class="line">--output</span><br><span class="line">Destination location (required)</span><br><span class="line"></span><br><span class="line">--output-index</span><br><span class="line">Destination index and type</span><br><span class="line">(default: all, example: index&#x2F;type)</span><br><span class="line"></span><br><span class="line">--overwrite</span><br><span class="line">Overwrite output file if it exists</span><br><span class="line">(default: false)</span><br><span class="line"></span><br><span class="line">--limit</span><br><span class="line">How many objects to move in batch per operation</span><br><span class="line">limit is approximate for file streams</span><br><span class="line">(default: 100)</span><br><span class="line"></span><br><span class="line">--size</span><br><span class="line">How many objects to retrieve</span><br><span class="line">(default: -1 -&gt; no limit)</span><br><span class="line"></span><br><span class="line">--concurrency</span><br><span class="line">How many concurrent request is sent to a specified transport</span><br><span class="line">(default: 1)</span><br><span class="line"></span><br><span class="line">--concurrencyInterval</span><br><span class="line">The length of time in milliseconds before the interval count resets. Must be finite.</span><br><span class="line">(default: 5000)</span><br><span class="line"></span><br><span class="line">--intervalCap</span><br><span class="line">The max number of transport request in the given interval of time.</span><br><span class="line">(default: 5)</span><br><span class="line"></span><br><span class="line">--type</span><br><span class="line">What are we exporting?</span><br><span class="line">(default: data, options: [settings, analyzer, data, mapping, policy, alias, template, component_template, index_template])</span><br></pre></td></tr></table></figure>
+
+<h5 id="example"><a href="#example" class="headerlink" title="example"></a>example</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"># Copy an index from production to staging with mappings:</span><br><span class="line">elasticdump \</span><br><span class="line">  --input&#x3D;http:&#x2F;&#x2F;production.es.com:9200&#x2F;my_index \</span><br><span class="line">  --output&#x3D;http:&#x2F;&#x2F;staging.es.com:9200&#x2F;my_index \</span><br><span class="line">  --type&#x3D;mapping</span><br><span class="line">elasticdump \</span><br><span class="line">  --input&#x3D;http:&#x2F;&#x2F;production.es.com:9200&#x2F;my_index \</span><br><span class="line">  --output&#x3D;http:&#x2F;&#x2F;staging.es.com:9200&#x2F;my_index \</span><br><span class="line">  --type&#x3D;data</span><br><span class="line"></span><br><span class="line"># Backup index data to a file:</span><br><span class="line">elasticdump \</span><br><span class="line">  --input&#x3D;http:&#x2F;&#x2F;production.es.com:9200&#x2F;my_index \</span><br><span class="line">  --output&#x3D;&#x2F;data&#x2F;my_index_mapping.json \</span><br><span class="line">  --type&#x3D;mapping</span><br><span class="line">elasticdump \</span><br><span class="line">  --input&#x3D;http:&#x2F;&#x2F;production.es.com:9200&#x2F;my_index \</span><br><span class="line">  --output&#x3D;&#x2F;data&#x2F;my_index.json \</span><br><span class="line">  --type&#x3D;data</span><br><span class="line"></span><br><span class="line"># Backup and index to a gzip using stdout:</span><br><span class="line">elasticdump \</span><br><span class="line">  --input&#x3D;http:&#x2F;&#x2F;production.es.com:9200&#x2F;my_index \</span><br><span class="line">  --output&#x3D;$ \</span><br><span class="line">  | gzip &gt; &#x2F;data&#x2F;my_index.json.gz</span><br><span class="line"></span><br><span class="line"># Backup the results of a query to a file</span><br><span class="line">elasticdump \</span><br><span class="line">  --input&#x3D;http:&#x2F;&#x2F;production.es.com:9200&#x2F;my_index \</span><br><span class="line">  --output&#x3D;query.json \</span><br><span class="line">  --searchBody &quot;&#123;\&quot;query\&quot;:&#123;\&quot;term\&quot;:&#123;\&quot;username\&quot;: \&quot;admin\&quot;&#125;&#125;&#125;&quot;</span><br></pre></td></tr></table></figure>
+
+<h2 id="创建索引"><a href="#创建索引" class="headerlink" title="创建索引"></a>创建索引</h2><p>在测试集群1创建索引,写入模拟数据.</p>
+<h3 id="创建索引模板"><a href="#创建索引模板" class="headerlink" title="创建索引模板"></a>创建索引模板</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">get _template</span><br><span class="line">put _template&#x2F;data_template</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;index_patterns&quot;</span>: [</span><br><span class="line">    <span class="string">&quot;data*&quot;</span></span><br><span class="line">  ],</span><br><span class="line">  <span class="attr">&quot;aliases&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;mydata&quot;</span>: &#123;&#125;</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">&quot;order&quot;</span>: <span class="number">1</span>,</span><br><span class="line">  <span class="attr">&quot;settings&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;number_of_shards&quot;</span>: <span class="number">5</span>,</span><br><span class="line">    <span class="attr">&quot;number_of_replicas&quot;</span>: <span class="number">2</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">&quot;mappings&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;_default_&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;_all&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;enabled&quot;</span>: <span class="literal">false</span></span><br><span class="line">      &#125;,</span><br><span class="line">      <span class="attr">&quot;dynamic_templates&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">          <span class="attr">&quot;message_full&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;match&quot;</span>: <span class="string">&quot;message_full&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;mapping&quot;</span>: &#123;</span><br><span class="line">              <span class="attr">&quot;fields&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;keyword&quot;</span>: &#123;</span><br><span class="line">                  <span class="attr">&quot;ignore_above&quot;</span>: <span class="number">2048</span>,</span><br><span class="line">                  <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;keyword&quot;</span></span><br><span class="line">                &#125;</span><br><span class="line">              &#125;,</span><br><span class="line">              <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">          <span class="attr">&quot;message&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;match&quot;</span>: <span class="string">&quot;message&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;mapping&quot;</span>: &#123;</span><br><span class="line">              <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">          <span class="attr">&quot;strings&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;match_mapping_type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;mapping&quot;</span>: &#123;</span><br><span class="line">              <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;keyword&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      ]</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;friend&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;_all&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;enabled&quot;</span>: <span class="literal">false</span></span><br><span class="line">      &#125;,</span><br><span class="line">      <span class="attr">&quot;dynamic_templates&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">          <span class="attr">&quot;message_full&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;match&quot;</span>: <span class="string">&quot;message_full&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;mapping&quot;</span>: &#123;</span><br><span class="line">              <span class="attr">&quot;fields&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;keyword&quot;</span>: &#123;</span><br><span class="line">                  <span class="attr">&quot;ignore_above&quot;</span>: <span class="number">2048</span>,</span><br><span class="line">                  <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;keyword&quot;</span></span><br><span class="line">                &#125;</span><br><span class="line">              &#125;,</span><br><span class="line">              <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">          <span class="attr">&quot;message&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;match&quot;</span>: <span class="string">&quot;message&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;mapping&quot;</span>: &#123;</span><br><span class="line">              <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">          <span class="attr">&quot;strings&quot;</span>: &#123;</span><br><span class="line">            <span class="attr">&quot;match_mapping_type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;mapping&quot;</span>: &#123;</span><br><span class="line">              <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;keyword&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      ],</span><br><span class="line">      <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;accid&quot;</span>: &#123;</span><br><span class="line">          <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;keyword&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;faccid&quot;</span>: &#123;</span><br><span class="line">          <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;keyword&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;fnickname&quot;</span>: &#123;</span><br><span class="line">          <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span>,</span><br><span class="line">          <span class="attr">&quot;analyzer&quot;</span>: <span class="string">&quot;ik_max_word&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">&quot;id&quot;</span>: &#123;</span><br><span class="line">          <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;keyword&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="写入数据"><a href="#写入数据" class="headerlink" title="写入数据"></a>写入数据</h3><p>使用java程序不断写入测试数据,索引为&quot;data1&quot;,类型为&quot;friend&quot;.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> i = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">  String uuid = UUID.randomUUID().toString();</span><br><span class="line">  Map&lt;String, String&gt; json = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">  json.put(<span class="string">&quot;id&quot;</span>, uuid);</span><br><span class="line">  json.put(<span class="string">&quot;accid&quot;</span>, <span class="string">&quot;tom&quot;</span> + i + <span class="string">&quot;_&quot;</span> + uuid);</span><br><span class="line">  json.put(<span class="string">&quot;faccid&quot;</span>, uuid);</span><br><span class="line">  json.put(<span class="string">&quot;fnickname&quot;</span>, <span class="string">&quot;elastic&quot;</span> + i);</span><br><span class="line"></span><br><span class="line">  IndexRequest request = <span class="keyword">new</span> IndexRequest(<span class="string">&quot;data1&quot;</span>, <span class="string">&quot;friend&quot;</span>).source(json);</span><br><span class="line">  IndexResponse response = client.index(request, RequestOptions.DEFAULT);</span><br><span class="line"></span><br><span class="line">  i++;</span><br><span class="line">  TimeUnit.SECONDS.sleep(<span class="number">20</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1272.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h1 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h1><h2 id="reindex"><a href="#reindex" class="headerlink" title="reindex"></a>reindex</h2><p>reindex是Elasticsearch提供的一个api接口,可以把数据从源ES集群导入到当前的ES集群.<br>文档地址:<br><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/6.8/docs-reindex.html">https://www.elastic.co/guide/en/elasticsearch/reference/6.8/docs-reindex.html</a></p>
+<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p>配置reindex.remote.whitelist参数.<br>需要在目标ES集群中配置该参数,指明能够reindex的远程集群的白名单.<br>在elasticsearch.yml中添加以下配置.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">reindex.remote.whitelist: [&quot;172.18.250.93:9200&quot;,&quot;172.18.250.94:9200&quot;,&quot;172.18.250.95:9200&quot;]</span><br></pre></td></tr></table></figure>
+
+<h3 id="调用reindex-api"><a href="#调用reindex-api" class="headerlink" title="调用reindex api"></a>调用reindex api</h3><p>以下操作表示从源es集群中查询名为data1的索引,将结果写入<code>当前集群</code>的data1索引.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">POST _reindex</span><br><span class="line">&#123;</span><br><span class="line">  &quot;source&quot;: &#123;</span><br><span class="line">    &quot;remote&quot;: &#123;</span><br><span class="line">      &quot;host&quot;: &quot;http:&#x2F;&#x2F;172.18.250.93:9200&quot;,</span><br><span class="line">      &quot;socket_timeout&quot;: &quot;1m&quot;,</span><br><span class="line">      &quot;connect_timeout&quot;: &quot;1m&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;index&quot;: &quot;data1&quot;,</span><br><span class="line">    &quot;size&quot;: 1000</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;dest&quot;: &#123;</span><br><span class="line">    &quot;index&quot;: &quot;data1&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="测试结果"><a href="#测试结果" class="headerlink" title="测试结果"></a>测试结果</h3><p>需提前创建索引模板/分片等信息,未创建时,索引使用动态模板.</p>
+<h2 id="snapshot"><a href="#snapshot" class="headerlink" title="snapshot"></a>snapshot</h2><p>适用数据量大的场景.</p>
+<p>snapshot api是Elasticsearch用于对数据进行备份和恢复的一组api接口,可以通过snapshot api进行跨集群的数据迁移,原理就是从源es集群创建数据快照,然后在目标es集群中进行恢复,需要注意es的版本问题.</p>
+<h2 id="elasticsearch-dump-1"><a href="#elasticsearch-dump-1" class="headerlink" title="elasticsearch-dump"></a>elasticsearch-dump</h2><p>适合数据量不大,迁移索引个数不多的场景.<br>文档地址:<br><a target="_blank" rel="noopener" href="https://github.com/elasticsearch-dump/elasticsearch-dump">https://github.com/elasticsearch-dump/elasticsearch-dump</a></p>
+<h3 id="迁移单个索引"><a href="#迁移单个索引" class="headerlink" title="迁移单个索引"></a>迁移单个索引</h3><p>先将索引的settings迁移,如果直接迁移mapping或者data将失去原有集群中索引的配置信息如分片数量和副本数量等.<br>也可以直接在目标集群中将索引创建完毕后再同步mapping与data.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># settings, analyzer, data, mapping, policy, alias, template, component_template, index_template</span></span><br><span class="line"></span><br><span class="line">elasticdump --input=http://172.18.250.93:9200/data1 --output=http://172.18.250.103:9200/data1 --<span class="built_in">type</span>=settings</span><br><span class="line">elasticdump --input=http://172.18.250.93:9200/data1 --output=http://172.18.250.103:9200/data1 --<span class="built_in">type</span>=mapping</span><br><span class="line">elasticdump --input=http://172.18.250.93:9200/data1 --output=http://172.18.250.103:9200/data1 --<span class="built_in">type</span>=template</span><br><span class="line">elasticdump --input=http://172.18.250.93:9200/data1 --output=http://172.18.250.103:9200/data1 --<span class="built_in">type</span>=<span class="built_in">alias</span></span><br><span class="line"><span class="comment"># 带用户密码</span></span><br><span class="line"><span class="comment"># elasticdump --input=http://username:password@172.18.250.93:9200/data1 --output=http://172.18.250.103:9200/data1 --type=settings</span></span><br><span class="line"></span><br><span class="line">elasticdump \</span><br><span class="line">--input=http://172.18.250.93:9200/data1 \</span><br><span class="line">--output=http://172.18.250.103:9200/data1 \</span><br><span class="line">--<span class="built_in">limit</span> 5000 \</span><br><span class="line">--scrollTime=120m \</span><br><span class="line">--concurrency 5 \</span><br><span class="line">--<span class="built_in">type</span>=data</span><br></pre></td></tr></table></figure>
+
+<h3 id="迁移所有索引"><a href="#迁移所有索引" class="headerlink" title="迁移所有索引"></a>迁移所有索引</h3><p>此操作并不能迁移索引的配置如分片数量和副本数量,必须对每个索引单独进行配置的迁移,或者直接在目标集群中将索引创建完毕后再迁移数据.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">elasticdump --input=http://172.18.250.93:9200 --output=http://172.18.250.103:9200</span><br></pre></td></tr></table></figure>
+
+<h2 id="logstash-1"><a href="#logstash-1" class="headerlink" title="logstash"></a>logstash</h2><p>文档地址:<br><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/logstash/6.8/plugins-inputs-elasticsearch.html">https://www.elastic.co/guide/en/logstash/6.8/plugins-inputs-elasticsearch.html</a><br><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/logstash/6.8/plugins-outputs-elasticsearch.html">https://www.elastic.co/guide/en/logstash/6.8/plugins-outputs-elasticsearch.html</a></p>
+<h3 id="配置文件"><a href="#配置文件" class="headerlink" title="配置文件"></a>配置文件</h3><p>详细参数配置说明可查看文档.</p>
+<h4 id="迁移全量数据"><a href="#迁移全量数据" class="headerlink" title="迁移全量数据"></a>迁移全量数据</h4><p>在config目录下,创建es2es_all配置文件.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /opt/logstash/config</span><br><span class="line">vim es2es_all.conf</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">input&#123;</span><br><span class="line">  elasticsearch&#123;</span><br><span class="line">    # 源端ES地址.</span><br><span class="line">    hosts &#x3D;&gt;  [&quot;http:&#x2F;&#x2F;hadoop-sh1-core1:9200&quot;]</span><br><span class="line">    # 安全集群配置登录用户名密码.</span><br><span class="line">    #user &#x3D;&gt; &quot;xxx&quot;</span><br><span class="line">    #password &#x3D;&gt; &quot;xxx&quot;</span><br><span class="line">    # 需要迁移的索引列表,多个索引以英文以逗号(,)分隔.</span><br><span class="line">    index &#x3D;&gt; &quot;data1&quot;</span><br><span class="line">    # 以下三项保持默认即可,包含线程数和迁移数据大小和Logstash JVM配置相关.</span><br><span class="line">    docinfo &#x3D;&gt; true</span><br><span class="line">    slices &#x3D;&gt; 5</span><br><span class="line">    size &#x3D;&gt; 5000</span><br><span class="line">    #scroll &#x3D;&gt; &quot;5m&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">filter &#123;</span><br><span class="line">  # 去掉一些Logstash自己加的字段.</span><br><span class="line">  mutate &#123;</span><br><span class="line">    remove_field &#x3D;&gt; [&quot;@timestamp&quot;, &quot;@version&quot;]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">output&#123;</span><br><span class="line">  elasticsearch&#123;</span><br><span class="line">    # 目标端ES地址.</span><br><span class="line">    hosts &#x3D;&gt; [&quot;http:&#x2F;&#x2F;node2:9200&quot;]</span><br><span class="line">    # 安全集群配置登录用户名密码.</span><br><span class="line">    # user &#x3D;&gt; &quot;xxx&quot;</span><br><span class="line">    # password &#x3D;&gt; &quot;xxxxxx&quot;</span><br><span class="line">    # 目标端索引名称,以下配置表示索引与源端保持一致.</span><br><span class="line">    index &#x3D;&gt; &quot;%&#123;[@metadata][_index]&#125;&quot;</span><br><span class="line">    # 目标端索引type,以下配置表示索引类型与源端保持一致.</span><br><span class="line">    document_type &#x3D;&gt; &quot;%&#123;[@metadata][_type]&#125;&quot;</span><br><span class="line">    # 目标端数据的id,如果不需要保留原id,可以删除以下这行,删除后性能会更好.</span><br><span class="line">    document_id &#x3D;&gt; &quot;%&#123;[@metadata][_id]&#125;&quot;</span><br><span class="line">    ilm_enabled &#x3D;&gt; false</span><br><span class="line">    manage_template &#x3D;&gt; false</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>启动logstash,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup bin&#x2F;logstash -f config&#x2F;es2es_all.conf &gt;&#x2F;dev&#x2F;null 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure>
+
+<p>使用kibana核对数据,查看索引和数据量信息.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET _cat&#x2F;indices?v</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1273.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1274.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1275.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1276.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1277.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="迁移增量数据"><a href="#迁移增量数据" class="headerlink" title="迁移增量数据"></a>迁移增量数据</h4><p>开启logstash定时任务即可触发增量迁移.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">input&#123;</span><br><span class="line">  elasticsearch&#123;</span><br><span class="line">    hosts &#x3D;&gt;  [&quot;http:&#x2F;&#x2F;hadoop-sh1-core1:9200&quot;]</span><br><span class="line">    #user &#x3D;&gt; &quot;xxx&quot;</span><br><span class="line">    #password &#x3D;&gt; &quot;xxx&quot;</span><br><span class="line">    index &#x3D;&gt; &quot;data1&quot;</span><br><span class="line">    # 按时间范围查询增量数据,以下配置表示查询最近5分钟的数据.</span><br><span class="line">    # logstash使用的utc时间,需要加上8h转为本地时间.</span><br><span class="line">    query &#x3D;&gt; &#39;&#123;&quot;query&quot;:&#123;&quot;range&quot;:&#123;&quot;@timestamp&quot;:&#123;&quot;gte&quot;:&quot;now+8h-5m&quot;,&quot;lte&quot;:&quot;now+8h&#x2F;m&quot;&#125;&#125;&#125;&#125;&#39;</span><br><span class="line">    # 定时任务,以下配置表示每分钟执行一次.</span><br><span class="line">    schedule &#x3D;&gt; &quot;* * * * *&quot;</span><br><span class="line">    docinfo &#x3D;&gt; true</span><br><span class="line">    slices &#x3D;&gt; 5</span><br><span class="line">    size &#x3D;&gt; 5000</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">filter &#123;</span><br><span class="line">  mutate &#123;</span><br><span class="line">    remove_field &#x3D;&gt; [&quot;@timestamp&quot;, &quot;@version&quot;]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">output&#123;</span><br><span class="line">  elasticsearch&#123;</span><br><span class="line">    hosts &#x3D;&gt; [&quot;http:&#x2F;&#x2F;node2:9200&quot;]</span><br><span class="line">    # user &#x3D;&gt; &quot;xxx&quot;</span><br><span class="line">    # password &#x3D;&gt; &quot;xxxxxx&quot;</span><br><span class="line">    index &#x3D;&gt; &quot;%&#123;[@metadata][_index]&#125;&quot;</span><br><span class="line">    document_type &#x3D;&gt; &quot;%&#123;[@metadata][_type]&#125;&quot;</span><br><span class="line">    document_id &#x3D;&gt; &quot;%&#123;[@metadata][_id]&#125;&quot;</span><br><span class="line">    ilm_enabled &#x3D;&gt; false</span><br><span class="line">    manage_template &#x3D;&gt; false</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用kibana查询最近的数据.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">GET data1&#x2F;_search</span><br><span class="line">&#123;</span><br><span class="line">  &quot;query&quot;: &#123;</span><br><span class="line">    &quot;range&quot;: &#123;</span><br><span class="line">      &quot;@timestamp&quot;: &#123;</span><br><span class="line">        &quot;gte&quot;: &quot;now-5m&quot;,</span><br><span class="line">        &quot;lte&quot;: &quot;now&#x2F;m&quot;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;sort&quot;: [</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;@timestamp&quot;: &#123;</span><br><span class="line">        &quot;order&quot;: &quot;desc&quot;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="测试结果-1"><a href="#测试结果-1" class="headerlink" title="测试结果"></a>测试结果</h3><p>1.logstash迁移elastic数据,需要提前在目标集群创建索引模板,未创建时,将使用动态模板.<br>2.input插件中,index支持通配符,<code>*</code>表示所有索引,<code>data*</code>表示以&quot;data&quot;&quot;开头的索引.</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><table>
+<thead>
+<tr>
+<th align="left">类型</th>
+<th align="left">原理</th>
+<th align="left">索引模板</th>
+<th align="left">集群重启</th>
+<th align="left">场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">elasticsearch-dump</td>
+<td align="left">scroll</td>
+<td align="left">提前迁移</td>
+<td align="left">不需要</td>
+<td align="left">数据量小</td>
+</tr>
+<tr>
+<td align="left">logstash</td>
+<td align="left">scroll</td>
+<td align="left">提前创建</td>
+<td align="left">不需要</td>
+<td align="left">数据量大</td>
+</tr>
+<tr>
+<td align="left">snapshot</td>
+<td align="left">拷贝数据文件</td>
+<td align="left">提前创建</td>
+<td align="left">配置参数,需要重启集群</td>
+<td align="left">数据量大</td>
+</tr>
+<tr>
+<td align="left">reindex</td>
+<td align="left">scroll</td>
+<td align="left">提前创建</td>
+<td align="left">配置参数,需要重启集群</td>
+<td align="left">数据量小</td>
+</tr>
+</tbody></table>
+<p>都需要迁移或创建索引模板,未创建时将使用动态模板.<br>可导出索引模板等,提前在目标集群创建后,再使用logstash迁移数据.</p>
+<h1 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h1><p>使用python脚本迁移setting/mapping.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/python</span></span><br><span class="line"><span class="comment"># -*- coding: UTF-8 -*-</span></span><br><span class="line"><span class="comment"># 文件名:indiceCreate.py</span></span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">import</span> httplib</span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"><span class="comment">## 源集群host.</span></span><br><span class="line">oldClusterHost = <span class="string">&quot;localhost:9200&quot;</span></span><br><span class="line"><span class="comment">## 源集群用户名,可为空.</span></span><br><span class="line">oldClusterUserName = <span class="string">&quot;elastic&quot;</span></span><br><span class="line"><span class="comment">## 源集群密码,可为空.</span></span><br><span class="line">oldClusterPassword = <span class="string">&quot;xxxxxx&quot;</span></span><br><span class="line"><span class="comment">## 目标集群host.</span></span><br><span class="line">newClusterHost = <span class="string">&quot;es-cn-zvp2m4bko0009****.elasticsearch.aliyuncs.com:9200&quot;</span></span><br><span class="line"><span class="comment">## 目标集群用户名.</span></span><br><span class="line">newClusterUser = <span class="string">&quot;elastic&quot;</span></span><br><span class="line"><span class="comment">## 目标集群密码.</span></span><br><span class="line">newClusterPassword = <span class="string">&quot;xxxxxx&quot;</span></span><br><span class="line">DEFAULT_REPLICAS = <span class="number">0</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">httpRequest</span>(<span class="params">method, host, endpoint, params=<span class="string">&quot;&quot;</span>, username=<span class="string">&quot;&quot;</span>, password=<span class="string">&quot;&quot;</span></span>):</span></span><br><span class="line">    conn = httplib.HTTPConnection(host)</span><br><span class="line">    headers = &#123;&#125;</span><br><span class="line">    <span class="keyword">if</span> (username != <span class="string">&quot;&quot;</span>) :</span><br><span class="line">        <span class="string">&#x27;Hello &#123;name&#125;, your age is &#123;age&#125; !&#x27;</span>.<span class="built_in">format</span>(name = <span class="string">&#x27;Tom&#x27;</span>, age = <span class="string">&#x27;20&#x27;</span>)</span><br><span class="line">        base64string = base64.encodestring(<span class="string">&#x27;&#123;username&#125;:&#123;password&#125;&#x27;</span>.<span class="built_in">format</span>(username = username, password = password)).replace(<span class="string">&#x27;\n&#x27;</span>, <span class="string">&#x27;&#x27;</span>)</span><br><span class="line">        headers[<span class="string">&quot;Authorization&quot;</span>] = <span class="string">&quot;Basic %s&quot;</span> % base64string;</span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;GET&quot;</span> == method:</span><br><span class="line">        headers[<span class="string">&quot;Content-Type&quot;</span>] = <span class="string">&quot;application/x-www-form-urlencoded&quot;</span></span><br><span class="line">        conn.request(method=method, url=endpoint, headers=headers)</span><br><span class="line">    <span class="keyword">else</span> :</span><br><span class="line">        headers[<span class="string">&quot;Content-Type&quot;</span>] = <span class="string">&quot;application/json&quot;</span></span><br><span class="line">        conn.request(method=method, url=endpoint, body=params, headers=headers)</span><br><span class="line">    response = conn.getresponse()</span><br><span class="line">    res = response.read()</span><br><span class="line">    <span class="keyword">return</span> res</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">httpGet</span>(<span class="params">host, endpoint, username=<span class="string">&quot;&quot;</span>, password=<span class="string">&quot;&quot;</span></span>):</span></span><br><span class="line">    <span class="keyword">return</span> httpRequest(<span class="string">&quot;GET&quot;</span>, host, endpoint, <span class="string">&quot;&quot;</span>, username, password)</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">httpPost</span>(<span class="params">host, endpoint, params, username=<span class="string">&quot;&quot;</span>, password=<span class="string">&quot;&quot;</span></span>):</span></span><br><span class="line">    <span class="keyword">return</span> httpRequest(<span class="string">&quot;POST&quot;</span>, host, endpoint, params, username, password)</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">httpPut</span>(<span class="params">host, endpoint, params, username=<span class="string">&quot;&quot;</span>, password=<span class="string">&quot;&quot;</span></span>):</span></span><br><span class="line">    <span class="keyword">return</span> httpRequest(<span class="string">&quot;PUT&quot;</span>, host, endpoint, params, username, password)</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">getIndices</span>(<span class="params">host, username=<span class="string">&quot;&quot;</span>, password=<span class="string">&quot;&quot;</span></span>):</span></span><br><span class="line">    endpoint = <span class="string">&quot;/_cat/indices&quot;</span></span><br><span class="line">    indicesResult = httpGet(oldClusterHost, endpoint, oldClusterUserName, oldClusterPassword)</span><br><span class="line">    indicesList = indicesResult.split(<span class="string">&quot;\n&quot;</span>)</span><br><span class="line">    indexList = []</span><br><span class="line">    <span class="keyword">for</span> indices <span class="keyword">in</span> indicesList:</span><br><span class="line">        <span class="keyword">if</span> (indices.find(<span class="string">&quot;open&quot;</span>) &gt; <span class="number">0</span>):</span><br><span class="line">            indexList.append(indices.split()[<span class="number">2</span>])</span><br><span class="line">    <span class="keyword">return</span> indexList</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">getSettings</span>(<span class="params">index, host, username=<span class="string">&quot;&quot;</span>, password=<span class="string">&quot;&quot;</span></span>):</span></span><br><span class="line">    endpoint = <span class="string">&quot;/&quot;</span> + index + <span class="string">&quot;/_settings&quot;</span></span><br><span class="line">    indexSettings = httpGet(host, endpoint, username, password)</span><br><span class="line">    <span class="built_in">print</span> (index + <span class="string">&quot;  原始settings如下:\n&quot;</span> + indexSettings)</span><br><span class="line">    settingsDict = json.loads(indexSettings)</span><br><span class="line">    <span class="comment">## 分片数默认和源集群索引保持一致.</span></span><br><span class="line">    number_of_shards = settingsDict[index][<span class="string">&quot;settings&quot;</span>][<span class="string">&quot;index&quot;</span>][<span class="string">&quot;number_of_shards&quot;</span>]</span><br><span class="line">    <span class="comment">## 副本数默认为0.</span></span><br><span class="line">    number_of_replicas = DEFAULT_REPLICAS</span><br><span class="line">    newSetting = <span class="string">&quot;\&quot;settings\&quot;: &#123;\&quot;number_of_shards\&quot;: %s, \&quot;number_of_replicas\&quot;: %s&#125;&quot;</span> % (number_of_shards, number_of_replicas)</span><br><span class="line">    <span class="keyword">return</span> newSetting</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">getMapping</span>(<span class="params">index, host, username=<span class="string">&quot;&quot;</span>, password=<span class="string">&quot;&quot;</span></span>):</span></span><br><span class="line">    endpoint = <span class="string">&quot;/&quot;</span> + index + <span class="string">&quot;/_mapping&quot;</span></span><br><span class="line">    indexMapping = httpGet(host, endpoint, username, password)</span><br><span class="line">    <span class="built_in">print</span> (index + <span class="string">&quot; 原始mapping如下:\n&quot;</span> + indexMapping)</span><br><span class="line">    mappingDict = json.loads(indexMapping)</span><br><span class="line">    mappings = json.dumps(mappingDict[index][<span class="string">&quot;mappings&quot;</span>])</span><br><span class="line">    newMapping = <span class="string">&quot;\&quot;mappings\&quot; : &quot;</span> + mappings</span><br><span class="line">    <span class="keyword">return</span> newMapping</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">createIndexStatement</span>(<span class="params">oldIndexName</span>):</span></span><br><span class="line">    settingStr = getSettings(oldIndexName, oldClusterHost, oldClusterUserName, oldClusterPassword)</span><br><span class="line">    mappingStr = getMapping(oldIndexName, oldClusterHost, oldClusterUserName, oldClusterPassword)</span><br><span class="line">    createstatement = <span class="string">&quot;&#123;\n&quot;</span> + <span class="built_in">str</span>(settingStr) + <span class="string">&quot;,\n&quot;</span> + <span class="built_in">str</span>(mappingStr) + <span class="string">&quot;\n&#125;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> createstatement</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">createIndex</span>(<span class="params">oldIndexName, newIndexName=<span class="string">&quot;&quot;</span></span>):</span></span><br><span class="line">    <span class="keyword">if</span> (newIndexName == <span class="string">&quot;&quot;</span>) :</span><br><span class="line">        newIndexName = oldIndexName</span><br><span class="line">    createstatement = createIndexStatement(oldIndexName)</span><br><span class="line">    <span class="built_in">print</span> (<span class="string">&quot;新索引 &quot;</span> + newIndexName + <span class="string">&quot; 的setting和mapping如下:\n&quot;</span> + createstatement)</span><br><span class="line">    endpoint = <span class="string">&quot;/&quot;</span> + newIndexName</span><br><span class="line">    createResult = httpPut(newClusterHost, endpoint, createstatement, newClusterUser, newClusterPassword)</span><br><span class="line">    <span class="built_in">print</span> (<span class="string">&quot;新索引 &quot;</span> + newIndexName + <span class="string">&quot; 创建结果:&quot;</span> + createResult)</span><br><span class="line"><span class="comment">## main</span></span><br><span class="line">indexList = getIndices(oldClusterHost, oldClusterUserName, oldClusterPassword)</span><br><span class="line">systemIndex = []</span><br><span class="line"><span class="keyword">for</span> index <span class="keyword">in</span> indexList:</span><br><span class="line">    <span class="keyword">if</span> (index.startswith(<span class="string">&quot;.&quot;</span>)):</span><br><span class="line">        systemIndex.append(index)</span><br><span class="line">    <span class="keyword">else</span> :</span><br><span class="line">        createIndex(index, index)</span><br><span class="line"><span class="keyword">if</span> (<span class="built_in">len</span>(systemIndex) &gt; <span class="number">0</span>) :</span><br><span class="line">    <span class="keyword">for</span> index <span class="keyword">in</span> systemIndex:</span><br><span class="line">        <span class="built_in">print</span> (index + <span class="string">&quot; 或许是系统索引,不会重新创建,如有需要,请单独处理.&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>阿里文档:<br><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/61145.html">https://help.aliyun.com/document_detail/61145.html</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/elasticsearch/" rel="tag"># elasticsearch</a>
+              <a href="/tags/logstash/" rel="tag"># logstash</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/12/20/log4j2%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" rel="prev" title="log4j2漏洞复现">
+                  <i class="fa fa-chevron-left"></i> log4j2漏洞复现
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/01/12/elasticsearch-cluster%20apis/" rel="next" title="elasticsearch-cluster apis">
+                  elasticsearch-cluster apis <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

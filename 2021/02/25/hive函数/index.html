@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="所有hive关键字都不区分大小写,包括hive运算符和函数的名称.&#x2F;&#x2F;hive内部函数源码org.apache.hadoop.hive.ql.exec.FunctionRegistry&#x2F;&#x2F;注册为不变函数时,在类中增加,替换jar包system.registerGenericUDF(&quot;xxx&quot;, xxx.class); &#x2F;&#x2F;函数名,类名 123456show functions;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hive函数">
+<meta property="og:url" content="https://maoeryu.github.io/2021/02/25/hive%E5%87%BD%E6%95%B0/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="所有hive关键字都不区分大小写,包括hive运算符和函数的名称.&#x2F;&#x2F;hive内部函数源码org.apache.hadoop.hive.ql.exec.FunctionRegistry&#x2F;&#x2F;注册为不变函数时,在类中增加,替换jar包system.registerGenericUDF(&quot;xxx&quot;, xxx.class); &#x2F;&#x2F;函数名,类名 123456show functions;">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2021-02-24T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-11-15T05:57:28.387Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hive">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/02/25/hive%E5%87%BD%E6%95%B0/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hive函数 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E7%BD%AE%E8%BF%90%E7%AE%97%E7%AC%A6"><span class="nav-number">1.</span> <span class="nav-text">内置运算符</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E7%AE%97%E7%AC%A6%E4%BC%98%E5%85%88%E7%BA%A7"><span class="nav-number">1.1.</span> <span class="nav-text">运算符优先级</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B3%E7%B3%BB%E8%BF%90%E7%AE%97%E7%AC%A6"><span class="nav-number">1.2.</span> <span class="nav-text">关系运算符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%97%E6%9C%AF%E8%BF%90%E7%AE%97%E7%AC%A6"><span class="nav-number">1.3.</span> <span class="nav-text">算术运算符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%BB%E8%BE%91%E8%BF%90%E7%AE%97%E7%AC%A6"><span class="nav-number">1.4.</span> <span class="nav-text">逻辑运算符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%97%E7%AC%A6%E4%B8%B2%E8%BF%90%E7%AE%97%E7%AC%A6"><span class="nav-number">1.5.</span> <span class="nav-text">字符串运算符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E6%9D%82%E7%B1%BB%E5%9E%8B%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0"><span class="nav-number">1.6.</span> <span class="nav-text">复杂类型构造函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E6%9D%82%E7%B1%BB%E5%9E%8B%E8%BF%90%E7%AE%97%E7%AC%A6"><span class="nav-number">1.7.</span> <span class="nav-text">复杂类型运算符</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%87%E5%87%86%E5%87%BD%E6%95%B0-udf"><span class="nav-number">2.</span> <span class="nav-text">标准函数(udf)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E5%AD%A6%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.</span> <span class="nav-text">数学函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E5%90%88%E5%87%BD%E6%95%B0"><span class="nav-number">2.2.</span> <span class="nav-text">集合函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E5%87%BD%E6%95%B0"><span class="nav-number">2.3.</span> <span class="nav-text">类型转换函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%A5%E6%9C%9F%E5%87%BD%E6%95%B0"><span class="nav-number">2.4.</span> <span class="nav-text">日期函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9D%A1%E4%BB%B6%E5%87%BD%E6%95%B0"><span class="nav-number">2.5.</span> <span class="nav-text">条件函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%87%BD%E6%95%B0"><span class="nav-number">2.6.</span> <span class="nav-text">字符串函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%84%B1%E6%95%8F%E5%87%BD%E6%95%B0"><span class="nav-number">2.7.</span> <span class="nav-text">脱敏函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E5%AE%83%E5%87%BD%E6%95%B0"><span class="nav-number">2.8.</span> <span class="nav-text">其它函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#xpath"><span class="nav-number">2.9.</span> <span class="nav-text">xpath</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%81%9A%E5%90%88%E5%87%BD%E6%95%B0-udaf"><span class="nav-number">3.</span> <span class="nav-text">聚合函数(udaf)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A1%A8%E7%94%9F%E6%88%90%E5%87%BD%E6%95%B0-udtf"><span class="nav-number">4.</span> <span class="nav-text">表生成函数(udtf)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%87%BD%E6%95%B0"><span class="nav-number">5.</span> <span class="nav-text">自定义函数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#maven"><span class="nav-number">5.1.</span> <span class="nav-text">maven</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#udf"><span class="nav-number">5.2.</span> <span class="nav-text">udf</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%89%93%E5%8C%85%E4%B8%8A%E4%BC%A0"><span class="nav-number">5.2.1.</span> <span class="nav-text">打包上传</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E5%87%BD%E6%95%B0"><span class="nav-number">5.2.2.</span> <span class="nav-text">添加函数</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#genericudf"><span class="nav-number">5.3.</span> <span class="nav-text">genericudf</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%89%93%E5%8C%85%E4%B8%8A%E4%BC%A0-1"><span class="nav-number">5.3.1.</span> <span class="nav-text">打包上传</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E5%87%BD%E6%95%B0-1"><span class="nav-number">5.3.2.</span> <span class="nav-text">添加函数</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/02/25/hive%E5%87%BD%E6%95%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hive函数
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-02-25 00:00:00" itemprop="dateCreated datePublished" datetime="2021-02-25T00:00:00+08:00">2021-02-25</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-11-15 13:57:28" itemprop="dateModified" datetime="2022-11-15T13:57:28+08:00">2022-11-15</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>所有hive关键字都不区分大小写,包括hive运算符和函数的名称.<br>//hive内部函数源码<br>org.apache.hadoop.hive.ql.exec.FunctionRegistry<br>//注册为不变函数时,在类中增加,替换jar包<br>system.registerGenericUDF(&quot;xxx&quot;, xxx.class); //函数名,类名</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> functions;</span><br><span class="line"><span class="keyword">desc</span> <span class="keyword">function</span> <span class="operator">&lt;</span>function_name<span class="operator">&gt;</span>;</span><br><span class="line"><span class="keyword">desc</span> <span class="keyword">function</span> extended <span class="operator">&lt;</span>function_name<span class="operator">&gt;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 反射udf</span></span><br><span class="line"><span class="keyword">SELECT</span> reflect(&quot;java.lang.String&quot;, &quot;valueOf&quot;, <span class="number">1</span>), reflect(&quot;java.lang.Math&quot;, &quot;max&quot;, <span class="number">2</span>, <span class="number">3</span>);</span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+<h2 id="内置运算符"><a href="#内置运算符" class="headerlink" title="内置运算符"></a>内置运算符</h2><h3 id="运算符优先级"><a href="#运算符优先级" class="headerlink" title="运算符优先级"></a>运算符优先级</h3><h3 id="关系运算符"><a href="#关系运算符" class="headerlink" title="关系运算符"></a>关系运算符</h3><p>运算符之间的比较是否成立来生成true或false值.</p>
+<table>
+<thead>
+<tr>
+<th align="left">运算符</th>
+<th align="left">数据类型</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">a = b</td>
+<td align="left">所有原始类型</td>
+<td align="left">如果表达式a等于表达式b,则为true,否则为false</td>
+</tr>
+<tr>
+<td align="left">a == b</td>
+<td align="left">所有原始类型</td>
+<td align="left">同上</td>
+</tr>
+<tr>
+<td align="left">a &lt;=&gt; b</td>
+<td align="left">所有原始类型</td>
+<td align="left">如果都非null,则同=,如果都为null,则为true,如果其一为null,则为false</td>
+</tr>
+<tr>
+<td align="left">a &lt;&gt; b</td>
+<td align="left">所有原始类型</td>
+<td align="left">如果其一为null,则为null,如果a不等于b,则为true,否则为false</td>
+</tr>
+<tr>
+<td align="left">a != b</td>
+<td align="left">所有原始类型</td>
+<td align="left">同上</td>
+</tr>
+<tr>
+<td align="left">a &lt; b</td>
+<td align="left">所有原始类型</td>
+<td align="left">同上,小于</td>
+</tr>
+<tr>
+<td align="left">a &lt;= b</td>
+<td align="left">所有原始类型</td>
+<td align="left">同上,小于等于</td>
+</tr>
+<tr>
+<td align="left">a &gt; b</td>
+<td align="left">所有原始类型</td>
+<td align="left">同上,大于</td>
+</tr>
+<tr>
+<td align="left">a &gt;= b</td>
+<td align="left">所有原始类型</td>
+<td align="left">同上,大于等于</td>
+</tr>
+<tr>
+<td align="left">a [not] between b and c</td>
+<td align="left">所有原始类型</td>
+<td align="left">同上,a&gt;=b,a&lt;=c,not取相反结果</td>
+</tr>
+<tr>
+<td align="left">a is null</td>
+<td align="left">所有类型</td>
+<td align="left">如果a为null,则为true,否则为false</td>
+</tr>
+<tr>
+<td align="left">a is not null</td>
+<td align="left">所有类型</td>
+<td align="left">同上,相反结果</td>
+</tr>
+<tr>
+<td align="left">a is [not] (true|false)</td>
+<td align="left">布尔类型</td>
+<td align="left">仅当a满足条件时为true</td>
+</tr>
+<tr>
+<td align="left">a [not] like b</td>
+<td align="left">string</td>
+<td align="left">如果其一为null,则为null,如果a匹配正则b,则为true</td>
+</tr>
+<tr>
+<td align="left">a rlike b</td>
+<td align="left">string</td>
+<td align="left">同上,b为java正则</td>
+</tr>
+<tr>
+<td align="left">a regexp b</td>
+<td align="left">string</td>
+<td align="left">同rlike</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="number">1</span><span class="operator">&lt;=&gt;</span><span class="number">2</span>; <span class="comment">--false</span></span><br><span class="line"><span class="keyword">select</span> <span class="number">1</span><span class="operator">&lt;=&gt;</span><span class="keyword">null</span>; <span class="comment">--false</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">null</span><span class="operator">&lt;=&gt;</span><span class="keyword">null</span>;</span><br><span class="line"><span class="keyword">select</span> <span class="number">1</span><span class="operator">&lt;&gt;</span><span class="number">2</span>;</span><br><span class="line"><span class="keyword">select</span> <span class="number">1</span> <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">null</span>;</span><br><span class="line"><span class="keyword">select</span> <span class="number">2</span> <span class="keyword">between</span> <span class="number">0</span> <span class="keyword">and</span> <span class="number">2</span>;</span><br><span class="line"><span class="comment">--其中_表示单个字符,%表示任意个字符</span></span><br><span class="line"><span class="keyword">select</span> &quot;a&quot; <span class="keyword">not</span> <span class="keyword">like</span> &quot;a%&quot;; <span class="comment">--false</span></span><br><span class="line"><span class="keyword">select</span> <span class="string">&#x27;football&#x27;</span> <span class="keyword">like</span> <span class="string">&#x27;%ba&#x27;</span>; <span class="comment">--false</span></span><br><span class="line"><span class="keyword">select</span> <span class="string">&#x27;football&#x27;</span> <span class="keyword">like</span> <span class="string">&#x27;%ba%&#x27;</span>; <span class="comment">--true</span></span><br><span class="line"><span class="keyword">select</span> <span class="string">&#x27;football&#x27;</span> <span class="keyword">like</span> <span class="string">&#x27;__otba%&#x27;</span>; <span class="comment">--true</span></span><br><span class="line"><span class="comment">--其中.表示单个字符,*表示0或多个,+表示至少1个</span></span><br><span class="line"><span class="comment">--?表示0或1个,\d表示[0-9],\D表示[^0-9]</span></span><br><span class="line"><span class="keyword">select</span> <span class="string">&#x27;football&#x27;</span> rlike <span class="string">&#x27;ba&#x27;</span>; <span class="comment">--true</span></span><br><span class="line"><span class="keyword">select</span> <span class="string">&#x27;football&#x27;</span> rlike <span class="string">&#x27;^footba&#x27;</span>; <span class="comment">--true</span></span><br><span class="line"><span class="keyword">select</span> <span class="string">&#x27;does&#x27;</span> rlike <span class="string">&#x27;do(es)?&#x27;</span>; <span class="comment">--true</span></span><br><span class="line"><span class="keyword">select</span> <span class="string">&#x27;2314&#x27;</span> rlike <span class="string">&#x27;\\d+&#x27;</span>; <span class="comment">--true</span></span><br><span class="line"><span class="keyword">select</span> <span class="string">&#x27;football&#x27;</span> regexp <span class="string">&#x27;ba&#x27;</span>; <span class="comment">--true</span></span><br><span class="line"><span class="keyword">select</span> <span class="string">&#x27;football&#x27;</span> regexp <span class="string">&#x27;^footba&#x27;</span>; <span class="comment">--true</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="算术运算符"><a href="#算术运算符" class="headerlink" title="算术运算符"></a>算术运算符</h3><p>各种常见算术运算.返回number类型.<br>如果任何操作数为null,则结果也为null.</p>
+<table>
+<thead>
+<tr>
+<th align="left">运算符</th>
+<th align="left">数据类型</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">a + b</td>
+<td align="left">number</td>
+<td align="left">相加,返回父级类型,如float+int,返回float</td>
+</tr>
+<tr>
+<td align="left">a - b</td>
+<td align="left">number</td>
+<td align="left">同上,相减</td>
+</tr>
+<tr>
+<td align="left">a * b</td>
+<td align="left">number</td>
+<td align="left">同上,相乘,如溢出时,则必须将其中一个转换成父级类型</td>
+</tr>
+<tr>
+<td align="left">a / b</td>
+<td align="left">number</td>
+<td align="left">同上,相除</td>
+</tr>
+<tr>
+<td align="left">a % b</td>
+<td align="left">number</td>
+<td align="left">同上,返回相除的余数</td>
+</tr>
+<tr>
+<td align="left">a div b</td>
+<td align="left">integer</td>
+<td align="left">返回相除的倍数</td>
+</tr>
+<tr>
+<td align="left">a &amp; b</td>
+<td align="left">number</td>
+<td align="left">按位与,均为1时才为1</td>
+</tr>
+<tr>
+<td align="left">a</td>
+<td align="left">b</td>
+<td align="left">number</td>
+</tr>
+<tr>
+<td align="left">a ^ b</td>
+<td align="left">number</td>
+<td align="left">按位异或,仅有一个为1时为1</td>
+</tr>
+<tr>
+<td align="left">~a</td>
+<td align="left">number</td>
+<td align="left">按位取反</td>
+</tr>
+</tbody></table>
+<h3 id="逻辑运算符"><a href="#逻辑运算符" class="headerlink" title="逻辑运算符"></a>逻辑运算符</h3><p>返回布尔值true/false/null.null表现为&quot;unknown&quot;标志.</p>
+<table>
+<thead>
+<tr>
+<th align="left">运算符</th>
+<th align="left">数据类型</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">a and b</td>
+<td align="left">boolean</td>
+<td align="left">都为true时,为true,否则为false,如其一为null,则为null</td>
+</tr>
+<tr>
+<td align="left">a or b</td>
+<td align="left">boolean</td>
+<td align="left">如其一为true,则为true,否则为false,false和null时为null,其它为false</td>
+</tr>
+<tr>
+<td align="left">not a</td>
+<td align="left">boolean</td>
+<td align="left">a为false时为true,为null时为null,否则为false</td>
+</tr>
+<tr>
+<td align="left">! a</td>
+<td align="left">boolean</td>
+<td align="left">同上</td>
+</tr>
+<tr>
+<td align="left">a in (val1,val2,...)</td>
+<td align="left">boolean</td>
+<td align="left">如a等于任一值,则为true</td>
+</tr>
+<tr>
+<td align="left">a not in (val1,val2,...)</td>
+<td align="left">boolean</td>
+<td align="left">如a不等于任一值,则为true</td>
+</tr>
+<tr>
+<td align="left">[not] exists (subquery)</td>
+<td align="left"></td>
+<td align="left">如果子查询返回至少一行,则为true</td>
+</tr>
+</tbody></table>
+<h3 id="字符串运算符"><a href="#字符串运算符" class="headerlink" title="字符串运算符"></a>字符串运算符</h3><table>
+<thead>
+<tr>
+<th align="left">运算符</th>
+<th align="left">数据类型</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">a||b</td>
+<td align="left">string</td>
+<td align="left">concat(a,b)的简写</td>
+</tr>
+</tbody></table>
+<h3 id="复杂类型构造函数"><a href="#复杂类型构造函数" class="headerlink" title="复杂类型构造函数"></a>复杂类型构造函数</h3><table>
+<thead>
+<tr>
+<th align="left">类型</th>
+<th align="left">参数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">map</td>
+<td align="left">(key1,value1,key2,value2,...)</td>
+<td align="left">使用给定的键/值对创建一个映射</td>
+</tr>
+<tr>
+<td align="left">struct</td>
+<td align="left">(val1,val2,val3,...)</td>
+<td align="left">创建具有给定字段值的结构,结构字段的名称为col1,col2,...</td>
+</tr>
+<tr>
+<td align="left">named_struct</td>
+<td align="left">(name1,val1,name2,val2,...)</td>
+<td align="left">创建具有给定字段名称和值的结构</td>
+</tr>
+<tr>
+<td align="left">array</td>
+<td align="left">(val1,val2,...)</td>
+<td align="left">用给定的元素创建一个数组</td>
+</tr>
+<tr>
+<td align="left">create_union</td>
+<td align="left">(tag,val1,val2,...)</td>
+<td align="left">用tag参数指向的值创建一个联合类型</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> map(&quot;a&quot;,&quot;b&quot;); <span class="comment">--&#123;&quot;a&quot;:&quot;b&quot;&#125;</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">array</span>(&quot;a&quot;,&quot;b&quot;); <span class="comment">--[&quot;a&quot;,&quot;b&quot;]</span></span><br><span class="line"><span class="keyword">select</span> struct(&quot;a&quot;,&quot;b&quot;); <span class="comment">--&#123;&quot;col1&quot;:&quot;a&quot;,&quot;col2&quot;:&quot;b&quot;&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="复杂类型运算符"><a href="#复杂类型运算符" class="headerlink" title="复杂类型运算符"></a>复杂类型运算符</h3><table>
+<thead>
+<tr>
+<th align="left">运算符</th>
+<th align="left">数据类型</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">a[n]</td>
+<td align="left"></td>
+<td align="left">返回数组第n个元素,从0开始</td>
+</tr>
+<tr>
+<td align="left">m[key]</td>
+<td align="left"></td>
+<td align="left">返回k对应的value</td>
+</tr>
+<tr>
+<td align="left">s.x</td>
+<td align="left"></td>
+<td align="left">返回属性值</td>
+</tr>
+</tbody></table>
+<h2 id="标准函数-udf"><a href="#标准函数-udf" class="headerlink" title="标准函数(udf)"></a>标准函数(udf)</h2><h3 id="数学函数"><a href="#数学函数" class="headerlink" title="数学函数"></a>数学函数</h3><table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">double</td>
+<td align="left">round(double a)</td>
+<td align="left">四舍五入后的bigint值</td>
+</tr>
+<tr>
+<td align="left">double</td>
+<td align="left">round(double a,int d)</td>
+<td align="left">同上,有d位小数点</td>
+</tr>
+<tr>
+<td align="left">bigint</td>
+<td align="left">floor(double a)</td>
+<td align="left">小于等于的最小bigint值</td>
+</tr>
+<tr>
+<td align="left">bigint</td>
+<td align="left">ceil(double a)</td>
+<td align="left">同上,大于等于,ceiling/ceil</td>
+</tr>
+<tr>
+<td align="left">double</td>
+<td align="left">pow(double a,double p)</td>
+<td align="left">a的p方,power/pow</td>
+</tr>
+<tr>
+<td align="left">double</td>
+<td align="left">sqrt(double a)</td>
+<td align="left">平方根</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">bin(bigint a)</td>
+<td align="left">将数字格式为二进制</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">hex(bigint a)</td>
+<td align="left">string/bigint</td>
+</tr>
+<tr>
+<td align="left">binary</td>
+<td align="left">unhex(string a)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">conv(bigint num,int from_base,int to_base)</td>
+<td align="left">进制转换,bingint/string</td>
+</tr>
+<tr>
+<td align="left">double</td>
+<td align="left">abs(double a)</td>
+<td align="left">绝对值</td>
+</tr>
+</tbody></table>
+<h3 id="集合函数"><a href="#集合函数" class="headerlink" title="集合函数"></a>集合函数</h3><table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">int</td>
+<td align="left">size(map&lt;k.v&gt;)</td>
+<td align="left">元素个数</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">size(array&lt;t&gt;)</td>
+<td align="left">同上</td>
+</tr>
+<tr>
+<td align="left">array&lt;k&gt;</td>
+<td align="left">map_keys(map&lt;k.v&gt;)</td>
+<td align="left">无序key数组</td>
+</tr>
+<tr>
+<td align="left">array&lt;v&gt;</td>
+<td align="left">map_values(map&lt;k.v&gt;)</td>
+<td align="left">无序value数组</td>
+</tr>
+<tr>
+<td align="left">boolean</td>
+<td align="left">array_contains(array&lt;t&gt;,value)</td>
+<td align="left">如包含值,则为true</td>
+</tr>
+<tr>
+<td align="left">array&lt;t&gt;</td>
+<td align="left">sort_array(array&lt;t&gt;)</td>
+<td align="left">升序排序并返回</td>
+</tr>
+</tbody></table>
+<h3 id="类型转换函数"><a href="#类型转换函数" class="headerlink" title="类型转换函数"></a>类型转换函数</h3><table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">binary</td>
+<td align="left">binary(string</td>
+<td align="left">binary)</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left">cast(expr as &lt;type&gt;)</td>
+<td align="left">失败时为null</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="built_in">cast</span>(&quot;1&quot; <span class="keyword">as</span> <span class="type">int</span>); <span class="comment">--1</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="日期函数"><a href="#日期函数" class="headerlink" title="日期函数"></a>日期函数</h3><table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">string</td>
+<td align="left">from_unixtime(bigint unixtime[,string format])</td>
+<td align="left">转为string</td>
+</tr>
+<tr>
+<td align="left">bigint</td>
+<td align="left">unix_timestamp()</td>
+<td align="left">秒级时间戳</td>
+</tr>
+<tr>
+<td align="left">bigint</td>
+<td align="left">unix_timestamp(string date)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">bigint</td>
+<td align="left">unix_timestamp(string date,string pattern)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string/date</td>
+<td align="left">to_date(string timestamp)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">year(string date)</td>
+<td align="left">年份</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">quarter(date/timestamp/string)</td>
+<td align="left">季度</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">month(string date)</td>
+<td align="left">月</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">day(string date)</td>
+<td align="left">day/dayofmonth</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">hour(string date)</td>
+<td align="left">小时</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">minute(string date)</td>
+<td align="left">分钟</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">second(string date)</td>
+<td align="left">秒数</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">weekofyear(string date)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">datediff(string enddate,string startdate)</td>
+<td align="left">两个日期天数差</td>
+</tr>
+<tr>
+<td align="left">string/date</td>
+<td align="left">date_add(date/timestamp/string startdate,tinyint/smallint/int days)</td>
+<td align="left">增加天数</td>
+</tr>
+<tr>
+<td align="left">string/date</td>
+<td align="left">date_sub(date/timestamp/string startdate,tinyint/smallint/int days)</td>
+<td align="left">减少天数</td>
+</tr>
+<tr>
+<td align="left">timestamp</td>
+<td align="left">from_utc_timestamp({any primitive type} ts,string timezone)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">timestamp</td>
+<td align="left">to_utc_timestamp({any primitive type} ts,string timezone)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">date</td>
+<td align="left">current_date</td>
+<td align="left">当前日期</td>
+</tr>
+<tr>
+<td align="left">timestamp</td>
+<td align="left">current_timestamp</td>
+<td align="left">当前时间戳</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">add_months(string start_date,int num_months)</td>
+<td align="left">增加月份</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">last_day(string date)</td>
+<td align="left">月底最后一天</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">next_day(string start_date,string day_of_week)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">trunc(string date,string format)</td>
+<td align="left">返回月初或年初第一天</td>
+</tr>
+<tr>
+<td align="left">double</td>
+<td align="left">months_between(date1,date2)</td>
+<td align="left">月份差</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">date_format(date/timestamp/string ts,string fmt)</td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> from_unixtime(<span class="number">1614305753</span>, <span class="string">&#x27;yyyy/MM/dd&#x27;</span>); <span class="comment">--2021/02/26</span></span><br><span class="line"><span class="keyword">select</span> unix_timestamp(); <span class="comment">--过时,1614305753</span></span><br><span class="line"><span class="keyword">select</span> <span class="built_in">current_timestamp</span>(); <span class="comment">--2021-02-26 10:16:01.019</span></span><br><span class="line"><span class="keyword">select</span> unix_timestamp(&quot;2021-02-26 10:16:01.019&quot;); <span class="comment">--1614305761</span></span><br><span class="line"><span class="keyword">select</span> unix_timestamp(&quot;2021-02-26 10:16:01.019&quot;,&quot;yyyy-MM-dd&quot;); <span class="comment">--1614268800,0点</span></span><br><span class="line"><span class="keyword">select</span> unix_timestamp(&quot;2021-02-26 10:16:01.019&quot;,&quot;yyyy-MM-dd HH:mm:ss&quot;); <span class="comment">--1614305761</span></span><br><span class="line"><span class="keyword">select</span> <span class="built_in">current_date</span>(); <span class="comment">--2021-02-26</span></span><br><span class="line"><span class="keyword">select</span> to_date(&quot;2021-02-26 10:16:01.019&quot;); <span class="comment">--2021-02-26</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">year</span>(&quot;2021-02-26 10:16:01.019&quot;); <span class="comment">--2021</span></span><br><span class="line"><span class="keyword">select</span> datediff(<span class="string">&#x27;2009-03-01&#x27;</span>,<span class="string">&#x27;2009-02-27&#x27;</span>); <span class="comment">--2</span></span><br><span class="line"><span class="keyword">select</span> date_add(<span class="string">&#x27;2008-12-31&#x27;</span>,<span class="number">1</span>); <span class="comment">--2009-01-01</span></span><br><span class="line"><span class="keyword">select</span> date_sub(<span class="string">&#x27;2008-12-31&#x27;</span>,<span class="number">1</span>); <span class="comment">--2008-12-30</span></span><br><span class="line"><span class="keyword">select</span> add_months(<span class="string">&#x27;2009-08-31&#x27;</span>,<span class="number">3</span>); <span class="comment">--2009-11-30</span></span><br><span class="line"><span class="keyword">select</span> last_day(&quot;2021-02-26 10:16:01.019&quot;); <span class="comment">--2021-02-28</span></span><br><span class="line"><span class="keyword">select</span> next_day(<span class="string">&#x27;2021-02-26 10:16:01.019&#x27;</span>,<span class="string">&#x27;tu&#x27;</span>); <span class="comment">--2021-03-02</span></span><br><span class="line"><span class="keyword">select</span> trunc(<span class="string">&#x27;2015-03-17&#x27;</span>,<span class="string">&#x27;MM&#x27;</span>); <span class="comment">--2015-03-01,格式大写MONTH/MON/MM,YEAR/YYYY/YY</span></span><br><span class="line"><span class="keyword">select</span> months_between(<span class="string">&#x27;1997-01-30&#x27;</span>,<span class="string">&#x27;1996-10-30&#x27;</span>); <span class="comment">--3.0</span></span><br><span class="line"><span class="keyword">select</span> date_format(<span class="string">&#x27;2015-04-08&#x27;</span>,<span class="string">&#x27;y&#x27;</span>); <span class="comment">--2015</span></span><br><span class="line"><span class="keyword">select</span> date_format(&quot;2021-02-26 10:16:01.019&quot;,<span class="string">&#x27;EEEE&#x27;</span>); <span class="comment">--星期五</span></span><br><span class="line"><span class="keyword">select</span> date_format(&quot;2021-02-26 10:16:01.019&quot;,<span class="string">&#x27;D&#x27;</span>); <span class="comment">--57</span></span><br><span class="line"><span class="keyword">select</span> date_format(&quot;2021-02-26 10:16:01.019&quot;,<span class="string">&#x27;d&#x27;</span>); <span class="comment">--26</span></span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">fmt</th>
+<th align="left">时间/日期部分</th>
+<th align="left">介绍</th>
+<th align="left">example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">G</td>
+<td align="left">Era designator</td>
+<td align="left">Text</td>
+<td align="left">AD</td>
+</tr>
+<tr>
+<td align="left">y</td>
+<td align="left">Year</td>
+<td align="left">Year</td>
+<td align="left">1996; 96</td>
+</tr>
+<tr>
+<td align="left">Y</td>
+<td align="left">Week year</td>
+<td align="left">Year</td>
+<td align="left">2009; 09</td>
+</tr>
+<tr>
+<td align="left">M</td>
+<td align="left">Month in year</td>
+<td align="left">Month</td>
+<td align="left">July; Jul; 07</td>
+</tr>
+<tr>
+<td align="left">w</td>
+<td align="left">Week in year</td>
+<td align="left">Number</td>
+<td align="left">27</td>
+</tr>
+<tr>
+<td align="left">W</td>
+<td align="left">Week in month</td>
+<td align="left">Number</td>
+<td align="left">2</td>
+</tr>
+<tr>
+<td align="left">D</td>
+<td align="left">Day in year</td>
+<td align="left">Number</td>
+<td align="left">189</td>
+</tr>
+<tr>
+<td align="left">d</td>
+<td align="left">Day in month</td>
+<td align="left">Number</td>
+<td align="left">10</td>
+</tr>
+<tr>
+<td align="left">F</td>
+<td align="left">Day of week in month</td>
+<td align="left">Number</td>
+<td align="left">2</td>
+</tr>
+<tr>
+<td align="left">E</td>
+<td align="left">Day name in week</td>
+<td align="left">Text</td>
+<td align="left">Tuesday; Tue</td>
+</tr>
+<tr>
+<td align="left">u</td>
+<td align="left">Day number of week (1 = Monday, ..., 7 = Sunday)</td>
+<td align="left">Number</td>
+<td align="left">1</td>
+</tr>
+<tr>
+<td align="left">a</td>
+<td align="left">Am/pm marker</td>
+<td align="left">Text</td>
+<td align="left">PM</td>
+</tr>
+<tr>
+<td align="left">H</td>
+<td align="left">Hour in day (0-23)</td>
+<td align="left">Number</td>
+<td align="left">0</td>
+</tr>
+<tr>
+<td align="left">k</td>
+<td align="left">Hour in day (1-24)</td>
+<td align="left">Number</td>
+<td align="left">24</td>
+</tr>
+<tr>
+<td align="left">K</td>
+<td align="left">Hour in am/pm (0-11)</td>
+<td align="left">Number</td>
+<td align="left">0</td>
+</tr>
+<tr>
+<td align="left">h</td>
+<td align="left">Hour in am/pm (1-12)</td>
+<td align="left">Number</td>
+<td align="left">12</td>
+</tr>
+<tr>
+<td align="left">m</td>
+<td align="left">Minute in hour</td>
+<td align="left">Number</td>
+<td align="left">30</td>
+</tr>
+<tr>
+<td align="left">s</td>
+<td align="left">Second in minute</td>
+<td align="left">Number</td>
+<td align="left">55</td>
+</tr>
+<tr>
+<td align="left">S</td>
+<td align="left">Millisecond</td>
+<td align="left">Number</td>
+<td align="left">978</td>
+</tr>
+<tr>
+<td align="left">z</td>
+<td align="left">Time zone</td>
+<td align="left">General time zone</td>
+<td align="left">Pacific Standard Time; PST; GMT-08:00</td>
+</tr>
+<tr>
+<td align="left">Z</td>
+<td align="left">Time zone</td>
+<td align="left">RFC 822 time zone</td>
+<td align="left">-800</td>
+</tr>
+<tr>
+<td align="left">X</td>
+<td align="left">Time zone</td>
+<td align="left">ISO 8601 time zone</td>
+<td align="left">-08; -0800; -08:00</td>
+</tr>
+</tbody></table>
+<h3 id="条件函数"><a href="#条件函数" class="headerlink" title="条件函数"></a>条件函数</h3><table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">t</td>
+<td align="left">if(boolean condition,t v1,t v2)</td>
+<td align="left">if判断</td>
+</tr>
+<tr>
+<td align="left">boolean</td>
+<td align="left">isnull(a)</td>
+<td align="left">如果a为null,则返回true</td>
+</tr>
+<tr>
+<td align="left">boolean</td>
+<td align="left">isnotnull(a)</td>
+<td align="left">如果a不为null,则返回true</td>
+</tr>
+<tr>
+<td align="left">t</td>
+<td align="left">nvl(t value,t default_value)</td>
+<td align="left">如果value为null,则返回默认值,否则返回值</td>
+</tr>
+<tr>
+<td align="left">t</td>
+<td align="left">coalesce(t v1,t v2,...)</td>
+<td align="left">返回不为null的第一个v,如果所有v均为null,则返回null</td>
+</tr>
+<tr>
+<td align="left">t</td>
+<td align="left">case a when b then c [when d then e]* [else f] end</td>
+<td align="left">a=b,c;a=d,e;f</td>
+</tr>
+<tr>
+<td align="left">t</td>
+<td align="left">case when a then b [when c then d]* [else e] end</td>
+<td align="left">a=true,b;c=true,d;e</td>
+</tr>
+<tr>
+<td align="left">void</td>
+<td align="left">assert_true(boolean condition)</td>
+<td align="left">不为true时引发异常,否则返回null</td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> if(<span class="number">1</span><span class="operator">&lt;&gt;</span><span class="number">1</span>,<span class="number">1</span>,<span class="number">2</span>); <span class="comment">--2</span></span><br><span class="line"><span class="keyword">select</span> isnull(<span class="number">1</span>); <span class="comment">--false</span></span><br><span class="line"><span class="keyword">select</span> nvl(<span class="number">2</span>,<span class="number">1</span>); <span class="comment">--2</span></span><br><span class="line"><span class="keyword">select</span> <span class="built_in">coalesce</span>(<span class="keyword">null</span>,<span class="number">1</span>,<span class="number">2</span>); <span class="comment">--1</span></span><br><span class="line"><span class="comment">--case when两种写法1</span></span><br><span class="line"><span class="keyword">select</span> </span><br><span class="line"><span class="keyword">case</span> &quot;a&quot; </span><br><span class="line"><span class="keyword">when</span> &quot;a&quot; <span class="keyword">then</span> &quot;yes&quot; </span><br><span class="line"><span class="keyword">when</span> &quot;b&quot; <span class="keyword">then</span> &quot;no&quot; </span><br><span class="line"><span class="keyword">else</span> &quot;default&quot;</span><br><span class="line"><span class="keyword">end</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">--case when两种写法2</span></span><br><span class="line"><span class="keyword">select</span></span><br><span class="line"><span class="keyword">case</span> </span><br><span class="line"><span class="keyword">when</span> <span class="number">1</span><span class="operator">=</span><span class="number">2</span> <span class="keyword">then</span> &quot;yes&quot;</span><br><span class="line"><span class="keyword">when</span> <span class="number">1</span><span class="operator">&gt;</span><span class="number">2</span> <span class="keyword">then</span> &quot;no&quot;</span><br><span class="line"><span class="keyword">when</span> <span class="number">1</span><span class="operator">&lt;</span><span class="number">2</span> <span class="keyword">then</span> &quot;default&quot;</span><br><span class="line"><span class="keyword">else</span> &quot;aaa&quot;</span><br><span class="line"><span class="keyword">end</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="字符串函数"><a href="#字符串函数" class="headerlink" title="字符串函数"></a>字符串函数</h3><table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">int</td>
+<td align="left">ascii(string str)</td>
+<td align="left">首字符ascii函数</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">base64(binary bin)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">binary</td>
+<td align="left">unbase64(string str)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">chr(bigint|double a)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">concat(string|binary a,string</td>
+<td align="left">binary b...)</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">concat_ws(string sep,string a,string b...)</td>
+<td align="left">同concat,可定义分隔符</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">concat_ws(string sep,array&lt;string&gt;)</td>
+<td align="left">同上</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">decode(binary bin,string charset)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">binary</td>
+<td align="left">encode(string src,string charset)</td>
+<td align="left">同decode</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">elt(n int,str1 string,str2 string,...)</td>
+<td align="left">按索引取,从1开始</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">field(val t,val1 t,val2 t,...)</td>
+<td align="left">返回索引号,从1开始</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">find_in_set(string str,string strlist)</td>
+<td align="left">同上</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">instr(string str,string substr)</td>
+<td align="left">同上</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">locate(string substr,string str[,int pos])</td>
+<td align="left">同上,带起始位置参数</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">get_json_object(string json_string,string path)</td>
+<td align="left">获取json值</td>
+</tr>
+<tr>
+<td align="left">boolean</td>
+<td align="left">in_file(string str,string filename)</td>
+<td align="left">字符串是否在文件中,并且整行</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">length(string a)</td>
+<td align="left">字符串长度</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">lower(string a)</td>
+<td align="left">lower/lcase</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">upper(string a)</td>
+<td align="left">upper/ucase</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">lpad(string str,int len,string pad)</td>
+<td align="left">在左侧填充</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">rpad(string str,int len,string pad)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">ltrim(string a)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">rtrim(string a)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">trim(string a)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">format_number(number x,int d)</td>
+<td align="left">格式化数字</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">printf(string format,obj... args)</td>
+<td align="left">格式化输出</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">repeat(string str,int n)</td>
+<td align="left">重复n次</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">parse_url(string url,string part [,string key])</td>
+<td align="left">解析url</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">regexp_extract(string subject,string pattern,int index)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">regexp_replace(string init_str,string pattern,string replacement)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">replace(string a,string old,string new)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">reverse(string a)</td>
+<td align="left">反转</td>
+</tr>
+<tr>
+<td align="left">array&lt;array&lt;string&gt;&gt;</td>
+<td align="left">sentences(string str,string lang,string locale)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">space(int n)</td>
+<td align="left">打印n个空格的字符串</td>
+</tr>
+<tr>
+<td align="left">array</td>
+<td align="left">split(string str,string pat)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">map&lt;string,string&gt;</td>
+<td align="left">str_to_map(text[,delimiter1,delimiter2])</td>
+<td align="left">1是,2是:</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">substr(string a,int start)</td>
+<td align="left">substr/substring,从1开始</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">substr(string a,int start,int len)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">substring_index(string a,string delim,int count)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">translate(string input,string from,string</td>
+<td align="left">char</td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">initcap(string a)</td>
+<td align="left">首字母大写的字符串</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">levenshtein(string a,string b)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">soundex(string a)</td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> ascii(&quot;maoeryu&quot;); <span class="comment">--109</span></span><br><span class="line"><span class="keyword">select</span> chr(<span class="number">88</span>); <span class="comment">--X</span></span><br><span class="line"><span class="keyword">select</span> concat(<span class="string">&#x27;foo&#x27;</span>,<span class="string">&#x27;bar&#x27;</span>); <span class="comment">--foobar</span></span><br><span class="line"><span class="keyword">select</span> concat_ws(&quot;?&quot;,<span class="string">&#x27;foo&#x27;</span>,<span class="string">&#x27;bar&#x27;</span>); <span class="comment">--foo?bar</span></span><br><span class="line"><span class="keyword">select</span> elt(<span class="number">1</span>,&quot;mao&quot;,&quot;er&quot;,&quot;yu&quot;); <span class="comment">--mao</span></span><br><span class="line"><span class="keyword">select</span> field(<span class="string">&#x27;world&#x27;</span>,<span class="string">&#x27;say&#x27;</span>,<span class="string">&#x27;hello&#x27;</span>,<span class="string">&#x27;world&#x27;</span>); <span class="comment">--3</span></span><br><span class="line"><span class="keyword">select</span> find_in_set(<span class="string">&#x27;ab&#x27;</span>,<span class="string">&#x27;abc,b,ab,c,def&#x27;</span>); <span class="comment">--3</span></span><br><span class="line"><span class="keyword">select</span> format_number(<span class="number">2</span>,<span class="number">2</span>); <span class="comment">--2.00</span></span><br><span class="line"><span class="keyword">select</span> get_json_object(<span class="string">&#x27;&#123;&quot;title&quot;:&quot;aaa&quot;,&quot;url&quot;:&quot;xxx&quot;&#125;&#x27;</span>,&quot;$.title&quot;); <span class="comment">--aaa </span></span><br><span class="line"><span class="keyword">select</span> in_file(&quot;95002,刘晨,女,19,IS&quot;,&quot;student.txt&quot;); <span class="comment">--true</span></span><br><span class="line"><span class="keyword">select</span> instr(&quot;maoeryu&quot;,&quot;yu&quot;); <span class="comment">--6</span></span><br><span class="line"><span class="keyword">select</span> locate(&quot;yu&quot;,&quot;maoeryu&quot;,<span class="number">7</span>);</span><br><span class="line"><span class="keyword">select</span> <span class="built_in">upper</span>(&quot;maoeryu&quot;); <span class="comment">--MAOERYU</span></span><br><span class="line"><span class="keyword">select</span> lpad(&quot;abc&quot;,<span class="number">5</span>,&quot;m&quot;); <span class="comment">--mmabc</span></span><br><span class="line"><span class="keyword">select</span> lpad(&quot;abc&quot;,<span class="number">2</span>,&quot;m&quot;); <span class="comment">--ab</span></span><br><span class="line"><span class="keyword">select</span> parse_url(<span class="string">&#x27;http://aa.com/p.php|k1=v1#ref1&#x27;</span>,<span class="string">&#x27;HOST&#x27;</span>); <span class="comment">--aa.com,参数大写</span></span><br><span class="line"><span class="keyword">select</span> printf(&quot;hello world %d %s&quot;, <span class="number">100</span>, &quot;days&quot;); <span class="comment">--hello world 100 days</span></span><br><span class="line"><span class="keyword">select</span> regexp_replace(&quot;foobar&quot;,&quot;oo|ar&quot;,&quot;&quot;); <span class="comment">--fb</span></span><br><span class="line"><span class="keyword">select</span> regexp_replace(<span class="string">&#x27;h234ney&#x27;</span>, <span class="string">&#x27;\\d+&#x27;</span>, <span class="string">&#x27;o&#x27;</span>); <span class="comment">--honey</span></span><br><span class="line"><span class="keyword">select</span> regexp_extract(<span class="string">&#x27;foothebar&#x27;</span>,<span class="string">&#x27;foo(.*?)(bar)&#x27;</span>,<span class="number">2</span>); <span class="comment">--bar</span></span><br><span class="line"><span class="keyword">select</span> regexp_extract(<span class="string">&#x27;honeymoon&#x27;</span>, <span class="string">&#x27;hon(.*?)(moon)&#x27;</span>, <span class="number">0</span>); <span class="comment">--honeymoon,从1开始</span></span><br><span class="line"><span class="keyword">select</span> regexp_extract(<span class="string">&#x27;honeymoon&#x27;</span>, <span class="string">&#x27;hon(.*?)(moon)&#x27;</span>, <span class="number">1</span>); <span class="comment">--ey</span></span><br><span class="line"><span class="keyword">select</span> repeat(&quot;mao&quot;,<span class="number">2</span>); <span class="comment">--maomao</span></span><br><span class="line"><span class="keyword">select</span> replace(&quot;ababab&quot;,&quot;abab&quot;,&quot;z&quot;); <span class="comment">--zab</span></span><br><span class="line"><span class="keyword">select</span> reverse(&quot;maoeryu&quot;); <span class="comment">--uyreoam</span></span><br><span class="line"><span class="keyword">select</span> split(&quot;a,b,c&quot;,&quot;,&quot;); <span class="comment">--[&quot;a&quot;,&quot;b&quot;,&quot;c&quot;]</span></span><br><span class="line"><span class="keyword">select</span> str_to_map(<span class="string">&#x27;k1:v1,k2:v2&#x27;</span>); <span class="comment">--&#123;&quot;k1&quot;:&quot;v1&quot;,&quot;k2&quot;:&quot;v2&quot;&#125;</span></span><br><span class="line"><span class="keyword">select</span> substr(&quot;maoeryu&quot;,<span class="number">3</span>); <span class="comment">--oeryu</span></span><br><span class="line"><span class="keyword">select</span> substr(&quot;maoeryu&quot;,<span class="number">3</span>,<span class="number">2</span>); <span class="comment">--oe</span></span><br><span class="line"><span class="keyword">select</span> substring_index(<span class="string">&#x27;www.apache.org&#x27;</span>, <span class="string">&#x27;.&#x27;</span>, <span class="number">2</span>); <span class="comment">--www.apache</span></span><br><span class="line"><span class="keyword">select</span> initcap(&quot;maoeryu&quot;); <span class="comment">--Maoeryu</span></span><br><span class="line"><span class="keyword">select</span> <span class="built_in">translate</span>(<span class="string">&#x27;abcdef&#x27;</span>, <span class="string">&#x27;ada&#x27;</span>, <span class="string">&#x27;192&#x27;</span>); <span class="comment">--1bc9ef</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="脱敏函数"><a href="#脱敏函数" class="headerlink" title="脱敏函数"></a>脱敏函数</h3><table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">string</td>
+<td align="left">mask(string str[,string upper[,string lower[,string number]]])</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">mask_first_n(string str[,int n])</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">mask_last_n(string str[,int n])</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">mask_show_first_n(string str[,int n])</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">mask_show_last_n(string str[,int n])</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">mask_hash(string str)</td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<h3 id="其它函数"><a href="#其它函数" class="headerlink" title="其它函数"></a>其它函数</h3><table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">string</td>
+<td align="left">current_user()</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">current_database()</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">varies</td>
+<td align="left">java_method(class,method[,arg1[,arg2..]])</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">varies</td>
+<td align="left">reflect(class,method[,arg1[,arg2..]])</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">hash(a1[,a2...])</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">md5(string)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">sha1(string)</td>
+<td align="left">sha/sha1</td>
+</tr>
+<tr>
+<td align="left">bigint</td>
+<td align="left">crc32(string)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">sha2(string,int)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">binary</td>
+<td align="left">aes_encrypt(input string,key string)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">binary</td>
+<td align="left">aes_decrypt(input binary,key string)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">bigint</td>
+<td align="left">surrogate_key([write_id_bits,task_id_bits])</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">string</td>
+<td align="left">version()</td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> hash(&quot;maoeryu&quot;); <span class="comment">--836314212</span></span><br><span class="line"><span class="keyword">select</span> md5(&quot;maoeryu&quot;); <span class="comment">--13d59820e044d2846ac2547407dbe69f</span></span><br><span class="line"><span class="keyword">select</span> reflect(&quot;java.util.UUID&quot;, &quot;randomUUID&quot;); <span class="comment">--00d12c64-a6c4-4b21-b1d7-a5eec4b6a285</span></span><br><span class="line"><span class="keyword">select</span> reflect(&quot;org.apache.commons.lang.StringUtils&quot;,&quot;contains&quot;,&quot;abc&quot;,&quot;a&quot;); <span class="comment">--true</span></span><br></pre></td></tr></table></figure>
+<h3 id="xpath"><a href="#xpath" class="headerlink" title="xpath"></a>xpath</h3><p>xpath,xpath_short,xpath_int,xpath_long,xpath_float,xpath_double,xpath_number,xpath_string</p>
+<h2 id="聚合函数-udaf"><a href="#聚合函数-udaf" class="headerlink" title="聚合函数(udaf)"></a>聚合函数(udaf)</h2><p>接受从0行到多行的0个到多个列,然后返回单一值.</p>
+<table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">bigint</td>
+<td align="left">count(*)</td>
+<td align="left">包含null的行数</td>
+</tr>
+<tr>
+<td align="left">bigint</td>
+<td align="left">count(expr)</td>
+<td align="left">非null</td>
+</tr>
+<tr>
+<td align="left">bigint</td>
+<td align="left">count(distinct expr[,expr...])</td>
+<td align="left">唯一且非null</td>
+</tr>
+<tr>
+<td align="left">double</td>
+<td align="left">sum(col),sum(distinct col)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">double</td>
+<td align="left">avg(col),avg(distinct col)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">double</td>
+<td align="left">min(col)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">double</td>
+<td align="left">max(col)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">array</td>
+<td align="left">collect_set(col)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">array</td>
+<td align="left">collect_list(col)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">integer</td>
+<td align="left">ntile(integer x)</td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> collect_list(name) <span class="keyword">from</span> student; <span class="comment">--[&quot;王风娟&quot;,&quot;王一&quot;,&quot;冯伟&quot;,&quot;王小丽&quot;]</span></span><br></pre></td></tr></table></figure>
+
+<p>聚合操作时要注意null值.<br>count(*) 包含null值,统计所有行数.<br>count(id) 不包含null值.<br>min 求最小值是不包含null,除非所有值都是null.<br>avg 求平均值也是不包含null.</p>
+<h2 id="表生成函数-udtf"><a href="#表生成函数-udtf" class="headerlink" title="表生成函数(udtf)"></a>表生成函数(udtf)</h2><p>接受0个或多个输入,然后产生多列或多行输出.</p>
+<table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">t</td>
+<td align="left">explode(array&lt;t&gt; a)</td>
+<td align="left">生成1列数据</td>
+</tr>
+<tr>
+<td align="left">tkey,tvalue</td>
+<td align="left">explode(map&lt;tkey,tvalue&gt; m)</td>
+<td align="left">同上,两列</td>
+</tr>
+<tr>
+<td align="left">int,t</td>
+<td align="left">posexplode(array&lt;t&gt; a)</td>
+<td align="left">同上,两列</td>
+</tr>
+<tr>
+<td align="left">t1,...,tn</td>
+<td align="left">inline(array&lt;struct&lt;f1:t1,...,fn:tn&gt;&gt; a)</td>
+<td align="left">同上,多列</td>
+</tr>
+<tr>
+<td align="left">t1,...,tn/r</td>
+<td align="left">stack(int r,t1 v1,...,tn vn)</td>
+<td align="left">同上,r为行数</td>
+</tr>
+<tr>
+<td align="left">str1,...,strn</td>
+<td align="left">json_tuple(string jsonstr,string k1,...,string kn)</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">str1,...,strn</td>
+<td align="left">parse_url_tuple(string urlstr,string p1,...,string pn)</td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> explode(<span class="keyword">array</span>(<span class="string">&#x27;a&#x27;</span>,<span class="string">&#x27;b&#x27;</span>,<span class="string">&#x27;c&#x27;</span>)) <span class="keyword">as</span> col;</span><br><span class="line"><span class="keyword">select</span> explode(map(<span class="string">&#x27;a&#x27;</span>,<span class="number">10</span>,<span class="string">&#x27;b&#x27;</span>,<span class="number">20</span>,<span class="string">&#x27;c&#x27;</span>,<span class="number">30</span>)) <span class="keyword">as</span> (key,<span class="keyword">value</span>);</span><br><span class="line"><span class="keyword">select</span> posexplode(<span class="keyword">array</span>(<span class="string">&#x27;a&#x27;</span>,<span class="string">&#x27;b&#x27;</span>,<span class="string">&#x27;c&#x27;</span>)) <span class="keyword">as</span> (pos,val);</span><br><span class="line"><span class="keyword">select</span> inline(<span class="keyword">array</span>(struct(<span class="string">&#x27;a&#x27;</span>,<span class="number">10</span>,<span class="type">date</span> <span class="string">&#x27;2015-01-01&#x27;</span>),struct(<span class="string">&#x27;b&#x27;</span>,<span class="number">20</span>,<span class="type">date</span> <span class="string">&#x27;2016-02-02&#x27;</span>))) <span class="keyword">as</span> (col1,col2,col3);</span><br><span class="line"><span class="keyword">select</span> stack(<span class="number">2</span>,<span class="string">&#x27;a&#x27;</span>,<span class="number">10</span>,<span class="type">date</span> <span class="string">&#x27;2015-01-01&#x27;</span>,<span class="string">&#x27;b&#x27;</span>,<span class="number">20</span>,<span class="type">date</span> <span class="string">&#x27;2016-01-01&#x27;</span>) <span class="keyword">as</span> (col0,col1,col2);</span><br><span class="line"></span><br><span class="line"><span class="comment">--同get_json_object,一次可取多个值</span></span><br><span class="line"><span class="keyword">select</span> json_tuple(<span class="string">&#x27;&#123;&quot;title&quot;:&quot;aaa&quot;,&quot;url&quot;:&quot;xxx&quot;&#125;&#x27;</span>,&quot;title&quot;,&quot;url&quot;) <span class="keyword">as</span> (title, url);</span><br></pre></td></tr></table></figure>
+
+<h2 id="自定义函数"><a href="#自定义函数" class="headerlink" title="自定义函数"></a>自定义函数</h2><h3 id="maven"><a href="#maven" class="headerlink" title="maven"></a>maven</h3><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.hive<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>hive-service<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.1.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="udf"><a href="#udf" class="headerlink" title="udf"></a>udf</h3><h4 id="打包上传"><a href="#打包上传" class="headerlink" title="打包上传"></a>打包上传</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.hadoop.hive.ql.exec.UDF;</span><br><span class="line"><span class="keyword">import</span> java.text.SimpleDateFormat;</span><br><span class="line"><span class="keyword">import</span> java.util.Date;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UDFSign</span> <span class="keyword">extends</span> <span class="title">UDF</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> SimpleDateFormat sdf;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">UDFSign</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    sdf = <span class="keyword">new</span> SimpleDateFormat(<span class="string">&quot;MM-dd-yyyy&quot;</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> String <span class="title">evaluate</span><span class="params">(Date bday)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>.evaluate(bday.getMonth() + <span class="number">1</span>, bday.getDate());</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> String <span class="title">evaluate</span><span class="params">(String bday)</span> <span class="keyword">throws</span> Exception</span>&#123;</span><br><span class="line">    Date date = sdf.parse(bday);</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>.evaluate(date.getMonth() + <span class="number">1</span>, date.getDate());</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> String <span class="title">evaluate</span><span class="params">(Integer month, Integer day)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (month == <span class="number">1</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> day &lt; <span class="number">20</span> ? <span class="string">&quot;aaa&quot;</span> : <span class="string">&quot;bbb&quot;</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (month == <span class="number">2</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> day &lt; <span class="number">20</span> ? <span class="string">&quot;bbb&quot;</span> : <span class="string">&quot;ccc&quot;</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="string">&quot;ddd&quot;</span>;</span><br><span class="line">    &#125; </span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="添加函数"><a href="#添加函数" class="headerlink" title="添加函数"></a>添加函数</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">add</span> jar hive<span class="number">-1.0</span><span class="number">.0</span>.jar; <span class="comment">--路径不需要用引号</span></span><br><span class="line"><span class="keyword">create</span> temporary <span class="keyword">function</span> myudf <span class="keyword">as</span> <span class="string">&#x27;com.abc.hive.UDFSign&#x27;</span>; <span class="comment">--创建函数</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">function</span> myfunc <span class="keyword">as</span> <span class="string">&#x27;myclass&#x27;</span> <span class="keyword">using</span> jar <span class="string">&#x27;hdfs:///path/to/jar&#x27;</span>;</span><br><span class="line"><span class="keyword">select</span> name,bday,myudf(bday) <span class="keyword">from</span> tudf; <span class="comment">--调用函数</span></span><br><span class="line"><span class="keyword">drop</span> temporary <span class="keyword">function</span> if <span class="keyword">exists</span> myudf; <span class="comment">--删除函数</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="genericudf"><a href="#genericudf" class="headerlink" title="genericudf"></a>genericudf</h3><h4 id="打包上传-1"><a href="#打包上传-1" class="headerlink" title="打包上传"></a>打包上传</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.hadoop.hive.ql.exec.Description;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.hive.ql.exec.UDFArgumentException;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.hive.ql.metadata.HiveException;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.hive.ql.udf.generic.GenericUDF;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.hive.ql.udf.generic.GenericUDFUtils;</span><br><span class="line"><span class="keyword">import</span> org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Description(name = &quot;nvl&quot;,</span></span><br><span class="line"><span class="meta">    value = &quot;_FUNC_(value,default_value) - Returns default value if value is null else returns value&quot;,</span></span><br><span class="line"><span class="meta">    extended = &quot;Example:\n&quot;</span></span><br><span class="line"><span class="meta">        + &quot; &gt; SELECT _FUNC_(null,&#x27;bla&#x27;) FROM src LIMIT 1;\n&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UDFSign2</span> <span class="keyword">extends</span> <span class="title">GenericUDF</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> GenericUDFUtils.ReturnObjectInspectorResolver inspectorResolver;</span><br><span class="line">  <span class="keyword">private</span> ObjectInspector[] objectInspectors = <span class="keyword">new</span> ObjectInspector[]&#123;&#125;;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> ObjectInspector <span class="title">initialize</span><span class="params">(ObjectInspector[] arguments)</span> <span class="keyword">throws</span> UDFArgumentException </span>&#123;</span><br><span class="line">    objectInspectors = arguments;</span><br><span class="line">    <span class="keyword">if</span> (arguments.length != <span class="number">2</span>) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> UDFArgumentLengthException(<span class="string">&quot;The operator &#x27;NVL&#x27; accepts 2 arguments.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    inspectorResolver = <span class="keyword">new</span> GenericUDFUtils.ReturnObjectInspectorResolver(<span class="keyword">true</span>);</span><br><span class="line">    <span class="keyword">if</span> (!(inspectorResolver.update(arguments[<span class="number">0</span>]) &amp;&amp; inspectorResolver.update(arguments[<span class="number">1</span>]))) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> UDFArgumentTypeException(<span class="number">2</span>, <span class="string">&quot;The 1st and 2nd args of function NLV should have the same type, &quot;</span></span><br><span class="line">          + <span class="string">&quot;but they are different: \&quot;&quot;</span> + arguments[<span class="number">0</span>].getTypeName()</span><br><span class="line">          + <span class="string">&quot;\&quot; and \&quot;&quot;</span> + arguments[<span class="number">1</span>].getTypeName() + <span class="string">&quot;\&quot;&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> inspectorResolver.get();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Object <span class="title">evaluate</span><span class="params">(DeferredObject[] arguments)</span> <span class="keyword">throws</span> HiveException </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> inspectorResolver.convertIfNecessary(arguments[<span class="number">0</span>].get(), objectInspectors[<span class="number">0</span>]) == <span class="keyword">null</span> ?</span><br><span class="line">        inspectorResolver.convertIfNecessary(arguments[<span class="number">1</span>].get(), objectInspectors[<span class="number">1</span>]) :</span><br><span class="line">        inspectorResolver.convertIfNecessary(arguments[<span class="number">0</span>].get(), objectInspectors[<span class="number">0</span>]);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> String <span class="title">getDisplayString</span><span class="params">(String[] children)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;if &quot;</span> + children[<span class="number">0</span>] + <span class="string">&quot; is null &quot;</span> + <span class="string">&quot;returns&quot;</span> + children[<span class="number">1</span>];</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="添加函数-1"><a href="#添加函数-1" class="headerlink" title="添加函数"></a>添加函数</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">add</span> jar hive<span class="number">-1.0</span><span class="number">.0</span>.jar;</span><br><span class="line"><span class="keyword">create</span> temporary <span class="keyword">function</span> myudf2 <span class="keyword">as</span> <span class="string">&#x27;com.abc.hive.UDFSign2&#x27;</span>;</span><br><span class="line"><span class="keyword">select</span> myudf2(<span class="number">1</span>,<span class="number">2</span>) <span class="keyword">as</span> c1,myudf2(<span class="keyword">null</span>,<span class="number">5</span>) <span class="keyword">as</span> c2, myudf2(<span class="keyword">null</span>,&quot;mao&quot;) <span class="keyword">as</span> c3 <span class="keyword">from</span> student limit <span class="number">1</span>;</span><br><span class="line"><span class="keyword">drop</span> temporary <span class="keyword">function</span> if <span class="keyword">exists</span> myudf2;</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hive/" rel="tag"># hive</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/02/25/hive%E7%AA%97%E5%8F%A3%E4%B8%8E%E5%88%86%E6%9E%90%E5%87%BD%E6%95%B0/" rel="prev" title="hive窗口与分析函数">
+                  <i class="fa fa-chevron-left"></i> hive窗口与分析函数
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/02/26/hive%E8%AF%AD%E8%A8%80%E6%89%8B%E5%86%8C/" rel="next" title="hive语言手册">
+                  hive语言手册 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

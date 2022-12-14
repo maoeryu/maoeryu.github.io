@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="本地设置构建 hudi 后,可以通过 via 触发 shell cd hudi-cli &amp;&amp; .&#x2F;hudi-cli.sh.一个 hudi 表驻留在 DFS 上,在一个称为basePath的位置,我们需要这个位置才能连接到一个 Hudi 表.Hudi 库在内部有效地管理此表,使用.hoodie子文件夹来跟踪所有元数据. 使用 hudi- cli要初始化 hudi 表,请使用以下命令.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hudi cli">
+<meta property="og:url" content="https://maoeryu.github.io/2022/10/28/hudi%20cli/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="本地设置构建 hudi 后,可以通过 via 触发 shell cd hudi-cli &amp;&amp; .&#x2F;hudi-cli.sh.一个 hudi 表驻留在 DFS 上,在一个称为basePath的位置,我们需要这个位置才能连接到一个 Hudi 表.Hudi 库在内部有效地管理此表,使用.hoodie子文件夹来跟踪所有元数据. 使用 hudi- cli要初始化 hudi 表,请使用以下命令.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1193.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1194.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1195.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1196.png">
+<meta property="article:published_time" content="2022-10-27T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-10-28T07:46:30.527Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hudi">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1193.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/10/28/hudi%20cli/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hudi cli | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%AC%E5%9C%B0%E8%AE%BE%E7%BD%AE"><span class="nav-number">1.</span> <span class="nav-text">本地设置</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-hudi-cli"><span class="nav-number">2.</span> <span class="nav-text">使用 hudi- cli</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5%E6%8F%90%E4%BA%A4"><span class="nav-number">2.1.</span> <span class="nav-text">检查提交</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B7%B1%E5%85%A5%E5%88%B0%E7%89%B9%E5%AE%9A%E7%9A%84%E6%8F%90%E4%BA%A4"><span class="nav-number">2.2.</span> <span class="nav-text">深入到特定的提交</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E8%A7%86%E5%9B%BE"><span class="nav-number">2.3.</span> <span class="nav-text">文件系统视图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%9F%E8%AE%A1%E6%95%B0%E6%8D%AE"><span class="nav-number">2.4.</span> <span class="nav-text">统计数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BD%92%E6%A1%A3%E6%8F%90%E4%BA%A4"><span class="nav-number">2.5.</span> <span class="nav-text">归档提交</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%8B%E7%BC%A9"><span class="nav-number">2.6.</span> <span class="nav-text">压缩</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81%E5%8E%8B%E7%BC%A9"><span class="nav-number">2.7.</span> <span class="nav-text">验证压缩</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Unscheduling-Compaction"><span class="nav-number">2.7.1.</span> <span class="nav-text">Unscheduling Compaction</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Repair-Compaction"><span class="nav-number">2.7.2.</span> <span class="nav-text">Repair Compaction</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%9D%E5%AD%98%E7%82%B9%E5%92%8C%E6%81%A2%E5%A4%8D"><span class="nav-number">2.8.</span> <span class="nav-text">保存点和恢复</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%87%E7%BA%A7%E9%99%8D%E7%BA%A7%E8%A1%A8"><span class="nav-number">2.9.</span> <span class="nav-text">升级降级表</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/10/28/hudi%20cli/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hudi cli
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2022-10-28 00:00:00 / Modified: 15:46:30" itemprop="dateCreated datePublished" datetime="2022-10-28T00:00:00+08:00">2022-10-28</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="本地设置"><a href="#本地设置" class="headerlink" title="本地设置"></a>本地设置</h1><p>构建 hudi 后,可以通过 via 触发 shell <code>cd hudi-cli &amp;&amp; ./hudi-cli.sh</code>.<br>一个 hudi 表驻留在 DFS 上,在一个称为basePath的位置,我们需要这个位置才能连接到一个 Hudi 表.<br>Hudi 库在内部有效地管理此表,使用<code>.hoodie</code>子文件夹来跟踪所有元数据.</p>
+<h1 id="使用-hudi-cli"><a href="#使用-hudi-cli" class="headerlink" title="使用 hudi- cli"></a>使用 hudi- cli</h1><p>要初始化 hudi 表,请使用以下命令.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hudi-&gt;create --path &#x2F;user&#x2F;hive&#x2F;warehouse&#x2F;table1 --tableName hoodie_table_1 --tableType COPY_ON_WRITE</span><br></pre></td></tr></table></figure>
+<span id="more"></span>
+<p>要查看 hudi 表的描述,请使用以下命令:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hudi:hoodie_table_1-&gt;desc</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1193.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1194.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>以下是连接到包含 uber trips 的 Hudi 表的示例命令.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hudi:trips-&gt;connect --path &#x2F;app&#x2F;uber&#x2F;trips</span><br></pre></td></tr></table></figure>
+
+<p>一旦连接到表,许多其他命令就变得可用.<br>shell 具有上下文自动完成帮助(按 TAB),下面是所有命令的列表,本节中将回顾其中的几个</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hudi:trips-&gt;help</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><span class="line">hudi:hoodie_table_1-&gt;help</span><br><span class="line">* ! - Allows execution of operating system (OS) commands</span><br><span class="line">* &#x2F;&#x2F; - Inline comment markers (start of line only)</span><br><span class="line">* ; - Inline comment markers (start of line only)</span><br><span class="line">* bootstrap index showmapping - Show bootstrap index mapping</span><br><span class="line">* bootstrap index showpartitions - Show bootstrap indexed partitions</span><br><span class="line">* bootstrap run - Run a bootstrap action for current Hudi table</span><br><span class="line">* clean showpartitions - Show partition level details of a clean</span><br><span class="line">* cleans refresh - Refresh table metadata</span><br><span class="line">* cleans run - run clean</span><br><span class="line">* cleans show - Show the cleans</span><br><span class="line">* clear - Clears the console</span><br><span class="line">* cls - Clears the console</span><br><span class="line">* clustering run - Run Clustering</span><br><span class="line">* clustering schedule - Schedule Clustering</span><br><span class="line">* clustering scheduleAndExecute - Run Clustering. Make a cluster plan first and execute that plan immediately</span><br><span class="line">* commit rollback - Rollback a commit</span><br><span class="line">* commits compare - Compare commits with another Hoodie table</span><br><span class="line">* commit show_write_stats - Show write stats of a commit</span><br><span class="line">* commit showfiles - Show file level details of a commit</span><br><span class="line">* commit showpartitions - Show partition level details of a commit</span><br><span class="line">* commits refresh - Refresh table metadata</span><br><span class="line">* commits show - Show the commits</span><br><span class="line">* commits showarchived - Show the archived commits</span><br><span class="line">* commits sync - Sync commits with another Hoodie table</span><br><span class="line">* compaction repair - Renames the files to make them consistent with the timeline as dictated by Hoodie metadata. Use when compaction unschedule fails partially.</span><br><span class="line">* compaction run - Run Compaction for given instant time</span><br><span class="line">* compaction schedule - Schedule Compaction</span><br><span class="line">* compaction scheduleAndExecute - Schedule compaction plan and execute this plan</span><br><span class="line">* compaction show - Shows compaction details for a specific compaction instant</span><br><span class="line">* compaction showarchived - Shows compaction details for a specific compaction instant</span><br><span class="line">* compactions show all - Shows all compactions that are in active timeline</span><br><span class="line">* compactions showarchived - Shows compaction details for specified time window</span><br><span class="line">* compaction unschedule - Unschedule Compaction</span><br><span class="line">* compaction unscheduleFileId - UnSchedule Compaction for a fileId</span><br><span class="line">* compaction validate - Validate Compaction</span><br><span class="line">* connect - Connect to a hoodie table</span><br><span class="line">* create - Create a hoodie table if not present</span><br><span class="line">* date - Displays the local date and time</span><br><span class="line">* desc - Describe Hoodie Table properties</span><br><span class="line">* downgrade table - Downgrades a table</span><br><span class="line">* exit - Exits the shell</span><br><span class="line">* export instants - Export Instants and their metadata from the Timeline</span><br><span class="line">* fetch table schema - Fetches latest table schema</span><br><span class="line">* hdfsparquetimport - Imports Parquet table to a hoodie table</span><br><span class="line">* help - List all commands usage</span><br><span class="line">* marker delete - Delete the marker</span><br><span class="line">* metadata create - Create the Metadata Table if it does not exist</span><br><span class="line">* metadata delete - Remove the Metadata Table</span><br><span class="line">* metadata init - Update the metadata table from commits since the creation</span><br><span class="line">* metadata list-files - Print a list of all files in a partition from the metadata</span><br><span class="line">* metadata list-partitions - List all partitions from metadata</span><br><span class="line">* metadata refresh - Refresh table metadata</span><br><span class="line">* metadata set - Set options for Metadata Table</span><br><span class="line">* metadata stats - Print stats about the metadata</span><br><span class="line">* metadata validate-files - Validate all files in all partitions from the metadata</span><br><span class="line">* quit - Exits the shell</span><br><span class="line">* refresh - Refresh table metadata</span><br><span class="line">* repair addpartitionmeta - Add partition metadata to a table, if not present</span><br><span class="line">* repair corrupted clean files - repair corrupted clean files</span><br><span class="line">* repair deduplicate - De-duplicate a partition path contains duplicates &amp; produce repaired files to replace with</span><br><span class="line">* repair migrate-partition-meta - Migrate all partition meta file currently stored in text format to be stored in base file format. See HoodieTableConfig#PARTITION_METAFILE_USE_DATA_FORMAT.</span><br><span class="line">* repair overwrite-hoodie-props - Overwrite hoodie.properties with provided file. Risky operation. Proceed with caution!</span><br><span class="line">* savepoint create - Savepoint a commit</span><br><span class="line">* savepoint delete - Delete the savepoint</span><br><span class="line">* savepoint rollback - Savepoint a commit</span><br><span class="line">* savepoints refresh - Refresh table metadata</span><br><span class="line">* savepoints show - Show the savepoints</span><br><span class="line">* script - Parses the specified resource file and executes its commands</span><br><span class="line">* set - Set spark launcher env to cli</span><br><span class="line">* show archived commits - Read commits from archived files and show details</span><br><span class="line">* show archived commit stats - Read commits from archived files and show details</span><br><span class="line">* show env - Show spark launcher env by key</span><br><span class="line">* show envs all - Show spark launcher envs</span><br><span class="line">* show fsview all - Show entire file-system view</span><br><span class="line">* show fsview latest - Show latest file-system view</span><br><span class="line">* show logfile metadata - Read commit metadata from log files</span><br><span class="line">* show logfile records - Read records from log files</span><br><span class="line">* show rollback - Show details of a rollback instant</span><br><span class="line">* show rollbacks - List all rollback instants</span><br><span class="line">* stats filesizes - File Sizes. Display summary stats on sizes of files</span><br><span class="line">* stats wa - Write Amplification. Ratio of how many records were upserted to how many records were actually written</span><br><span class="line">* sync validate - Validate the sync by counting the number of records</span><br><span class="line">* system properties - Shows the shell&#39;s properties</span><br><span class="line">* table delete-configs - Delete the supplied table configs from the table.</span><br><span class="line">* table recover-configs - Recover table configs, from update&#x2F;delete that failed midway.</span><br><span class="line">* table update-configs - Update the table configs with configs with provided file.</span><br><span class="line">* temp_delete - Delete view name</span><br><span class="line">* temp_query - query against created temp view</span><br><span class="line">* temp delete - Delete view name</span><br><span class="line">* temp query - query against created temp view</span><br><span class="line">* temps_show - Show all views name</span><br><span class="line">* temps show - Show all views name</span><br><span class="line">* upgrade table - Upgrades a table</span><br><span class="line">* utils loadClass - Load a class</span><br><span class="line">* version - Displays shell version</span><br></pre></td></tr></table></figure>
+
+<h2 id="检查提交"><a href="#检查提交" class="headerlink" title="检查提交"></a>检查提交</h2><p>更新插入或插入一批传入记录的任务在 Hudi 中称为提交.<br>提交提供了基本的原子性保证,因此只有提交的数据可用于查询.<br>每个提交都有一个单调递增的字符串/数字,称为提交号.<br>通常,这是我们开始提交的时间.</p>
+<p>要查看有关最近 10 次提交的一些基本信息,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hudi:trips-&gt;commits show --sortBy &quot;Total Bytes Written&quot; --desc true --limit 10</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1195.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>在每次写入开始时,Hudi 还会将 <code>.inflight</code> 提交写入 <code>.hoodie</code> 文件夹.<br>您可以使用那里的时间戳来估计提交已经进行了多长时间.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ hdfs dfs -ls &#x2F;app&#x2F;uber&#x2F;trips&#x2F;.hoodie&#x2F;*.inflight</span><br><span class="line">-rw-r--r--   3 vinoth supergroup     321984 2016-10-05 23:18 &#x2F;app&#x2F;uber&#x2F;trips&#x2F;.hoodie&#x2F;20161005225920.inflight</span><br></pre></td></tr></table></figure>
+
+<h2 id="深入到特定的提交"><a href="#深入到特定的提交" class="headerlink" title="深入到特定的提交"></a>深入到特定的提交</h2><p>要了解写入如何跨特定分区传播,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hudi:trips-&gt;commit showpartitions --commit 20161005165855 --sortBy &quot;Total Bytes Written&quot; --desc true --limit 10</span><br></pre></td></tr></table></figure>
+
+<p>如果您需要文件级粒度,我们可以执行以下操作</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hudi:trips-&gt;commit showfiles --commit 20161005165855 --sortBy &quot;Partition Path&quot;</span><br></pre></td></tr></table></figure>
+
+<h2 id="文件系统视图"><a href="#文件系统视图" class="headerlink" title="文件系统视图"></a>文件系统视图</h2><p>Hudi 将每个分区视为文件组的集合,每个文件组包含按提交顺序排列的文件切片列表.<br>以下命令允许用户查看数据集的文件切片.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hudi:stock_ticks_mor-&gt;show fsview all</span><br><span class="line">hudi:stock_ticks_mor-&gt;show fsview latest --partitionPath &quot;2018&#x2F;08&#x2F;31&quot;</span><br></pre></td></tr></table></figure>
+
+<h2 id="统计数据"><a href="#统计数据" class="headerlink" title="统计数据"></a>统计数据</h2><p>由于 Hudi 直接管理 DFS 表的文件大小,因此获得整体情况可能会很好</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hudi:trips-&gt;stats filesizes --partitionPath 2016&#x2F;09&#x2F;01 --sortBy &quot;95th&quot; --desc true --limit 10</span><br></pre></td></tr></table></figure>
+
+<p>如果 Hudi 写入需要更长的时间,可能会很好地看到任何突然增加的写入放大</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hudi:trips-&gt;stats wa</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1196.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="归档提交"><a href="#归档提交" class="headerlink" title="归档提交"></a>归档提交</h2><p>为了限制 DFS 上 <code>.commit</code> 文件的增长量,Hudi 将较旧的 <code>.commit</code> 文件(在适当考虑清洁策略的情况下)归档到 <code>commits.archived</code> 文件中.<br>这是一个序列文件,其中包含来自 commitNumber =&gt; json 的映射,其中包含有关提交的原始信息.</p>
+<h2 id="压缩"><a href="#压缩" class="headerlink" title="压缩"></a>压缩</h2><p>要了解压缩和编写器应用程序之间的延迟,请使用以下命令列出所有待处理的压缩.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hudi:trips-&gt;compactions show all</span><br></pre></td></tr></table></figure>
+
+<p>要检查特定的压实计划,请使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hudi:trips-&gt;compaction show --instant &lt;INSTANT_1&gt;</span><br></pre></td></tr></table></figure>
+
+<p>要手动安排或运行压缩,请使用以下命令.<br>此命令使用 spark 启动器执行压缩操作.</p>
+<p>注意:确保没有其他应用程序同时调度此表的压缩.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hudi:trips-&gt;help compaction schedule</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">Keyword:                   compaction schedule</span><br><span class="line">Description:               Schedule Compaction</span><br><span class="line"> Keyword:                  sparkMemory</span><br><span class="line">   Help:                   Spark executor memory</span><br><span class="line">   Mandatory:              false</span><br><span class="line">   Default if specified:   &#39;__NULL__&#39;</span><br><span class="line">   Default if unspecified: &#39;1G&#39;</span><br><span class="line"></span><br><span class="line"> Keyword:                  propsFilePath</span><br><span class="line">   Help:                   path to properties file on localfs or dfs with configurations for hoodie client for compacting</span><br><span class="line">   Mandatory:              false</span><br><span class="line">   Default if specified:   &#39;__NULL__&#39;</span><br><span class="line">   Default if unspecified: &#39;&#39;</span><br><span class="line"></span><br><span class="line"> Keyword:                  hoodieConfigs</span><br><span class="line">   Help:                   Any configuration that can be set in the properties file can be passed here in the form of an array</span><br><span class="line">   Mandatory:              false</span><br><span class="line">   Default if specified:   &#39;__NULL__&#39;</span><br><span class="line">   Default if unspecified: &#39;&#39;</span><br><span class="line"></span><br><span class="line"> Keyword:                  sparkMaster</span><br><span class="line">   Help:                   Spark Master</span><br><span class="line">   Mandatory:              false</span><br><span class="line">   Default if specified:   &#39;__NULL__&#39;</span><br><span class="line">   Default if unspecified: &#39;local&#39;</span><br><span class="line"></span><br><span class="line">* compaction schedule - Schedule Compaction</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hudi:trips-&gt;help compaction run</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">Keyword:                   compaction run</span><br><span class="line">Description:               Run Compaction for given instant time</span><br><span class="line"> Keyword:                  parallelism</span><br><span class="line">   Help:                   Parallelism for hoodie compaction</span><br><span class="line">   Mandatory:              true</span><br><span class="line">   Default if specified:   &#39;__NULL__&#39;</span><br><span class="line">   Default if unspecified: &#39;__NULL__&#39;</span><br><span class="line"></span><br><span class="line"> Keyword:                  schemaFilePath</span><br><span class="line">   Help:                   Path for Avro schema file</span><br><span class="line">   Mandatory:              true</span><br><span class="line">   Default if specified:   &#39;__NULL__&#39;</span><br><span class="line">   Default if unspecified: &#39;__NULL__&#39;</span><br><span class="line"></span><br><span class="line"> Keyword:                  sparkMaster</span><br><span class="line">   Help:                   Spark Master</span><br><span class="line">   Mandatory:              false</span><br><span class="line">   Default if specified:   &#39;__NULL__&#39;</span><br><span class="line">   Default if unspecified: &#39;local&#39;</span><br><span class="line"></span><br><span class="line"> Keyword:                  sparkMemory</span><br><span class="line">   Help:                   Spark executor memory</span><br><span class="line">   Mandatory:              false</span><br><span class="line">   Default if specified:   &#39;__NULL__&#39;</span><br><span class="line">   Default if unspecified: &#39;4G&#39;</span><br><span class="line"></span><br><span class="line"> Keyword:                  retry</span><br><span class="line">   Help:                   Number of retries</span><br><span class="line">   Mandatory:              false</span><br><span class="line">   Default if specified:   &#39;__NULL__&#39;</span><br><span class="line">   Default if unspecified: &#39;1&#39;</span><br><span class="line"></span><br><span class="line"> Keyword:                  compactionInstant</span><br><span class="line">   Help:                   Base path for the target hoodie table</span><br><span class="line">   Mandatory:              false</span><br><span class="line">   Default if specified:   &#39;__NULL__&#39;</span><br><span class="line">   Default if unspecified: &#39;__NULL__&#39;</span><br><span class="line"></span><br><span class="line"> Keyword:                  propsFilePath</span><br><span class="line">   Help:                   path to properties file on localfs or dfs with configurations for hoodie client for compacting</span><br><span class="line">   Mandatory:              false</span><br><span class="line">   Default if specified:   &#39;__NULL__&#39;</span><br><span class="line">   Default if unspecified: &#39;&#39;</span><br><span class="line"></span><br><span class="line"> Keyword:                  hoodieConfigs</span><br><span class="line">   Help:                   Any configuration that can be set in the properties file can be passed here in the form of an array</span><br><span class="line">   Mandatory:              false</span><br><span class="line">   Default if specified:   &#39;__NULL__&#39;</span><br><span class="line">   Default if unspecified: &#39;&#39;</span><br><span class="line"></span><br><span class="line">* compaction run - Run Compaction for given instant time</span><br></pre></td></tr></table></figure>
+
+<h2 id="验证压缩"><a href="#验证压缩" class="headerlink" title="验证压缩"></a>验证压缩</h2><p>验证压缩计划:检查压缩所需的所有文件是否存在且有效</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hudi:stock_ticks_mor-&gt;compaction validate --instant 20181005222611</span><br></pre></td></tr></table></figure>
+
+<p>注意:必须在不运行任何其他写入器/摄取应用程序的情况下执行以下命令.</p>
+<p>有时,有必要从压缩计划中删除 fileId 以加速或取消阻塞压缩操作.<br>计划压缩后在此文件上发生的任何新日志文件都将被安全地重命名,以便保留.<br>Hudi 提供以下 CLI 来支持它</p>
+<h3 id="Unscheduling-Compaction"><a href="#Unscheduling-Compaction" class="headerlink" title="Unscheduling Compaction"></a>Unscheduling Compaction</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hudi:trips-&gt;compaction unscheduleFileId --fileId &lt;FileUUID&gt;</span><br></pre></td></tr></table></figure>
+
+<p>在其他情况下,需要恢复整个压缩计划.<br>以下 CLI 支持此功能</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hudi:trips-&gt;compaction unschedule --compactionInstant &lt;compactionInstant&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Repair-Compaction"><a href="#Repair-Compaction" class="headerlink" title="Repair Compaction"></a>Repair Compaction</h3><p>上述压缩非调度操作有时可能会部分失败(例如 -&gt; DFS 暂时不可用).<br>如果部分失败,压缩操作可能会与文件切片的状态不一致.<br>当您运行时 compaction validate,您会注意到无效的压缩操作(如果有的话).<br>在这些情况下,修复命令来救援,它会重新排列文件分片,使文件分片没有丢失,并且文件分片与压缩计划一致</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">hudi:stock_ticks_mor-&gt;compaction repair --instant 20181005222611</span><br><span class="line"></span><br><span class="line">......</span><br><span class="line">Compaction successfully repaired</span><br><span class="line">.....</span><br></pre></td></tr></table></figure>
+
+<h2 id="保存点和恢复"><a href="#保存点和恢复" class="headerlink" title="保存点和恢复"></a>保存点和恢复</h2><p>顾名思义,&quot;保存点&quot;将表保存到提交时间,以便您可以在以后需要时将表恢复到此保存点.</p>
+<p>触发 hudi 表的保存点</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">connect --path &#x2F;tmp&#x2F;hudi_trips_cow&#x2F;</span><br><span class="line">commits show</span><br><span class="line">set --conf SPARK_HOME&#x3D;&lt;SPARK_HOME&gt;</span><br><span class="line">savepoint create --commit 20220128160245447 --sparkMaster local[2]</span><br></pre></td></tr></table></figure>
+
+<p>要将表恢复到保存点提交之一:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">connect --path &#x2F;tmp&#x2F;hudi_trips_cow&#x2F;</span><br><span class="line">commits show</span><br><span class="line">set --conf SPARK_HOME&#x3D;&lt;SPARK_HOME&gt;</span><br><span class="line">savepoints show</span><br><span class="line">savepoint rollback --savepoint 20220128160245447 --sparkMaster local[2]</span><br></pre></td></tr></table></figure>
+
+<h2 id="升级降级表"><a href="#升级降级表" class="headerlink" title="升级降级表"></a>升级降级表</h2><p>如果用户需要降级使用的 Hudi 库的版本,则需要在库降级之前在较新版本的 Hudi CLI 上手动降级 Hudi 表.<br>要通过 CLI 降级 Hudi 表,用户需要指定目标 Hudi 表版本,如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">connect --path &lt;table_path&gt;</span><br><span class="line">downgrade table --toVersion &lt;target_version&gt;</span><br></pre></td></tr></table></figure>
+
+<p>例如,要将表从版本FIVE(5)(当前版本)降级到TWO(2),您应该运行(根据您的环境使用适当的 Spark master)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">downgrade table --toVersion TWO --sparkMaster local[2]</span><br></pre></td></tr></table></figure>
+<p>或者</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">downgrade table --toVersion 2 --sparkMaster local[2]</span><br></pre></td></tr></table></figure>
+
+<p>您可以通过查看表路径下的hoodie.table.version属性来验证表版本:.hoodie/hoodie.properties</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hoodie.table.version&#x3D;2</span><br></pre></td></tr></table></figure>
+
+<p>Hudi CLI 还提供手动升级 Hudi 表的功能.<br>通过 CLI 升级 Hudi 表:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">upgrade table --toVersion &lt;target_version&gt;</span><br></pre></td></tr></table></figure>
+
+<p>升级Hudi库后,在DeltaStreamer等不同部署模式下,表升级由Hudi写客户端自动处理,用户无需手动升级.<br>这种自动表升级是一般推荐的方式,而不是使用upgradeCLI 命令.</p>
+<p>从表版本 ONE 升级到 TWO 表需要密钥生成器相关配置,例如&quot;hoodie.datasource.write.recordkey.field&quot;,该配置仅在用户配置写入作业时可用.<br>因此不支持通过 CLI 将表从版本 ONE 升级到 TWO,而用户应依赖写入客户端中的自动升级.</p>
+<p>您也可以在不指定目标版本的情况下运行升级命令.<br>在这种情况下,使用与库发布版本对应的最新表版本:<br>upgrade table</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hudi/" rel="tag"># hudi</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/10/28/hudi%E6%9C%8D%E5%8A%A1/" rel="prev" title="hudi服务">
+                  <i class="fa fa-chevron-left"></i> hudi服务
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/10/31/hudi%20try/" rel="next" title="hudi try">
+                  hudi try <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

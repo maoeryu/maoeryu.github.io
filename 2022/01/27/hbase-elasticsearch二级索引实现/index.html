@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="使用elasticserch实现hbase数据二级索引.HBase作为基础存储,Elasticsearch作为数据索引.根据业务需求,判断哪些需要建立二级索引,存入Elasticsearch中,建立索引与HBase的关联外键,可以实现实时搜索.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hbase-elasticsearch二级索引实现">
+<meta property="og:url" content="https://maoeryu.github.io/2022/01/27/hbase-elasticsearch%E4%BA%8C%E7%BA%A7%E7%B4%A2%E5%BC%95%E5%AE%9E%E7%8E%B0/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="使用elasticserch实现hbase数据二级索引.HBase作为基础存储,Elasticsearch作为数据索引.根据业务需求,判断哪些需要建立二级索引,存入Elasticsearch中,建立索引与HBase的关联外键,可以实现实时搜索.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbase-es1.jpg">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbase-es2.png">
+<meta property="article:published_time" content="2022-01-26T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-08-10T08:09:50.355Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="elasticsearch">
+<meta property="article:tag" content="hbase">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/hbase-es1.jpg">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/01/27/hbase-elasticsearch%E4%BA%8C%E7%BA%A7%E7%B4%A2%E5%BC%95%E5%AE%9E%E7%8E%B0/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hbase-elasticsearch二级索引实现 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#hbase"><span class="nav-number">1.1.</span> <span class="nav-text">hbase</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#elasticsearch"><span class="nav-number">1.2.</span> <span class="nav-text">elasticsearch</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E6%B5%81%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">构建流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2%E6%B5%81%E7%A8%8B"><span class="nav-number">2.1.</span> <span class="nav-text">查询流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E8%BF%87%E7%A8%8B"><span class="nav-number">2.2.</span> <span class="nav-text">实现过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E8%AE%BE%E8%AE%A1"><span class="nav-number">2.3.</span> <span class="nav-text">存储设计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E7%B4%A2%E5%BC%95"><span class="nav-number">2.4.</span> <span class="nav-text">创建索引</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%B4%E6%98%8E"><span class="nav-number">2.4.1.</span> <span class="nav-text">说明</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%9A%E5%8A%A1%E4%BB%A3%E7%A0%81"><span class="nav-number">3.</span> <span class="nav-text">业务代码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E6%B5%81%E7%A8%8B"><span class="nav-number">3.1.</span> <span class="nav-text">实现流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2%E6%8E%A5%E5%8F%A3"><span class="nav-number">3.2.</span> <span class="nav-text">查询接口</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81"><span class="nav-number">4.</span> <span class="nav-text">代码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#controller"><span class="nav-number">4.1.</span> <span class="nav-text">controller</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#service"><span class="nav-number">4.2.</span> <span class="nav-text">service</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#entity"><span class="nav-number">4.3.</span> <span class="nav-text">entity</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/01/27/hbase-elasticsearch%E4%BA%8C%E7%BA%A7%E7%B4%A2%E5%BC%95%E5%AE%9E%E7%8E%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hbase-elasticsearch二级索引实现
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-01-27 00:00:00" itemprop="dateCreated datePublished" datetime="2022-01-27T00:00:00+08:00">2022-01-27</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-08-10 16:09:50" itemprop="dateModified" datetime="2022-08-10T16:09:50+08:00">2022-08-10</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>使用elasticserch实现hbase数据二级索引.<br>HBase作为基础存储,Elasticsearch作为数据索引.<br>根据业务需求,判断哪些需要建立二级索引,存入Elasticsearch中,建立索引与HBase的关联外键,可以实现实时搜索.</p>
+<span id="more"></span>
+
+<h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><h3 id="hbase"><a href="#hbase" class="headerlink" title="hbase"></a>hbase</h3><p>HBase是一个构建在HDFS之上,用于海量数据/分布式列存储系统,在HBase中,<br>表的每行都是按照RowKey的字典序排序存储,表的数据是按照RowKey区间进行分割存储成多个region.</p>
+<p>所以,HBase主要适用以下两种常见场景:<br>1.适用于基于RowKey的单行数据快速随机读写;<br>2.适合基于RowKey前缀的范围扫描;</p>
+<blockquote>
+<p>为什么需要HBase二级索引?</p>
+</blockquote>
+<p>HBase里面只有RowKey作为一级索引,如果要对库里的非RowKey字段进行数据检索和查询,往往要通过MapReduce/Spark等分布式计算框架进行,硬件资源消耗和时间延迟都会比较高.<br>为了HBase的数据查询更高效/适应更多的场景,诸如使用非RowKey字段检索也能做到秒级响应,或者支持各个字段进行模糊查询和多字段组合查询等,因此需要在HBase上面构建二级索引,以满足现实中更复杂多样的业务需求.</p>
+<blockquote>
+<p>为什么不直接存入es? </p>
+</blockquote>
+<p>一行数据大量字段,而查询时只需要少量字段,如果向es中写入一行数据所有字段,就会导致大量数据不是用来搜索的,这样会占用大量的磁盘空间,影响查询效率.</p>
+<h3 id="elasticsearch"><a href="#elasticsearch" class="headerlink" title="elasticsearch"></a>elasticsearch</h3><p>构建二级索引的两种方式:准实时同步/非实时同步<br>1.准实时同步<br>使用自定义代码,每次插入/更新/删除数据时,插入Elasticsearch索引.</p>
+<p>2.非实时同步<br>定时任务,每天定时更新Elasticsearch索引.</p>
+<h2 id="构建流程"><a href="#构建流程" class="headerlink" title="构建流程"></a>构建流程</h2><blockquote>
+<p>增量索引<br>日常持续接入的数据源,进行增量的索引更新.</p>
+</blockquote>
+<blockquote>
+<p>全量索引<br>配套基于Spark/MapReduce的批量索引创建/更新程序,用于初次或重建已有HBase库表的索引.</p>
+</blockquote>
+<h3 id="查询流程"><a href="#查询流程" class="headerlink" title="查询流程"></a>查询流程</h3><p>Elasticsearch构建其他数据列和RowKey行键之间的对应关系的索引,基于多维查询条件,获取对应的RowKey列表,找到RowKey之后,HBase本身就有基于RowKey的索引,通过RowKey就可以找到HBase中的对应记录,这种方式也是比较高效的查找到HBase中的记录.</p>
+<img src="/images/hbase-es1.jpg" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="实现过程"><a href="#实现过程" class="headerlink" title="实现过程"></a>实现过程</h3><p>实际业务中,一篇文章要分成标题和正文,但是正文的量是比较大的,那么一般会在elasticsearch中存储标题/作者等信息,在hbase中存储正文.<br>这样,通过elasticsearch的倒排索引列表检索到关键词的文档id,然后根据文档id在hbase中查询出具体的正文.</p>
+<h3 id="存储设计"><a href="#存储设计" class="headerlink" title="存储设计"></a>存储设计</h3><p>分析数据哪些字段需要构建索引,文章数据(id/title/author/describe/content).</p>
+<h3 id="创建索引"><a href="#创建索引" class="headerlink" title="创建索引"></a>创建索引</h3><p>创建一个新的索引<code>articles</code>.</p>
+<p><code>PUT articles</code></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;settings&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;number_of_shards&quot;</span>: <span class="number">1</span>,</span><br><span class="line">    <span class="attr">&quot;number_of_replicas&quot;</span>: <span class="number">0</span>,</span><br><span class="line">    <span class="attr">&quot;analysis&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;analyzer&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;ik&quot;</span>: &#123;</span><br><span class="line">          <span class="attr">&quot;tokenizer&quot;</span>: <span class="string">&quot;ik_max_word&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">&quot;mappings&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;dynamic&quot;</span>: <span class="string">&quot;strict&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;_source&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;includes&quot;</span>: [</span><br><span class="line">        <span class="string">&quot;id&quot;</span>,</span><br><span class="line">        <span class="string">&quot;title&quot;</span>,</span><br><span class="line">        <span class="string">&quot;from&quot;</span>,</span><br><span class="line">        <span class="string">&quot;readCounts&quot;</span>,</span><br><span class="line">        <span class="string">&quot;times&quot;</span></span><br><span class="line">      ],</span><br><span class="line">      <span class="attr">&quot;excludes&quot;</span>: [</span><br><span class="line">        <span class="string">&quot;content&quot;</span></span><br><span class="line">      ]</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;properties&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;id&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;keyword&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;store&quot;</span>: <span class="literal">true</span></span><br><span class="line">      &#125;,</span><br><span class="line">      <span class="attr">&quot;title&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;store&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">        <span class="attr">&quot;index&quot;</span>: <span class="literal">true</span>,</span><br><span class="line">        <span class="attr">&quot;analyzer&quot;</span>: <span class="string">&quot;ik_max_word&quot;</span></span><br><span class="line">      &#125;,</span><br><span class="line">      <span class="attr">&quot;from&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;keyword&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;store&quot;</span>: <span class="literal">true</span></span><br><span class="line">      &#125;,</span><br><span class="line">      <span class="attr">&quot;readCounts&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;integer&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;store&quot;</span>: <span class="literal">true</span></span><br><span class="line">      &#125;,</span><br><span class="line">      <span class="attr">&quot;content&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;store&quot;</span>: <span class="literal">false</span>,</span><br><span class="line">        <span class="attr">&quot;index&quot;</span>: <span class="literal">false</span></span><br><span class="line">      &#125;,</span><br><span class="line">      <span class="attr">&quot;times&quot;</span>: &#123;</span><br><span class="line">        <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;keyword&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;index&quot;</span>: <span class="literal">false</span></span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h4><blockquote>
+<p>存储的字段都创建索引,毕竟不创建索引就不能查询.<br>根据实际情况,字段是否需要设置分词,如果字段不需要分词,直接指定字段为 keyword.<br>查询时仅需要返回文档的id,不需要文档的内容,所以存储的字段可以禁用存储,大幅度节省磁盘空间.<br>如果存储的字段不需要进行排序/聚合/脚本运算,可以禁用doc_values,也可以节省磁盘空间.</p>
+</blockquote>
+<p>1.<code>dynamic</code><br>true:遇到陌生字段就dynamic mapping.<br>false:遇到陌生字段就忽略.<br>strict:遇到陌生字段就报错.</p>
+<p>2.<code>_source</code><br>默认情况下,Elasticsearch里面有2份内容,<br>一份是原始文档,也就是<code>_source</code>字段里的内容,在Elasticsearch中搜索文档,查看的文档内容就是<code>_source</code>中的内容.<br>另一份是倒排索引,倒排索引中的数据结构是倒排记录表,记录了词项和文档之间的对应关系.<br>在mapping中通过includes/excludes参数来调整source字段的内容.</p>
+<p><code>includes</code>,包含的字段.<br><code>excludes</code>,排除的字段.</p>
+<p>3.<code>store</code><br>单独设置此字段是否存储(是否在<code>_source</code>之外再独立存储一份),<code>&quot;store&quot;: yes</code>,默认no.</p>
+<p><code>_source</code>是源文档,当索引数据的时候,elasticsearch会保存一份源文档到<code>_source</code>,如果文档的某一字段设置了store为yes,会在<code>_source</code>存储之外再为这个字段独立进行存储.</p>
+<p>对内容太长的字段,将store设置为yes,一般来说还应该在<code>_source</code>排除exclude掉这个字段,这时候索引的字段,不会保存在<code>_source</code>里了,会独立存储一份,查询时<code>_source</code>里也没有这个字段了,但是还是可以通过指定返回字段来获取,但是会有额外的IO开销,因为<code>_source</code>的读取只有一次IO,而已经exclude并设置store的字段,是独立存储的需要一个新的IO.</p>
+<p>4.<code>index</code><br>控制字段值是否被索引,true/false,默认为true.<br>没有索引的字段是不可查询的,es默认为每一个字段建立索引,<code>&quot;index&quot;:true</code>.</p>
+<p>5.<code>analyzer</code><br>Elasticsearch也需要安装IK分词器以实现对中文更好的分词支持.<br>IK Analyzer的版本会随着elasticsearch版本更新而更新.</p>
+<p>ik_max_word会将文本做最细粒度的拆分,比如会将“中华人民共和国国歌”拆分为“中华人民共和国,中华人民,中华,华人,人民共和国,人民,人,民,共和国,共和,和,国国,国歌”,会穷尽各种可能的组合.</p>
+<p>ik_smart会做最粗粒度的拆分,比如会将“中华人民共和国国歌”拆分为“中华人民共和国,国歌”.</p>
+<h2 id="业务代码"><a href="#业务代码" class="headerlink" title="业务代码"></a>业务代码</h2><p>数据源根据业务特点划分为索引数据和原始数据:<br>索引数据:指需要被检索的字段,存储在Elasticsearch集群中;<br>原始数据:指不需要被Elasticsearch检索的字段,包括某些超长的文本数据等,存储在HBase集群中;</p>
+<h3 id="实现流程"><a href="#实现流程" class="headerlink" title="实现流程"></a>实现流程</h3><p>将HBase的rowkey设定为Elasticsearch的文档ID,搜索时根据灵活的业务查询条件,先从Elasticsearch里面全文检索出相对应的文档,从而获取出文档ID,即拿到了rowkey,再从HBase里面抽取数据.</p>
+<blockquote>
+<p>将rowkey作为ES文档的id:</p>
+<p>id需要全局唯一性,而HBase中数据的rowkey已经保证了这一点.<br>rowkey不需要被搜索.<br>查询时,只返回文档id即可,不需要返回文档内容(即做了二级索引的那些列的值),能提高查询效率.<br>rowkey如果作为文档的一个列进行存储,会带来一些不必要的磁盘空间占用.</p>
+</blockquote>
+<blockquote>
+<p>优点<br>各取所长,发挥两个开源组件各自的优势. </p>
+</blockquote>
+<p>发挥了Elasticsearch的全文检索的优势,能够快速根据灵活的查询条件检索出相关度最高的结果.<br>同时减少了Elasticsearch的存储压力,这种场景下不需要存储检索无关的内容,甚至可以禁用<code>_source</code>,节约一半的存储空间,同时提升最少30%的写入速度.<br>避免了Elasticsearch大数据量下查询返回慢的问题,大数据量下HBase的抽取速度明显优于Elasticsearch.</p>
+<blockquote>
+<p>不足<br>两个组件之间存在写入时效不一致的问题</p>
+</blockquote>
+<p>相对而言,Elasticsearch的入库速度肯定是要快于HBase的,这是需要业务容忍一定的时效性.<br>同时,部署和管理两个组件增加了开发维护成本.</p>
+<p>总的来说,如果要使用Elasticsearch/HBase,要充分考虑实际业务数据是否适合这种模式,是否需要构建基于Elasticsearch的二级索引. </p>
+<h3 id="查询接口"><a href="#查询接口" class="headerlink" title="查询接口"></a>查询接口</h3><p><code>/article/saveToEs</code><br>将article列表数据写入到Elasticsearch中articles索引.</p>
+<img src="/images/hbase-es2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p><code>/article/saveToHbase</code><br>将article列表数据写入到HBase数据库hbase_articles.</p>
+<p><code>/article/queryByTitle/tom</code><br>通过article中title(标题)参数从Elasticsearch查询多条article记录.<br><code>/article/getOnlyOne/tom1</code><br>通过title(标题)参数从Elasticsearch精确查询一条article记录.</p>
+<p><code>/article/queryByRowkey/1</code><br>通过rowkey从HBase中获取一条article记录.<br>通过rowkey列表对象从HBase中获取多条article记录.</p>
+<p><code>/article/queryBySecondaryIndex/tom1</code><br>通过title(标题)从HBase中获取一条article完整记录,含content字段.<br><code>/article/getMoreBySecondaryIndex/tom</code><br>通过title(标题)从HBase中获取多条article完整记录,含content字段.</p>
+<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><h3 id="controller"><a href="#controller" class="headerlink" title="controller"></a>controller</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;article&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ArticleController</span> </span>&#123;</span><br><span class="line">  <span class="meta">@Resource</span></span><br><span class="line">  <span class="keyword">private</span> ArticleService articleService;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@GetMapping(&quot;saveToEs&quot;)</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> String <span class="title">saveToEs</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      List&lt;Article&gt; articles = ExcelUtil.getExcelInfo();</span><br><span class="line">      articleService.saveToEs(articles);</span><br><span class="line">      <span class="keyword">return</span> <span class="string">&quot;Save to Elasticsearch&quot;</span>;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">      e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;Failed.&quot;</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@GetMapping(&quot;saveToHbase&quot;)</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> String <span class="title">saveToHbase</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      List&lt;Article&gt; articles = ExcelUtil.getExcelInfo();</span><br><span class="line">      articleService.saveToHbase(articles);</span><br><span class="line">      <span class="keyword">return</span> <span class="string">&quot;Save to HBase&quot;</span>;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">      e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;Failed.&quot;</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@GetMapping(&quot;queryByRowkey/&#123;rowkey&#125;&quot;)</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Article <span class="title">queryByRowkey</span><span class="params">(<span class="meta">@PathVariable</span> String rowkey)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> articleService.getFromHbase(rowkey);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@GetMapping(&quot;queryByTitle/&#123;title&#125;&quot;)</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> List&lt;Article&gt; <span class="title">queryByTitle</span><span class="params">(<span class="meta">@PathVariable</span> String title)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> articleService.queryByTitle(title);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@GetMapping(&quot;getOnlyOne/&#123;title&#125;&quot;)</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Article <span class="title">getOnlyOne</span><span class="params">(<span class="meta">@PathVariable</span> String title)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> articleService.getOnlyOne(title);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@GetMapping(&quot;queryBySecondaryIndex/&#123;title&#125;&quot;)</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Article <span class="title">getOneFullArticleByTitle</span><span class="params">(<span class="meta">@PathVariable</span> String title)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> articleService.getOneFullArticleFromHbase(title);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@GetMapping(&quot;getMoreBySecondaryIndex/&#123;title&#125;&quot;)</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> List&lt;Article&gt; <span class="title">getMoreFullArticlesByTitle</span><span class="params">(<span class="meta">@PathVariable</span> String title)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> articleService.getMultiFullArticlesFromHbase(title);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="service"><a href="#service" class="headerlink" title="service"></a>service</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ArticleService</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String familyName = <span class="string">&quot;d&quot;</span>;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String title = <span class="string">&quot;title&quot;</span>;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String from = <span class="string">&quot;from&quot;</span>;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String times = <span class="string">&quot;times&quot;</span>;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String readCounts = <span class="string">&quot;readCounts&quot;</span>;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String content = <span class="string">&quot;content&quot;</span>;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String es_index = <span class="string">&quot;articles&quot;</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">byte</span>[] FAMILY = Bytes.toBytes(<span class="string">&quot;d&quot;</span>);</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Resource</span></span><br><span class="line">  <span class="keyword">private</span> Connection hbaseConnection;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Resource</span></span><br><span class="line">  <span class="keyword">private</span> RestHighLevelClient client;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">saveToHbase</span><span class="params">(List&lt;Article&gt; articleList)</span> </span>&#123;</span><br><span class="line">    List&lt;Put&gt; putList = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    <span class="keyword">for</span> (Article article : articleList) &#123;</span><br><span class="line">      Put put = <span class="keyword">new</span> Put(Bytes.toBytes(article.getId()));</span><br><span class="line">      <span class="keyword">if</span> (StringUtils.isNotEmpty(article.getTitle())) &#123;</span><br><span class="line">        put.addColumn(FAMILY, title.getBytes(), article.getTitle().getBytes());</span><br><span class="line">        put.addColumn(FAMILY, from.getBytes(), article.getFrom().getBytes());</span><br><span class="line">        put.addColumn(FAMILY, times.getBytes(), article.getTimes().getBytes());</span><br><span class="line">        put.addColumn(FAMILY, readCounts.getBytes(), article.getReadCounts().getBytes());</span><br><span class="line">        put.addColumn(FAMILY, content.getBytes(), article.getContent().getBytes());</span><br><span class="line">        putList.add(put);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> (Table table = hbaseConnection.getTable(TableName.valueOf(<span class="string">&quot;xx1&quot;</span>))) &#123;</span><br><span class="line">      table.put(putList);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">      e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">saveToEs</span><span class="params">(List&lt;Article&gt; articleList)</span> </span>&#123;</span><br><span class="line">    insertBatch(articleList);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> List&lt;Article&gt; <span class="title">queryByTitle</span><span class="params">(String qTitle)</span> </span>&#123;</span><br><span class="line">    SearchSourceBuilder builder = <span class="keyword">new</span> SearchSourceBuilder();</span><br><span class="line">    builder.query(<span class="keyword">new</span> TermQueryBuilder(title, qTitle));</span><br><span class="line">    builder.size(<span class="number">5</span>);</span><br><span class="line">    <span class="keyword">return</span> search(builder);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Article <span class="title">getOnlyOne</span><span class="params">(String qTitle)</span> </span>&#123;</span><br><span class="line">    SearchSourceBuilder builder = <span class="keyword">new</span> SearchSourceBuilder();</span><br><span class="line">    MatchQueryBuilder matchQueryBuilder = <span class="keyword">new</span> MatchQueryBuilder(<span class="string">&quot;title&quot;</span>, qTitle);</span><br><span class="line">    matchQueryBuilder.operator(Operator.AND);</span><br><span class="line">    builder.query(matchQueryBuilder);</span><br><span class="line">    builder.size(<span class="number">1</span>);</span><br><span class="line">    List&lt;Article&gt; articles = search(builder);</span><br><span class="line">    <span class="keyword">if</span> (articles.size() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> articles.get(<span class="number">0</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Article <span class="title">getFromHbase</span><span class="params">(String rowKey)</span> </span>&#123;</span><br><span class="line">    Result result = getRow(rowKey);</span><br><span class="line">    <span class="keyword">if</span> (result != <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">if</span> (!result.isEmpty()) &#123;</span><br><span class="line">        Article article = <span class="keyword">new</span> Article();</span><br><span class="line">        article.setId(Bytes.toString(result.getRow()));</span><br><span class="line">        article.setTitle(Bytes.toString(result.getValue(Bytes.toBytes(familyName), Bytes.toBytes(title))));</span><br><span class="line">        article.setFrom(Bytes.toString(result.getValue(Bytes.toBytes(familyName), Bytes.toBytes(from))));</span><br><span class="line">        article.setTimes(Bytes.toString(result.getValue(Bytes.toBytes(familyName), Bytes.toBytes(times))));</span><br><span class="line">        article.setReadCounts(Bytes.toString(result.getValue(Bytes.toBytes(familyName), Bytes.toBytes(readCounts))));</span><br><span class="line">        article.setContent(Bytes.toString(result.getValue(Bytes.toBytes(familyName), Bytes.toBytes(content))));</span><br><span class="line">        <span class="keyword">return</span> article;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> List&lt;Article&gt; <span class="title">getMoreFromHbase</span><span class="params">(List&lt;String&gt; lstRowkey)</span> </span>&#123;</span><br><span class="line">    List&lt;Article&gt; articles = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    <span class="keyword">for</span> (String rowkey : lstRowkey) &#123;</span><br><span class="line">      articles.add(getFromHbase(rowkey));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> articles;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Article <span class="title">getOneFullArticleFromHbase</span><span class="params">(String title)</span> </span>&#123;</span><br><span class="line">    Article article = getOnlyOne(title);</span><br><span class="line">    article = getFromHbase(article.getId());</span><br><span class="line">    <span class="keyword">return</span> article;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> List&lt;Article&gt; <span class="title">getMultiFullArticlesFromHbase</span><span class="params">(String title)</span> </span>&#123;</span><br><span class="line">    List&lt;Article&gt; articles = queryByTitle(title);</span><br><span class="line">    List&lt;String&gt; lstString = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    <span class="keyword">for</span> (Article article : articles) &#123;</span><br><span class="line">      <span class="keyword">if</span> (article != <span class="keyword">null</span>) &#123;</span><br><span class="line">        lstString.add(article.getId());</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    articles = getMoreFromHbase(lstString);</span><br><span class="line">    <span class="keyword">return</span> articles;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">insertBatch</span><span class="params">(List&lt;Article&gt; list)</span> </span>&#123;</span><br><span class="line">    BulkRequest request = <span class="keyword">new</span> BulkRequest();</span><br><span class="line">    <span class="keyword">for</span> (Article article : list) &#123;</span><br><span class="line">      Map&lt;String, Object&gt; map = Maps.newHashMap();</span><br><span class="line">      map.put(<span class="string">&quot;id&quot;</span>, article.getId());</span><br><span class="line">      map.put(<span class="string">&quot;title&quot;</span>, article.getTitle());</span><br><span class="line">      map.put(<span class="string">&quot;from&quot;</span>, article.getFrom());</span><br><span class="line">      map.put(<span class="string">&quot;readCounts&quot;</span>, article.getReadCounts());</span><br><span class="line">      map.put(<span class="string">&quot;content&quot;</span>, article.getContent());</span><br><span class="line">      map.put(<span class="string">&quot;times&quot;</span>, article.getTimes());</span><br><span class="line">      request.add(<span class="keyword">new</span> IndexRequest(es_index).id(article.getId()).source(map));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    BulkResponse response = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      response = client.bulk(request, RequestOptions.DEFAULT);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">      e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (response != <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">for</span> (BulkItemResponse bulkItemResponse : response) &#123;</span><br><span class="line">        <span class="keyword">if</span> (bulkItemResponse.isFailed()) &#123;</span><br><span class="line">          System.out.println(bulkItemResponse.getFailure().getMessage());</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> List&lt;Article&gt; <span class="title">search</span><span class="params">(SearchSourceBuilder builder)</span> </span>&#123;</span><br><span class="line">    SearchRequest request = <span class="keyword">new</span> SearchRequest();</span><br><span class="line">    request.source(builder).indices(es_index);</span><br><span class="line">    SearchResponse response = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      response = client.search(request, RequestOptions.DEFAULT);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">      e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    List&lt;Article&gt; articles = Lists.newArrayList();</span><br><span class="line">    <span class="keyword">if</span> (response != <span class="keyword">null</span> &amp;&amp; response.getHits() != <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">for</span> (SearchHit hit : response.getHits()) &#123;</span><br><span class="line">        String source = hit.getSourceAsString();</span><br><span class="line">        JSONObject object = JSON.parseObject(source);</span><br><span class="line">        Article article = <span class="keyword">new</span> Article();</span><br><span class="line">        article.setId(object.getString(<span class="string">&quot;id&quot;</span>));</span><br><span class="line">        article.setFrom(object.getString(<span class="string">&quot;from&quot;</span>));</span><br><span class="line">        article.setTimes(object.getString(<span class="string">&quot;times&quot;</span>));</span><br><span class="line">        article.setTitle(object.getString(<span class="string">&quot;title&quot;</span>));</span><br><span class="line">        article.setReadCounts(object.getString(<span class="string">&quot;readCounts&quot;</span>));</span><br><span class="line">        article.setContent(object.getString(<span class="string">&quot;content&quot;</span>));</span><br><span class="line">        articles.add(article);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> articles;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">private</span> Result <span class="title">getRow</span><span class="params">(String rowkey)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> (Table table = hbaseConnection.getTable(TableName.valueOf(<span class="string">&quot;xx1&quot;</span>))) &#123;</span><br><span class="line">      Get get = <span class="keyword">new</span> Get(Bytes.toBytes(rowkey));</span><br><span class="line">      get.addColumn(FAMILY, title.getBytes());</span><br><span class="line">      get.addColumn(FAMILY, from.getBytes());</span><br><span class="line">      get.addColumn(FAMILY, times.getBytes());</span><br><span class="line">      get.addColumn(FAMILY, readCounts.getBytes());</span><br><span class="line">      get.addColumn(FAMILY, content.getBytes());</span><br><span class="line">      <span class="keyword">return</span> table.get(get);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">      e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="entity"><a href="#entity" class="headerlink" title="entity"></a>entity</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> String id;</span><br><span class="line"><span class="keyword">private</span> String title;</span><br><span class="line"><span class="keyword">private</span> String from;</span><br><span class="line"><span class="keyword">private</span> String times;</span><br><span class="line"><span class="keyword">private</span> String readCounts;</span><br><span class="line"><span class="keyword">private</span> String content;</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/elasticsearch/" rel="tag"># elasticsearch</a>
+              <a href="/tags/hbase/" rel="tag"># hbase</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/01/13/log4j.properties/" rel="prev" title="log4j.properties">
+                  <i class="fa fa-chevron-left"></i> log4j.properties
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/03/01/yaml%E4%BD%BF%E7%94%A8/" rel="next" title="yaml使用">
+                  yaml使用 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="hbase版本为1.2.6,默认配置在hbase-common jar包中.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hbase默认配置参数">
+<meta property="og:url" content="https://maoeryu.github.io/2022/03/03/hbase%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="hbase版本为1.2.6,默认配置在hbase-common jar包中.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-03-02T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-09T06:25:02.407Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hbase">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/03/03/hbase%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hbase默认配置参数 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E8%A6%81%E9%85%8D%E7%BD%AE"><span class="nav-number">1.</span> <span class="nav-text">重要配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#master"><span class="nav-number">2.</span> <span class="nav-text">master</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#regionserver"><span class="nav-number">3.</span> <span class="nav-text">regionserver</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zookeeper"><span class="nav-number">4.</span> <span class="nav-text">zookeeper</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#client"><span class="nav-number">5.</span> <span class="nav-text">client</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E5%AE%83%E9%85%8D%E7%BD%AE"><span class="nav-number">6.</span> <span class="nav-text">其它配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E5%85%A8"><span class="nav-number">7.</span> <span class="nav-text">安全</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#web"><span class="nav-number">8.</span> <span class="nav-text">web</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#wal"><span class="nav-number">9.</span> <span class="nav-text">wal</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/03/03/hbase%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hbase默认配置参数
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-03-03 00:00:00" itemprop="dateCreated datePublished" datetime="2022-03-03T00:00:00+08:00">2022-03-03</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-09 14:25:02" itemprop="dateModified" datetime="2022-09-09T14:25:02+08:00">2022-09-09</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>hbase版本为1.2.6,默认配置在hbase-common jar包中.</p>
+<span id="more"></span>
+<h3 id="重要配置"><a href="#重要配置" class="headerlink" title="重要配置"></a>重要配置</h3><p>hbase.tmp.dir<br><code>$&#123;java.io.tmpdir&#125;/hbase-$&#123;user.name&#125;</code><br>本地文件系统上的临时目录,更改此设置以指向更永久的位置&#39;/tmp&#39;,java.io.tmpdir 的通常解析,因为&#39;/tmp&#39; 目录在机器重新启动时被清除.</p>
+<p><font color="#dd0000">hbase.rootdir</font><br><code>$&#123;hbase.tmp.dir&#125;/hbase</code><br>区域服务器共享的目录,HBase 保留的目录.URL 应该是&quot;完全限定的以包含文件系统方案&quot;.<br>例如,要指定 HDFS 目录&quot;/hbase&quot;,其中 HDFS 实例的 namenode 在端口 9000 上的 namenode.example.org 上运行,请将此值设置为 hdfs://namenode.example.org:9000/hbase.<br>默认情况下,我们也会写入任何 <code>$&#123;hbase.tmp.dir&#125;</code> 设置,通常是 /tmp,所以更改此配置,否则所有数据都将丢失机器重启.</p>
+<p>hbase.fs.tmp.dir<br><code>/user/$&#123;user.name&#125;/hbase-staging</code><br>默认文件系统中的暂存目录,用于保存临时数据的 HDFS</p>
+<p>hbase.bulkload.staging.dir<br><code>$&#123;hbase.fs.tmp.dir&#125;</code><br>默认文件系统中的暂存目录,用于批量加载的 HDFS</p>
+<p><font color="#dd0000">hbase.cluster.distributed</font><br>FALSE<br>集群将处于的模式.独立模式的可能值 false 和分布式模式的 true.如果为false,启动将在一个 JVM 中同时运行所有 HBase 和 ZooKeeper 守护进程.</p>
+<p><font color="#dd0000">hbase.zookeeper.quorum</font><br>localhost<br>ZooKeeper ensembl 中服务器的逗号分隔列表(此配置应该已命名为 hbase.zookeeper.ensemble)<br>例如,&quot;host1.mydomain.com,host2.mydomain.com,host3.mydomain.com&quot;默认设置为本地和伪分布式操作模式.对于完全分布式的设置,这应该设置为 ZooKeeper 集成服务器的完整列表.如果 HBASE_MANAGES_ZK 在 hbase-env.sh 中设置,这是 hbase 将在集群启动/停止之外启动/停止 ZooKeeper 的服务器列表.在客户端,我们将把这个列表 oensemble 成员和 hbase.zookeeper.clientPorconfig 放在一起.并将其作为 connectStrin 参数传递给 zookeeper 构造函数.</p>
+<p>hbase.local.dir<br><code>$&#123;hbase.tmp.dir&#125;/local/</code><br>本地文件系统上用作本地存储的目录.</p>
+<h3 id="master"><a href="#master" class="headerlink" title="master"></a>master</h3><p>hbase.master.port<br>16000<br>HBase Master 应该绑定到的端口.</p>
+<p>hbase.master.info.port<br>16010<br>如果您不想运行 UI 实例,则 HBase Master Web UI 的端口设置为 -1.</p>
+<p>hbase.master.info.bindAddress<br>0.0.0.0<br>HBase Master web 的绑定地址</p>
+<p>hbase.master.logcleaner.plugins<br>org.apache.hadoop.hbase.master.cleaner.TimeToLiveLogCleaner<br>以逗号分隔的 BaseLogCleanerDelegate 列表调用了 LogsCleaner 服务.这些 WAL 清理程序是按顺序调用的,因此将修剪最多文件的清理程序放在前面.实现自己的BaseLogCleanerDelegate,把它放在HBase的classpat中,并在此处添加完全限定的类名.始终在列表中添加 abovdefault 日志清理器.</p>
+<p><font color="#dd0000">hbase.master.logcleaner.ttl</font><br>600000<br>WAL 可以在 .oldlogdir 目录中停留的最长时间,之后它将被主线程清理.</p>
+<p><font color="#dd0000">hbase.master.hfilecleaner.plugins</font><br>org.apache.hadoop.hbase.master.cleaner.TimeToLiveHFileCleaner<br>BaseHFileCleanerDelegate 的逗号分隔列表调用了 HFileCleaner 服务.这些 HFiles 清理程序是按顺序调用的,因此将修剪最多文件的清理程序放在前面.实现你自己的BaseHFileCleanerDelegate,把它放在HBase的classpat中,并在此处添加完全限定的类名.始终在列表中添加 abovdefault 日志清理器,因为它们将被 ihbase-site.xml 覆盖.</p>
+<p>hbase.master.catalog.timeout<br>600000<br>来自主 tMETA 的 Catalog Janitor 的超时值.</p>
+<p>hbase.master.infoserver.redirect<br>TRUE<br>Master是否监听Master weUI端口(hbase.master.info.port)并将请求重定向到Master和RegionServer共享的weUI服务器.</p>
+<h3 id="regionserver"><a href="#regionserver" class="headerlink" title="regionserver"></a>regionserver</h3><p>hbase.regionserver.port<br>16020<br>HBase RegionServer 绑定的端口.</p>
+<p>hbase.regionserver.info.port<br>16030<br>如果您不希望 RegionServer UI 运行,则 HBase RegionServer Web US 的端口设置为 -1.</p>
+<p>hbase.regionserver.info.bindAddress<br>0.0.0.0<br>HBase RegionServer Web UI 的地址</p>
+<p>hbase.regionserver.info.port.auto<br>FALSE<br>Master 或 RegionServeUI 是否应该搜索要绑定的端口.如果 hbase.regionserver.info.port 已经在使用,则启用自动 porsearch 用于测试,默认关闭.</p>
+<p><font color="#dd0000">hbase.regionserver.handler.count</font><br>30<br>在 RegionServersSame 属性上启动的 RPC 侦听器实例的计数由 Master 用于主处理程序的计数.</p>
+<p>hbase.ipc.server.callqueue.handler.factor<br>0.1<br>决定调用队列数量的因素值 0 表示在所有处理程序之间共享单个队列值 1 表示每个处理程序都有自己的队列.</p>
+<p>hbase.ipc.server.callqueue.read.ratio<br>0<br>将调用队列拆分为读写队列指定的时间间隔(应该在0.0到1.0之间将乘以调用队列的数量,值为0表示不拆分调用队列,意思是读和写请求都会被推送到相同的一组队列值小于0.5表示读队列比写队列少值0.5表示读队列数和写队列数相同值大于0.5表示读队列比写队列多值1.0 表示除一个之外的所有队列都用于调度读取请求.示例:给定调用队列的总数为 1a read.ratio 为 0 表示:10 个队列将同时包含读/写请求 a read.ratio 为 0.3意思是:3 个队列将仅包含读取请求,7 个队列将仅包含写入请求读取.比率为 0.5 表示:5 个队列将仅包含读取请求,5 个队列将仅包含写入请求读取.比率为 0.8 表示:8 个队列将仅包含读取请求和 2 个队列将仅包含写请求读取.比率为 1 意味着:9 个队列将仅包含读取请求和 1 个队列将仅包含写入请求</p>
+<p>hbase.ipc.server.callqueue.scan.ratio<br>0<br>给定读取调用队列的数量,由调用队列总数乘以 callqueue.read.ratio 计算得出,scan.ratio 属性会将读取调用队列分为小读取队列和长读取队列,值低于 0.5 表示存在长读队列比短读队列少 0.5 表示短读队列和长读队列数量相同 值大于 0.5 表示长读队列多于短读队列queueA 值为 0 或 1 表示使用同一组队列进行获取和扫描.示例:给定读取调用队列的总数为一次扫描.比率为 0 或 1 表示:8 个队列将同时包含长读取和短读取requestsa scan.ratio 为 0.3 意味着:2 个队列将仅包含长读取请求,6 个队列将仅包含短读取请求,scan.ratio 为 0.5 表示:4 个队列将仅包含长读请求,4 个队列将仅包含短读请求扫描.比率为 0.8 表示:6 个队列将仅包含长读请求,2 个队列将仅包含短读请求</p>
+<p>hbase.regionserver.msginterval<br>3000<br>从 RegionServer 到 Mastein 的消息之间的间隔毫秒.</p>
+<p>hbase.regionserver.logroll.period<br>3600000<br>无论有多少编辑,我们都会滚动提交日志的时间段.</p>
+<p>hbase.regionserver.logroll.errors.tolerated<br>2<br>在触发服务器中止之前,我们将允许的连续 WAL 关闭错误的数量.如果在日志滚动期间关闭当前 WAL 写入器失败,设置为 0 将导致 thregion 服务器中止.即使是一个很小的值(2 或 3)也将允许一个区域服务跨越瞬态 HDFS 错误.</p>
+<p>hbase.regionserver.hlog.reader.impl<br>org.apache.hadoop.hbase.regionserver.wal.ProtobufLogReader<br>WAL 文件阅读器实现.</p>
+<p>hbase.regionserver.hlog.writer.impl<br>org.apache.hadoop.hbase.regionserver.wal.ProtobufLogWriter<br>WAL 文件编写器实现.</p>
+<p><font color="#dd0000">hbase.regionserver.global.memstore.size</font><br>未配置<br>在阻止 neupdates 并强制刷新之前,区域服务器中所有 memstore 的最大大小.默认为 40% 的堆 (0.4) 更新被阻止并强制刷新,直到区域服务器中所有 memstore 的大小达到 hbase.regionserver.global.memstore.size.lower.limit 此配置中的默认值已被有意保留为 emtpy如果存在旧的 hbase.regionserver.global.memstore.upperLimit 属性.</p>
+<p><font color="#dd0000">hbase.regionserver.global.memstore.size.lower.limit</font><br>未配置<br>强制刷新之前区域服务器中所有 memstore 的最大大小默认为 hbase.regionserver.global.memstore.size 的 95% (0.95)此值的 100% 值会导致当更新因 memstore 限制而被阻止时发生的最小可能刷新此配置中的默认值已故意保留为 emtpy,以便保留旧的 hbase.regionserver.global.memstore.lowerLimit 属性(如果存在).</p>
+<p><font color="#dd0000">hbase.regionserver.optionalcacheflushinterval</font><br>3600000<br>在自动刷新之前,编辑在内存中的最长时间默认为 1 小时.将其设置为 0 以禁用自动冲洗.</p>
+<p>hbase.regionserver.catalog.timeout<br>600000<br>从 regionserver 到 META 的 Catalog Janitor 的超时值.</p>
+<p>hbase.regionserver.dns.interface<br>default<br>区域服务的网络接口的名称应报告其 IP 地址.</p>
+<p>hbase.regionserver.dns.nameserver<br>default<br>名称服务器的主机名或 IP 地址(区域服务器应使用它来确定 thmaster 用于通信和显示目的的主机名.</p>
+<p>hbase.regionserver.region.split.policy<br>org.apache.hadoop.hbase.regionserver.IncreasingToUpperBoundRegionSplitPolicy<br>拆分策略确定何时应拆分区域.当前可用的各种其他拆分策略有ConstantSizeRegionSplitPolicy/DisabledRegionSplitPolicy/DelimitedKeyPrefixRegionSplitPolicy/KeyPrefixRegionSplitPolicy等.</p>
+<p><font color="#dd0000">hbase.regionserver.regionSplitLimit</font><br>1000<br>区域数量限制,在此之后不再进行区域分裂这不是区域数量的硬性限制,而是作为区域服务在一定限制后停止分裂的指导方针.默认设置为 1000</p>
+<h3 id="zookeeper"><a href="#zookeeper" class="headerlink" title="zookeeper"></a>zookeeper</h3><p><font color="#dd0000">zookeeper.session.timeout</font><br>90000<br>ZooKeeper 会话超时(以毫秒为单位).它以两种不同的方式使用首先,该值用于 HBase 用于连接到 ensemble 的 ZK 客户端它也被 HBase 在启动 ZK 服务器时使用,并作为&quot;maxSessionTimeout&quot;传递.Se<a target="_blank" rel="noopener" href="http://hadoop.apache.org/zookeeper/docs/current/zookeeperProgrammers.html#ch_zkSessions%E4%BE%8B%E5%A6%82,%E5%A6%82%E6%9E%9C">http://hadoop.apache.org/zookeeper/docs/current/zookeeperProgrammers.html#ch_zkSessions例如,如果</a> HBase 区域服务器连接到同样由 HBase 管理的 ZK ensemble,则 thsession 超时将是此配置指定的超时. 但是,连接到使用不同配置管理的 ensemble 的区域服务器将受到该 ensemble 的 maxSessionTimeout 的影响.因此,尽管 HBase 可能会建议使用 90 秒,但集合的最大超时时间可能低于此值,否则将优先.ZK 附带的当前默认值为 40 秒,</p>
+<p>zookeeper.znode.parent<br>/hbase<br>ZooKeeper 中 HBase 的根 ZNode.HBase所有配置了相对路径的ZooKeepe文件都会在这个节点下.默认情况下,HBase的所有ZooKeeper文件路径都配置了相对路径,所以除非改变它们都会在这个目录下.</p>
+<p>zookeeper.znode.rootserver<br>root-region-server<br>保存根区域位置的 ZNode 的路径.这是由主服务器写入并由客户端和区域服务器读取.如果给定相对路径,则父文件夹将为 <code>$&#123;zookeeper.znode.parent&#125;</code>.默认情况下,这意味着根位置存储在 /hbase/root-region-server.</p>
+<p>zookeeper.znode.acl.parent<br>acl<br>访问控制列表的根 ZNode.</p>
+<p>hbase.zookeeper.dns.interface<br>default<br>ZooKeeper 服务的网络接口的名称应报告其 IP 地址.</p>
+<p>hbase.zookeeper.dns.nameserver<br>default<br>名称服务器的主机名或 IP 地址(ZooKeeper 服务器应使用的 DNS 来确定 thmaster 用于通信和显示目的的主机名.</p>
+<p>hbase.zookeeper.peerport<br>2888<br>ZooKeeper 对等方用于相互交谈的端口请参阅 <a target="_blank" rel="noopener" href="http://hadoop.apache.org/zookeeper/docs/r3.1.1/zookeeperStarted.html#sc_RunningReplicatedZooKeepe">http://hadoop.apache.org/zookeeper/docs/r3.1.1/zookeeperStarted.html#sc_RunningReplicatedZooKeepe</a> 了解更多信息.</p>
+<p>hbase.zookeeper.leaderport<br>3888<br>ZooKeeper 用于领导选举的端口有关详细信息,请参阅 <a target="_blank" rel="noopener" href="http://hadoop.apache.org/zookeeper/docs/r3.1.1/zookeeperStarted.html#sc_RunningReplicatedZooKeepe">http://hadoop.apache.org/zookeeper/docs/r3.1.1/zookeeperStarted.html#sc_RunningReplicatedZooKeepe</a>.</p>
+<p>hbase.zookeeper.useMulti<br>TRUE<br>指示 HBase 使用 ZooKeeper 的多更新功能这允许某些 ZooKeeper 操作更快地完成并防止一些罕见的复制失败场景的问题(有关示例,请参阅 HBASE-2611 的发行说明)重要:仅当所有 ZooKeeper 都设置为 true集群中的服务器版本为 3.4,不会降级.ZooKeeper 3.4 之前的版本不支持多重更新,如果调用多重更新,也不会正常失败(参见 ZOOKEEPER-1495).</p>
+<p>hbase.config.read.zookeeper.config<br>FALSE<br>设置为 true 以允许 HBaseConfiguration 读取 ZooKeeper 属性的 thzoo.cfg 文件.不推荐将此切换为 truis,因为从 zoo.cfg 文件中读取 Zproperties 的功能已被弃用.</p>
+<p>hbase.zookeeper.property.initLimit<br>10<br>ZooKeeper 配置中的属性 zoo.cfg 初始同步阶段可以采取的滴答数.</p>
+<p>hbase.zookeeper.property.syncLimit<br>5<br>ZooKeeper 配置中的属性 zoo.cfg 在发送请求和获得确认之间可以传递的滴答数.</p>
+<p><font color="#dd0000">hbase.zookeeper.property.dataDir</font><br><code>$&#123;hbase.tmp.dir&#125;/zookeeper</code><br>ZooKeeper 的配置属性 zoo.cfg 存储快照的目录.</p>
+<p>hbase.zookeeper.property.clientPort<br>2181<br>ZooKeeper 配置中的属性 zoo.cfg 客户端将连接的端口.</p>
+<p><font color="#dd0000">hbase.zookeeper.property.maxClientCnxns</font><br>300<br>ZooKeeper 的配置 zoo.cfgLimit 的属性,关于并发连接数(在套接字级别),由 IP 地址标识的单个客户端可以对 ZooKeeper 整体的单个成员进行.设置为高以避免独立运行和伪分布式的 zk 连接问题.</p>
+<h3 id="client"><a href="#client" class="headerlink" title="client"></a>client</h3><p><font color="#dd0000">hbase.client.write.buffer</font><br>2097152<br>HTable 客户端写入缓冲区的默认大小(以字节为单位)更大的缓冲区占用更多内存——在客户端和服务端,因为服务器实例化传递的写入缓冲区以进行处理——但更大的缓冲区大小会减少进行的 RPC 的数量对于服务器的估计 -侧内存使用,evaluathbase.client.write.buffer * hbase.regionserver.handler.count</p>
+<p><font color="#dd0000">hbase.client.pause</font><br>100<br>一般客户端暂停值.在运行失败的获取/区域查找等重试之前主要用作 waibe 的值参见 hbase.client.retries.number 以了解我们如何退避这个初始暂停量以及这个暂停如何在重试时工作.</p>
+<p><font color="#dd0000">hbase.client.retries.number</font><br>35<br>最大重试次数.用作所有重试操作的最大值,例如获取单元格的值/启动行更新等.重试间隔是一个基于 hbase.client.pause 的粗略函数.首先,我们在此间隔重试,但随后通过退避,我们很快每十秒重新尝试一次.请参阅 HConstants#RETRY_BACKOFF 以了解 backuramps 是如何上升的.更改此设置和 hbase.client.pause 以适应您的工作负载.</p>
+<p>hbase.client.max.total.tasks<br>100<br>单个 HTable 实例将发送到集群的最大并发任务数.</p>
+<p>hbase.client.max.perserver.tasks<br>5<br>单个 HTable 实例将发送到单个区域服务器的最大并发任务数.</p>
+<p>hbase.client.max.perregion.tasks<br>1<br>客户端将保持到单个区域的最大并发连接数.也就是说,如果该区域有 alreadhbase.client.max.perregion.tasks 正在进行写入,则在某些写入完成之前不会将新的 put 发送到该区域.</p>
+<p><font color="#dd0000">hbase.client.scanner.caching</font><br>2147483647<br>如果不是从(本地,客户端)内存提供的,我们在调用 nexon 扫描仪时尝试获取的行数.此配置与 hbase.client.scanner.max.result.size 一起尝试有效地使用 thnetwork.默认值为 Integer.MAX_VALUE,这样网络将填充由 hbase.client.scanner.max.result.siz 定义的块大小,而不是受到特定行数的限制,因为行的大小是可变的.如果您提前知道扫描不需要超过一定数量的行,则应将此配置设置为该行限制 viScan#setCaching.更高的缓存值将启用更快的扫描器,但会消耗更多内存,并且当缓存为空时,某些 next 调用可能需要越来越长的时间不要设置此值,以便调用之间的时间大于 scannetimeout;即 hbase.client.scanner.timeout.period</p>
+<p>hbase.client.keyvalue.maxsize<br>10485760<br>指定 KeyValuinstance 的组合最大允许大小.这是为存储文件中保存的单个条目设置上限.由于它们无法拆分,因此有助于避免由于数据太大而无法进一步拆分区域.似乎将其设置为最大区域大小的一小部分.将其设置为 zeror less 会禁用检查.</p>
+<p><font color="#dd0000">hbase.client.scanner.timeout.period</font><br>60000<br>客户端扫描仪租用期(以毫秒为单位).</p>
+<p>hbase.client.localityCheck.threadPoolSize<br>2<br>无</p>
+<h3 id="其它配置"><a href="#其它配置" class="headerlink" title="其它配置"></a>其它配置</h3><p>hbase.bulkload.retries.number<br>10<br>最大重试次数.这是在面对拆分操作时尝试原子批量加载的最大迭代次数 0 意味着永不放弃.</p>
+<p>hbase.balancer.perio<br>300000<br>区域平衡器在 Master 中运行的时间段.</p>
+<p>hbase.normalizer.period<br>1800000<br>区域规范器在 Master 中运行的时间段.</p>
+<p>hbase.regions.slop<br>0.2<br>如果任何 regionserver 具有平均 + (average * slop) 区域,则重新平衡.</p>
+<p><font color="#dd0000">hbase.server.thread.wakefrequency</font><br>10000<br>搜索工作之间的睡眠时间(以毫秒为单位)用作服务线程(例如日志滚轮)的睡眠间隔.</p>
+<p>hbase.server.versionfile.writeattempts<br>3<br>在中止之前重试尝试编写版本的时间.每次尝试都由 thhbase.server.thread.wakefrequency 毫秒分隔.</p>
+<p>hbase.hregion.memstore.flush.size<br>134217728<br>如果 memstore 的大小超过此字节数,则 Memstore 将被刷新到磁盘.值由运行每个 hbase.server.thread.wakefrequency 的线程检查.</p>
+<p>hbase.hregion.percolumnfamilyflush.size.lower.bound<br>16777216<br>如果使用 FlushLargeStoresPolicy,那么每次达到 thtotal memstore limit 时,我们会找出所有 memstore 超过这个值的列族,只刷新它们,同时保留其他 memstore 低于这个限制的列族.如果没有一个家族的imemstore大小超过这个,所有的memstores都将被刷新(就像往常一样).此值应小于总 memstorthreshold (hbase.hregion.memstore.flush.size) 的一半</p>
+<p>hbase.hregion.preclose.flush.size<br>5242880<br>如果我们关闭时区域中的内存存储区是这个大小或更大,则在我们设置区域关闭标志并使该区域离线之前运行&quot;预刷新&quot;以清除内存存储区.关闭时,刷新在关闭标志下运行以清空内存.在此期间,该区域处于脱机状态,我们不进行任何写入如果内存存储内容很大,则此刷新可能需要很长时间才能完成.预刷新是为了在设置关闭标志并使该区域脱机之前清除大部分内存,因此在关闭标志下运行的 thflush 几乎没有任何作用.</p>
+<p><font color="#dd0000">hbase.hregion.memstore.block.multiplier</font><br>4<br>如果 memstore 有 hbase.hregion.memstore.block.multiplietimes hbase.hregion.memstore.flush.size 字节,则块更新.在更新流量高峰期间有用的防止内存失控.如果没有上限,memstore 会填充,因此当它刷新 thresultant 刷新文件时需要很长时间来压缩或拆分,更糟糕的是,我们 OOME.</p>
+<p><font color="#dd0000">hbase.hregion.memstore.mslab.enabled</font><br>TRUE<br>启用 MemStore-Local Allocation Buffera 功能,该功能可防止堆碎片过多的写入负载.这可以减少大型堆上 stop-the-worlGC 暂停的频率.</p>
+<p><font color="#dd0000">hbase.hregion.max.filesize</font><br>10737418240<br>最大 HStoreFile 大小.如果任何一个列族的 HStoreFiles 增长到超过此值,则托管 HRegion 将一分为二.</p>
+<p><font color="#dd0000">hbase.hregion.majorcompaction</font><br>604800000<br>区域中 alHStoreFiles 的&quot;主要&quot;压缩之间的时间(以毫秒为单位).默认值:设置为 7 天.主要压缩往往恰好在您最不需要它们时发生,因此启用它们以便它们在您的部署中运行非高峰;或者,由于此设置的周期性不太可能与您的加载相匹配,因此请通过 cron 作业或类似的外部调用来运行压缩.</p>
+<p><font color="#dd0000">hbase.hregion.majorcompaction.jitter</font><br>0.5<br>主要压缩的抖动外部边界在每个区域服务器上,我们将 hbase.region.majorcompactiointerval 乘以 thimaximum 范围内的某个随机分数.然后,我们将这个 + 或 - 产品添加到运行 nexmajor 压缩时.这个想法是主要的compactiodoes在每个区域服务器上同时发生.这个数字越小,压缩越紧密.</p>
+<p><font color="#dd0000">hbase.hstore.compactionThreshold</font><br>3<br>如果任何一个 HStor 中的 HStoreFiles 数量超过此数量(每次刷新 memstore 写入一个 HStoreFile),则运行 compactiois 将所有 HStoreFiles 文件重写为一个.更大的数字推迟了压缩,但是当它运行时,它需要更长的时间才能完成.</p>
+<p>hbase.hstore.flusher.count<br>2<br>刷新线程的数量.使用较少的线程,memstore 刷新将排队.Witmore 线程,flush 将并行执行,增加 hdfs 负载.这也导致更多的压实</p>
+<p><font color="#dd0000">hbase.hstore.blockingStoreFiles</font><br>10<br>如果任何一个 Stor 中的 StoreFiles 数量超过此数量(每次刷新 MemStore 写入一个 StoreFile),则为此 HRegion 更新 arblocked,直到完成压缩,直到超过 hbase.hstore.blockingWaitTime.</p>
+<p><font color="#dd0000">hbase.hstore.blockingWaitTime</font><br>90000<br>HRegion 在达到 hbase.hstore.blockingStoreFiles 定义的 StoreFillimit 后阻塞更新的时间在此时间过去后,即使压缩尚未完成,HRegion 也会停止阻塞更新.</p>
+<p><font color="#dd0000">hbase.hstore.compaction.max</font><br>10<br>每个&quot;次要&quot;压缩要压缩的最大 HStoreFile 数.</p>
+<p>hbase.hstore.compaction.kv.max<br>10<br>在flushin或compacting时批量读取然后写入多少个KeyValue.如果 KeyValues 大,则少做,OOMEDo 问题多,如果行宽,小.</p>
+<p>hbase.hstore.time.to.purge.deletes<br>0<br>延迟清除具有未来时间戳的删除标记的时间量.Iunset 或设置为 0,所有删除标记,包括那些具有未来时间戳的标记,正在清除下一次主要压缩.否则,将保留删除标记,直到在标记的时间戳加上此设置的值之后发生的主要压缩,以毫秒为单位</p>
+<p>hbase.storescanner.parallel.seek.enable<br>FALSE<br>在 StoreScannera 功能中启用 StoreFileScanner 并行搜索,可以减少特殊条件下的响应延迟.</p>
+<p>hbase.storescanner.parallel.seek.threads<br>10<br>启用并行搜索功能时的默认线程池大小.</p>
+<p><font color="#dd0000">hfile.block.cache.size</font><br>0.4<br>分配给 HFile/StoreFile 缓存的块的最大堆百分比(-Xmx 设置).默认为 0.4 表示分配 40%Set 为 0 禁用但不推荐;您需要足够的缓存来保存存储文件索引.</p>
+<p>hfile.block.index.cacheonwrite<br>FALSE<br>这允许在写入索引时将非根多级索引块放入 bloccache.</p>
+<p>hfile.index.block.max.size<br>131072<br>当多级块索引中的叶级/中间级或根级索引块的大小增长到这个大小时,thblock 被写出并开始一个新的块.</p>
+<p>hbase.bucketcache.ioengine<br>未配置<br>存储桶缓存内容的位置.其中之一:heapoffheap,或文件.如果是文件,请将其设置为 file:PATH_TO_FILE.Se <a target="_blank" rel="noopener" href="http://hbase.apache.org/book.html#offheap.blockcache">http://hbase.apache.org/book.html#offheap.blockcache</a> 了解更多信息</p>
+<p><font color="#dd0000">hbase.bucketcache.combinedcache.enabled</font><br>TRUE<br>bucketcache 是否与 LRon-heap 块缓存一起使用.在这种模式下,索引和bloom保存在LRblockcache中,数据块保存在bucketcache中.</p>
+<p>hbase.bucketcache.size<br>未配置<br>一个浮点数,要么代表要提供给缓存的总堆内存的百分比(如果 &lt; 1.0),要么是 BucketCache 的总容量(以兆字节计).默认值:0.0</p>
+<p>hbase.bucketcache.sizes<br>未配置<br>桶缓存的桶大小的逗号分隔列表可以是多个大小.按从小到大的顺序列出块大小您使用的大小将取决于您的数据访问模式必须是 1024 的倍数否则您将运行 int&#39;java.io.IOException: Invalid HFile block magic&#39; when you go to read from cacheIf you specified此处没有值,然后您选择默认的 bucketsizes sein 代码(请参阅 BucketAllocator#DEFAULT_BUCKET_SIZES).</p>
+<p>hfile.format.version<br>3<br>用于新文件的 HFile 格式版本版本 3 添加了对 hfiles 中标签的支持(参见 <a target="_blank" rel="noopener" href="http://hbase.apache.org/book.html#hbase.tags)%E5%88%86%E5%B8%83%E5%BC%8F%E6%97%A5%E5%BF%97%E9%87%8D%E6%94%BE%E8%A6%81%E6%B1%82%E5%90%AF%E7%94%A8%E6%A0%87%E7%AD%BE.%E5%8F%A6%E8%A7%81%E9%85%8D%E7%BD%AE&#39;hbase.replication.rpc.codec&#39;">http://hbase.apache.org/book.html#hbase.tags)分布式日志重放要求启用标签.另见配置&#39;hbase.replication.rpc.codec&#39;</a></p>
+<p>hfile.block.bloom.cacheonwrite<br>FALSE<br>为复合布隆过滤器的内联块启用写时缓存.</p>
+<p>io.storefile.bloom.block.size<br>131072<br>复合 Bloofilter 的单个块(&quot;块&quot;)的大小(以字节为单位).这个大小是近似的,因为 Bloom 块只能在数据块边界处插入,并且每个 datblock 的键数会有所不同.</p>
+<p>hbase.rs.cacheblocksonwrite<br>FALSE<br>thblock 完成时是否应将 HFile 块添加到块缓存中.</p>
+<p><font color="#dd0000">hbase.rpc.timeout</font><br>60000<br>这是为了让 RPC 层定义远程调用超时的 HBase 客户端应用程序需要多长时间(毫秒).它使用 ping 检查连接,但最终会抛出 TimeoutException.</p>
+<p><font color="#dd0000">hbase.client.operation.timeout</font><br>1200000<br>操作超时是一个顶级限制(毫秒),它确保 Table 中的阻塞操作不会被阻塞超过这个时间.在每次操作中,如果rprequest由于超时或其他原因失败,它会重试直到成功或throRetriesExhaustedException.但是如果被阻塞的总时间达到操作timeoubefore retries用尽,它会提前中断并抛出SocketTimeoutException.</p>
+<p>hbase.cells.scanned.per.heartbeat.check<br>10000<br>在心跳检查之间扫描的细胞数.在处理扫描过程中会发生心跳,以确定 thserver 是否应该停止扫描以便将心跳消息发送回 thclient.心跳消息用于在长时间运行的扫描期间保持客户端-服务器连接.较小的值意味着心跳检查会更频繁地进行,因此将对扫描的执行时间提供更严格的限制.较大的值意味着心跳检查发生的频率较低</p>
+<p>hbase.rpc.shortoperation.timeout<br>10000<br>这是&quot;hbase.rpc.timeout&quot;的另一个版本.对于集群内的那些 RPC 操作,我们依靠这个配置来为短操作设置一个短超时限制.例如,区域服务器尝试向活动主服务器报告的短 rpc 超时可以有利于更快的主服务器故障转移过程.</p>
+<p>hbase.ipc.client.tcpnodelay<br>TRUE<br>在 rpc 套接字连接上设置无延迟.Se <a target="_blank" rel="noopener" href="http://docs.oracle.com/javase/1.5.0/docs/api/java/net/Socket.html#getTcpNoDelay()">http://docs.oracle.com/javase/1.5.0/docs/api/java/net/Socket.html#getTcpNoDelay()</a></p>
+<p>hbase.regionserver.hostname<br>未配置<br>此配置适用于专家:除非您真的知道自己在做什么,否则不要设置其值当设置为非空值时,这表示底层服务器的(面向外部的)主机名请参阅 <a target="_blank" rel="noopener" href="https://issues.apache.org/">https://issues.apache.org/</a> jira/browse/HBASE-12954 了解详情.</p>
+<p>hbase.master.keytab.file<br>未配置<br>用于记录配置的 HMaster 服务器主体的 kerberos 密钥表文件的完整路径.</p>
+<p>hbase.master.kerberos.principal<br>未配置<br>前任.&quot;hbase/<code>@EXAMPLE.COM</code>&quot;.用于运行 HMaster 进程的 kerberos 主体名称.主体名称应采用以下形式:用户/<code>主机名@DOMAIN</code>.如果使用&quot;&quot;作为主机名,它将被替换为运行实例的实际主机名.</p>
+<p>hbase.regionserver.keytab.file<br>未配置<br>用于记录配置的 HRegionServer 服务器主体的 kerberos 密钥表文件的完整路径.</p>
+<p>hbase.regionserver.kerberos.principal<br>未配置<br>前任.&quot;hbase/<code>@EXAMPLE.COM</code>&quot;.用于运行 HRegionServer 进程的 kerberos 主体名称.主体名称应采用以下形式:用户/<code>主机名@DOMAIN</code>.如果&#39;&#39; 用作 thhostname 部分,它将被替换为 thrunning 实例的实际主机名.此主体的条目必须存在于 hbase.regionserver.keytab.file 中指定的文件中</p>
+<h3 id="安全"><a href="#安全" class="headerlink" title="安全"></a>安全</h3><p>hadoop.policy.file<br>hbase-policy.xml<br>RPC 服务器用于对客户端请求进行授权决策的策略配置文件.仅在启用 HBassecurity 时使用.</p>
+<p><font color="#dd0000">hbase.superuser</font><br>未配置<br>用户或组的列表(逗号分隔),无论存储的 ACL 是什么,都允许在整个集群中拥有完全权限仅在启用 HBase 安全性时使用.</p>
+<p>hbase.auth.key.update.interval<br>86400000<br>服务器中身份验证令牌的主密钥的更新间隔(以毫秒为单位).仅在启用 HBase 安全性时使用.</p>
+<p>hbase.auth.token.max.lifetime<br>604800000<br>身份验证令牌过期后的最大生命周期(以毫秒为单位).仅在启用 HBase 安全性时使用.</p>
+<p>hbase.ipc.client.fallback-to-simple-auth-allowed<br>FALSE<br>当客户端被配置为尝试安全连接,但尝试连接到不安全的服务器时,该服务器可能会指示客户端切换到 SASL 简单(不安全)身份验证.此设置控制客户端是否接受来自服务器的此指令.当为 false(默认值)时,客户端将不允许回退到 SIMP 身份验证,并将中止连接.</p>
+<p>hbase.ipc.server.fallback-to-simple-auth-allowed<br>FALSE<br>当服务器被配置为需要安全连接时,它将拒绝来自使用 SASL SIMPLE(不安全)身份验证的客户端的连接尝试此设置允许安全服务器在客户端请求时接受来自客户端的 SASL SIMPLE 连接.当为 false(默认值)时,服务器将不允许 fallbacto SIMPLE 身份验证,并将拒绝连接.警告:此设置应仅用作将客户端转换为安全身份验证时的临时措施.为了安全操作,必须禁用.</p>
+<p>hbase.coprocessor.enabled<br>TRUE<br>启用或禁用协处理器加载.如果为 &#39;false(disabled),任何其他协处理器相关配置将被忽略</p>
+<p>hbase.coprocessor.user.enabled<br>TRUE<br>启用或禁用用户(又名表)协处理器加载如果为&quot;假&quot;(禁用),则表描述符中的任何表协处理器属性都将被忽略.如果&quot;hbase.coprocessor.enabled&quot;为 &#39;false,此设置无效</p>
+<p><font color="#dd0000">hbase.coprocessor.region.classes</font><br>未配置<br>在所有表上默认加载的协处理器的逗号分隔列表.对于任何覆盖协处理器方法,将按顺序调用这些类.实现自己的协处理器后,只需放入 HBase 的类路径,并在此处添加完全限定的类名,也可以通过设置 HTableDescriptor 按需加载协处理器.</p>
+<p><font color="#dd0000">hbase.rest.port</font><br>8080<br>HBase REST 服务器的端口.</p>
+<p>hbase.rest.readonly<br>FALSE<br>定义启动 REST 服务器的模式.可能的值是 false:允许所有 HTTP 方法 - GET/PUT/POST/DELETEtrue:仅允许 GET 方法.</p>
+<p>hbase.rest.threads.max<br>100<br>REST 服务器线程池的最大线程数池中的线程被重用于处理 REST 请求.这控制了并发处理的最大请求数它可能有助于控制 REST 服务器使用的内存以避免 OOM 问题.如果线程池已满,传入的请求将排队等待一些空闲线程.</p>
+<p>hbase.rest.threads.min<br>2<br>REST 服务器线程池的最小线程数线程池始终具有至少这些线程数,以便 REST 服务器准备好为传入请求提供服务.</p>
+<p>hbase.rest.support.proxyuser<br>FALSE<br>启用运行 REST 服务器以支持代理用户模式.</p>
+<p>hbase.defaults.for.version.skip<br>FALSE<br>设置为 true 以跳过 &#39;hbase.defaults.for.version&#39; 检查将其设置为 true 在 maven 生成的另一端以外的上下文中很有用;即在助手中运行.您需要将此布尔值设置为 true 以避免 RuntimException 投诉:&quot;hbase-default.xml 文件似乎适用于旧版本的 HBase (<code>\$&#123;hbase.version&#125;</code>),thiversion 是 XXX-SNAPSHOT&quot;</p>
+<p><font color="#dd0000">hbase.coprocessor.master.classes</font><br>未配置<br>一个逗号分隔的列表 oorg.apache.hadoop.hbase.coprocessor.MasterObserver 协处理器,默认加载在活动的 HMaster 进程上.对于任何实现协处理器方法,将按顺序调用列出的类.在实现自己的 MasterObserver 之后,只需将其放入 HBase 的 classpat 并在此处添加完全限定的类名.</p>
+<p>hbase.coprocessor.abortonerror<br>TRUE<br>如果协处理器加载失败/初始化失败或抛出意外的 Throwable 对象,设置为 true 会导致托管服务器(主服务器或区域服务器)中止.将此设置为 false 将允许服务器继续执行,但协处理器在系统范围内的状态将变得不一致,因为它将仅在子服务器中正确执行,因此这仅对调试最有用.</p>
+<p>hbase.online.schema.update.enable<br>TRUE<br>设置为 true 以启用在线模式更改.</p>
+<p>hbase.table.lock.enable<br>TRUE<br>设置为 true 以启用在 zookeeper 中锁定表以进行模式更改操作表锁定来自 master 可防止并发模式修改损坏的表状态.</p>
+<p>hbase.table.max.rowsize<br>1073741824<br>未设置行内扫描标志的 Get&#39;tinor Scan&#39;ning 的单行最大大小(默认为 1 Gb).如果行大小超过这个 limiRowTooBigException 被抛出给客户端</p>
+<p>hbase.thrift.minWorkerThreads<br>16<br>线程池的&quot;核心大小&quot;.在everconnection 上创建新线程,直到创建这么多线程.</p>
+<p>hbase.thrift.maxWorkerThreads<br>1000<br>线程池的最大大小.当挂起的请求队列溢出时,会创建新的线程,直到它们的数量达到这个数量之后,服务器开始丢弃连接.</p>
+<p>hbase.thrift.maxQueuedRequests<br>1000<br>队列中等待的最大挂起 Thrift 连接数.池中没有空闲线程,服务器将请求排队.只有当队列溢出时,才会添加新线程,增加 thbase.thrift.maxQueuedRequests 个线程.</p>
+<p>hbase.thrift.htablepool.size.max<br>1000<br>Thrift 网关服务器中使用的表池的上限因为这是每个表名,我们假设一个表,因此最多有 1000 个默认工作线程,这被设置为匹配的数字.对于其他工作负载,此数字可以根据需要进行调整</p>
+<p>hbase.regionserver.thrift.framed<br>FALSE<br>在服务器端使用 Thrift TFramedTransport 这是推荐用于 thrift 服务器的传输,并且需要在客户端进行类似的设置.当由于 THRIFT-601 发出格式错误的请求时,将其更改为 false 将选择默认传输易受 DoS 攻击</p>
+<p>hbase.regionserver.thrift.framed.max_frame_size_in_mb<br>2<br>使用框架传输时的默认帧大小</p>
+<p>hbase.regionserver.thrift.compact<br>FALSE<br>使用 Thrift TCompactProtocol 二进制序列化协议.</p>
+<p>hbase.rootdir.perms<br>700<br>安全(kerberos)设置中根目录的 FS 权限当 master 启动时,它会创建具有此权限的 rootdir,如果不匹配则设置权限.</p>
+<p>hbase.data.umask.enable<br>FALSE<br>启用,如果为真,则应将文件权限分配给区域服务器写入的文件</p>
+<p>hbase.data.umask<br>0<br>当 hbase.data.umask.enable 为 true 时用于写入 datfile 的文件权限</p>
+<p>hbase.metrics.showTableName<br>TRUE<br>是否在 per-column family metrics 中包含前缀&quot;tbl.tablename&quot;如果为 true,则对于每个 metric M,将为 tbl.T.cf.CF.M 报告 per-cf metrics,如果 false per-cf metrics 将聚合跨表的列族,并为 cf.CF.M 报告在这两种情况下,将报告跨表和 cfs 的聚合度量 M.</p>
+<p>hbase.metrics.exposeOperationTimes<br>TRUE<br>是否报告有关在区域服务器上执行操作所用时间的指标.Get/Put/Delete/Increment 和 Append 可以通过每个 CF 和每个区域的 Hadoop 指标公开它们的时间.</p>
+<p>hbase.snapshot.enabled<br>TRUE<br>设置为 true 以允许拍摄/恢复/克隆快照.</p>
+<p>hbase.snapshot.restore.take.failsafe.snapshot<br>TRUE<br>设置为 true 以在恢复操作之前拍摄快照在失败的情况下将使用拍摄的快照,以恢复以前的状态在恢复操作结束时,此快照将被删除</p>
+<p>hbase.snapshot.restore.failsafe.name<br>hbase-failsafe-{snapshot.name}-{restore.timestamp}<br>恢复操作拍摄的故障安全快照的名称您可以使用 {snapshot.name}/{table.name} 和 {restore.timestamp} 变量根据您正在恢复的内容创建名称.</p>
+<p><font color="#dd0000">hbase.server.compactchecker.interval.multiplier</font><br>1000<br>决定我们多久扫描一次以查看是否需要压缩的数字通常,压缩是在某些事件(例如 memstore 刷新)之后完成的,但是 iregion 有一段时间没有收到很多写入,或者由于不同的压缩策略,它可能有必要定期检查.检查之间的间隔 ihbase.server.compactchecker.interval.multiplier 乘以 bhbase.server.thread.wakefrequency.</p>
+<p>hbase.lease.recovery.timeout<br>900000<br>在放弃之前,我们总共等待 dfs 租约恢复多长时间.</p>
+<p>hbase.lease.recovery.dfs.timeout<br>64000<br>dfs 恢复租约调用之间的时间间隔.应该大于namenode作为odatanode的一部分发出块恢复命令所花费的时间总和;dfs.heartbeat.interval 和primardatanode所花费的时间,在一个dead datanode上执行块恢复超时;通常ldfs.client.socket-timeout.有关更多信息,请参阅 HBASE-8389 的结尾.</p>
+<p>hbase.column.max.version<br>1<br>新的列族描述符将使用此值作为要保留的默认版本数.</p>
+<p>hbase.dfs.client.read.shortcircuit.buffer.size<br>131072<br>如果 DFSClient configuratiodfs.client.read.shortcircuit.buffer.size 未设置,我们将使用此处配置的内容作为短路读取默认字节缓冲区大小.DFSClient原生默认为1MB;HBaskeep 保持其 HDFS 文件打开,因此文件块的数量 * 1MB soostart 累加起来并威胁 OOME,因为 odirect 内存不足.所以,我们把它从默认设置下来.Makit &gt; 在 HColumnDescripto 中设置的默认 hbase 块大小通常为 64k</p>
+<p>hbase.regionserver.checksum.verify<br>TRUE<br>如果设置为 true(默认值),HBase 将验证 hfilblocks 的校验和.HBase 在写入 ouhfile 时将校验和与数据内联写入.HDFS(在撰写本文时)将校验和写入单独的文件,而不是需要额外查找的数据文件.在 i/o 上设置这个标志可以节省一些时间.设置此标志时,HDFS 的校验和验证将在内部禁用 hfile 流.如果 hbase-checksum 验证失败,我们将切换回使用 HDFS 校验和(因此不要禁用 HDFchecksums！此外,此功能仅适用于 hfile,不适用于 WAL)如果此参数设置为 false,则 hbase 将不验证任何校验和.这将取决于在 HDFS 客户端中进行的校验和验证</p>
+<p>hbase.hstore.bytes.per.checksum<br>16384<br>为 hfile 块中的 HBase-levelchecksums 新创建的校验和块中的字节数</p>
+<p>hbase.hstore.checksum.algorithm<br>CRC32C<br>用于计算校验和的算法的名称.可能的值为 NULL/CRC32/CRC32C</p>
+<p>hbase.client.scanner.max.result.size<br>2097152<br>调用扫描器的下一个方法时返回的最大字节数请注意,当单行大于此限制时,该行仍会完全返回默认值是 2MB,这对于 1ge 网络有好处,具有更快和/或高延迟的网络,应该增加此值</p>
+<p>hbase.server.scanner.max.result.size<br>104857600<br>调用扫描器的下一个方法时返回的最大字节数请注意,当单行大于此限制时,该行仍会完全返回默认值为 100MB 这是保护服务器免受 OOM 情况影响的安全设置</p>
+<p>hbase.status.published<br>FALSE<br>该设置激活master发布区域服务器的状态当一个region server死掉并开始恢复时,master会将此信息推送给客户端应用程序,让它们立即断开连接而不是等待超时</p>
+<p>hbase.status.publisher.class<br>org.apache.hadoop.hbase.master.ClusterStatusPublisher$MulticastPublisher<br>使用多播消息实现状态发布</p>
+<p>hbase.status.listener.class<br>org.apache.hadoop.hbase.client.ClusterStatusListener$MulticastListener<br>使用多播消息实现状态监听器</p>
+<p>hbase.status.multicast.address.ip<br>226.1.1.3<br>用于通过多播发布状态的多播地址</p>
+<p>hbase.status.multicast.address.port<br>16100<br>用于通过多播发布状态的多播端口</p>
+<p>hbase.dynamic.jars.dir<br>${hbase.rootdir}/lib<br>区域服务器可以动态加载自定义过滤器/协处理器 jar 的目录,而无需重新启动.然而,已经加载的过滤器/协处理器类不会被卸载.SeHBASE-1936 了解更多详情</p>
+<p>hbase.security.authentication<br>simple<br>控制是否为 HBasePossible 值启用安全身份验证是&quot;简单&quot;(无身份验证)和&quot;kerberos&quot;</p>
+<p>hbase.rest.filter.classes<br>org.apache.hadoop.hbase.rest.filter.GzipFilter<br>用于 REST 服务的 Servlet 过滤器</p>
+<p>hbase.master.loadbalancer.class<br>org.apache.hadoop.hbase.master.balancer.StochasticLoadBalancer<br>用于在周期发生时执行区域平衡的类有关其工作原理的更多信息,请参见类注释 <a target="_blank" rel="noopener" href="http://hbase.apache.org/devapidocs/org/apache/hadoop/hbase/master/balancer/StochasticLoadBalancer.htm%E5%AE%83%E6%9B%BF%E6%8D%A2%E4%BA%86">http://hbase.apache.org/devapidocs/org/apache/hadoop/hbase/master/balancer/StochasticLoadBalancer.htm它替换了</a> DefaultLoadBalancer作为默认值(因为重命名为 SimpleLoadBalancer)</p>
+<p>hbase.security.exec.permission.checks<br>FALSE<br>如果启用此设置并且基于 ACL 的访问控制处于活动状态(thAccessController 协处理器作为系统协处理器安装在表上作为表协处理器),那么如果他们需要执行协处理器端点调用的能力,则必须授予所有相关用户 EXEC 权限.EXEC 权限与任何其他权限一样,可以全局授予用户,或者授予每个表或每个名称空间上的用户.有关协处理器端点的更多信息,请参阅 HBase 在线手册的协处理器部分.有关使用 AccessController 授予或撤销权限的更多信息,请参阅 HBase 在线手册的安全部分</p>
+<p>hbase.procedure.regionserver.classes<br>未配置<br>一个逗号分隔的列表 oorg.apache.hadoop.hbase.procedure.RegionServerProcedureManager 过程管理器,默认加载在活动的 HRegionServer 进程上.生命周期方法(init/start/stop)会被激活的HRegionServer进程调用,执行具体的全局barriereprocedure.实现自己的RegionServerProcedureManager后,只需将其放入iHBase的classpath,并在此处添加全限定类名</p>
+<p>hbase.procedure.master.classes<br>未配置<br>一个逗号分隔的列表 oorg.apache.hadoop.hbase.procedure.MasterProcedureManager 过程管理器,默认加载在活动的 HMaster 进程上.过程由其签名标识,用户可以使用签名和即时名称来触发全局屏障过程的执行.实现自己的 MasterProcedureManager 后,只需将其放在 HBase 的 classpat 中并在此处添加完全限定的类名即可.</p>
+<p>hbase.coordinated.state.manager.class<br>org.apache.hadoop.hbase.coordination.ZkCoordinatedStateManager<br>实现协调状态管理器的类的完全限定名称.</p>
+<p>hbase.regionserver.storefile.refresh.period<br>0<br>刷新次要区域的存储文件的周期(以毫秒为单位).表示此功能已禁用.一旦次要区域刷新 thregion 中的文件列表(没有通知机制),次要区域就会从主要区域看到新文件(来自刷新和压缩).但是过于频繁的刷新可能会导致额外的 Namenode 压力.如果文件不能刷新超过 HFile TT(hbase.master.hfilecleaner.ttl) 请求将被拒绝.还建议使用此设置将 HFile TTL 配置为较大的值</p>
+<p>hbase.region.replica.replication.enabled<br>FALSE<br>是否启用到次要区域副本的异步 WAL 复制如果启用,将创建一个名为&quot;region_replica_replication&quot;的复制对等体,它将跟踪日志并将突变复制到区域复制大于 1 的表的区域副本.如果启用此选项一次,禁用此复制还需要使用 shell 或 ReplicationAdmin java 类禁用复制对等方复制到次要区域副本在标准集群间复制上工作因此,如果显式禁用复制,还必须通过将&quot;hbase.replication&quot;设置为 true 来启用此功能才能正常工作</p>
+<p>hbase.http.filter.initializers<br>org.apache.hadoop.hbase.http.lib.StaticUserWebFilter<br>以逗号分隔的类名列表.列表中的每个类都必须是 extenorg.apache.hadoop.hbase.http.FilterInitializer.相应的过滤器将被初始化.然后,过滤器将应用于所有面向用户的 js 和 servlet 网页列表的顺序定义过滤器的顺序默认的 StaticUserWebFilter 添加一个用户主体,由 thhbase.http.staticuser.user 属性定义</p>
+<p>hbase.security.visibility.mutations.checkauths<br>FALSE<br>如果启用此属性,将检查可见性表达式中的标签是否与发出 mutatio 的用户相关联</p>
+<p>hbase.http.max.threads<br>10<br>HTTP Server 将在 itThreadPool 中创建的最大线程数</p>
+<p>hbase.replication.rpc.codec<br>org.apache.hadoop.hbase.codec.KeyValueCodecWithTags<br>启用复制时要使用的编解码器,以便也复制标签.这与其中支持标签的 HFileV3 一起使用.如果不使用标签或者如果 hfile 版本使用的是 HFileV2,那么 KeyValueCodec 可以用作复制编解码器.请注意,在没有标签的情况下使用 KeyValueCodecWithTags 进行复制不会造成任何伤害</p>
+<p>hbase.replication.source.maxthreads<br>10<br>任何复制源将使用 fshipping 并行编辑接收器的最大线程数.这也限制了每个复制批次分成的ochunk数量,较大的值可以提高主从集群之间的复制吞吐量.默认值 10 很少需要更改</p>
+<h3 id="web"><a href="#web" class="headerlink" title="web"></a>web</h3><p>hbase.http.staticuser.user<br>dr.stack<br>在呈现内容时在静态 Web 过滤器上过滤的用户名.一个示例使用是 HDFweb UI(用于浏览文件的用户)</p>
+<p>hbase.master.normalizer.class<br>org.apache.hadoop.hbase.master.normalizer.SimpleRegionNormalizer<br>用于在周期发生时执行区域规范化的类有关其工作原理的更多信息,请参阅类注释 <a target="_blank" rel="noopener" href="http://hbase.apache.org/devapidocs/org/apache/hadoop/hbase/master/normalizer/SimpleRegionNormalizer.htm">http://hbase.apache.org/devapidocs/org/apache/hadoop/hbase/master/normalizer/SimpleRegionNormalizer.htm</a></p>
+<p>hbase.regionserver.handler.abort.on.error.percent<br>0.5<br>区域服务器 RPC 线程中止失败的百分比 RS-1 禁用中止;0 即使有一个处理程序已经死亡,则中止0.x 仅当此百分比的处理程序已死亡时才中止1 仅中止所有处理程序都已死亡.</p>
+<p>hbase.snapshot.master.timeout.millis<br>300000<br>快照过程执行的 master 超时</p>
+<p>hbase.snapshot.region.timeout<br>300000<br>区域服务器超时以保持快照请求池中的线程等待</p>
+<h3 id="wal"><a href="#wal" class="headerlink" title="wal"></a>wal</h3><p>hbase.wal.provider<br>multiwal<br>允许RegionServer通过在底层HDFS实例中使用多个管道并行写入多个WAL流,这增加了写入期间的总吞吐量.<br>这种并行化是通过按区域划分传入编辑来完成的.<br>因此当前的实现无助于增加单个区域的吞吐量.<br>禁用时,取消该配置</p>
+<p>hbase.hlog.split.skip.errors<br>false<br>传播EOFException异常并将拆分记录为失败.<br>设置为true时,将记录拆分过程中遇到的任何错误,有问题的WAL日志将被移动到hbase下的.corruptrootdir目录中,WAL的处理将继续.</p>
+<p>hbase.master.distributed.log.splitting<br>true<br>分布式日志拆分</p>
+<p>hbase.master.distributed.log.replay<br>true<br>启用分布式日志重播,必须启用HFile版本3</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hbase/" rel="tag"># hbase</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/03/03/hive%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/" rel="prev" title="hive默认配置参数">
+                  <i class="fa fa-chevron-left"></i> hive默认配置参数
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/03/03/hive%20mysql8%20row_number/" rel="next" title="hive mysql8 row_number">
+                  hive mysql8 row_number <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

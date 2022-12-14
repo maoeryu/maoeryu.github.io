@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="Stream是Java8中处理集合的关键抽象概念,它可以指定你希望对集合进行的操作,可以执行非常复杂的查找&#x2F;过滤和映射数据等操作.使用StreamAPI对集合数据进行操作,就类似于使用SQL执行的数据库查询.也可以使用StreamAPI来并行执行操作.简而言之,StreamAPI提供了一种高效且易于使用的处理数据的方式.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="java8 stream">
+<meta property="og:url" content="https://maoeryu.github.io/2021/09/24/java8%20stream/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="Stream是Java8中处理集合的关键抽象概念,它可以指定你希望对集合进行的操作,可以执行非常复杂的查找&#x2F;过滤和映射数据等操作.使用StreamAPI对集合数据进行操作,就类似于使用SQL执行的数据库查询.也可以使用StreamAPI来并行执行操作.简而言之,StreamAPI提供了一种高效且易于使用的处理数据的方式.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/basestream.png">
+<meta property="article:published_time" content="2021-09-23T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-09T06:27:45.015Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="java">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/basestream.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/09/24/java8%20stream/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>java8 stream | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%B9%E7%82%B9"><span class="nav-number">1.1.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B1%BB%E5%9B%BE"><span class="nav-number">1.2.</span> <span class="nav-text">类图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E7%B1%BB"><span class="nav-number">1.3.</span> <span class="nav-text">分类</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%AD%E9%97%B4%E6%93%8D%E4%BD%9C"><span class="nav-number">1.3.1.</span> <span class="nav-text">中间操作</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%97%A0%E7%8A%B6%E6%80%81"><span class="nav-number">1.3.1.1.</span> <span class="nav-text">无状态</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%9C%89%E7%8A%B6%E6%80%81"><span class="nav-number">1.3.1.2.</span> <span class="nav-text">有状态</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%93%E6%9D%9F%E6%93%8D%E4%BD%9C"><span class="nav-number">1.3.2.</span> <span class="nav-text">结束操作</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%9D%9E%E7%9F%AD%E8%B7%AF%E6%93%8D%E4%BD%9C"><span class="nav-number">1.3.2.1.</span> <span class="nav-text">非短路操作</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%9F%AD%E8%B7%AF%E6%93%8D%E4%BD%9C"><span class="nav-number">1.3.2.2.</span> <span class="nav-text">短路操作</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B6%E5%AE%83"><span class="nav-number">1.3.3.</span> <span class="nav-text">其它</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">用法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%81%E5%88%9B%E5%BB%BA"><span class="nav-number">2.1.</span> <span class="nav-text">流创建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%81%E4%B8%AD%E9%97%B4%E6%93%8D%E4%BD%9C"><span class="nav-number">2.2.</span> <span class="nav-text">流中间操作</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AD%9B%E9%80%89%E5%92%8C%E5%88%87%E7%89%87"><span class="nav-number">2.2.1.</span> <span class="nav-text">筛选和切片</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#filter-Predicate"><span class="nav-number">2.2.1.1.</span> <span class="nav-text">filter(Predicate)</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#limit-n"><span class="nav-number">2.2.1.2.</span> <span class="nav-text">limit(n)</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#skip-n"><span class="nav-number">2.2.1.3.</span> <span class="nav-text">skip(n)</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#distinct"><span class="nav-number">2.2.1.4.</span> <span class="nav-text">distinct</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%98%A0%E5%B0%84"><span class="nav-number">2.2.2.</span> <span class="nav-text">映射</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#map"><span class="nav-number">2.2.2.1.</span> <span class="nav-text">map</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#flatMap"><span class="nav-number">2.2.2.2.</span> <span class="nav-text">flatMap</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8E%92%E5%BA%8F"><span class="nav-number">2.2.3.</span> <span class="nav-text">排序</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#sorted"><span class="nav-number">2.2.3.1.</span> <span class="nav-text">sorted()</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#sorted-Comparator"><span class="nav-number">2.2.3.2.</span> <span class="nav-text">sorted(Comparator)</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B6%88%E8%B4%B9"><span class="nav-number">2.2.4.</span> <span class="nav-text">消费</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#peek"><span class="nav-number">2.2.4.1.</span> <span class="nav-text">peek</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%81%E7%BB%88%E6%AD%A2%E6%93%8D%E4%BD%9C"><span class="nav-number">2.3.</span> <span class="nav-text">流终止操作</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8C%B9%E9%85%8D-%E8%81%9A%E5%90%88%E6%93%8D%E4%BD%9C"><span class="nav-number">2.3.1.</span> <span class="nav-text">匹配&#x2F;聚合操作</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#allMatch"><span class="nav-number">2.3.1.1.</span> <span class="nav-text">allMatch</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#anyMatch"><span class="nav-number">2.3.1.2.</span> <span class="nav-text">anyMatch</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#findFirst"><span class="nav-number">2.3.1.3.</span> <span class="nav-text">findFirst</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#findAny"><span class="nav-number">2.3.1.4.</span> <span class="nav-text">findAny</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#count"><span class="nav-number">2.3.1.5.</span> <span class="nav-text">count</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#max"><span class="nav-number">2.3.1.6.</span> <span class="nav-text">max</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#min"><span class="nav-number">2.3.1.7.</span> <span class="nav-text">min</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A7%84%E7%BA%A6%E6%93%8D%E4%BD%9C"><span class="nav-number">2.3.2.</span> <span class="nav-text">规约操作</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#reduce-accumulator"><span class="nav-number">2.3.2.1.</span> <span class="nav-text">reduce(accumulator)</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#reduce-T-identity-accumulator"><span class="nav-number">2.3.2.2.</span> <span class="nav-text">reduce(T identity, accumulator)</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#reduce-identity-accumulator-combiner"><span class="nav-number">2.3.2.3.</span> <span class="nav-text">reduce(identity,accumulator,combiner)</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%94%B6%E9%9B%86%E6%93%8D%E4%BD%9C"><span class="nav-number">2.3.3.</span> <span class="nav-text">收集操作</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#collect"><span class="nav-number">2.3.3.1.</span> <span class="nav-text">collect</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Collectors"><span class="nav-number">2.3.4.</span> <span class="nav-text">Collectors</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#list-set-map"><span class="nav-number">2.3.4.1.</span> <span class="nav-text">list&#x2F;set&#x2F;map</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%81%9A%E5%90%88%E6%93%8D%E4%BD%9C"><span class="nav-number">2.3.4.2.</span> <span class="nav-text">聚合操作</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%86%E7%BB%84"><span class="nav-number">2.3.4.3.</span> <span class="nav-text">分组</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%86%E5%8C%BA"><span class="nav-number">2.3.4.4.</span> <span class="nav-text">分区</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%A7%84%E7%BA%A6"><span class="nav-number">2.3.4.5.</span> <span class="nav-text">规约</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%BB%E5%8F%96%E6%96%87%E4%BB%B6"><span class="nav-number">2.4.</span> <span class="nav-text">读取文件</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/09/24/java8%20stream/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          java8 stream
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-09-24 00:00:00" itemprop="dateCreated datePublished" datetime="2021-09-24T00:00:00+08:00">2021-09-24</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-09 14:27:45" itemprop="dateModified" datetime="2022-09-09T14:27:45+08:00">2022-09-09</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>Stream是Java8中处理集合的关键抽象概念,它可以指定你希望对集合进行的操作,可以执行非常复杂的查找/过滤和映射数据等操作.<br>使用StreamAPI对集合数据进行操作,就类似于使用SQL执行的数据库查询.<br>也可以使用StreamAPI来并行执行操作.<br>简而言之,StreamAPI提供了一种高效且易于使用的处理数据的方式.</p>
+<span id="more"></span>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><p>1.不是数据结构,不会保存数据.<br>2.不会修改原来的数据源,它会将操作后的数据保存到另外一个对象中.<br>3.惰性求值,流在中间处理过程中,只是对操作进行了记录,并不会立即执行,需要等到执行终止操作的时候才会进行实际的计算.</p>
+<h3 id="类图"><a href="#类图" class="headerlink" title="类图"></a>类图</h3><p>//判断是否是并行化流<br>boolean isParallel();<br>//将流串行化<br>S sequential();<br>//将流并行化<br>S parallel();<br>//解除有序流的顺序限制,发挥并行处理的性能优势<br>S unordered();</p>
+<img src="/images/basestream.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>默认情况下,从有序集合/生成器/迭代器产生的流或者通过调用Stream.sorted产生的流都是有序流,有序流在并行处理时会在处理完成之后恢复原顺序.</p>
+<p>unordered()方法可以解除有序流的顺序限制,更好地发挥并行处理的性能优势,例如distinct将保存任意一个唯一元素而不是第一个,limit将保留任意n个元素而不是前n个.</p>
+<p>BaseStream的四个子接口方法都差不多,只是IntStream/LongStream/DoubleStream直接存储基本类型,可以避免自动装/拆箱,效率会更高一些.</p>
+<h3 id="分类"><a href="#分类" class="headerlink" title="分类"></a>分类</h3><p>无状态:指元素的处理不受之前元素的影响.<br>有状态:指该操作只有拿到所有元素之后才能继续下去.<br>非短路操作:指必须处理所有元素才能得到最终结果.<br>短路操作:指遇到某些符合条件的元素就可以得到最终结果,如 A || B,只要A为true,则无需判断B的结果.</p>
+<h4 id="中间操作"><a href="#中间操作" class="headerlink" title="中间操作"></a>中间操作</h4><h5 id="无状态"><a href="#无状态" class="headerlink" title="无状态"></a>无状态</h5><p>unordered()<br>filter(Predicate&lt;? super T&gt; predicate)<br>map(Function&lt;? super T, ? extends R&gt; mapper)<br>mapToInt,mapToLong,mapToDouble<br>flatMap(Function&lt;? super T, ? extends Stream&lt;? extends R&gt;&gt; mapper)<br>flatMapToInt,flatMapToLong,flatMapToDouble<br>peek(Consumer&lt;? super T&gt; action)</p>
+<h5 id="有状态"><a href="#有状态" class="headerlink" title="有状态"></a>有状态</h5><p>distinct()<br>limit(long maxSize)<br>sorted()<br>sorted(Comparator&lt;? super T&gt; comparator)<br>skip(long n)</p>
+<h4 id="结束操作"><a href="#结束操作" class="headerlink" title="结束操作"></a>结束操作</h4><h5 id="非短路操作"><a href="#非短路操作" class="headerlink" title="非短路操作"></a>非短路操作</h5><p>forEach(Consumer&lt;? super T&gt; action)<br>forEachOrdered(Consumer&lt;? super T&gt; action)<br>toArray()<br>reduce(accumulator)<br>reduce(T identity, accumulator)<br>reduce(U identity, accumulator, combiner)<br>collect(Collector&lt;? super T, A, R&gt; collector)<br>count()<br>max(Comparator&lt;? super T&gt; comparator)<br>min(Comparator&lt;? super T&gt; comparator)</p>
+<h5 id="短路操作"><a href="#短路操作" class="headerlink" title="短路操作"></a>短路操作</h5><p>allMatch(Predicate&lt;? super T&gt; predicate)<br>anyMatch(Predicate&lt;? super T&gt; predicate)<br>noneMatch(Predicate&lt;? super T&gt; predicate)<br>findAny()<br>findFirst()</p>
+<h4 id="其它"><a href="#其它" class="headerlink" title="其它"></a>其它</h4><p>concat(Stream&lt;? extends T&gt; a, Stream&lt;? extends T&gt; b)<br>empty()<br>generate(s)<br>isParallel()<br>iterate(final T seed, f)<br>iterator()<br>of(T t)<br>of(T... values)<br>onClose(Runnable closeHandler)<br>parallel()<br>sequential()<br>spliterator()</p>
+<h2 id="用法"><a href="#用法" class="headerlink" title="用法"></a>用法</h2><h3 id="流创建"><a href="#流创建" class="headerlink" title="流创建"></a>流创建</h3><p>1.使用Collection下的stream()和parallelStream()方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ArrayList&lt;String&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line"><span class="comment">// 顺序流</span></span><br><span class="line">Stream&lt;String&gt; stream = list.stream();</span><br><span class="line"><span class="comment">// 并行流</span></span><br><span class="line">Stream&lt;String&gt; stringStream = list.parallelStream();</span><br></pre></td></tr></table></figure>
+
+<p>2.使用Arrays中的stream()方法,将数组转成流</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Integer[] nums = <span class="keyword">new</span> Integer[<span class="number">10</span>];</span><br><span class="line">Stream&lt;Integer&gt; stream1 = Arrays.stream(nums);</span><br></pre></td></tr></table></figure>
+
+<p>3.使用Stream中的静态方法,of/iterate/generate</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;Integer&gt; stream2 = Stream.of(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>);</span><br><span class="line"></span><br><span class="line">Stream&lt;Integer&gt; stream3 = Stream.iterate(<span class="number">0</span>, (x) -&gt; x + <span class="number">2</span>).limit(<span class="number">5</span>);</span><br><span class="line">stream3.forEach(System.out::println);</span><br><span class="line"></span><br><span class="line">Stream&lt;Double&gt; stream4 = Stream.generate(Math::random).limit(<span class="number">5</span>);</span><br><span class="line">stream4.forEach(System.out::println);</span><br></pre></td></tr></table></figure>
+
+<p>4.使用BufferedReader.lines()方法,将每行内容转成流</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">BufferedReader reader = <span class="keyword">new</span> BufferedReader(<span class="keyword">new</span> FileReader(<span class="string">&quot;d:/io.txt&quot;</span>));</span><br><span class="line">Stream&lt;String&gt; stream5 = reader.lines();</span><br><span class="line">stream5.forEach(System.out::println);</span><br></pre></td></tr></table></figure>
+
+<p>5.使用Pattern.splitAsStream()方法,将字符串分隔成流</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Pattern pattern = Pattern.compile(<span class="string">&quot;,&quot;</span>);</span><br><span class="line">Stream&lt;String&gt; stream6 = pattern.splitAsStream(<span class="string">&quot;a,b,c,d,e&quot;</span>);</span><br><span class="line">stream6.forEach(System.out::println);</span><br></pre></td></tr></table></figure>
+
+<h3 id="流中间操作"><a href="#流中间操作" class="headerlink" title="流中间操作"></a>流中间操作</h3><h4 id="筛选和切片"><a href="#筛选和切片" class="headerlink" title="筛选和切片"></a>筛选和切片</h4><h5 id="filter-Predicate"><a href="#filter-Predicate" class="headerlink" title="filter(Predicate)"></a>filter(Predicate)</h5><p>将结果为false的元素过滤掉.</p>
+<h5 id="limit-n"><a href="#limit-n" class="headerlink" title="limit(n)"></a>limit(n)</h5><p>获取n个元素.</p>
+<h5 id="skip-n"><a href="#skip-n" class="headerlink" title="skip(n)"></a>skip(n)</h5><p>跳过n元素,配合limit(n)可实现分页.</p>
+<h5 id="distinct"><a href="#distinct" class="headerlink" title="distinct"></a>distinct</h5><p>通过流中元素的hashCode()和equals()去除重复元素.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;Integer&gt; stream7 = Stream.of(<span class="number">6</span>, <span class="number">4</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">3</span>, <span class="number">9</span>, <span class="number">8</span>, <span class="number">10</span>, <span class="number">12</span>);</span><br><span class="line">Stream&lt;Integer&gt; stream8 = stream7</span><br><span class="line">    .filter(s -&gt; s &gt; <span class="number">5</span>)</span><br><span class="line">    .distinct()</span><br><span class="line">    .skip(<span class="number">2</span>)</span><br><span class="line">    .limit(<span class="number">2</span>);</span><br><span class="line">stream8.forEach(System.out::println);</span><br></pre></td></tr></table></figure>
+
+<h4 id="映射"><a href="#映射" class="headerlink" title="映射"></a>映射</h4><h5 id="map"><a href="#map" class="headerlink" title="map"></a>map</h5><p>接收一个函数作为参数,该函数会被应用到每个元素上,并将其映射成一个新的元素.</p>
+<p>将每个元素转成一个新的且不带逗号的元素.<br>abc 123</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">List&lt;String&gt; list = Arrays.asList(<span class="string">&quot;a,b,c&quot;</span>, <span class="string">&quot;1,2,3&quot;</span>);</span><br><span class="line">Stream&lt;String&gt; stream = list.stream().map(s -&gt; s.replaceAll(<span class="string">&quot;,&quot;</span>, <span class="string">&quot;&quot;</span>));</span><br><span class="line">stream.forEach(System.out::println);</span><br></pre></td></tr></table></figure>
+
+<h5 id="flatMap"><a href="#flatMap" class="headerlink" title="flatMap"></a>flatMap</h5><p>接收一个函数作为参数,将流中的每个值都换成另一个流,然后把所有流连接成一个流.</p>
+<p>将每个元素转换成一个stream.<br>a b c 1 2 3</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Stream&lt;String&gt; stream1 = list.stream().flatMap(s -&gt; &#123;</span><br><span class="line">  <span class="keyword">return</span> Arrays.stream(s.split(<span class="string">&quot;,&quot;</span>));</span><br><span class="line">&#125;);</span><br><span class="line">stream1.forEach(System.out::println);</span><br></pre></td></tr></table></figure>
+
+<h4 id="排序"><a href="#排序" class="headerlink" title="排序"></a>排序</h4><h5 id="sorted"><a href="#sorted" class="headerlink" title="sorted()"></a>sorted()</h5><p>自然排序,流中元素需实现Comparable接口.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">List&lt;String&gt; list = Arrays.asList(<span class="string">&quot;aa&quot;</span>, <span class="string">&quot;ff&quot;</span>, <span class="string">&quot;dd&quot;</span>);</span><br><span class="line"><span class="comment">// String类自身已实现Compareable接口</span></span><br><span class="line">list.stream().sorted().forEach(System.out::println);</span><br></pre></td></tr></table></figure>
+
+<p>aa dd ff</p>
+<h5 id="sorted-Comparator"><a href="#sorted-Comparator" class="headerlink" title="sorted(Comparator)"></a>sorted(Comparator)</h5><p>定制排序,自定义Comparator排序器.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Student s1 = <span class="keyword">new</span> Student(<span class="string">&quot;aa&quot;</span>, <span class="number">10</span>);</span><br><span class="line">Student s2 = <span class="keyword">new</span> Student(<span class="string">&quot;bb&quot;</span>, <span class="number">20</span>);</span><br><span class="line">Student s3 = <span class="keyword">new</span> Student(<span class="string">&quot;aa&quot;</span>, <span class="number">30</span>);</span><br><span class="line">Student s4 = <span class="keyword">new</span> Student(<span class="string">&quot;dd&quot;</span>, <span class="number">40</span>);</span><br><span class="line">List&lt;Student&gt; students = Arrays.asList(s1, s2, s3, s4);</span><br><span class="line"><span class="comment">// 自定义排序,先按姓名升序,姓名相同则按年龄升序</span></span><br><span class="line">students.stream().sorted((o1, o2) -&gt; &#123;</span><br><span class="line">  <span class="keyword">if</span> (o1.getName().equals(o2.getName())) &#123;</span><br><span class="line">    <span class="keyword">return</span> o1.getAge() - o2.getAge();</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> o1.getName().compareTo(o2.getName());</span><br><span class="line">  &#125;</span><br><span class="line">&#125;).forEach(System.out::println);</span><br></pre></td></tr></table></figure>
+
+<p>aa  10<br>aa  30<br>bb  20<br>dd  40</p>
+<h4 id="消费"><a href="#消费" class="headerlink" title="消费"></a>消费</h4><h5 id="peek"><a href="#peek" class="headerlink" title="peek"></a>peek</h5><p>同于map,能得到流中的每一个元素.<br>但map接收的是一个Function表达式,有返回值.<br>而peek接收的是Consumer表达式,没有返回值.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Student s1 = <span class="keyword">new</span> Student(<span class="string">&quot;aa&quot;</span>, <span class="number">10</span>);</span><br><span class="line">Student s2 = <span class="keyword">new</span> Student(<span class="string">&quot;bb&quot;</span>, <span class="number">20</span>);</span><br><span class="line">List&lt;Student&gt; students = Arrays.asList(s1, s2);</span><br><span class="line">students.stream().peek(o -&gt; o.setAge(<span class="number">100</span>)).forEach(System.out::println);</span><br></pre></td></tr></table></figure>
+
+<p>aa  100<br>bb  100</p>
+<h3 id="流终止操作"><a href="#流终止操作" class="headerlink" title="流终止操作"></a>流终止操作</h3><h4 id="匹配-聚合操作"><a href="#匹配-聚合操作" class="headerlink" title="匹配/聚合操作"></a>匹配/聚合操作</h4><h5 id="allMatch"><a href="#allMatch" class="headerlink" title="allMatch"></a>allMatch</h5><p>接收一个Predicate函数,当流中每个元素都符合该断言时才返回true,否则返回false.</p>
+<h5 id="anyMatch"><a href="#anyMatch" class="headerlink" title="anyMatch"></a>anyMatch</h5><p>接收一个Predicate函数,只要流中有一个元素满足该断言则返回true,否则返回false.</p>
+<h5 id="findFirst"><a href="#findFirst" class="headerlink" title="findFirst"></a>findFirst</h5><p>返回流中第一个元素.</p>
+<h5 id="findAny"><a href="#findAny" class="headerlink" title="findAny"></a>findAny</h5><p>返回流中的任意元素.</p>
+<h5 id="count"><a href="#count" class="headerlink" title="count"></a>count</h5><p>返回流中元素的个数.</p>
+<h5 id="max"><a href="#max" class="headerlink" title="max"></a>max</h5><p>返回流中元素最大值.</p>
+<h5 id="min"><a href="#min" class="headerlink" title="min"></a>min</h5><p>返回流中元素最小值.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Integer&gt; list = Arrays.asList(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// false</span></span><br><span class="line"><span class="keyword">boolean</span> allMatch = list.stream().allMatch(e -&gt; e &gt; <span class="number">10</span>);</span><br><span class="line"><span class="comment">// true</span></span><br><span class="line"><span class="keyword">boolean</span> noneMatch = list.stream().noneMatch(e -&gt; e &gt; <span class="number">10</span>);</span><br><span class="line"><span class="comment">//true</span></span><br><span class="line"><span class="keyword">boolean</span> anyMatch = list.stream().anyMatch(e -&gt; e &gt; <span class="number">4</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 1</span></span><br><span class="line">Integer findFirst = list.stream().findFirst().get();</span><br><span class="line"><span class="comment">// 1</span></span><br><span class="line">Integer findAny = list.stream().findAny().get();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 5</span></span><br><span class="line"><span class="keyword">long</span> count = list.stream().count();</span><br><span class="line"><span class="comment">// 5</span></span><br><span class="line">Integer max = list.stream().max(Integer::compareTo).get();</span><br><span class="line"><span class="comment">// 1</span></span><br><span class="line">Integer min = list.stream().min(Integer::compareTo).get();</span><br></pre></td></tr></table></figure>
+
+<h4 id="规约操作"><a href="#规约操作" class="headerlink" title="规约操作"></a>规约操作</h4><h5 id="reduce-accumulator"><a href="#reduce-accumulator" class="headerlink" title="reduce(accumulator)"></a>reduce(accumulator)</h5><p>第一次执行时,accumulator函数的第一个参数为流中的第一个元素,第二个参数为流中元素的第二个元素.<br>第二次执行时,第一个参数为第一次函数执行的结果,第二个参数为流中的第三个元素.<br>依次类推.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Integer integer = Stream.of(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>).reduce(<span class="keyword">new</span> BinaryOperator&lt;Integer&gt;() &#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Integer <span class="title">apply</span><span class="params">(Integer integer, Integer integer2)</span> </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">&quot;i1:&quot;</span> + integer);</span><br><span class="line">    integer += integer2;</span><br><span class="line">    System.out.println(<span class="string">&quot;i2:&quot;</span> + integer2);</span><br><span class="line">    System.out.println(<span class="string">&quot;i1:&quot;</span> + integer);</span><br><span class="line">    System.out.println(<span class="string">&quot;-------------&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> integer;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;).get();</span><br><span class="line">System.out.println(integer);</span><br></pre></td></tr></table></figure>
+
+<p>i1:1<br>i2:2<br>i1:3</p>
+<hr>
+<p>i1:3<br>i2:3<br>i1:6</p>
+<hr>
+<p>i1:6<br>i2:4<br>i1:10</p>
+<hr>
+<p>10</p>
+<h5 id="reduce-T-identity-accumulator"><a href="#reduce-T-identity-accumulator" class="headerlink" title="reduce(T identity, accumulator)"></a>reduce(T identity, accumulator)</h5><p>流程跟上面一样,只是第一次执行时,accumulator函数的第一个参数为identity,而第二个参数为流中的第一个元素.<br>如果Stream为空,就直接返回该值.<br>另一方面,该方法不会返回Optional,因为该方法不会出现null.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Integer integer = Stream.of(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>).reduce(<span class="number">11</span>, <span class="keyword">new</span> BinaryOperator&lt;Integer&gt;() &#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Integer <span class="title">apply</span><span class="params">(Integer integer, Integer integer2)</span> </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">&quot;i1:&quot;</span> + integer);</span><br><span class="line">    integer += integer2;</span><br><span class="line">    System.out.println(<span class="string">&quot;i2:&quot;</span> + integer2);</span><br><span class="line">    System.out.println(<span class="string">&quot;i1:&quot;</span> + integer);</span><br><span class="line">    System.out.println(<span class="string">&quot;-------------&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> integer;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line">System.out.println(integer);</span><br></pre></td></tr></table></figure>
+
+<p>i1:11<br>i2:1<br>i1:12</p>
+<hr>
+<p>i1:12<br>i2:2<br>i1:14</p>
+<hr>
+<p>i1:14<br>i2:3<br>i1:17</p>
+<hr>
+<p>i1:17<br>i2:4<br>i1:21</p>
+<hr>
+<p>21</p>
+<h5 id="reduce-identity-accumulator-combiner"><a href="#reduce-identity-accumulator-combiner" class="headerlink" title="reduce(identity,accumulator,combiner)"></a>reduce(identity,accumulator,combiner)</h5><p>在串行流(stream)中,该方法跟第二个方法一样,即第三个参数combiner不会起作用.<br>在并行流(parallelStream)中,我们知道流被fork join出多个线程进行执行,<br>此时每个线程的执行流程就跟第二个方法reduce(identity,accumulator)一样.<br>而第三个参数combiner函数,则是将每个线程的执行结果当成一个新的流,然后使用第一个方法reduce(accumulator)流程进行规约.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">ArrayList&lt;Integer&gt; arrayList = Stream.of(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>).reduce(<span class="keyword">new</span> ArrayList&lt;Integer&gt;(),</span><br><span class="line">    <span class="keyword">new</span> BiFunction&lt;ArrayList&lt;Integer&gt;, Integer, ArrayList&lt;Integer&gt;&gt;() &#123;</span><br><span class="line">      <span class="meta">@Override</span></span><br><span class="line">      <span class="function"><span class="keyword">public</span> ArrayList&lt;Integer&gt; <span class="title">apply</span><span class="params">(ArrayList&lt;Integer&gt; integers, Integer integer)</span> </span>&#123;</span><br><span class="line">        integers.add(integer);</span><br><span class="line">        System.out.println(<span class="string">&quot;i1:&quot;</span> + integer);</span><br><span class="line">        System.out.println(<span class="string">&quot;i2:&quot;</span> + integers);</span><br><span class="line">        System.out.println(<span class="string">&quot;BiFunction&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> integers;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;, <span class="keyword">new</span> BinaryOperator&lt;ArrayList&lt;Integer&gt;&gt;() &#123;</span><br><span class="line">      <span class="meta">@Override</span></span><br><span class="line">      <span class="function"><span class="keyword">public</span> ArrayList&lt;Integer&gt; <span class="title">apply</span><span class="params">(ArrayList&lt;Integer&gt; integers, ArrayList&lt;Integer&gt; integers2)</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;BinaryOperator&quot;</span>);</span><br><span class="line">        integers.addAll(integers2);</span><br><span class="line">        System.out.println(<span class="string">&quot;i3:&quot;</span> + integers2);</span><br><span class="line">        System.out.println(<span class="string">&quot;i4:&quot;</span> + integers);</span><br><span class="line">        System.out.println(<span class="string">&quot;-------------------&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> integers;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">System.out.println(arrayList);</span><br></pre></td></tr></table></figure>
+
+<p>i1:1<br>i2:[1]<br>BiFunction<br>i1:2<br>i2:[1, 2]<br>BiFunction<br>i1:3<br>i2:[1, 2, 3]<br>BiFunction<br>i1:4<br>i2:[1, 2, 3, 4]<br>BiFunction<br>[1, 2, 3, 4]</p>
+<h4 id="收集操作"><a href="#收集操作" class="headerlink" title="收集操作"></a>收集操作</h4><h5 id="collect"><a href="#collect" class="headerlink" title="collect"></a>collect</h5><p>接收一个Collector实例,将流中元素收集成另外一个数据结构.<br>Collector是一个接口,有以下5个抽象方法:</p>
+<p>1.supplier()<br>创建一个结果容器A.</p>
+<p>2.accumulator()<br>消费型接口,第一个参数为容器A,第二个参数为流中元素T.</p>
+<p>3.combiner()<br>函数接口,该参数的作用跟上一个方法(reduce)中的combiner参数一样,<br>将并行流中各个子进程的运行结果(accumulator函数操作后的容器A)进行合并.</p>
+<p>4.finisher()<br>函数式接口,参数为容器A,返回类型为为collect方法最终想要的结果R.</p>
+<p>5.characteristics()<br>返回一个不可变的Set集合,用来表明该Collector的特征.有以下三个特征,<br>CONCURRENT:表示此收集器支持并发.<br>UNORDERED:表示该收集操作不会保留流中元素原有的顺序.<br>IDENTITY_FINISH:表示finisher参数只是标识而已,可忽略.</p>
+<h4 id="Collectors"><a href="#Collectors" class="headerlink" title="Collectors"></a>Collectors</h4><h5 id="list-set-map"><a href="#list-set-map" class="headerlink" title="list/set/map"></a>list/set/map</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Student s1 = <span class="keyword">new</span> Student(<span class="string">&quot;aa&quot;</span>, <span class="number">10</span>, <span class="number">1</span>);</span><br><span class="line">Student s2 = <span class="keyword">new</span> Student(<span class="string">&quot;bb&quot;</span>, <span class="number">20</span>, <span class="number">2</span>);</span><br><span class="line">Student s3 = <span class="keyword">new</span> Student(<span class="string">&quot;cc&quot;</span>, <span class="number">10</span>, <span class="number">3</span>);</span><br><span class="line">List&lt;Student&gt; list = Arrays.asList(s1, s2, s3);</span><br><span class="line"></span><br><span class="line"><span class="comment">// [10, 20, 10]</span></span><br><span class="line">List&lt;Integer&gt; ageList = list.stream().map(Student::getAge).collect(Collectors.toList());</span><br><span class="line"><span class="comment">// [20, 10]</span></span><br><span class="line">Set&lt;Integer&gt; ageSet = list.stream().map(Student::getAge).collect(Collectors.toSet());</span><br><span class="line"><span class="comment">// &#123;cc=10, bb=20, aa=10&#125;,key不能相同,否则报错</span></span><br><span class="line">Map&lt;String, Integer&gt; studentMap = list.stream().collect(Collectors.toMap(Student::getName, Student::getAge));</span><br><span class="line"><span class="comment">// (aa,bb,cc),字符串分隔符连接</span></span><br><span class="line">String joinName = list.stream().map(Student::getName).collect(Collectors.joining(<span class="string">&quot;,&quot;</span>, <span class="string">&quot;(&quot;</span>, <span class="string">&quot;)&quot;</span>));</span><br></pre></td></tr></table></figure>
+
+<h5 id="聚合操作"><a href="#聚合操作" class="headerlink" title="聚合操作"></a>聚合操作</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// list.stream().collect(Collectors.counting());</span></span><br><span class="line">Long count = list.stream().count();</span><br><span class="line"></span><br><span class="line"><span class="comment">// list.stream().map(Student::getAge).collect(Collectors.maxBy(Integer::compare)).get();</span></span><br><span class="line">Integer maxAge = list.stream().map(Student::getAge).max(Integer::compare).get();</span><br><span class="line"></span><br><span class="line"><span class="comment">// list.stream().collect(Collectors.averagingDouble(Student::getAge));</span></span><br><span class="line">Integer sumAge = list.stream().mapToInt(Student::getAge).sum();</span><br><span class="line"></span><br><span class="line">Double averageAge = list.stream().collect(Collectors.averagingDouble(Student::getAge));</span><br><span class="line"></span><br><span class="line">DoubleSummaryStatistics statistics = list.stream().collect(Collectors.summarizingDouble(Student::getAge));</span><br><span class="line">System.out.println(statistics.getMax());</span><br><span class="line">System.out.println(statistics.getCount());</span><br><span class="line">System.out.println(statistics.getSum());</span><br><span class="line">System.out.println(statistics.getAverage());</span><br></pre></td></tr></table></figure>
+
+<h5 id="分组"><a href="#分组" class="headerlink" title="分组"></a>分组</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;Integer, List&lt;Student&gt;&gt; ageMap = list.stream().collect(Collectors.groupingBy(Student::getAge));</span><br><span class="line"><span class="comment">// &#123;20=[bb  20  2], 10=[aa  10  1, cc 10  3]&#125;</span></span><br><span class="line">System.out.println(ageMap);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>多重分组,先根据id分再根据年龄分</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;Integer, Map&lt;Integer, List&lt;Student&gt;&gt;&gt; idAgeMap = list.stream().collect(</span><br><span class="line">    Collectors.groupingBy(Student::getId, Collectors.groupingBy(Student::getAge)));</span><br><span class="line"><span class="comment">// &#123;1=&#123;10=[aa 10  1]&#125;, 2=&#123;20=[bb  20  2]&#125;, 3=&#123;10=[cc  10  3]&#125;&#125;</span></span><br><span class="line">System.out.println(idAgeMap);</span><br></pre></td></tr></table></figure>
+
+<h5 id="分区"><a href="#分区" class="headerlink" title="分区"></a>分区</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;Boolean, List&lt;Student&gt;&gt; partMap = list.stream().collect(Collectors.partitioningBy(v -&gt; v.getAge() &gt; <span class="number">10</span>));</span><br><span class="line"><span class="comment">// &#123;false=[aa 10  1, cc 10  3], true=[bb  20  2]&#125;</span></span><br><span class="line">System.out.println(partMap);</span><br></pre></td></tr></table></figure>
+
+<h5 id="规约"><a href="#规约" class="headerlink" title="规约"></a>规约</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// list.stream().map(Student::getAge).collect(Collectors.reducing(Integer::sum)).get();</span></span><br><span class="line">Integer allAge = list.stream().map(Student::getAge).reduce(Integer::sum).get();</span><br><span class="line">System.out.println(allAge);</span><br></pre></td></tr></table></figure>
+
+<h3 id="读取文件"><a href="#读取文件" class="headerlink" title="读取文件"></a>读取文件</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">  Files.lines(Paths.get(<span class="string">&quot;/xxx/xx/x.log&quot;</span>), StandardCharsets.UTF_8).forEach(s -&gt; &#123;</span><br><span class="line">    System.out.println(s);</span><br><span class="line">  &#125;);</span><br><span class="line"></span><br><span class="line">&#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">  e.printStackTrace();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/java/" rel="tag"># java</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/09/14/java%E5%90%84%E7%89%88%E6%9C%AC%E4%B8%8B%E8%BD%BD%E5%9C%B0%E5%9D%80/" rel="prev" title="java下载地址">
+                  <i class="fa fa-chevron-left"></i> java下载地址
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/11/04/elasticsearch-java-transport%20client/" rel="next" title="elasticsearch-java-transport client">
+                  elasticsearch-java-transport client <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="spark-sql下运行命令,set -v;spark版本2.4.8,hive版本2.1.0">
+<meta property="og:type" content="article">
+<meta property="og:title" content="spark on hive">
+<meta property="og:url" content="https://maoeryu.github.io/2022/07/29/spark%20on%20hive/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="spark-sql下运行命令,set -v;spark版本2.4.8,hive版本2.1.0">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-07-28T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-09-07T09:31:22.565Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hive">
+<meta property="article:tag" content="spark">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/07/29/spark%20on%20hive/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>spark on hive | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">1.</span> <span class="nav-text">配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#spark-on-hive"><span class="nav-number">1.1.</span> <span class="nav-text">spark on hive</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hive-on-spark"><span class="nav-number">1.2.</span> <span class="nav-text">hive on spark</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#hive-on-spark%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.2.1.</span> <span class="nav-text">hive on spark实现</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%B8%8B%E8%BD%BD"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">下载</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%A7%A3%E5%8E%8B%E7%BC%96%E8%AF%91"><span class="nav-number">1.2.1.2.</span> <span class="nav-text">解压编译</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%B8%8A%E4%BC%A0jar%E5%8C%85"><span class="nav-number">1.2.1.3.</span> <span class="nav-text">上传jar包</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-1"><span class="nav-number">1.2.1.4.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E9%AA%8C%E8%AF%81"><span class="nav-number">1.2.1.5.</span> <span class="nav-text">测试验证</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0"><span class="nav-number">2.</span> <span class="nav-text">配置参数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#common"><span class="nav-number">2.1.</span> <span class="nav-text">common</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cbo"><span class="nav-number">2.2.</span> <span class="nav-text">cbo</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hive"><span class="nav-number">2.3.</span> <span class="nav-text">hive</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#inMemoryColumnarStorage"><span class="nav-number">2.4.</span> <span class="nav-text">inMemoryColumnarStorage</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#orc"><span class="nav-number">2.5.</span> <span class="nav-text">orc</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#parquet"><span class="nav-number">2.6.</span> <span class="nav-text">parquet</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#shuffle"><span class="nav-number">2.7.</span> <span class="nav-text">shuffle</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sources"><span class="nav-number">2.8.</span> <span class="nav-text">sources</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#statistics"><span class="nav-number">2.9.</span> <span class="nav-text">statistics</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#streaming"><span class="nav-number">2.10.</span> <span class="nav-text">streaming</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#thriftserver"><span class="nav-number">2.11.</span> <span class="nav-text">thriftserver</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/07/29/spark%20on%20hive/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          spark on hive
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-07-29 00:00:00" itemprop="dateCreated datePublished" datetime="2022-07-29T00:00:00+08:00">2022-07-29</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-09-07 17:31:22" itemprop="dateModified" datetime="2022-09-07T17:31:22+08:00">2022-09-07</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+          , 
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>spark-sql下运行命令,<code>set -v;</code><br>spark版本2.4.8,hive版本2.1.0</p>
+<span id="more"></span>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>复制hive-site.xml到spark conf目录下,复制mysql驱动到spark jars目录下.<br>启动spark sql,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spark-sql --master yarn</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>hive on spark大体与spark on hive结构类似,只是SQL引擎不同,但是计算引擎都是spark.</p>
+</blockquote>
+<h3 id="spark-on-hive"><a href="#spark-on-hive" class="headerlink" title="spark on hive"></a>spark on hive</h3><p>Hive只作为存储角色,Spark负责sql解析优化,执行.<br>这里可以理解为Spark通过Spark SQL使用Hive语句操作Hive表,底层运行的还是 Spark RDD.<br>具体步骤如下:</p>
+<ol>
+<li>通过SparkSQL,加载Hive的配置文件,获取到Hive的元数据信息.</li>
+<li>获取到Hive的元数据信息之后可以拿到Hive表的数据.</li>
+<li>通过SparkSQL来操作Hive表中的数据.</li>
+</ol>
+<h3 id="hive-on-spark"><a href="#hive-on-spark" class="headerlink" title="hive on spark"></a>hive on spark</h3><p>Hive既作为存储又负责sql的解析优化,Spark负责执行.<br>这里Hive的执行引擎变成了Spark,不再是MR,这个要实现比Spark on Hive麻烦很多, 必须重新编译你的spark和导入jar包,不过目前大部分使用的确实是spark on hive.</p>
+<p>Hive默认使用MapReduce作为执行引擎,即Hive on MapReduce.<br>实际上,Hive还可以使用Tez和Spark作为其执行引擎,分别为Hive on Tez和Hive on Spark.<br>由于MapReduce中间计算均需要写入磁盘,而Spark是放在内存中,所以总体来讲Spark比MapReduce快很多.<br>因此,Hive on Spark也会比Hive on MapReduce快.</p>
+<h4 id="hive-on-spark实现"><a href="#hive-on-spark实现" class="headerlink" title="hive on spark实现"></a>hive on spark实现</h4><p>要使用Hive on Spark,所用的Spark版本必须不包含Hive的相关jar包.<br>在spark官网下载的编译的Spark都是有集成Hive的,因此需要自己下载源码来编译,并且编译的时候不指定Hive.<br>主要是spark和hive版本对应上,建议使用hive的pom.xml配置文件里配置的版本.</p>
+<h5 id="下载"><a href="#下载" class="headerlink" title="下载"></a>下载</h5><p>下载hive源码包查看spark版本.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">wget http:&#x2F;&#x2F;archive.apache.org&#x2F;dist&#x2F;hive&#x2F;hive-3.1.2&#x2F;apache-hive-3.1.2-src.tar.gz</span><br><span class="line">tar -zxvf apache-hive-3.1.2-src.tar.gz</span><br><span class="line">egrep &#39;spark.version|hadoop.version&#39; apache-hive-3.1.2-src&#x2F;pom.xml</span><br></pre></td></tr></table></figure>
+
+<p>下载对应版本的spark<br>下载地址:<a target="_blank" rel="noopener" href="https://archive.apache.org/dist/spark/spark-2.3.0/">https://archive.apache.org/dist/spark/spark-2.3.0/</a></p>
+<h5 id="解压编译"><a href="#解压编译" class="headerlink" title="解压编译"></a>解压编译</h5><p>编译会自动下载maven和scala,存放在build目录下.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"># 解压</span><br><span class="line">tar -zxvf spark-2.3.0.tgz</span><br><span class="line">cd spark-2.3.0</span><br><span class="line"># 开始编译,注意hadoop版本</span><br><span class="line">.&#x2F;dev&#x2F;make-distribution.sh --name without-hive --tgz -Pyarn -Phadoop-2.7 -Dhadoop.version&#x3D;3.3.1 -Pparquet-provided -Porc-provided -Phadoop-provided</span><br><span class="line"># 或者</span><br><span class="line">.&#x2F;dev&#x2F;make-distribution.sh --name &quot;without-hive&quot; --tgz &quot;-Pyarn,hadoop-provided,hadoop-2.7,parquet-provided,orc-provided&quot;</span><br><span class="line"></span><br><span class="line">命令解释:</span><br><span class="line">-Phadoop-3.3 \  -Dhadoop.version&#x3D;3.3.1 \ 指定hadoop版本为3.3.1</span><br><span class="line">--name without-hive hive是编译文件的名字参数</span><br><span class="line">--tgz 压缩成tgz格式</span><br><span class="line">-Pyarn 是支持yarn</span><br><span class="line">-Phadoop-2.7 是支持的hadoop版本</span><br><span class="line">-Dhadoop.version&#x3D;3.3.1 运行环境</span><br></pre></td></tr></table></figure>
+
+<p>解压.<br>tar -zxvf spark-2.3.0-bin-without-hive.tgz</p>
+<h5 id="上传jar包"><a href="#上传jar包" class="headerlink" title="上传jar包"></a>上传jar包</h5><p>把spark jar包上传到HDFS(hive-site.xml文件里配置需要).</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">## 创建日志存放目录</span><br><span class="line">hadoop fs -mkdir -p hdfs:&#x2F;&#x2F;xxx&#x2F;tmp&#x2F;spark</span><br><span class="line">## 在hdfs上创建存放jar包目录</span><br><span class="line">hadoop fs -mkdir -p &#x2F;spark&#x2F;spark-2.4.5-jars</span><br><span class="line">## 上传jars到HDFS</span><br><span class="line">hadoop fs -put .&#x2F;jars&#x2F;* &#x2F;spark&#x2F;spark-2.4.5-jars&#x2F;</span><br></pre></td></tr></table></figure>
+
+<p>打包spark jar包并上传到HDFS(spark-default.xml文件需要配置打包好的jar包,spark-submit会调用).</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">jar cv0f spark2.3.0-without-hive-libs.jar -C .&#x2F;jars&#x2F; .</span><br><span class="line">## 在hdfs上创建存放jar包目录</span><br><span class="line">hadoop fs -mkdir -p &#x2F;spark&#x2F;jars</span><br><span class="line">## 上传jars到HDFS</span><br><span class="line">hadoop fs -put spark2.3.0-without-hive-libs.jar &#x2F;spark&#x2F;jars&#x2F;</span><br></pre></td></tr></table></figure>
+
+<h5 id="配置-1"><a href="#配置-1" class="headerlink" title="配置"></a>配置</h5><p>1)配置spark-defaults.conf</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">spark.master                     yarn</span><br><span class="line">spark.home                       &#x2F;xxx&#x2F;spark-2.3.0-bin-without-hive</span><br><span class="line">spark.eventLog.enabled           true</span><br><span class="line">spark.eventLog.dir               hdfs:&#x2F;&#x2F;xxx&#x2F;tmp&#x2F;spark</span><br><span class="line">spark.serializer                 org.apache.spark.serializer.KryoSerializer</span><br><span class="line">spark.executor.memory            1g</span><br><span class="line">spark.driver.memory              1g</span><br><span class="line">spark.executor.extraJavaOptions  -XX:+PrintGCDetails -Dkey&#x3D;value -Dnumbers&#x3D;&quot;one two three&quot;</span><br><span class="line">spark.yarn.archive               hdfs:&#x2F;&#x2F;&#x2F;spark&#x2F;jars&#x2F;spark2.3.0-without-hive-libs.jar</span><br><span class="line">spark.yarn.jars                  hdfs:&#x2F;&#x2F;&#x2F;spark&#x2F;jars&#x2F;spark2.3.0-without-hive-libs.jar</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">### 参数解释,不用复制到配置文件中</span><br><span class="line"># spark.master指定Spark运行模式,可以是yarn-client、yarn-cluster...</span><br><span class="line"># spark.home指定SPARK_HOME路径</span><br><span class="line"># spark.eventLog.enabled需要设为true</span><br><span class="line"># spark.eventLog.dir指定路径,放在master节点的hdfs中,端口要跟hdfs设置的端口一致(默认为8020),否则会报错</span><br><span class="line"># spark.executor.memory和spark.driver.memory指定executor和dirver的内存,512m或1g</span><br></pre></td></tr></table></figure>
+
+<p>2)配置spark-env.sh<br>在spark-env.sh添加如下内容.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">export SPARK_DIST_CLASSPATH&#x3D;$(hadoop classpath)</span><br><span class="line">export HADOOP_CONF_DIR&#x3D;&#123;HADOOP_HOME&#125;&#x2F;etc&#x2F;hadoop&#x2F;</span><br></pre></td></tr></table></figure>
+
+<p>在Yarn模式运行时,需要将以下三个包放在HIVE_HOME/lib下:<br>scala-library<br>spark-core<br>spark-network-common</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">rm -f .&#x2F;lib&#x2F;scala-library-*.jar</span><br><span class="line">rm -f .&#x2F;lib&#x2F;spark-core_*.jar</span><br><span class="line">rm -f .&#x2F;lib&#x2F;spark-network-common_*.jar</span><br><span class="line"></span><br><span class="line"># copy这三个jar到hive lib目录下</span><br><span class="line">cp jars&#x2F;scala-library-*.jar ..&#x2F;apache-hive-3.1.2-bin&#x2F;lib&#x2F;</span><br><span class="line">cp jars&#x2F;spark-core_*.jar ..&#x2F;apache-hive-3.1.2-bin&#x2F;lib&#x2F;</span><br><span class="line">cp jars&#x2F;spark-network-common_*.jar ..&#x2F;apache-hive-3.1.2-bin&#x2F;lib&#x2F;</span><br></pre></td></tr></table></figure>
+
+<p>3)配置hive-site.xml</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;hive.metastore.warehouse.dir&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;&#x2F;user&#x2F;hive&#x2F;warehouse&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;javax.jdo.option.ConnectionURL&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;jdbc:mysql:&#x2F;&#x2F;xxx:3306&#x2F;xxx?createDatabaseIfNotExist&#x3D;true&amp;useSSL&#x3D;false&amp;serverTimezone&#x3D;Asia&#x2F;Shanghai&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;javax.jdo.option.ConnectionDriverName&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;com.mysql.jdbc.Driver&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;javax.jdo.option.ConnectionUserName&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;root&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;javax.jdo.option.ConnectionPassword&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;123456&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;hive.metastore.schema.verification&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;false&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;system:user.name&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;root&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;hive.server2.thrift.bind.host&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;xxx&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;hive.server2.thrift.port&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;11000&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;hive.metastore.uris&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;thrift:&#x2F;&#x2F;xxx:9083&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line"></span><br><span class="line">&lt;!--Spark依赖位置,上面上传jar包的hdfs路径--&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;spark.yarn.jars&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;hdfs:&#x2F;&#x2F;&#x2F;spark&#x2F;spark-2.3.0-jars&#x2F;*.jar&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line"></span><br><span class="line">&lt;!--Hive执行引擎,使用spark--&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;hive.execution.engine&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;spark&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br><span class="line"></span><br><span class="line">&lt;!--Hive和spark连接超时时间--&gt;</span><br><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;hive.spark.client.connect.timeout&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;10000ms&lt;&#x2F;value&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
+
+<p>4)设置环境变量</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">export HIVE_HOME&#x3D;&#x2F;xxx&#x2F;apache-hive-3.1.2-bin</span><br><span class="line">export PATH&#x3D;$HIVE_HOME&#x2F;bin:$PATH</span><br><span class="line">export SPARK_HOME&#x3D;&#x2F;xxx&#x2F;spark-2.3.0-bin-without-hive</span><br><span class="line">export PATH&#x3D;$SPARK_HOME&#x2F;bin:$PATH</span><br></pre></td></tr></table></figure>
+
+<p>5)初始化数据库(mysql)<br>schematool -initSchema -dbType mysql --verbose</p>
+<p>6)启动或者重启hive的metstore服务<br>ss -atnlp|grep 9083<br>nohup hive --service metastore &amp;</p>
+<h5 id="测试验证"><a href="#测试验证" class="headerlink" title="测试验证"></a>测试验证</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">spark-submit \</span><br><span class="line">--class org.apache.spark.examples.SparkPi \</span><br><span class="line">--master yarn \</span><br><span class="line">--deploy-mode client \</span><br><span class="line">--driver-memory 1G \</span><br><span class="line">--num-executors 3 \</span><br><span class="line">--executor-memory 1G \</span><br><span class="line">--executor-cores 1 \</span><br><span class="line">&#x2F;xxx&#x2F;spark-2.3.0-bin-without-hive&#x2F;examples&#x2F;jars&#x2F;spark-examples_*.jar 10</span><br></pre></td></tr></table></figure>
+
+<p>1,phone<br>2,music<br>3,apple<br>4,clothes</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> xxx(id string,shop string) <span class="type">row</span> format delimited fields terminated <span class="keyword">by</span> <span class="string">&#x27;,&#x27;</span>;</span><br><span class="line">load data <span class="keyword">local</span> inpath <span class="string">&#x27;/xxx/xxx-data&#x27;</span> <span class="keyword">into</span> <span class="keyword">table</span> xxx;</span><br><span class="line"># 通过<span class="keyword">insert</span>添加数据,会提交spark任务</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> xxx;</span><br><span class="line"><span class="keyword">select</span> <span class="built_in">count</span>(<span class="operator">*</span>) <span class="keyword">from</span> xxx;</span><br></pre></td></tr></table></figure>
+
+<h2 id="配置参数"><a href="#配置参数" class="headerlink" title="配置参数"></a>配置参数</h2><h3 id="common"><a href="#common" class="headerlink" title="common"></a>common</h3><p>spark.sql.adaptive.enabled<br>FALSE<br>当为真时,启用自适应查询执行.</p>
+<p>spark.sql.adaptive.shuffle.targetPostShuffleInputSize<br>67108864b<br>任务的目标后随机输入大小(以字节为单位).</p>
+<p>spark.sql.autoBroadcastJoinThreshold<br>10485760<br>配置在执行连接时将广播到所有工作节点的表的最大大小(以字节为单位).通过将此值设置为 -1 可以禁用广播.请注意,当前仅支持命令 <code>ANALYZE TABLE <code>&lt;tableName&gt;</code> 的 Hive Metastore 表的统计信息.COMPUTE STATISTICS noscan</code> 已经运行,并且是基于文件的数据源表,其中直接在数据文件上计算统计信息.</p>
+<p>spark.sql.avro.compression.codec<br>snappy<br>压缩编解码器用于编写 AVRO 文件.支持的编解码器:uncompressed/deflate/snappy/bzip2 和 xz.默认编解码器是活泼的.</p>
+<p>spark.sql.avro.deflate.level<br>-1<br>用于编写 AVRO 文件的 deflate 编解码器的压缩级别.有效值必须在 1 到 9(含)或 -1 的范围内.默认值为 -1,对应当前实现中的 6 级.</p>
+<p>spark.sql.broadcastTimeout<br>300000ms<br>Timeout 以秒为单位,用于广播连接中的广播等待时间.</p>
+<h3 id="cbo"><a href="#cbo" class="headerlink" title="cbo"></a>cbo</h3><p>spark.sql.cbo.enabled<br>FALSE<br>启用 CBO 以在设置为 true 时估计计划统计信息.</p>
+<p>spark.sql.cbo.joinReorder.dp.star.filter<br>FALSE<br>将星型连接过滤器启发式应用于基于成本的连接枚举.</p>
+<p>spark.sql.cbo.joinReorder.dp.threshold<br>12<br>动态规划算法中允许的最大连接节点数.</p>
+<p>spark.sql.cbo.joinReorder.enabled<br>FALSE<br>Enables 在 CBO 中加入重新排序.</p>
+<p>spark.sql.cbo.starSchemaDetection<br>FALSE<br>当为真时,它启用基于星型模式检测的连接重新排序.</p>
+<p>spark.sql.columnNameOfCorruptRecord<br><code>_corrupt_record</code><br>内部列的名称,用于存储无法解析的原始/未解析的 JSON 和 CSV 记录.</p>
+<p>spark.sql.crossJoin.enabled<br>FALSE<br>当为 false 时,如果查询包含没有明确 CROSS JOIN 语法的笛卡尔积,我们将抛出错误.</p>
+<p>spark.sql.execution.arrow.enabled<br>FALSE<br>当为真时,使用 Apache Arrow 进行列数据传输.当前可与 pyspark.sql.DataFrame.toPandas 和 pyspark.sql.SparkSession.createDataFrame 一起使用,当它的输入是 Pandas DataFrame 时.不支持以下数据类型:BinaryType/MapType/TimestampType 的 ArrayType 和嵌套的 StructType.</p>
+<p>spark.sql.execution.arrow.fallback.enabled<br>TRUE<br>当为真时,如果出现错误,&quot;spark.sql.execution.arrow.enabled&quot;启用的优化将自动回退到未优化的实现发生.</p>
+<p>spark.sql.execution.arrow.maxRecordsPerBatch<br>10000<br>使用 Apache Arrow 时,限制可写入内存中单个 ArrowRecordBatch 的最大记录数.如果设置为零或负数,则没有限制.</p>
+<p>spark.sql.extensions<br><code>&lt;undefined&gt;</code><br>用于配置 Spark Session 扩展的类的名称.该类应实现 Function1<code>[SparkSessionExtension, Unit]</code>,并且必须具有无参数构造函数.</p>
+<p>spark.sql.files.ignoreCorruptFiles<br>FALSE<br>是否忽略损坏的文件.如果为 true,则 Spark 作业在遇到损坏的文件时将继续运行,并且仍然会返回已读取的内容.</p>
+<p>spark.sql.files.ignoreMissingFiles<br>FALSE<br>是否忽略丢失的文件.如果为 true,则 Spark 作业在遇到丢失文件时将继续运行,并且仍然会返回已读取的内容.</p>
+<p>spark.sql.files.maxPartitionBytes<br>134217728<br>读取文件时打包到单个分区的最大字节数.</p>
+<p>spark.sql.files.maxRecordsPerFile<br>0<br>要写入单个文件的最大记录数.如果此值为零或负数,则没有限制.</p>
+<p>spark.sql.function.concatBinaryAsString<br>FALSE<br>当此选项设置为 false 并且所有输入都是二进制时,<code>functions.concat</code> 会以二进制形式返回输出.否则,它以字符串形式返回.</p>
+<p>spark.sql.function.eltOutputAsString<br>FALSE<br>当此选项设置为 false 并且所有输入均为二进制时,<code>elt</code> 将输出作为二进制返回.否则,它以字符串形式返回.</p>
+<p>spark.sql.groupByAliases<br>TRUE<br>当为 true 时,选择列表中的别名可以在 group by 子句中使用.如果为 false,则在案例中抛出分析异常.</p>
+<p>spark.sql.groupByOrdinal<br>TRUE<br>当为真时,group by 子句中的序数被视为选择列表中的位置.如果为 false,则忽略序数.</p>
+<h3 id="hive"><a href="#hive" class="headerlink" title="hive"></a>hive</h3><p>spark.sql.hive.caseSensitiveInferenceMode<br>INFER_AND_SAVE<br>设置当无法从 Hive 表的属性中读取区分大小写的架构时要执行的操作.虽然 Spark SQL 本身不区分大小写,但 Parquet 等 Hive 兼容的文件格式是.在查询由包含区分大小写的字段名称的文件支持的任何表时,Spark SQL 必须使用保留大小写的模式,否则查询可能不会返回准确的结果.有效选项包括 INFER_AND_SAVE(默认模式--从底层数据文件推断区分大小写的模式并将其写回表属性)/INFER_ONLY(推断模式但不尝试将其写入表属性)和NEVER_INFER(回退到使用不区分大小写的元存储架构而不是推断).</p>
+<p>spark.sql.hive.convertMetastoreCtas<br>TRUE<br>当设置为 true 时,Spark 将尝试使用内置数据源编写器而不是 CTAS 中的 Hive serde.只有在 Parquet 和 ORC 格式分别启用了 <code>spark.sql.hive.convertMetastoreParquet</code> 或 <code>spark.sql.hive.convertMetastoreOrc</code> 时,此标志才有效</p>
+<p>spark.sql.hive.convertMetastoreOrc<br>TRUE<br>设置为true时,内置的ORC读取器和写入器用于处理使用HiveQL语法创建的ORC表,而不是Hive serde.</p>
+<p>spark.sql.hive.convertMetastoreParquet<br>TRUE<br>当设置为 true 时,内置 Parquet 读取器和写入器用于处理使用 HiveQL 语法创建的 parquet 表,而不是 Hive serde.</p>
+<p>spark.sql.hive.convertMetastoreParquet.mergeSchema<br>FALSE<br>当为真时,还会尝试在不同的 Parquet 数据文件中合并可能不同但兼容的 Parquet 模式.此配置仅在&quot;spark.sql.hive.convertMetastoreParquet&quot;为真时有效.</p>
+<p>spark.sql.hive.filesourcePartitionFileCacheSize<br>262144000<br>当非零时,启用内存中分区文件元数据的缓存.所有表共享一个缓存,该缓存最多可以使用指定的 num 个字节来存储文件元数据.此配置仅在启用 hive 文件源分区管理时有效.</p>
+<p>spark.sql.hive.manageFilesourcePartitions<br>TRUE<br>当为 true 时,也为文件源表启用 Metastore 分区管理.这包括数据源和转换后的 Hive 表.启用分区管理后,数据源表将分区存储在 Hive Metastore 中,并在查询计划期间使用 Metastore 修剪分区.</p>
+<p>spark.sql.hive.metastore.barrierPrefixes<br><code>&lt;undefined&gt;</code><br>一个逗号分隔的类前缀列表,应该为 Spark SQL 正在与之通信的每个 Hive 版本显式重新加载.例如,在通常共享的前缀中声明的 Hive UDF(即 <code>org.apache.spark.*</code>).</p>
+<p>spark.sql.hive.metastore.jars<br>builtin<br> 用于实例化 HiveMetastoreClient 的 jar 的位置.此属性可以是以下三个选项之一:&quot; 1. &quot;builtin&quot; 使用 Hive 1.2.1,当启用 <code>-Phive</code> 时,它与 Spark 程序集捆绑在一起.选择此选项时,<code> spark.sql.hive.metastore.version</code> 必须是 <code>1.2.1</code> 或未定义.2.&quot;maven&quot;使用从 Maven 存储库下载的指定版本的 Hive jar.3.类路径采用 Hive 和 Hadoop 的标准格式.</p>
+<p>spark.sql.hive.metastore.sharedPrefixes<br>com.mysql.jdbc,org.postgresql,com.microsoft.sqlserver,oracle.jdbc<br>应使用加载的类前缀的逗号分隔列表在 Spark SQL 和特定版本的 Hive 之间共享的类加载器.应该共享的类的一个示例是与元存储对话所需的 JDBC 驱动程序.其他需要共享的类是那些与已经共享的类交互的类.例如,log4j 使用的自定义附加程序.</p>
+<p>spark.sql.hive.metastore.version<br>1.2.1<br>Hive 元存储的版本.可用选项为 <code>0.12.0</code> 到 <code>2.3.3</code>.</p>
+<p>spark.sql.hive.metastorePartitionPruning<br>TRUE<br>当为 true 时,一些谓词将被下推到 Hive 元存储中,以便可以更早地消除不匹配的分区.这仅影响未转换为文件源关系的 Hive 表(有关更多信息,请参阅 HiveUtils.CONVERT_METASTORE_PARQUET 和 HiveUtils.CONVERT_METASTORE_ORC).</p>
+<p>spark.sql.hive.thriftServer.async<br>TRUE<br>当设置为 true 时,Hive Thrift 服务器以异步方式执行 SQL 查询.</p>
+<p>spark.sql.hive.thriftServer.singleSession<br>FALSE<br>设置为 true 时,Hive Thrift 服务器以单会话模式运行.所有 JDBC/ODBC 连接共享临时视图/函数注册表/SQL 配置和当前数据库.</p>
+<p>spark.sql.hive.verifyPartitionPath<br>FALSE<br>当为true时,读取存储在HDFS中的数据时检查表根目录下的所有分区路径.此配置将在未来的版本中弃用,并由 spark.files.ignoreMissingFiles 取代.</p>
+<p>spark.sql.hive.version<br>1.2.1<br>deprecated,请使用 spark.sql.hive.metastore.version 获取 Spark 中的 Hive 版本.</p>
+<h3 id="inMemoryColumnarStorage"><a href="#inMemoryColumnarStorage" class="headerlink" title="inMemoryColumnarStorage"></a>inMemoryColumnarStorage</h3><p>spark.sql.inMemoryColumnarStorage.batchSize<br>10000<br>控制列缓存的批次大小.较大的批处理大小可以提高内存利用率和压缩率,但在缓存数据时会出现 OOM.</p>
+<p>spark.sql.inMemoryColumnarStorage.compressed<br>TRUE<br>当设置为 true Spark SQL 将根据数据的统计信息自动为每一列选择压缩编解码器.</p>
+<p>spark.sql.inMemoryColumnarStorage.enableVectorizedReader<br>TRUE<br>为列缓存启用矢量化读取器.</p>
+<p>spark.sql.legacy.replaceDatabricksSparkAvro.enabled<br>TRUE<br>如果设置为true,则将数据源提供程序com.databricks.spark.avro映射到内置但外部的Avro数据源向后兼容的模块.</p>
+<p>spark.sql.legacy.sizeOfNull<br>TRUE<br>如果设置为true,则null的大小返回-1.此行为是从 Hive 继承的.如果标志被禁用,则 size 函数为 null 输入返回 null.</p>
+<p>spark.sql.optimizer.excludedRules<br><code>&lt;undefined&gt;</code><br>配置优化器中要禁用的规则列表,其中规则由规则名称指定并以逗号分隔.不能保证最终会排除此配置中的所有规则,因为某些规则是正确性所必需的.优化器将记录确实已被排除的规则.</p>
+<h3 id="orc"><a href="#orc" class="headerlink" title="orc"></a>orc</h3><p>spark.sql.orc.columnarReaderBatchSize<br>4096<br>orc 矢量化读取器批处理中包含的行数.应仔细选择该数字,以尽量减少开销并避免读取数据时出现 OOM.</p>
+<p>spark.sql.orc.compression.codec<br>snappy<br>设置编写ORC文件时使用的压缩编解码器.如果在特定于表的选项/属性中指定了&quot;compression&quot;或&quot;orc.compress&quot;,则优先级为&quot;compression&quot;/&quot;orc.compress&quot;/&quot;spark.sql.orc.compression.codec&quot;.可接受的值包括:无/未压缩/snappy/zlib/lzo.</p>
+<p>spark.sql.orc.enableVectorizedReader<br>TRUE<br>Enables 矢量化兽人解码.</p>
+<p>spark.sql.orc.filterPushdown<br>TRUE</p>
+<p>spark.sql.orderByOrdinal<br>TRUE<br>当为真时,序数被视为选择列表中的位置.如果为 false,则忽略 order/sort by 子句中的序数.</p>
+<h3 id="parquet"><a href="#parquet" class="headerlink" title="parquet"></a>parquet</h3><p>spark.sql.parquet.binaryAsString<br>FALSE<br>其他一些 Parquet 生成系统,特别是 Impala 和旧版本的 Spark SQL,在写出 Parquet 模式时不区分二进制数据和字符串.此标志告诉 Spark SQL 将二进制数据解释为字符串以提供与这些系统的兼容性.</p>
+<p>spark.sql.parquet.columnarReaderBatchSize<br>4096<br>parquet 矢量化读取器批处理中包含的行数.应仔细选择该数字,以尽量减少开销并避免读取数据时出现 OOM.</p>
+<p>spark.sql.parquet.compression.codec<br>snappy<br>设置编写 Parquet 文件时使用的压缩编解码器.如果在特定于表的选项/属性中指定了&quot;compression&quot;或&quot;parquet.compression&quot;,则优先级为&quot;compression&quot;/&quot;parquet.compression&quot;/&quot;spark.sql.parquet.compression.codec&quot;.可接受的值包括:none/uncompressed/snappy/gzip/lzo/brotli/lz4/zstd.</p>
+<p>spark.sql.parquet.enableVectorizedReader<br>TRUE<br>Enables 矢量化镶木地板解码.</p>
+<p>spark.sql.parquet.filterPushdown<br>TRUE<br>Enables Parquet 过滤器下推优化设置为 true.</p>
+<p>spark.sql.parquet.int64AsTimestampMillis<br>FALSE<br>(自 Spark 2.3 起已弃用,请设置 spark.sql.parquet.outputTimestampType.)如果为 true,时间戳值将存储为 INT64,TIMESTAMP_MILLIS 作为扩展类型.在这种模式下,时间戳值的微秒部分将被截断.</p>
+<p>spark.sql.parquet.int96AsTimestamp<br>TRUE<br>一些 Parquet 生产系统,特别是 Impala,将 Timestamp 存储到 INT96 中.Spark 还将 Timestamp 存储为 INT96,因为我们需要避免纳秒字段的精度丢失.该标志告诉 Spark SQL 将 INT96 数据解释为时间戳,以提供与这些系统的兼容性.</p>
+<p>spark.sql.parquet.int96TimestampConversion<br>FALSE<br>这控制在转换为时间戳时是否应将时间戳调整应用于 INT96 数据,用于 Impala 写入的数据.这是必要的,因为 Impala 使用与 Hive 和 Spark 不同的时区偏移存储 INT96 数据.</p>
+<p>spark.sql.parquet.mergeSchema<br>FALSE<br>当为 true 时,Parquet 数据源合并从所有数据文件收集的模式,否则从摘要文件或随机数据文件中选择模式(如果没有摘要)文件可用.</p>
+<p>spark.sql.parquet.outputTimestampType<br>INT96<br>设置 Spark 将数据写入 Parquet 文件时使用的 Parquet 时间戳类型.INT96 是 Parquet 中非标准但常用的时间戳类型.TIMESTAMP_MICROS 是 Parquet 中的标准时间戳类型,它存储 Unix 纪元的微秒数.TIMESTAMP_MILLIS 也是标准的,但精度为毫秒,这意味着 Spark 必须截断其时间戳值的微秒部分.</p>
+<p>spark.sql.parquet.recordLevelFilter.enabled<br>FALSE<br>如果为真,则使用下推过滤器启用 Parquet 的本机记录级过滤.此配置仅在启用&quot;spark.sql.parquet.filterPushdown&quot;且未使用矢量化阅读器时有效.您可以通过将&quot;spark.sql.parquet.enableVectorizedReader&quot;设置为 false 来确保不使用矢量化阅读器.</p>
+<p>spark.sql.parquet.respectSummaryFiles<br>FALSE<br>当为真时,我们假设 Parquet 的所有部分文件与摘要文件一致,合并模式时将忽略它们.否则,如果这是默认值 false,我们将合并所有零件文件.这应该被视为仅限专家的选项,并且在知道它的确切含义之前不应启用.</p>
+<p>spark.sql.parquet.writeLegacyFormat<br>FALSE<br>如果为真,数据将以 Spark 1.4 及更早版本的方式写入.例如,十进制值将以 Apache Parquet 的固定长度字节数组格式写入,Apache Hive 和 Apache Impala 等其他系统使用该格式.如果为 false,将使用 Parquet 中较新的格式.例如,小数将以基于 int 的格式写入.如果 Parquet 输出旨在用于不支持这种较新格式的系统,请设置为 true.</p>
+<p>spark.sql.parser.quotedRegexColumnNames<br>FALSE<br>当为真时,SELECT 语句中引用的标识符(使用反引号)被解释为正则表达式.</p>
+<p>spark.sql.pivotMaxValues<br>10000<br>当在没有为数据透视列指定值的情况下进行数据透视时,这是将无错误收集的(不同)值的最大数量.</p>
+<p>spark.sql.queryExecutionListeners<br><code>&lt;undefined&gt;</code><br>实现 QueryExecutionListener 的类名列表,将自动添加到新创建的会话中.这些类应该有一个无参数构造函数,或者一个需要 SparkConf 参数的构造函数.</p>
+<p>spark.sql.redaction.options.regex<br>(?i)url<br>Regex 来决定 Spark SQL 命令的选项映射中的哪些键包含敏感信息.名称与此正则表达式匹配的选项的值将在解释输出中进行编辑.此修订应用在 spark.redaction.regex 定义的全局修订配置之上.</p>
+<p>spark.sql.redaction.string.regex<br><code>&lt;value of spark.redaction.string.regex&gt;</code><br>Regex 来决定 Spark 生成的字符串的哪些部分包含敏感信息.当此正则表达式匹配字符串部分时,该字符串部分将替换为虚拟值.这目前用于编辑 SQL 解释命令的输出.如果未设置此配置,则使用来自 <code>spark.redaction.string.regex</code> 的值.</p>
+<p>spark.sql.repl.eagerEval.enabled<br>FALSE<br>Enables 热切评估与否.当为 true 时,当且仅当 REPL 支持 Eager 评估时,才会显示 Dataset 的前 K 行.目前,仅在 PySpark 中支持急切评估.对于像 Jupyter 这样的笔记本,将返回 HTML 表(由 _repr_html_ 生成).对于纯 Python REPL,返回的输出格式类似于 dataframe.show().</p>
+<p>spark.sql.repl.eagerEval.maxNumRows<br>20<br>急切评估返回的最大行数.这仅在 spark.sql.repl.eagerEval.enabled 设置为 true 时生效.该配置的有效范围是从 0 到 (Int.MaxValue - 1),因此负数和大于 (Int.MaxValue - 1) 的无效配置将被归一化为 0 和 (Int.MaxValue - 1).</p>
+<p>spark.sql.repl.eagerEval.truncate<br>20<br>急切评估返回的每个单元格的最大字符数.这仅在 spark.sql.repl.eagerEval.enabled 设置为 true 时生效.</p>
+<p>spark.sql.session.timeZone<br>Asia/Shanghai<br>session本地时区ID,如&quot;GMT&quot;/&quot;America/Los_Angeles&quot;等.</p>
+<h3 id="shuffle"><a href="#shuffle" class="headerlink" title="shuffle"></a>shuffle</h3><p><font color="#dd0000">spark.sql.shuffle.partitions</font><br>200<br>为连接或聚合混洗数据时使用的默认分区数.</p>
+<h3 id="sources"><a href="#sources" class="headerlink" title="sources"></a>sources</h3><p><font color="#dd0000">spark.sql.sources.bucketing.enabled</font><br>TRUE<br>当为false时,我们会将分桶表视为普通表</p>
+<p>spark.sql.sources.bucketing.maxBuckets<br>100000<br>允许的最大桶数.默认为 100000</p>
+<p>spark.sql.sources.default<br>parquet<br>输入/输出中使用的默认数据源.</p>
+<p>spark.sql.sources.parallelPartitionDiscovery.threshold<br>32<br>驱动程序端列出文件允许的最大路径数.如果在分区发现期间检测到的路径数超过此值,它会尝试列出具有另一个 Spark 分布式作业的文件.这适用于 Parquet/ORC/CSV/JSON 和 LibSVM 数据源.</p>
+<p>spark.sql.sources.partitionColumnTypeInference.enabled<br>TRUE<br>当为真时,自动推断分区列的数据类型.</p>
+<p>spark.sql.sources.partitionOverwriteMode<br>STATIC<br>当 INSERT OVERWRITE 分区数据源表时,我们目前支持 2 种模式:静态和动态.在静态模式下,Spark 在覆盖之前删除所有与 INSERT 语句中的分区规范(例如 PARTITION(a=1,b))匹配的分区.在动态模式下,Spark 不会提前删除分区,只会覆盖那些在运行时写入了数据的分区.默认情况下,我们使用静态模式来保持 Spark 2.3 之前的相同行为.请注意,此配置不会影响 Hive serde 表,因为它们总是被动态模式覆盖.这也可以使用 key partitionOverwriteMode (优先于此设置)设置为数据源的输出选项,例如 dataframe.write.option(&quot;partitionOverwriteMode&quot;, &quot;</p>
+<h3 id="statistics"><a href="#statistics" class="headerlink" title="statistics"></a>statistics</h3><p>spark.sql.statistics.fallBackToHdfs<br>FALSE<br>如果表元数据中的表统计信息不可用,则启用回退到 hdfs.这对于确定表是否足够小以使用自动广播连接很有用.</p>
+<p>spark.sql.statistics.histogram.enabled<br>FALSE<br>如果启用,则在计算列统计信息时生成直方图.直方图可以提供更好的估计精度.目前,Spark 仅支持等高直方图.请注意,收集直方图需要额外费用.例如,收集列统计信息通常只需要一次表扫描,但生成等高直方图会导致额外的表扫描.</p>
+<p>spark.sql.statistics.size.autoUpdate.enabled<br>FALSE<br>一旦表的数据发生变化,就启用表大小的自动更新.请注意,如果表的文件总数非常大,这可能会很昂贵并且会减慢数据更改命令.</p>
+<h3 id="streaming"><a href="#streaming" class="headerlink" title="streaming"></a>streaming</h3><p>spark.sql.streaming.checkpointLocation<br><code>&lt;undefined&gt;</code><br>流式查询存储检查点数据的默认位置.</p>
+<p>spark.sql.streaming.metricsEnabled<br>FALSE<br>是否将为活动的流式查询报告 Dropwizard/Codahale 指标.</p>
+<p>spark.sql.streaming.multipleWatermarkPolicy<br>min<br>Policy 用于在流式查询中有多个水印运算符时计算全局水印值.默认值为&quot;min&quot;,它选择跨多个运营商报告的最小水印.其他替代值是&#39;max&#39;,它在多个运算符中选择最大值.注意:在从同一检查点位置重新启动查询之间不能更改此配置.</p>
+<p>spark.sql.streaming.noDataMicroBatches.enabled<br>TRUE<br>流式微批处理引擎是否将执行没有数据的批处理,以进行有状态流式查询的急切状态管理.</p>
+<p>spark.sql.streaming.numRecentProgressUpdates<br>100<br>为流式查询保留的进度更新数</p>
+<p>spark.sql.streaming.streamingQueryListeners<br><code>&lt;undefined&gt;</code><br>实现 StreamingQueryListener 的类名列表,将自动添加到新创建的会话中.这些类应该有一个无参数构造函数,或者一个需要 SparkConf 参数的构造函数.</p>
+<h3 id="thriftserver"><a href="#thriftserver" class="headerlink" title="thriftserver"></a>thriftserver</h3><p>spark.sql.thriftserver.scheduler.pool<br><code>&lt;undefined&gt;</code><br>为 JDBC 客户端会话设置公平调度程序池.</p>
+<p>spark.sql.thriftserver.ui.retainedSessions<br>200<br>保存在 JDBC/ODBC Web UI 历史记录中的 SQL 客户端会话数.</p>
+<p>spark.sql.thriftserver.ui.retainedStatements<br>200<br>保存在 JDBC/ODBC Web UI 历史记录中的 SQL 语句数.</p>
+<p>spark.sql.ui.retainedExecutions<br>1000<br>在 Spark UI 中保留的执行次数.</p>
+<p>spark.sql.variable.substitute<br>TRUE<br>这可以使用 ${var} ${system:var} 和 ${env:var} 等语法进行替换.</p>
+<p>spark.sql.warehouse.dir<br>/user/hive/warehouse<br>托管数据库和表的默认位置.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hive/" rel="tag"># hive</a>
+              <a href="/tags/spark/" rel="tag"># spark</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/07/28/hadoop%E8%8A%82%E7%82%B9%E7%9A%84%E6%9C%8D%E5%BD%B9%E4%B8%8E%E9%80%80%E5%BD%B9/" rel="prev" title="节点的服役与退役">
+                  <i class="fa fa-chevron-left"></i> 节点的服役与退役
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/07/29/hadoop%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/" rel="next" title="hadoop默认配置参数">
+                  hadoop默认配置参数 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

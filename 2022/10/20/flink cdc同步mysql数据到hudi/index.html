@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="flink 1.15.2hudi 0.12.0mysql 8.0.22cdc 2.2.0hive 2.1.1hadoop 2.6.5spark 2.4.8 https:&#x2F;&#x2F;ververica.github.io&#x2F;flink-cdc-connectors&#x2F;https:&#x2F;&#x2F;github.com&#x2F;ververica&#x2F;flink-cdc-connectors">
+<meta property="og:type" content="article">
+<meta property="og:title" content="flink cdc同步mysql数据到hudi">
+<meta property="og:url" content="https://maoeryu.github.io/2022/10/20/flink%20cdc%E5%90%8C%E6%AD%A5mysql%E6%95%B0%E6%8D%AE%E5%88%B0hudi/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="flink 1.15.2hudi 0.12.0mysql 8.0.22cdc 2.2.0hive 2.1.1hadoop 2.6.5spark 2.4.8 https:&#x2F;&#x2F;ververica.github.io&#x2F;flink-cdc-connectors&#x2F;https:&#x2F;&#x2F;github.com&#x2F;ververica&#x2F;flink-cdc-connectors">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1083.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1132.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1135.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1136.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1137.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1138.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1139.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1140.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1141.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1142.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1143.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1144.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1145.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1146.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1147.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1133.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1134.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1151.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1152.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1153.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1154.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1155.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1156.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1157.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1158.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1159.png">
+<meta property="article:published_time" content="2022-10-19T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-10-27T01:54:14.169Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="flink">
+<meta property="article:tag" content="hudi">
+<meta property="article:tag" content="mysql">
+<meta property="article:tag" content="hive">
+<meta property="article:tag" content="spark">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1083.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/10/20/flink%20cdc%E5%90%8C%E6%AD%A5mysql%E6%95%B0%E6%8D%AE%E5%88%B0hudi/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>flink cdc同步mysql数据到hudi | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%8F%E5%88%97%E5%8C%96%E5%92%8C%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96"><span class="nav-number">2.</span> <span class="nav-text">序列化和反序列化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0Flink-CDC%E4%BE%9D%E8%B5%96"><span class="nav-number">3.</span> <span class="nav-text">添加Flink CDC依赖</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#sql-client"><span class="nav-number">3.1.</span> <span class="nav-text">sql-client</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Java-Scala-API"><span class="nav-number">3.2.</span> <span class="nav-text">Java&#x2F;Scala API</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8SQL%E6%96%B9%E5%BC%8F%E5%90%8C%E6%AD%A5Mysql%E6%95%B0%E6%8D%AE%E5%88%B0Hudi%E6%95%B0%E6%8D%AE%E6%B9%96"><span class="nav-number">4.</span> <span class="nav-text">使用SQL方式同步Mysql数据到Hudi数据湖</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%90%AFMySQL%E6%95%B0%E6%8D%AE%E5%BA%93binlog%E6%97%A5%E5%BF%97"><span class="nav-number">4.1.</span> <span class="nav-text">开启MySQL数据库binlog日志</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Mysql%E8%A1%A8%E7%BB%93%E6%9E%84%E5%92%8C%E6%95%B0%E6%8D%AE"><span class="nav-number">4.2.</span> <span class="nav-text">Mysql表结构和数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Flink%E5%BC%80%E5%90%AFcheckpoint"><span class="nav-number">4.3.</span> <span class="nav-text">Flink开启checkpoint</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%A8flink%E4%B8%AD%E5%88%9B%E5%BB%BAmysql%E7%9A%84%E6%98%A0%E5%B0%84%E8%A1%A8"><span class="nav-number">4.4.</span> <span class="nav-text">在flink中创建mysql的映射表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%A8Flink%E4%B8%AD%E5%88%9B%E5%BB%BAHudi-Sink%E7%9A%84%E6%98%A0%E5%B0%84%E8%A1%A8"><span class="nav-number">4.5.</span> <span class="nav-text">在Flink中创建Hudi Sink的映射表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E5%86%99%E5%85%A5Hudi"><span class="nav-number">4.6.</span> <span class="nav-text">流式写入Hudi</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#hive%E6%9F%A5%E8%AF%A2hudi%E8%A1%A8"><span class="nav-number">5.</span> <span class="nav-text">hive查询hudi表</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E5%A4%96%E9%83%A8%E8%A1%A8%E5%85%B3%E8%81%94Hudi%E8%B7%AF%E5%BE%84"><span class="nav-number">5.1.</span> <span class="nav-text">创建外部表关联Hudi路径</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E5%BC%8F%E4%B8%80"><span class="nav-number">5.1.1.</span> <span class="nav-text">方式一</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E5%BC%8F%E4%BA%8C"><span class="nav-number">5.1.2.</span> <span class="nav-text">方式二</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E5%88%86%E5%8C%BA"><span class="nav-number">5.2.</span> <span class="nav-text">添加分区</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hive%E7%89%88%E6%9C%AC%E5%85%BC%E5%AE%B9%E6%80%A7%E9%97%AE%E9%A2%98"><span class="nav-number">5.3.</span> <span class="nav-text">hive版本兼容性问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#spark-sql%E6%9F%A5%E8%AF%A2hudi%E8%A1%A8"><span class="nav-number">6.</span> <span class="nav-text">spark-sql查询hudi表</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E8%A1%A8"><span class="nav-number">6.1.</span> <span class="nav-text">创建表</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E5%BC%8F%E4%B8%80-1"><span class="nav-number">6.1.1.</span> <span class="nav-text">方式一</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%B9%E5%BC%8F%E4%BA%8C-1"><span class="nav-number">6.1.2.</span> <span class="nav-text">方式二</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#flink%E4%BD%BF%E7%94%A8yarn-session"><span class="nav-number">7.</span> <span class="nav-text">flink使用yarn-session</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8yarn-session"><span class="nav-number">7.1.</span> <span class="nav-text">启动yarn-session</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8sql-client"><span class="nav-number">7.2.</span> <span class="nav-text">启动sql-client</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mysql%E5%88%9B%E5%BB%BA%E8%A1%A8"><span class="nav-number">7.3.</span> <span class="nav-text">mysql创建表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#flink-sql%E5%88%9B%E5%BB%BA%E8%A1%A8"><span class="nav-number">7.4.</span> <span class="nav-text">flink sql创建表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hudi-sink-table-ddl"><span class="nav-number">7.5.</span> <span class="nav-text">hudi sink table ddl</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B1%9E%E6%80%A7%E8%AF%B4%E6%98%8E"><span class="nav-number">7.5.1.</span> <span class="nav-text">属性说明</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E6%95%B0%E6%8D%AE%E5%88%B0hudi%E8%A1%A8"><span class="nav-number">7.6.</span> <span class="nav-text">同步数据到hudi表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81hudi%E8%A1%A8%E5%90%8C%E6%AD%A5%E7%8A%B6%E6%80%81"><span class="nav-number">7.7.</span> <span class="nav-text">验证hudi表同步状态</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hudi%E7%94%9F%E6%88%90%E7%9A%84hive%E8%A1%A8%E8%AF%B4%E6%98%8E"><span class="nav-number">7.8.</span> <span class="nav-text">hudi生成的hive表说明</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/10/20/flink%20cdc%E5%90%8C%E6%AD%A5mysql%E6%95%B0%E6%8D%AE%E5%88%B0hudi/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          flink cdc同步mysql数据到hudi
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-10-20 00:00:00" itemprop="dateCreated datePublished" datetime="2022-10-20T00:00:00+08:00">2022-10-20</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-10-27 09:54:14" itemprop="dateModified" datetime="2022-10-27T09:54:14+08:00">2022-10-27</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+          , 
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>flink 1.15.2<br>hudi 0.12.0<br>mysql 8.0.22<br>cdc 2.2.0<br>hive 2.1.1<br>hadoop 2.6.5<br>spark 2.4.8</p>
+<p><a target="_blank" rel="noopener" href="https://ververica.github.io/flink-cdc-connectors/">https://ververica.github.io/flink-cdc-connectors/</a><br><a target="_blank" rel="noopener" href="https://github.com/ververica/flink-cdc-connectors">https://github.com/ververica/flink-cdc-connectors</a></p>
+<span id="more"></span>
+<h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>Flink CDC底层是使用Debezium来进行data changes的capture.<br>特色:</p>
+<ol>
+<li>snapshot能并行读取.<br>根据表定义的primary key中的第一列划分成chunk.<br>如果表没有primary key,需要通过参数<code>scan.incremental.snapshot.enabled</code>关闭snapshot增量读取.</li>
+<li>snapshot读取时的checkpoint粒度为chunk.</li>
+<li>snapshot读取不需要global read lock(FLUSH TABLES WITH READ LOCK).</li>
+</ol>
+<p>reader读取snapshot和binlog的一致性过程:</p>
+<ol>
+<li>标记当前的binlog position为low</li>
+<li>多个reader读取各自的chunk</li>
+<li>标记当前的binlog position为high</li>
+<li>一个reader读取low ~ high之间的binlog</li>
+<li>一个reader读取high之后的binlog</li>
+</ol>
+<h2 id="序列化和反序列化"><a href="#序列化和反序列化" class="headerlink" title="序列化和反序列化"></a>序列化和反序列化</h2><p>下面用json格式,展示了change event</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;before&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;id&quot;</span>: <span class="number">111</span>,</span><br><span class="line">    <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;scooter&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;description&quot;</span>: <span class="string">&quot;Big 2-wheel scooter&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;weight&quot;</span>: <span class="number">5.18</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">&quot;after&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;id&quot;</span>: <span class="number">111</span>,</span><br><span class="line">    <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;scooter&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;description&quot;</span>: <span class="string">&quot;Big 2-wheel scooter&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;weight&quot;</span>: <span class="number">5.15</span></span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;source&quot;: &#123;...&#125;,</span><br><span class="line">  &quot;op&quot;: &quot;u&quot;,  // operation type, u表示这是一个update event </span><br><span class="line">  &quot;ts_ms&quot;: 1589362330904,  // connector处理event的时间</span><br><span class="line">  &quot;transaction&quot;: null</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在DataStrea API中,用户可以使用Constructor:JsonDebeziumDeserializationSchema(true),在message中包含schema.<br>但是不推荐使用.</p>
+<p>JsonDebeziumDeserializationSchema也可以接收JsonConverter的自定义配置.<br>如下示例在output中包含小数的数据.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;String, Object&gt; customConverterConfigs = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line"> customConverterConfigs.put(JsonConverterConfig.DECIMAL_FORMAT_CONFIG, <span class="string">&quot;numeric&quot;</span>);</span><br><span class="line"> JsonDebeziumDeserializationSchema schema = </span><br><span class="line">      <span class="keyword">new</span> JsonDebeziumDeserializationSchema(<span class="keyword">true</span>, customConverterConfigs);</span><br></pre></td></tr></table></figure>
+
+<h2 id="添加Flink-CDC依赖"><a href="#添加Flink-CDC依赖" class="headerlink" title="添加Flink CDC依赖"></a>添加Flink CDC依赖</h2><h3 id="sql-client"><a href="#sql-client" class="headerlink" title="sql-client"></a>sql-client</h3><p>从github flink cdc(<a target="_blank" rel="noopener" href="https://github.com/ververica/flink-cdc-connectors/releases/">https://github.com/ververica/flink-cdc-connectors/releases/</a>)<br>下载flink-sql-connector-mysql-cdc-2.2.0.jar.<br>将jar包放到Flink集群所有服务器的lib目录下,重启Flink集群.</p>
+<p>启动sql-client.sh,</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./bin/sql-client.sh embedded shell</span><br><span class="line">SET &#x27;sql-client.execution.result-mode&#x27; = &#x27;tableau&#x27;;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Java-Scala-API"><a href="#Java-Scala-API" class="headerlink" title="Java/Scala API"></a>Java/Scala API</h3><p>添加如下依赖到pom.xml中.</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.ververica<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>flink-connector-mysql-cdc<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.2.0<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="使用SQL方式同步Mysql数据到Hudi数据湖"><a href="#使用SQL方式同步Mysql数据到Hudi数据湖" class="headerlink" title="使用SQL方式同步Mysql数据到Hudi数据湖"></a>使用SQL方式同步Mysql数据到Hudi数据湖</h2><h3 id="开启MySQL数据库binlog日志"><a href="#开启MySQL数据库binlog日志" class="headerlink" title="开启MySQL数据库binlog日志"></a>开启MySQL数据库binlog日志</h3><p>开启MySQL binlog日志,再重启MySQL数据库服务<br>vim /etc/my.cnf<br>在<code>[mysqld]</code>下面添加内容,重启mysql.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">server-id&#x3D;2</span><br><span class="line">log-bin&#x3D;mysql-bin</span><br><span class="line">binlog_format&#x3D;row</span><br><span class="line">expire_logs_days&#x3D;15</span><br><span class="line">binlog_row_image&#x3D;full</span><br></pre></td></tr></table></figure>
+
+<p>登录mysql,查看是否生效.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SHOW</span> MASTER LOGS;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1083.png" width="300" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="Mysql表结构和数据"><a href="#Mysql表结构和数据" class="headerlink" title="Mysql表结构和数据"></a>Mysql表结构和数据</h3><p>建表语句如下:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> users</span><br><span class="line">(</span><br><span class="line"> id <span class="type">BIGINT</span> AUTO_INCREMENT <span class="keyword">PRIMARY</span> KEY,</span><br><span class="line"> name <span class="type">VARCHAR</span>(<span class="number">20</span>) <span class="keyword">NULL</span>,</span><br><span class="line"> birthday <span class="type">TIMESTAMP</span> <span class="keyword">DEFAULT</span> <span class="built_in">CURRENT_TIMESTAMP</span> <span class="keyword">NOT</span> <span class="keyword">NULL</span>,</span><br><span class="line"> ts <span class="type">TIMESTAMP</span> <span class="keyword">DEFAULT</span> <span class="built_in">CURRENT_TIMESTAMP</span> <span class="keyword">NOT</span> <span class="keyword">NULL</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>随意插入几条数据.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> users (name) <span class="keyword">VALUES</span> (<span class="string">&#x27;hello&#x27;</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> users (name) <span class="keyword">VALUES</span> (<span class="string">&#x27;world&#x27;</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> users (name) <span class="keyword">VALUES</span> (<span class="string">&#x27;iceberg&#x27;</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> users (id,name) <span class="keyword">VALUES</span> (<span class="number">4</span>,<span class="string">&#x27;spark&#x27;</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> users (name) <span class="keyword">VALUES</span> (<span class="string">&#x27;hudi&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> users;</span><br><span class="line"></span><br><span class="line">UPDATE users <span class="keyword">SET</span> name <span class="operator">=</span> <span class="string">&#x27;hello spark&#x27;</span> <span class="keyword">WHERE</span> id <span class="operator">=</span> <span class="number">5</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">DELETE</span> <span class="keyword">FROM</span> users <span class="keyword">WHERE</span> id <span class="operator">=</span> <span class="number">5</span>;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1132.png" width="300" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="Flink开启checkpoint"><a href="#Flink开启checkpoint" class="headerlink" title="Flink开启checkpoint"></a>Flink开启checkpoint</h3><p>Checkpoint默认是不开启的,开启Checkpoint让Hudi可以提交事务.<br>并且mysql-cdc在binlog读取阶段开始前,需要<font color="#dd0000">等待一个完整的checkpoint</font>来避免binlog记录乱序的情况.<br>binlog读取的并行度为1,checkpoint的粒度为数据行级别.<br>可以在任务失败的情况下,达到Exactly-once语义.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--flink sql</span></span><br><span class="line"><span class="keyword">set</span> <span class="string">&#x27;execution.checkpointing.interval&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;10s&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>要设置<code>execution.checkpointing.interval</code>开启checkpoint,只有checkpoint开启时才会commit数据到hdfs,这时数据才可见.<br>测试时可以设置较少的时间间隔以便于数据观察,线上设置应该根据实际情况设定,设置的间隔不宜过小.</p>
+</blockquote>
+<h3 id="在flink中创建mysql的映射表"><a href="#在flink中创建mysql的映射表" class="headerlink" title="在flink中创建mysql的映射表"></a>在flink中创建mysql的映射表</h3><p>flinkcdc mysql connector相关配置说明请参考官网文档.<br><a target="_blank" rel="noopener" href="https://ververica.github.io/flink-cdc-connectors/master/content/connectors/mysql-cdc.html">https://ververica.github.io/flink-cdc-connectors/master/content/connectors/mysql-cdc.html</a></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--flink sql</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> mysql_users (</span><br><span class="line"> id <span class="type">BIGINT</span> <span class="keyword">PRIMARY</span> KEY <span class="keyword">NOT</span> ENFORCED,</span><br><span class="line"> name STRING,</span><br><span class="line"> birthday <span class="type">TIMESTAMP</span>(<span class="number">3</span>),</span><br><span class="line"> ts <span class="type">TIMESTAMP</span>(<span class="number">3</span>)</span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line"> <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;mysql-cdc&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;hostname&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;oceanbase004&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;port&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;3306&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;username&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;root&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;password&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;123456&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;server-time-zone&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;Asia/Shanghai&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;database-name&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;test&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;table-name&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;users&#x27;</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>说明如下:</p>
+<ol>
+<li>Flink的table中添加了两个metadata列.<br>还可以定义op_ts列,类型为TIMESTAMP_LTZ(3),表示binlog在数据库创建的时间,如果是snapshot,则值为0.</li>
+<li>如果Mysql中有很多个列,这里只获取Flink Table中定义的列.</li>
+<li>Mysql的用户需要的权限:SELECT/SHOW DATABASES/REPLICATION SLAVE/REPLICATION CLIENT</li>
+<li>server-time-zone<br>Mysql数据库的session time zone,用来控制如何将Mysql的timestamp类型转换成string类型.</li>
+<li>scan.startup.mode<br>mysql-cdc启动时消费的模式,initial表示同步snapshot和binlog,latest-offset表示同步最新的binlog.</li>
+<li>database-name和table-name可以使用正则表达式匹配多个数据库和多个表,例如&quot;test[0-9]+&quot;可以匹配test0/test999等.</li>
+</ol>
+<img src="/images/fly1135.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="在Flink中创建Hudi-Sink的映射表"><a href="#在Flink中创建Hudi-Sink的映射表" class="headerlink" title="在Flink中创建Hudi Sink的映射表"></a>在Flink中创建Hudi Sink的映射表</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--flink sql</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> hudi_users</span><br><span class="line">(</span><br><span class="line"> id <span class="type">BIGINT</span> <span class="keyword">PRIMARY</span> KEY <span class="keyword">NOT</span> ENFORCED,</span><br><span class="line"> name STRING,</span><br><span class="line"> birthday <span class="type">TIMESTAMP</span>(<span class="number">3</span>),</span><br><span class="line"> ts <span class="type">TIMESTAMP</span>(<span class="number">3</span>),</span><br><span class="line"> `<span class="keyword">partition</span>` <span class="type">VARCHAR</span>(<span class="number">20</span>)</span><br><span class="line">) PARTITIONED <span class="keyword">BY</span> (`<span class="keyword">partition</span>`) <span class="keyword">WITH</span> (</span><br><span class="line"> <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;path&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;/hudi/hudi_users&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;table.type&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;MERGE_ON_READ&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;read.streaming.enabled&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;read.streaming.check-interval&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span> </span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> hudi_users(</span><br><span class="line"> database_name string,</span><br><span class="line"> table_name string,</span><br><span class="line"> id <span class="type">DECIMAL</span>(<span class="number">20</span>,<span class="number">0</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span>,</span><br><span class="line"> msg_title string,</span><br><span class="line"> msg_ctx string,</span><br><span class="line"> msg_time <span class="type">TIMESTAMP</span>(<span class="number">6</span>), </span><br><span class="line"> <span class="keyword">PRIMARY</span> KEY (database_name, table_name, id) <span class="keyword">NOT</span> enforced</span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line"> <span class="string">&#x27;connector&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;path&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;/user/hudi/warehouse/hudi_db/info_message&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;table.type&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;MERGE_ON_READ&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;hoodie.datasource.write.recordkey.field&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;database_name.table_name.id&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;write.precombine.field&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;msg_time&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;write.rate.limit&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;2000&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;write.tasks&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;2&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;write.operation&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;upsert&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;compaction.tasks&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;2&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;compaction.async.enabled&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;compaction.trigger.strategy&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;num_commits&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;compaction.delta_commits&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;5&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;read.tasks&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;2&#x27;</span>,</span><br><span class="line"> <span class="string">&#x27;changelog.enabled&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;true&#x27;</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>说明如下:</p>
+<ol>
+<li>不同数据库和表的id字段可能会相同,定义复合主键.</li>
+<li>hoodie.datasource.write.recordkey.field<br>默指定表的主键,多个字段用.分隔.默认uuid字段.</li>
+<li>如果upstream不能保证数据的order,则需要显式指定<code>write.precombine.field</code>,且选取的字段不能包含null.<br>默认为ts字段.作用是如果在一个批次中,有两条key相同的数据,取较大的precombine数据,插入到Hudi中.</li>
+<li>write.rate.limit:每秒写入数据的条数,默认为0表示不限制.</li>
+<li>默认write的并行度为4.</li>
+<li>write.operation:默认是upsert</li>
+<li>默认compaction的并行度为4</li>
+<li>compaction.async.enabled:是否开启online compaction,默认为true</li>
+<li>compaction.trigger.strategy<br>compaction触发的策略,可选值:num_commits/time_elapsed/num_and_time/num_or_time,默认值为num_commits.</li>
+<li>compaction.delta_commits<br>每多少次commit进行一次compaction,默认值为5.</li>
+<li>MOR类型的表,还不能处理delete,所以会导致数据不一致.<br>可以通过changelog.enabled转换到change log模式</li>
+</ol>
+<h3 id="流式写入Hudi"><a href="#流式写入Hudi" class="headerlink" title="流式写入Hudi"></a>流式写入Hudi</h3><p>先同步snapshot,再同步事务日志.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> hudi_users</span><br><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span>, DATE_FORMAT(birthday, <span class="string">&#x27;yyyyMMdd&#x27;</span>)</span><br><span class="line"><span class="keyword">FROM</span> mysql_users;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--flink sql</span></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> hudi_sink</span><br><span class="line"><span class="keyword">SELECT</span> database_name, table_name, id, msg_title, msg_ctx, msg_time</span><br><span class="line"><span class="keyword">FROM</span> mysql_source <span class="comment">/*+ OPTIONS(&#x27;server-id&#x27;=&#x27;5401&#x27;) */</span></span><br><span class="line"><span class="keyword">WHERE</span> msg_time <span class="keyword">IS</span> <span class="keyword">NOT</span> <span class="keyword">NULL</span>;</span><br></pre></td></tr></table></figure>
+
+<p>写入hudi,会提交有一个flink任务.</p>
+<img src="/images/fly1136.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1137.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1138.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1139.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>查看HDFS里的Hudi数据路径,这里需要等Flink 5次checkpoint(默认配置可修改)之后才能查看到这些目录,一开始只有.hoodie一个文件夹.</p>
+<img src="/images/fly1140.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1141.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>注意:</p>
+<p>这里如果where条件如果添加了&quot;msg_time &gt; timestamp &#39;2021-04-14 09:49:00&#39;&quot;,任务会一直卡在write_stream这一步,write_stream的状态一直是bush(max): 100%,并且checkpoint也会一直卡住,查看HDFS上的表是没有数据.<br>默认查询的并行度是1.<br>如果并行度大于1,需要为每个slot设置server-id,4个slot的设置方法为:&#39;server-id&#39;=&#39;5401-5404&#39;.<br>这样Mysql server就能正确维护network connection和binlog position.</p>
+</blockquote>
+<h2 id="hive查询hudi表"><a href="#hive查询hudi表" class="headerlink" title="hive查询hudi表"></a>hive查询hudi表</h2><p>将hudi-hadoop-mr-bundle-0.12.0.jar复制到hive lib(hive外部jar配置目录)目录下.</p>
+<h3 id="创建外部表关联Hudi路径"><a href="#创建外部表关联Hudi路径" class="headerlink" title="创建外部表关联Hudi路径"></a>创建外部表关联Hudi路径</h3><p>有两种建表方式.</p>
+<h4 id="方式一"><a href="#方式一" class="headerlink" title="方式一"></a>方式一</h4><p>INPUTFORMAT是<code>org.apache.hudi.hadoop.HoodieParquetInputFormat</code>.<br>这种方式只会查询出来parquet数据文件中的内容,但是刚刚更新或者删除的数据不能查出来.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--hive sql</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">EXTERNAL</span> <span class="keyword">TABLE</span> `hive_users`(</span><br><span class="line"> `_hoodie_commit_time` string, </span><br><span class="line"> `_hoodie_commit_seqno` string, </span><br><span class="line"> `_hoodie_record_key` string, </span><br><span class="line"> `_hoodie_partition_path` string, </span><br><span class="line"> `_hoodie_file_name` string, </span><br><span class="line"> `id` <span class="type">BIGINT</span>, </span><br><span class="line"> `name` string, </span><br><span class="line"> `birthday` <span class="type">BIGINT</span>, </span><br><span class="line"> `ts` <span class="type">BIGINT</span>) </span><br><span class="line"> PARTITIONED <span class="keyword">BY</span> (</span><br><span class="line"> `<span class="keyword">partition</span>` string) <span class="type">ROW</span> FORMAT SERDE </span><br><span class="line"> <span class="string">&#x27;org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe&#x27;</span> </span><br><span class="line"> STORED <span class="keyword">AS</span> INPUTFORMAT </span><br><span class="line"> <span class="string">&#x27;org.apache.hudi.hadoop.HoodieParquetInputFormat&#x27;</span> </span><br><span class="line"> OUTPUTFORMAT </span><br><span class="line"> <span class="string">&#x27;org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat&#x27;</span> </span><br><span class="line"> LOCATION </span><br><span class="line"> <span class="string">&#x27;/hudi/hudi_users&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<h4 id="方式二"><a href="#方式二" class="headerlink" title="方式二"></a>方式二</h4><p>INPUTFORMAT是<code>org.apache.hudi.hadoop.realtime.HoodieParquetRealtimeInputFormat</code>.<br>这种方式是能够实时读出来写入的数据,也就是Merge On Write.<br>会将基于Parquet的基础列式文件和基于行的Avro日志文件合并在一起呈现给用户.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--hive sql</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">EXTERNAL</span> <span class="keyword">TABLE</span> `hive_users_2_mor`(</span><br><span class="line"> `_hoodie_commit_time` string, </span><br><span class="line"> `_hoodie_commit_seqno` string, </span><br><span class="line"> `_hoodie_record_key` string, </span><br><span class="line"> `_hoodie_partition_path` string, </span><br><span class="line"> `_hoodie_file_name` string, </span><br><span class="line"> `id` <span class="type">BIGINT</span>, </span><br><span class="line"> `name` string, </span><br><span class="line"> `birthday` <span class="type">BIGINT</span>, </span><br><span class="line"> `ts` <span class="type">BIGINT</span>) </span><br><span class="line"> PARTITIONED <span class="keyword">BY</span> (</span><br><span class="line"> `<span class="keyword">partition</span>` string) <span class="type">ROW</span> FORMAT SERDE </span><br><span class="line"> <span class="string">&#x27;org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe&#x27;</span> </span><br><span class="line"> STORED <span class="keyword">AS</span> INPUTFORMAT </span><br><span class="line"> <span class="string">&#x27;org.apache.hudi.hadoop.realtime.HoodieParquetRealtimeInputFormat&#x27;</span> </span><br><span class="line"> OUTPUTFORMAT </span><br><span class="line"> <span class="string">&#x27;org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat&#x27;</span> </span><br><span class="line"> LOCATION </span><br><span class="line"> <span class="string">&#x27;/hudi/hudi_users&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1142.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="添加分区"><a href="#添加分区" class="headerlink" title="添加分区"></a>添加分区</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--hive sql</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> hive_users <span class="keyword">add</span> if <span class="keyword">not</span> <span class="keyword">exists</span> <span class="keyword">partition</span>(`<span class="keyword">partition</span>`<span class="operator">=</span><span class="string">&#x27;20221020&#x27;</span>) location <span class="string">&#x27;/hudi/hudi_users/20221020&#x27;</span>;</span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> hive_users_2_mor <span class="keyword">add</span> if <span class="keyword">not</span> <span class="keyword">exists</span> <span class="keyword">partition</span>(`<span class="keyword">partition</span>`<span class="operator">=</span><span class="string">&#x27;20221020&#x27;</span>) location <span class="string">&#x27;/hudi/hudi_users/20221020&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">--查询分区的数据</span></span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> hive_users <span class="keyword">where</span> `<span class="keyword">partition</span>`<span class="operator">=</span><span class="number">20221020</span>;</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> hive_users_2_mor <span class="keyword">where</span> `<span class="keyword">partition</span>`<span class="operator">=</span><span class="number">20221020</span>;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1143.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>在MySQL执行insert/update/delete等操作,当进行compaction生成parquet文件后就可以用hive/spark-sql/presto进行查询.<br>如果没有生成parquet文件,建的parquet表是查询不出数据的.</p>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># Flink Offline Compaction</span></span></span><br><span class="line">./bin/flink run -c org.apache.hudi.sink.compact.HoodieFlinkCompactor ./lib/hudi-flink1.15-bundle-0.12.0.jar --path /hudi/hudi_users</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1144.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1145.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1146.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1147.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="hive版本兼容性问题"><a href="#hive版本兼容性问题" class="headerlink" title="hive版本兼容性问题"></a>hive版本兼容性问题</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--查询正常</span></span><br><span class="line"><span class="keyword">select</span> <span class="built_in">count</span>(<span class="number">1</span>) <span class="keyword">from</span> hive_users;</span><br><span class="line"></span><br><span class="line"><span class="comment">--报错</span></span><br><span class="line"><span class="keyword">select</span> <span class="built_in">count</span>(<span class="number">1</span>) form hive_users_2_mor;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Caused by: java.lang.IllegalArgumentException: HoodieRealtimeRecordReader can only work on RealtimeSplit and not with hdfs:&#x2F;&#x2F;mycluster&#x2F;hudi&#x2F;hudi_users&#x2F;20221020&#x2F;cd4fff06-8265-4ad4-84ef-695325b3a095_2-4-0_20221020182346741.parquet:0+435785</span><br><span class="line">  at org.apache.hudi.common.util.ValidationUtils.checkArgument(ValidationUtils.java:40)</span><br><span class="line">  at org.apache.hudi.hadoop.realtime.HoodieParquetRealtimeInputFormat.getRecordReader(HoodieParquetRealtimeInputFormat.java:61)</span><br><span class="line">  at org.apache.hadoop.hive.ql.io.CombineHiveRecordReader.&lt;init&gt;(CombineHiveRecordReader.java:67)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--hive sql</span></span><br><span class="line"><span class="comment">--报错</span></span><br><span class="line"><span class="keyword">set</span> hive.input.format <span class="operator">=</span> org.apache.hudi.hadoop.hive.HoodieCombineHiveInputFormat</span><br></pre></td></tr></table></figure>
+
+<p>hudi-0.12中hive默认版本为2.3版本,测试中2.1.1版本无此类StringInternUtils.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FAILED: Execution Error, return code -101 from org.apache.hadoop.hive.ql.exec.mr.MapRedTask. org&#x2F;apache&#x2F;hadoop&#x2F;hive&#x2F;common&#x2F;StringInternUtils</span><br></pre></td></tr></table></figure>
+
+<h2 id="spark-sql查询hudi表"><a href="#spark-sql查询hudi表" class="headerlink" title="spark-sql查询hudi表"></a>spark-sql查询hudi表</h2><p>将hudi-spark2.4-bundle_2.11-0.12.0.jar复制到spark jars目录下.<br>将hudi-hadoop-mr-bundle-0.12.0.jar复制到$HADOOP_HOME/share/hadoop/hdfs下,重启hadoop.</p>
+<h3 id="创建表"><a href="#创建表" class="headerlink" title="创建表"></a>创建表</h3><p>启动spark-sql交互式命令行,设置依赖jar包和相关属性参数.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">spark-sql \</span><br><span class="line">--conf &#x27;spark.serializer=org.apache.spark.serializer.KryoSerializer&#x27; \</span><br><span class="line">--conf &#x27;spark.sql.extensions=org.apache.spark.sql.hudi.HoodieSparkSessionExtension&#x27;</span><br></pre></td></tr></table></figure>
+
+<h4 id="方式一-1"><a href="#方式一-1" class="headerlink" title="方式一"></a>方式一</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--spark sql</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">EXTERNAL</span> <span class="keyword">TABLE</span> `spark_users`(</span><br><span class="line"> `_hoodie_commit_time` string, </span><br><span class="line"> `_hoodie_commit_seqno` string, </span><br><span class="line"> `_hoodie_record_key` string, </span><br><span class="line"> `_hoodie_partition_path` string, </span><br><span class="line"> `_hoodie_file_name` string, </span><br><span class="line"> `id` <span class="type">BIGINT</span>, </span><br><span class="line"> `name` string, </span><br><span class="line"> `birthday` <span class="type">BIGINT</span>, </span><br><span class="line"> `ts` <span class="type">BIGINT</span>) </span><br><span class="line"> PARTITIONED <span class="keyword">BY</span> (</span><br><span class="line"> `<span class="keyword">partition</span>` string) <span class="type">ROW</span> FORMAT SERDE </span><br><span class="line"> <span class="string">&#x27;org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe&#x27;</span> </span><br><span class="line"> STORED <span class="keyword">AS</span> INPUTFORMAT </span><br><span class="line"> <span class="string">&#x27;org.apache.hudi.hadoop.HoodieParquetInputFormat&#x27;</span> </span><br><span class="line"> OUTPUTFORMAT </span><br><span class="line"> <span class="string">&#x27;org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat&#x27;</span> </span><br><span class="line"> LOCATION </span><br><span class="line"> <span class="string">&#x27;/hudi/hudi_users&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> spark_users <span class="keyword">ADD</span> if <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> <span class="keyword">PARTITION</span>(`<span class="keyword">partition</span>`<span class="operator">=</span><span class="string">&#x27;20221020&#x27;</span>) location <span class="string">&#x27;/hudi/hudi_users/20221020&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> spark_users</span><br><span class="line"><span class="keyword">WHERE</span> `<span class="keyword">partition</span>`<span class="operator">=</span><span class="string">&#x27;20221020&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">--查询正常</span></span><br><span class="line"><span class="keyword">select</span> <span class="built_in">count</span>(<span class="number">1</span>) <span class="keyword">from</span> spark_users;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1133.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="方式二-1"><a href="#方式二-1" class="headerlink" title="方式二"></a>方式二</h4><p>创建可以实时读表数据的格式.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--spark sql</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">EXTERNAL</span> <span class="keyword">TABLE</span> `spark_users_2_mor`(</span><br><span class="line"> `_hoodie_commit_time` string, </span><br><span class="line"> `_hoodie_commit_seqno` string, </span><br><span class="line"> `_hoodie_record_key` string, </span><br><span class="line"> `_hoodie_partition_path` string, </span><br><span class="line"> `_hoodie_file_name` string, </span><br><span class="line"> `id` <span class="type">BIGINT</span>, </span><br><span class="line"> `name` string, </span><br><span class="line"> `birthday` <span class="type">BIGINT</span>, </span><br><span class="line"> `ts` <span class="type">BIGINT</span>) </span><br><span class="line"> PARTITIONED <span class="keyword">BY</span> (</span><br><span class="line"> `<span class="keyword">partition</span>` string) <span class="type">ROW</span> FORMAT SERDE </span><br><span class="line"> <span class="string">&#x27;org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe&#x27;</span> </span><br><span class="line"> STORED <span class="keyword">AS</span> INPUTFORMAT </span><br><span class="line"> <span class="string">&#x27;org.apache.hudi.hadoop.HoodieParquetInputFormat&#x27;</span> </span><br><span class="line"> OUTPUTFORMAT </span><br><span class="line"> <span class="string">&#x27;org.apache.hudi.hadoop.realtime.HoodieParquetRealtimeInputFormat&#x27;</span> </span><br><span class="line"> LOCATION </span><br><span class="line"> <span class="string">&#x27;/hudi/hudi_users&#x27;</span>; </span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> spark_users_2_mor <span class="keyword">ADD</span> if <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> <span class="keyword">PARTITION</span>(`<span class="keyword">partition</span>`<span class="operator">=</span><span class="string">&#x27;20221020&#x27;</span>) location <span class="string">&#x27;/hudi/hudi_users/20221020&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> spark_users_2_mor</span><br><span class="line"><span class="keyword">WHERE</span> `<span class="keyword">partition</span>`<span class="operator">=</span><span class="string">&#x27;20221020&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">--查询正常</span></span><br><span class="line"><span class="keyword">select</span> <span class="built_in">count</span>(<span class="number">1</span>) <span class="keyword">from</span> spark_users_2_mor;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1134.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>如果Spark-SQL读取实时Hudi数据,必须进行如下设置.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> spark.sql.hive.convertMetastoreParquet<span class="operator">=</span><span class="literal">false</span>;</span><br></pre></td></tr></table></figure>
+
+<p>如果创建表的时候字段类型不对会报错.<br>比如id/ts/birthday都设置为String,会报下面错误.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Column: [id], Expected: string, Found: INT64</span><br></pre></td></tr></table></figure>
+
+<p>Spark-SQL想读取Hudi数据,字段类型需要严格匹配.</p>
+<h2 id="flink使用yarn-session"><a href="#flink使用yarn-session" class="headerlink" title="flink使用yarn-session"></a>flink使用yarn-session</h2><h3 id="启动yarn-session"><a href="#启动yarn-session" class="headerlink" title="启动yarn-session"></a>启动yarn-session</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/yarn-session.sh -s 4 -jm 1024 -tm 2048 -nm flink-hudi -d</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1151.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1152.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1153.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="启动sql-client"><a href="#启动sql-client" class="headerlink" title="启动sql-client"></a>启动sql-client</h3><p>-j指定额外的依赖包,可以指定多个依赖包,<code>-j jar1 -j jar2</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;sql-client.sh -s yarn-session embedded shell</span><br><span class="line">SET &#39;sql-client.execution.result-mode&#39; &#x3D; &#39;tableau&#39;;</span><br></pre></td></tr></table></figure>
+
+<h3 id="mysql创建表"><a href="#mysql创建表" class="headerlink" title="mysql创建表"></a>mysql创建表</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> DATABASE flink_cdc;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> `test_a` (</span><br><span class="line"> `id` <span class="type">BIGINT</span>(<span class="number">20</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span> AUTO_INCREMENT,</span><br><span class="line"> `data` <span class="type">VARCHAR</span>(<span class="number">10</span>) <span class="keyword">DEFAULT</span> <span class="keyword">NULL</span>,</span><br><span class="line"> `create_time` <span class="type">TIMESTAMP</span> <span class="keyword">NOT</span> <span class="keyword">NULL</span> <span class="keyword">DEFAULT</span> <span class="built_in">CURRENT_TIMESTAMP</span> <span class="keyword">ON</span></span><br><span class="line">UPDATE <span class="built_in">CURRENT_TIMESTAMP</span>, <span class="keyword">PRIMARY</span> KEY (`id`)</span><br><span class="line">) ENGINE<span class="operator">=</span>InnoDB <span class="keyword">DEFAULT</span> CHARSET<span class="operator">=</span>UTF8;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> test_a(DATA) <span class="keyword">VALUES</span>(<span class="string">&#x27;d1&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<h3 id="flink-sql创建表"><a href="#flink-sql创建表" class="headerlink" title="flink sql创建表"></a>flink sql创建表</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> mysql_test_a(</span><br><span class="line">id <span class="type">BIGINT</span> <span class="keyword">PRIMARY</span> KEY <span class="keyword">NOT</span> enforced, DATA String,</span><br><span class="line">create_time <span class="type">TIMESTAMP</span>(<span class="number">3</span>)</span><br><span class="line">) <span class="keyword">WITH</span> (</span><br><span class="line"><span class="string">&#x27;connector&#x27;</span><span class="operator">=</span><span class="string">&#x27;mysql-cdc&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;hostname&#x27;</span><span class="operator">=</span><span class="string">&#x27;oceanbase004&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;port&#x27;</span><span class="operator">=</span><span class="string">&#x27;3306&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;server-id&#x27;</span><span class="operator">=</span><span class="string">&#x27;5600-5604&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;username&#x27;</span><span class="operator">=</span><span class="string">&#x27;root&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;password&#x27;</span><span class="operator">=</span><span class="string">&#x27;123456&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;server-time-zone&#x27;</span><span class="operator">=</span><span class="string">&#x27;Asia/Shanghai&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;debezium.snapshot.mode&#x27;</span><span class="operator">=</span><span class="string">&#x27;initial&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;database-name&#x27;</span><span class="operator">=</span><span class="string">&#x27;flink_cdc&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;table-name&#x27;</span><span class="operator">=</span><span class="string">&#x27;test_a&#x27;</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Flink SQL&gt; desc mysql_test_a;</span><br><span class="line">+-------------+--------------+-------+---------+--------+-----------+</span><br><span class="line">|        name |         type |  null |     key | extras | watermark |</span><br><span class="line">+-------------+--------------+-------+---------+--------+-----------+</span><br><span class="line">|          id |       BIGINT | FALSE | PRI(id) |        |           |</span><br><span class="line">|        DATA |       STRING |  TRUE |         |        |           |</span><br><span class="line">| create_time | TIMESTAMP(3) |  TRUE |         |        |           |</span><br><span class="line">+-------------+--------------+-------+---------+--------+-----------+</span><br><span class="line">3 rows in set</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1154.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>在mysql里执行一条更新,</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">UPDATE test_a <span class="keyword">SET</span> DATA<span class="operator">=</span><span class="string">&#x27;d5&#x27;</span></span><br><span class="line"><span class="keyword">WHERE</span> id<span class="operator">=</span><span class="number">4</span>;</span><br></pre></td></tr></table></figure>
+
+<p>观察到flinksql中,id=5的数据实时刷新了.</p>
+<img src="/images/fly1155.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="hudi-sink-table-ddl"><a href="#hudi-sink-table-ddl" class="headerlink" title="hudi sink table ddl"></a>hudi sink table ddl</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> hudi_test_a(</span><br><span class="line">id <span class="type">BIGINT</span>, DATA String,</span><br><span class="line">create_time <span class="type">TIMESTAMP</span>(<span class="number">3</span>), <span class="keyword">PRIMARY</span> KEY (`id`) <span class="keyword">NOT</span> ENFORCED</span><br><span class="line">) <span class="keyword">WITH</span>(</span><br><span class="line"><span class="string">&#x27;connector&#x27;</span><span class="operator">=</span><span class="string">&#x27;hudi&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;path&#x27;</span><span class="operator">=</span><span class="string">&#x27;/cdcdata/test_a&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;hoodie.datasource.write.recordkey.field&#x27;</span><span class="operator">=</span><span class="string">&#x27;id&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;hoodie.parquet.max.file.size&#x27;</span><span class="operator">=</span><span class="string">&#x27;268435456&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;write.precombine.field&#x27;</span><span class="operator">=</span><span class="string">&#x27;create_time&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;write.tasks&#x27;</span><span class="operator">=</span><span class="string">&#x27;1&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;write.bucket_assign.tasks&#x27;</span><span class="operator">=</span><span class="string">&#x27;1&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;write.task.max.size&#x27;</span><span class="operator">=</span><span class="string">&#x27;1024&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;write.rate.limit&#x27;</span><span class="operator">=</span><span class="string">&#x27;30000&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;table.type&#x27;</span><span class="operator">=</span><span class="string">&#x27;MERGE_ON_READ&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;compaction.tasks&#x27;</span><span class="operator">=</span><span class="string">&#x27;1&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;compaction.async.enabled&#x27;</span><span class="operator">=</span><span class="string">&#x27;true&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;compaction.delta_commits&#x27;</span><span class="operator">=</span><span class="string">&#x27;1&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;compaction.max_memory&#x27;</span><span class="operator">=</span><span class="string">&#x27;500&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;changelog.enabled&#x27;</span><span class="operator">=</span><span class="string">&#x27;true&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;read.streaming.enabled&#x27;</span><span class="operator">=</span><span class="string">&#x27;true&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;read.streaming.check.interval&#x27;</span><span class="operator">=</span><span class="string">&#x27;3&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;hive_sync.enable&#x27;</span><span class="operator">=</span><span class="string">&#x27;true&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;hive_sync.mode&#x27;</span><span class="operator">=</span><span class="string">&#x27;hms&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;hive_sync.metastore.uris&#x27;</span><span class="operator">=</span><span class="string">&#x27;thrift://hadoop-sh1-core1:9083&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;hive_sync.db&#x27;</span><span class="operator">=</span><span class="string">&#x27;test&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;hive_sync.table&#x27;</span><span class="operator">=</span><span class="string">&#x27;test_a&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;hive_sync.username&#x27;</span><span class="operator">=</span><span class="string">&#x27;flinkcdc&#x27;</span>,</span><br><span class="line"><span class="string">&#x27;hive_sync.support_timestamp&#x27;</span><span class="operator">=</span><span class="string">&#x27;true&#x27;</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Flink SQL&gt; desc hudi_test_a;</span><br><span class="line">+-------------+--------------+-------+---------+--------+-----------+</span><br><span class="line">|        name |         type |  null |     key | extras | watermark |</span><br><span class="line">+-------------+--------------+-------+---------+--------+-----------+</span><br><span class="line">|          id |       BIGINT | FALSE | PRI(id) |        |           |</span><br><span class="line">|        DATA |       STRING |  TRUE |         |        |           |</span><br><span class="line">| create_time | TIMESTAMP(3) |  TRUE |         |        |           |</span><br><span class="line">+-------------+--------------+-------+---------+--------+-----------+</span><br><span class="line">3 rows in set</span><br></pre></td></tr></table></figure>
+
+<h4 id="属性说明"><a href="#属性说明" class="headerlink" title="属性说明"></a>属性说明</h4><p>table_type是Hudi的表文件类型,定义了Hudi文件格式与索引组织方式.<br>支持COPY_ON_WRITE 和MERGE_ON_READ,默认COPY_ON_WRITE.</p>
+<p>COPY_ON_WRITE:<br>数据保存在列式文件中,如parquet.<br>更新时可以定义数据版本或直接重写对应的parquet文件.<br>支持快照读取和增量读取.</p>
+<p>MERGE_ON_READ:<br>数据保存在列式文件(如parquet) + 行记录级文件(如avro)中.<br>数据更新时,会先将数据写到增量文件,然后会定时同步或异步合并成新的列式文件.<br>支持快照读取和增量读取与读查询优化.</p>
+<p>path为落地到hdfs的目录路径.</p>
+<p>hoodie.datasource.write.recordkey.field为表去重主键,hudi根据这个配置创建数据索引,实现数据去重和增删改.<br>主键相同时,选取write.precombine.field中对应字段的最大值的记录.</p>
+<p>write.bucket_assign.tasks,write.tasks,compaction.tasks,设置3个子任务的并行度.<br>hive_sync*相关配置项定义hive元数据的同步方式.<br>这里定义的是hms(hive metastore)同步,hudi会根据配置自动创建相应的hive表.</p>
+<h3 id="同步数据到hudi表"><a href="#同步数据到hudi表" class="headerlink" title="同步数据到hudi表"></a>同步数据到hudi表</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> <span class="string">&#x27;execution.checkpointing.interval&#x27;</span> <span class="operator">=</span> <span class="string">&#x27;10s&#x27;</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> hudi_test_a <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> mysql_test_a;</span><br></pre></td></tr></table></figure>
+
+<img src="/images/fly1156.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1157.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">.*log*:记录增量数据.</span><br><span class="line">*.parquet:生成的parquet镜像文件.</span><br><span class="line">.hoodie_partition_metadata:记录当前同步到的分区元数据.</span><br></pre></td></tr></table></figure>
+
+<p>.hoodie目录是Hudi作业的工作目录.<br>文件命名规则为:instance_time.action.action_state.<br>instance_time为一个instance触发时为时间戳,通过时间戳可以区分文件发生的先后.<br>action为instance的行为类型,主要有commit,clean,delta_commit,compaction,rollback,savepoint.<br>action_state指action的状态,主要有requested(调度发起,但未初始化),inflight(执行中),completed(已完成).</p>
+<h3 id="验证hudi表同步状态"><a href="#验证hudi表同步状态" class="headerlink" title="验证hudi表同步状态"></a>验证hudi表同步状态</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--报错</span></span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> hudi_test_a;</span><br></pre></td></tr></table></figure>
+
+<p>Caused by: java.lang.NoSuchMethodError: org.apache.hudi.table.format.cow.vector.reader.ParquetColumnarRowSplitReader.nextRecord()Lorg/apache/flink/table/data/ColumnarRowData;<br>  at org.apache.hudi.table.format.mor.MergeOnReadInputFormat$BaseFileOnlyFilteringIterator.reachedEnd(MergeOnReadInputFormat.java:510)</p>
+<h3 id="hudi生成的hive表说明"><a href="#hudi生成的hive表说明" class="headerlink" title="hudi生成的hive表说明"></a>hudi生成的hive表说明</h3><p>在hive中进行test库,show table后可以看到Hudi自动建了两张hive外部表.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">hive<span class="operator">&gt;</span> <span class="keyword">show</span> tables;</span><br><span class="line">OK</span><br><span class="line">tbl</span><br><span class="line">test_a_ro</span><br><span class="line">test_a_rt</span><br><span class="line">test_orc</span><br><span class="line"><span class="type">Time</span> taken: <span class="number">0.244</span> seconds, Fetched: <span class="number">4</span> <span class="type">row</span>(s)</span><br><span class="line">hive<span class="operator">&gt;</span> </span><br></pre></td></tr></table></figure>
+
+<p>Merge on read表会创建两张表,rt表支持快照+增量查询(近实时),ro支持读优化查询(ReadOptimized).<br>show create table查看两张表的DDL:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line">hive<span class="operator">&gt;</span> <span class="keyword">show</span> <span class="keyword">create</span> <span class="keyword">table</span> test_a_ro;</span><br><span class="line">OK</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">EXTERNAL</span> <span class="keyword">TABLE</span> `test_a_ro`(</span><br><span class="line">  `_hoodie_commit_time` string COMMENT <span class="string">&#x27;&#x27;</span>, </span><br><span class="line">  `_hoodie_commit_seqno` string COMMENT <span class="string">&#x27;&#x27;</span>, </span><br><span class="line">  `_hoodie_record_key` string COMMENT <span class="string">&#x27;&#x27;</span>, </span><br><span class="line">  `_hoodie_partition_path` string COMMENT <span class="string">&#x27;&#x27;</span>, </span><br><span class="line">  `_hoodie_file_name` string COMMENT <span class="string">&#x27;&#x27;</span>, </span><br><span class="line">  `_hoodie_operation` string COMMENT <span class="string">&#x27;&#x27;</span>, </span><br><span class="line">  `id` <span class="type">bigint</span> COMMENT <span class="string">&#x27;&#x27;</span>, </span><br><span class="line">  `data` string COMMENT <span class="string">&#x27;&#x27;</span>, </span><br><span class="line">  `create_time` <span class="type">bigint</span> COMMENT <span class="string">&#x27;&#x27;</span>)</span><br><span class="line"><span class="type">ROW</span> FORMAT SERDE </span><br><span class="line">  <span class="string">&#x27;org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe&#x27;</span> </span><br><span class="line"><span class="keyword">WITH</span> SERDEPROPERTIES ( </span><br><span class="line">  <span class="string">&#x27;hoodie.query.as.ro.table&#x27;</span><span class="operator">=</span><span class="string">&#x27;true&#x27;</span>, </span><br><span class="line">  <span class="string">&#x27;path&#x27;</span><span class="operator">=</span><span class="string">&#x27;/cdcdata/test_a&#x27;</span>) </span><br><span class="line">STORED <span class="keyword">AS</span> INPUTFORMAT </span><br><span class="line">  <span class="string">&#x27;org.apache.hudi.hadoop.HoodieParquetInputFormat&#x27;</span> </span><br><span class="line">OUTPUTFORMAT </span><br><span class="line">  <span class="string">&#x27;org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat&#x27;</span></span><br><span class="line">LOCATION</span><br><span class="line">  <span class="string">&#x27;hdfs://mycluster/cdcdata/test_a&#x27;</span></span><br><span class="line">TBLPROPERTIES (</span><br><span class="line">  <span class="string">&#x27;last_commit_time_sync&#x27;</span><span class="operator">=</span><span class="string">&#x27;20221021152646182&#x27;</span>, </span><br><span class="line">  <span class="string">&#x27;numFiles&#x27;</span><span class="operator">=</span><span class="string">&#x27;1&#x27;</span>, </span><br><span class="line">  <span class="string">&#x27;spark.sql.sources.provider&#x27;</span><span class="operator">=</span><span class="string">&#x27;hudi&#x27;</span>, </span><br><span class="line">  <span class="string">&#x27;spark.sql.sources.schema.numParts&#x27;</span><span class="operator">=</span><span class="string">&#x27;1&#x27;</span>, </span><br><span class="line">  <span class="string">&#x27;spark.sql.sources.schema.part.0&#x27;</span><span class="operator">=</span><span class="string">&#x27;&#123;\&quot;type\&quot;:\&quot;struct\&quot;,\&quot;fields\&quot;:[&#123;\&quot;name\&quot;:\&quot;_hoodie_commit_time\&quot;,\&quot;type\&quot;:\&quot;string\&quot;,\&quot;nullable\&quot;:true,\&quot;metadata\&quot;:&#123;&#125;&#125;,&#123;\&quot;name\&quot;:\&quot;_hoodie_commit_seqno\&quot;,\&quot;type\&quot;:\&quot;string\&quot;,\&quot;nullable\&quot;:true,\&quot;metadata\&quot;:&#123;&#125;&#125;,&#123;\&quot;name\&quot;:\&quot;_hoodie_record_key\&quot;,\&quot;type\&quot;:\&quot;string\&quot;,\&quot;nullable\&quot;:true,\&quot;metadata\&quot;:&#123;&#125;&#125;,&#123;\&quot;name\&quot;:\&quot;_hoodie_partition_path\&quot;,\&quot;type\&quot;:\&quot;string\&quot;,\&quot;nullable\&quot;:true,\&quot;metadata\&quot;:&#123;&#125;&#125;,&#123;\&quot;name\&quot;:\&quot;_hoodie_file_name\&quot;,\&quot;type\&quot;:\&quot;string\&quot;,\&quot;nullable\&quot;:true,\&quot;metadata\&quot;:&#123;&#125;&#125;,&#123;\&quot;name\&quot;:\&quot;_hoodie_operation\&quot;,\&quot;type\&quot;:\&quot;string\&quot;,\&quot;nullable\&quot;:true,\&quot;metadata\&quot;:&#123;&#125;&#125;,&#123;\&quot;name\&quot;:\&quot;id\&quot;,\&quot;type\&quot;:\&quot;long\&quot;,\&quot;nullable\&quot;:false,\&quot;metadata\&quot;:&#123;&#125;&#125;,&#123;\&quot;name\&quot;:\&quot;DATA\&quot;,\&quot;type\&quot;:\&quot;string\&quot;,\&quot;nullable\&quot;:true,\&quot;metadata\&quot;:&#123;&#125;&#125;,&#123;\&quot;name\&quot;:\&quot;create_time\&quot;,\&quot;type\&quot;:\&quot;timestamp\&quot;,\&quot;nullable\&quot;:true,\&quot;metadata\&quot;:&#123;&#125;&#125;]&#125;&#x27;</span>, </span><br><span class="line">  <span class="string">&#x27;totalSize&#x27;</span><span class="operator">=</span><span class="string">&#x27;435115&#x27;</span>, </span><br><span class="line">  <span class="string">&#x27;transient_lastDdlTime&#x27;</span><span class="operator">=</span><span class="string">&#x27;1666337230&#x27;</span>)</span><br><span class="line"><span class="type">Time</span> taken: <span class="number">0.224</span> seconds, Fetched: <span class="number">29</span> <span class="type">row</span>(s)</span><br><span class="line">hive<span class="operator">&gt;</span> <span class="keyword">show</span> <span class="keyword">create</span> <span class="keyword">table</span> test_a_rt;</span><br><span class="line">OK</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">EXTERNAL</span> <span class="keyword">TABLE</span> `test_a_rt`(</span><br><span class="line">  `_hoodie_commit_time` string COMMENT <span class="string">&#x27;&#x27;</span>, </span><br><span class="line">  `_hoodie_commit_seqno` string COMMENT <span class="string">&#x27;&#x27;</span>, </span><br><span class="line">  `_hoodie_record_key` string COMMENT <span class="string">&#x27;&#x27;</span>, </span><br><span class="line">  `_hoodie_partition_path` string COMMENT <span class="string">&#x27;&#x27;</span>, </span><br><span class="line">  `_hoodie_file_name` string COMMENT <span class="string">&#x27;&#x27;</span>, </span><br><span class="line">  `_hoodie_operation` string COMMENT <span class="string">&#x27;&#x27;</span>, </span><br><span class="line">  `id` <span class="type">bigint</span> COMMENT <span class="string">&#x27;&#x27;</span>, </span><br><span class="line">  `data` string COMMENT <span class="string">&#x27;&#x27;</span>, </span><br><span class="line">  `create_time` <span class="type">bigint</span> COMMENT <span class="string">&#x27;&#x27;</span>)</span><br><span class="line"><span class="type">ROW</span> FORMAT SERDE </span><br><span class="line">  <span class="string">&#x27;org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe&#x27;</span> </span><br><span class="line"><span class="keyword">WITH</span> SERDEPROPERTIES ( </span><br><span class="line">  <span class="string">&#x27;hoodie.query.as.ro.table&#x27;</span><span class="operator">=</span><span class="string">&#x27;false&#x27;</span>, </span><br><span class="line">  <span class="string">&#x27;path&#x27;</span><span class="operator">=</span><span class="string">&#x27;/cdcdata/test_a&#x27;</span>) </span><br><span class="line">STORED <span class="keyword">AS</span> INPUTFORMAT </span><br><span class="line">  <span class="string">&#x27;org.apache.hudi.hadoop.realtime.HoodieParquetRealtimeInputFormat&#x27;</span> </span><br><span class="line">OUTPUTFORMAT </span><br><span class="line">  <span class="string">&#x27;org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat&#x27;</span></span><br><span class="line">LOCATION</span><br><span class="line">  <span class="string">&#x27;hdfs://mycluster/cdcdata/test_a&#x27;</span></span><br><span class="line">TBLPROPERTIES (</span><br><span class="line">  <span class="string">&#x27;last_commit_time_sync&#x27;</span><span class="operator">=</span><span class="string">&#x27;20221021152646182&#x27;</span>, </span><br><span class="line">  <span class="string">&#x27;numFiles&#x27;</span><span class="operator">=</span><span class="string">&#x27;1&#x27;</span>, </span><br><span class="line">  <span class="string">&#x27;spark.sql.sources.provider&#x27;</span><span class="operator">=</span><span class="string">&#x27;hudi&#x27;</span>, </span><br><span class="line">  <span class="string">&#x27;spark.sql.sources.schema.numParts&#x27;</span><span class="operator">=</span><span class="string">&#x27;1&#x27;</span>, </span><br><span class="line">  <span class="string">&#x27;spark.sql.sources.schema.part.0&#x27;</span><span class="operator">=</span><span class="string">&#x27;&#123;\&quot;type\&quot;:\&quot;struct\&quot;,\&quot;fields\&quot;:[&#123;\&quot;name\&quot;:\&quot;_hoodie_commit_time\&quot;,\&quot;type\&quot;:\&quot;string\&quot;,\&quot;nullable\&quot;:true,\&quot;metadata\&quot;:&#123;&#125;&#125;,&#123;\&quot;name\&quot;:\&quot;_hoodie_commit_seqno\&quot;,\&quot;type\&quot;:\&quot;string\&quot;,\&quot;nullable\&quot;:true,\&quot;metadata\&quot;:&#123;&#125;&#125;,&#123;\&quot;name\&quot;:\&quot;_hoodie_record_key\&quot;,\&quot;type\&quot;:\&quot;string\&quot;,\&quot;nullable\&quot;:true,\&quot;metadata\&quot;:&#123;&#125;&#125;,&#123;\&quot;name\&quot;:\&quot;_hoodie_partition_path\&quot;,\&quot;type\&quot;:\&quot;string\&quot;,\&quot;nullable\&quot;:true,\&quot;metadata\&quot;:&#123;&#125;&#125;,&#123;\&quot;name\&quot;:\&quot;_hoodie_file_name\&quot;,\&quot;type\&quot;:\&quot;string\&quot;,\&quot;nullable\&quot;:true,\&quot;metadata\&quot;:&#123;&#125;&#125;,&#123;\&quot;name\&quot;:\&quot;_hoodie_operation\&quot;,\&quot;type\&quot;:\&quot;string\&quot;,\&quot;nullable\&quot;:true,\&quot;metadata\&quot;:&#123;&#125;&#125;,&#123;\&quot;name\&quot;:\&quot;id\&quot;,\&quot;type\&quot;:\&quot;long\&quot;,\&quot;nullable\&quot;:false,\&quot;metadata\&quot;:&#123;&#125;&#125;,&#123;\&quot;name\&quot;:\&quot;DATA\&quot;,\&quot;type\&quot;:\&quot;string\&quot;,\&quot;nullable\&quot;:true,\&quot;metadata\&quot;:&#123;&#125;&#125;,&#123;\&quot;name\&quot;:\&quot;create_time\&quot;,\&quot;type\&quot;:\&quot;timestamp\&quot;,\&quot;nullable\&quot;:true,\&quot;metadata\&quot;:&#123;&#125;&#125;]&#125;&#x27;</span>, </span><br><span class="line">  <span class="string">&#x27;totalSize&#x27;</span><span class="operator">=</span><span class="string">&#x27;435115&#x27;</span>, </span><br><span class="line">  <span class="string">&#x27;transient_lastDdlTime&#x27;</span><span class="operator">=</span><span class="string">&#x27;1666337231&#x27;</span>)</span><br><span class="line"><span class="type">Time</span> taken: <span class="number">0.104</span> seconds, Fetched: <span class="number">29</span> <span class="type">row</span>(s)</span><br><span class="line">hive<span class="operator">&gt;</span> </span><br></pre></td></tr></table></figure>
+
+<p>可以看到Hudi在两张表中都加入了6个Hudi的元数据字段,字段名以&#39;<code>_hoodie_</code>&#39;为前缀.<br>rt和ro的读写类是不一样的.</p>
+<img src="/images/fly1158.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>rt表(HoodieParquetRealtimeInputFormat)读取parquet文件与增量log文件,读取时将两种数据进行合并,产生近实时的数据镜像.<br>rt表实时性好,但读IO效率较差.</p>
+<p>ro表(HoodieParquetInputFormat)查询时只读取parquet文件.<br>新数据只有经过compact合并生成新的parquet文件时才可以读到,数据存在一定的延时,但读IO效率更高,因为只读取parquet文件,不需要读增量log进行数据合并.</p>
+<img src="/images/fly1159.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+
+
+
+
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/flink/" rel="tag"># flink</a>
+              <a href="/tags/hudi/" rel="tag"># hudi</a>
+              <a href="/tags/mysql/" rel="tag"># mysql</a>
+              <a href="/tags/hive/" rel="tag"># hive</a>
+              <a href="/tags/spark/" rel="tag"># spark</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/10/20/java%E8%8E%B7%E5%8F%96resources%E7%9B%AE%E5%BD%95%E8%B5%84%E6%BA%90%E6%96%87%E4%BB%B6/" rel="prev" title="java获取resources目录资源文件">
+                  <i class="fa fa-chevron-left"></i> java获取resources目录资源文件
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/10/21/maven%20question/" rel="next" title="maven question">
+                  maven question <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

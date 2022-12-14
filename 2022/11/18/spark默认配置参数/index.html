@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="spark 2.4.8https:&#x2F;&#x2F;spark.apache.org&#x2F;docs&#x2F;2.4.8&#x2F;configuration.html Spark 提供了三个位置来配置系统:  Spark properties控制大多数应用程序参数,可以使用SparkConf对象或通过 Java 系统属性进行设置. Environment variables可用于每台机器的设置,例如 IP 地址,通过每个节点上的脚本">
+<meta property="og:type" content="article">
+<meta property="og:title" content="spark默认配置参数">
+<meta property="og:url" content="https://maoeryu.github.io/2022/11/18/spark%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="spark 2.4.8https:&#x2F;&#x2F;spark.apache.org&#x2F;docs&#x2F;2.4.8&#x2F;configuration.html Spark 提供了三个位置来配置系统:  Spark properties控制大多数应用程序参数,可以使用SparkConf对象或通过 Java 系统属性进行设置. Environment variables可用于每台机器的设置,例如 IP 地址,通过每个节点上的脚本">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1336.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1337.png">
+<meta property="article:published_time" content="2022-11-17T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-11-18T09:53:42.195Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="spark">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1336.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/11/18/spark%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>spark默认配置参数 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Spark-Properties"><span class="nav-number">1.</span> <span class="nav-text">Spark Properties</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A8%E6%80%81%E5%8A%A0%E8%BD%BD-Spark-%E5%B1%9E%E6%80%A7"><span class="nav-number">1.1.</span> <span class="nav-text">动态加载 Spark 属性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B-Spark-%E5%B1%9E%E6%80%A7"><span class="nav-number">1.2.</span> <span class="nav-text">查看 Spark 属性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%AF%E7%94%A8%E5%B1%9E%E6%80%A7"><span class="nav-number">1.3.</span> <span class="nav-text">可用属性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E5%B1%9E%E6%80%A7"><span class="nav-number">1.3.1.</span> <span class="nav-text">应用程序属性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Runtime-Environment-%E8%BF%90%E8%A1%8C%E7%8E%AF%E5%A2%83"><span class="nav-number">1.3.2.</span> <span class="nav-text">Runtime Environment(运行环境)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Shuffle-Behavior"><span class="nav-number">1.3.3.</span> <span class="nav-text">Shuffle Behavior</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Spark-UI"><span class="nav-number">1.3.4.</span> <span class="nav-text">Spark UI</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Compression-and-Serialization"><span class="nav-number">1.3.5.</span> <span class="nav-text">Compression and Serialization</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Memory-Management-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-number">1.3.6.</span> <span class="nav-text">Memory Management(内存管理)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Execution-Behavior-%E6%89%A7%E8%A1%8C%E8%A1%8C%E4%B8%BA"><span class="nav-number">1.3.7.</span> <span class="nav-text">Execution Behavior(执行行为)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Networking"><span class="nav-number">1.3.8.</span> <span class="nav-text">Networking</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Scheduling"><span class="nav-number">1.3.9.</span> <span class="nav-text">Scheduling</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Dynamic-Allocation-%E5%8A%A8%E6%80%81%E5%88%86%E9%85%8D"><span class="nav-number">1.3.10.</span> <span class="nav-text">Dynamic Allocation(动态分配)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Spark-Streaming"><span class="nav-number">1.3.11.</span> <span class="nav-text">Spark Streaming</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SparkR"><span class="nav-number">1.3.12.</span> <span class="nav-text">SparkR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GraphX"><span class="nav-number">1.3.13.</span> <span class="nav-text">GraphX</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Deploy-%E9%83%A8%E7%BD%B2"><span class="nav-number">1.3.14.</span> <span class="nav-text">Deploy(部署)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Security"><span class="nav-number">1.3.15.</span> <span class="nav-text">Security</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Spark-SQL"><span class="nav-number">1.3.16.</span> <span class="nav-text">Spark SQL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E5%99%A8"><span class="nav-number">1.3.17.</span> <span class="nav-text">集群管理器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#yarn"><span class="nav-number">1.3.17.1.</span> <span class="nav-text">yarn</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Standalone-Mode"><span class="nav-number">1.3.17.2.</span> <span class="nav-text">Standalone Mode</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Environment-Variables-%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F"><span class="nav-number">2.</span> <span class="nav-text">Environment Variables(环境变量)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E6%97%A5%E5%BF%97%E8%AE%B0%E5%BD%95"><span class="nav-number">3.</span> <span class="nav-text">配置日志记录</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A6%86%E7%9B%96%E9%85%8D%E7%BD%AE%E7%9B%AE%E5%BD%95"><span class="nav-number">4.</span> <span class="nav-text">覆盖配置目录</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%A7%E6%89%BF-Hadoop-%E9%9B%86%E7%BE%A4%E9%85%8D%E7%BD%AE"><span class="nav-number">5.</span> <span class="nav-text">继承 Hadoop 集群配置</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89-Hadoop-Hive-%E9%85%8D%E7%BD%AE"><span class="nav-number">6.</span> <span class="nav-text">自定义 Hadoop&#x2F;Hive 配置</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/11/18/spark%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          spark默认配置参数
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2022-11-18 00:00:00 / Modified: 17:53:42" itemprop="dateCreated datePublished" datetime="2022-11-18T00:00:00+08:00">2022-11-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>spark 2.4.8<br><a target="_blank" rel="noopener" href="https://spark.apache.org/docs/2.4.8/configuration.html">https://spark.apache.org/docs/2.4.8/configuration.html</a></p>
+<p>Spark 提供了三个位置来配置系统:</p>
+<ul>
+<li>Spark properties控制大多数应用程序参数,可以使用SparkConf对象或通过 Java 系统属性进行设置.</li>
+<li>Environment variables可用于每台机器的设置,例如 IP 地址,通过每个节点上的脚本<code>conf/spark-env.sh</code>来设置.</li>
+<li>Logging可以通过配置日志记录log4j.properties.</li>
+</ul>
+<span id="more"></span>
+<h1 id="Spark-Properties"><a href="#Spark-Properties" class="headerlink" title="Spark Properties"></a>Spark Properties</h1><p>控制大多数应用程序设置,并为每个应用程序单独配置.<br>这些属性可以直接在SparkConf传递给您的 SparkContext.<br>SparkConf允许通过该方法配置一些常用属性(例如master URL/应用程序名称)以及任意键值对 set().<br>例如,我们可以用两个线程初始化一个应用程序,如下所示:</p>
+<p>请注意,我们使用 <code>local[2]</code> 运行,这意味着两个线程 - 代表&quot;minimal&quot;并行性,这可以帮助检测仅当我们在分布式上下文中运行时才存在的错误.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">val conf &#x3D; new SparkConf()</span><br><span class="line">             .setMaster(&quot;local[2]&quot;)</span><br><span class="line">             .setAppName(&quot;CountingSheep&quot;)</span><br><span class="line">val sc &#x3D; new SparkContext(conf)</span><br></pre></td></tr></table></figure>
+
+<p>请注意,在本地模式下我们可以有超过 1 个线程,在像 Spark Streaming 这样的情况下,我们实际上可能需要超过 1 个线程来防止任何类型的饥饿问题.</p>
+<p>指定一些持续时间的属性应该配置一个时间单位.<br>接受以下格式:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">25ms (milliseconds)</span><br><span class="line">5s (seconds)</span><br><span class="line">10m or 10min (minutes)</span><br><span class="line">3h (hours)</span><br><span class="line">5d (days)</span><br><span class="line">1y (years)</span><br></pre></td></tr></table></figure>
+
+<p>指定字节大小的属性应该配置一个大小单位.<br>接受以下格式:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">1b (bytes)</span><br><span class="line">1k or 1kb (kibibytes &#x3D; 1024 bytes)</span><br><span class="line">1m or 1mb (mebibytes &#x3D; 1024 kibibytes)</span><br><span class="line">1g or 1gb (gibibytes &#x3D; 1024 mebibytes)</span><br><span class="line">1t or 1tb (tebibytes &#x3D; 1024 gibibytes)</span><br><span class="line">1p or 1pb (pebibytes &#x3D; 1024 tebibytes)</span><br></pre></td></tr></table></figure>
+
+<p>虽然没有单位的数字通常被解释为字节,但少数被解释为 KiB 或 MiB.</p>
+<h2 id="动态加载-Spark-属性"><a href="#动态加载-Spark-属性" class="headerlink" title="动态加载 Spark 属性"></a>动态加载 Spark 属性</h2><p>在某些情况下,您可能希望避免在SparkConf配置.<br>例如,如果您想使用不同的masters 或不同的内存量运行相同的应用程序.<br>Spark 允许您简单地创建一个空的 conf:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">val sc &#x3D; new SparkContext(new SparkConf())</span><br></pre></td></tr></table></figure>
+<p>然后,您可以在运行时提供配置值:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;spark-submit --name &quot;My app&quot; --master local[4] --conf spark.eventLog.enabled&#x3D;false</span><br><span class="line">  --conf &quot;spark.executor.extraJavaOptions&#x3D;-XX:+PrintGCDetails -XX:+PrintGCTimeStamps&quot; myApp.jar</span><br></pre></td></tr></table></figure>
+
+<p>Spark shell 和spark-submit 工具支持两种动态加载配置的方式.<br>首先是命令行选项,如--master,如上所示.<br>spark-submit可以使用该标志(<code>--conf/-c</code>)接受任何 Spark 属性,但对在启动 Spark 应用程序中发挥作用的属性使用特殊标志.<br>运行<code>./bin/spark-submit --help</code>将显示这些选项的完整列表.</p>
+<p>bin/spark-submit还将从<code>conf/spark-defaults.conf</code>中读取配置选项,其中每一行由一个键和一个由空格分隔的值组成.<br>例如:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">spark.master            spark:&#x2F;&#x2F;5.6.7.8:7077</span><br><span class="line">spark.executor.memory   4g</span><br><span class="line">spark.eventLog.enabled  true</span><br><span class="line">spark.serializer        org.apache.spark.serializer.KryoSerializer</span><br></pre></td></tr></table></figure>
+
+<p>任何指定为标志或在属性文件中的值都将传递给应用程序并与通过 SparkConf 指定的值合并.<br>直接在 SparkConf 上设置的属性具有最高优先级,然后是传递给spark-submitor的标志spark-shell,最后是spark-defaults.conf文件中的选项.<br>自早期版本的 Spark 以来,一些配置键已被重命名.<br>在这种情况下,旧的密钥名称仍然被接受,但优先级低于新密钥的任何实例.</p>
+<p>Spark属性主要分为两种:一种是与部署相关的,比如&quot;spark.driver.memory&quot;,&quot;spark.executor.instances&quot;,这种属性SparkConf在运行时通过编程方式设置可能不会受到影响,或者行为取决于您选择的集群管理器和部署模式,因此建议通过配置文件或spark-submit命令行选项进行设置.<br>另一个主要是Spark运行时控制,比如&quot;spark.task.maxFailures&quot;,这种属性可以任意设置.</p>
+<h2 id="查看-Spark-属性"><a href="#查看-Spark-属性" class="headerlink" title="查看 Spark 属性"></a>查看 Spark 属性</h2><p>应用程序 Web UI 在<code>http://&lt;driver&gt;:4040</code>&quot;环境&quot;选项卡中列出了 Spark 属性.<br>这是检查以确保您的属性设置正确的有用位置.<br>请注意,只有通过<code>spark-defaults.conf/SparkConf/命令行</code>明确指定的值才会出现.<br>对于所有其他配置属性,您可以假定使用默认值.</p>
+<h2 id="可用属性"><a href="#可用属性" class="headerlink" title="可用属性"></a>可用属性</h2><p>大多数控制内部设置的属性都有合理的默认值.</p>
+<h3 id="应用程序属性"><a href="#应用程序属性" class="headerlink" title="应用程序属性"></a>应用程序属性</h3><p>spark.app.name<br>(none)<br>应用程序的名称.这将出现在 UI 和日志数据中.</p>
+<p>spark.driver.cores<br>1<br>用于驱动程序进程的核心数,仅在集群模式(cluster mode)下.</p>
+<p>spark.driver.maxResultSize<br>1g<br>每个 Spark 操作(例如collect)的所有分区的序列化结果的总大小限制(以字节为单位).应至少为 1M,或 0 表示无限制.如果总大小超过此限制,作业将被中止.具有高限制可能会导致驱动程序内存不足错误(取决于 <code>spark.driver.memory</code> 和 JVM 中对象的内存开销).设置适当的限制可以保护驱动程序免受内存不足错误的影响.</p>
+<p>spark.driver.memory<br>1g<br>用于驱动程序进程的内存量,即初始化 SparkContext 的位置,格式与具有大小单位后缀(&quot;k&quot;/&quot;m&quot;/&quot;g&quot;或&quot;t&quot;,例如512m/2g)的 JVM 内存字符串相同.注意:在客户端模式(client mode)下,此配置不能 直接在您的应用程序中设置SparkConf,因为驱动程序 JVM 已经在此时启动.相反,<code>--driver-memory</code>命令行选项或在您的默认属性文件中进行设置.</p>
+<p>spark.driver.memoryOverhead<br>driverMemory * 0.10,最小为 384<br>除非另有说明,否则要在集群模式下为每个驱动程序分配的堆外内存量(以 MiB 为单位).这是内存,用于解释 VM 开销/驻留字符串/其他本机开销等.这往往会随着容器大小(通常为 6-10%)而增长.YARN 和 Kubernetes 目前支持此选项.</p>
+<p>spark.executor.memory<br>1g<br>每个执行程序进程使用的内存量,格式与 JVM 内存字符串相同,带有大小单位后缀(&quot;k&quot;/&quot;m&quot;/&quot;g&quot;或&quot;t&quot;),例如512m/2g.</p>
+<p>spark.executor.pyspark.memory<br>Not set<br>除非另有说明,否则要在每个执行程序中分配给 PySpark 的内存量(以 MiB 为单位).如果设置,执行程序的 PySpark 内存将被限制为此数量.如果未设置,Spark 将不会限制 Python 的内存使用,应用程序会避免超出与其他非 JVM 进程共享的开销内存空间.当 PySpark 在 YARN 或 Kubernetes 中运行时,此内存将添加到执行程序资源请求中.注意:在不支持资源限制的平台(例如 Windows)上,Python 内存使用可能不受限制.</p>
+<p>spark.executor.memoryOverhead<br>executorMemory * 0.10,最小为 384<br>除非另有说明,否则每个执行程序要分配的堆外内存量,以 MiB 为单位.这是内存,用于解释 VM 开销/驻留字符串/其他本机开销等.这往往会随着执行程序的大小(通常为 6-10%)而增长.YARN 和 Kubernetes 目前支持此选项.</p>
+<p>spark.extraListeners<br>(none)<br>以逗号分隔的类列表,实现SparkListener; 在初始化 SparkContext 时,这些类的实例将被创建并注册到 Spark 的监听器总线.如果一个类有一个接受 SparkConf 的单参数构造函数,那么将调用该构造函数.否则,将调用零参数构造函数.如果找不到有效的构造函数,则 SparkContext 创建将失败并出现异常.</p>
+<p>spark.local.dir<br>/tmp<br>用于 Spark 中&quot;暂存&quot;空间的目录,包括映射输出文件和存储在磁盘上的 RDD.这应该在您系统中的快速本地磁盘上.它也可以是不同磁盘上多个目录的逗号分隔列表.注意:在 Spark 1.0 及更高版本中,这将被集群管理器设置的 SPARK_LOCAL_DIRS(Standalone)/MESOS_SANDBOX(Mesos)或 LOCAL_DIRS(YARN)环境变量覆盖.</p>
+<p>spark.logConf<br>FALSE<br>当 SparkContext 启动时,将有效的 SparkConf 记录为 INFO.</p>
+<p>spark.master<br>(none)<br>要连接的集群管理器.请参阅 允许的master URL 列表.</p>
+<p>spark.submit.deployMode<br>(none)<br>Spark驱动程序的部署模式,可以是&quot;client&quot;或&quot;cluster&quot;,即在集群内的某个节点上本地(&quot;client&quot;)或远程(&quot;cluster&quot;)启动驱动程序.</p>
+<p>spark.log.callerContext<br>(none)<br>在 Yarn/HDFS 上运行时将写入 Yarn RM log/HDFS 审计日志的应用程序信息.它的长度取决于 Hadoop 配置<code>hadoop.caller.context.max.size</code>.它应该简洁,通常最多可以包含 50 个字符.</p>
+<p>spark.driver.supervise<br>FALSE<br>如果为真,则在驱动程序失败且退出状态为非零时自动重新启动驱动程序.仅在 Spark standalone mode或 Mesos cluster deploy mode下有效.</p>
+<h3 id="Runtime-Environment-运行环境"><a href="#Runtime-Environment-运行环境" class="headerlink" title="Runtime Environment(运行环境)"></a>Runtime Environment(运行环境)</h3><p>spark.driver.extraClassPath<br>(none)<br>附加到驱动程序类路径的额外类路径条目.注意:在客户端模式下,此配置不能直接在您的应用程序中设置SparkConf,因为驱动程序 JVM 已经在此时启动.相反,请通过<code>--driver-class-path</code>命令行选项或在您的默认属性文件中进行设置.</p>
+<p>spark.driver.extraJavaOptions<br>(none)<br>要传递给驱动程序的一串额外的 JVM 选项.例如,GC 设置或其他日志记录.请注意,使用此选项设置最大堆大小 (-Xmx) 设置是非法的.最大堆大小设置可以spark.driver.memory在集群模式下设置,也可以通过<code>--driver-memory</code>客户端模式下的命令行选项设置.注意:在客户端模式下,此配置不能直接在您的应用程序中设置SparkConf,因为驱动程序 JVM 已经在此时启动.相反,请通过<code>--driver-java-options</code>命令行选项或在您的默认属性文件中进行设置.</p>
+<p>spark.driver.extraLibraryPath<br>(none)<br>设置启动驱动程序 JVM 时要使用的特殊库路径.注意:在客户端模式下,此配置不能直接在您的应用程序中设置SparkConf,因为驱动程序 JVM 已经在此时启动.相反,请通过<code>--driver-library-path</code>命令行选项或在您的默认属性文件中进行设置.</p>
+<p>spark.driver.userClassPathFirst<br>FALSE<br>(实验性的)在驱动程序中加载类时,是否让用户添加的 jar 优先于 Spark 自己的 jar.此功能可用于缓解 Spark 的依赖项和用户依赖项之间的冲突.它目前是一项实验性功能.这仅用于集群模式.</p>
+<p>spark.executor.extraClassPath<br>(none)<br>额外的类路径条目添加到执行程序的类路径中.这主要是为了向后兼容旧版本的 Spark.用户通常不需要设置此选项.</p>
+<p>spark.executor.extraJavaOptions<br>(none)<br>要传递给执行程序的一串额外的 JVM 选项.例如,GC 设置或其他日志记录.请注意,使用此选项设置 Spark 属性或最大堆大小 (-Xmx) 设置是非法的.应使用 SparkConf 对象或与 spark-submit 脚本一起使用的 spark-defaults.conf 文件来设置 Spark 属性.可以使用 <code>spark.executor.memory</code> 设置最大堆大小设置.以下符号(如果存在)将被插入:将被应用程序 ID 替换,并将被执行者 ID 替换.例如,要启用详细的 gc 日志记录到 /tmp 中以应用程序的执行程序 ID 命名的文件,请传递以下&quot;value&quot;: <code>-verbose:gc -Xloggc:/tmp/-.gc</code></p>
+<p>spark.executor.extraLibraryPath<br>(none)<br>设置启动执行程序 JVM 时要使用的特殊库路径.</p>
+<p>spark.executor.logs.rolling.maxRetainedFiles<br>(none)<br>设置系统将保留的最新滚动日志文件的数量.较旧的日志文件将被删除.默认情况下禁用.</p>
+<p>spark.executor.logs.rolling.enableCompression<br>FALSE<br>启用执行程序日志压缩.如果启用,滚动的执行程序日志将被压缩.默认情况下禁用.</p>
+<p>spark.executor.logs.rolling.maxSize<br>(none)<br>设置文件的最大大小(以字节为单位),执行程序日志将被滚动.默认情况下禁用滚动.请参阅<code>spark.executor.logs.rolling.maxRetainedFiles</code> 自动清理旧日志.</p>
+<p>spark.executor.logs.rolling.strategy<br>(none)<br>设置执行器日志的滚动策略.默认情况下它是禁用的.它可以设置为&quot;time&quot;(基于时间的滚动)或&quot;size&quot;(基于大小的滚动).对于&quot;time&quot;,用于<code>spark.executor.logs.rolling.time.interval</code>设置滚动间隔.对于&quot;size&quot;,用于<code>spark.executor.logs.rolling.maxSize</code>设置滚动的最大文件大小.</p>
+<p>spark.executor.logs.rolling.time.interval<br>daily<br>设置执行程序日志滚动的时间间隔.默认情况下禁用滚动.有效值为daily/hourly/minutely任何以秒为单位的间隔.请参阅<code>spark.executor.logs.rolling.maxRetainedFiles</code> 自动清理旧日志.</p>
+<p>spark.executor.userClassPathFirst<br>FALSE<br>(实验性的)与<code>spark.driver.userClassPathFirst</code>相同的功能,但适用于执行程序实例.</p>
+<p><code>spark.executorEnv.[EnvironmentVariableName]</code><br>(none)<br>将由EnvironmentVariableName指定的环境变量添加到Executor进程.用户可以指定其中的多个来设置多个环境变量.</p>
+<p>spark.redaction.regex<br>(?i)secret|password<br>用于确定驱动程序和执行程序环境中哪些 Spark 配置属性和环境变量包含敏感信息的正则表达式.当此正则表达式匹配属性键或值时,该值将从环境 UI 和各种日志(如 YARN 和事件日志)中删除.</p>
+<p>spark.python.profile<br>FALSE<br>在 Python worker 中启用分析,分析结果将显示为sc.show_profiles(),或者在驱动程序退出之前显示.它也可以通过sc.dump_profiles(path)转储到磁盘中.如果某些配置文件结果是手动显示的,则在驱动程序退出之前不会自动显示它们.默认情况下<code>pyspark.profiler.BasicProfiler</code>将使用,但这可以通过将探查器类作为参数传递给SparkContext构造函数来覆盖.</p>
+<p>spark.python.profile.dump<br>(none)<br>驱动程序退出前用于转储配置文件结果的目录.结果将转储为每个 RDD 的单独文件.它们可以通过加载<code>pstats.Stats()</code>.如果指定此项,则不会自动显示配置文件结果.</p>
+<p>spark.python.worker.memory<br>512m<br>聚合期间每个 python 工作进程使用的内存量,格式与具有大小单位后缀(&quot;k&quot;/&quot;m&quot;/&quot;g&quot;/&quot;t&quot;)(例如512m, 2g)的 JVM 内存字符串相同.如果聚合期间使用的内存超过此数量,它会将数据溢出到磁盘中.</p>
+<p>spark.python.worker.reuse<br>TRUE<br>是否重用 Python worker.如果是,它将使用固定数量的 Python worker,不需要为每个任务 fork() 一个 Python 进程.如果有大量广播,这将非常有用,那么广播将不需要为每个任务从 JVM 传输到 Python worker.</p>
+<p>spark.files<br>无<br>要放置在每个执行程序的工作目录中的以逗号分隔的文件列表.允许使用 Glob.</p>
+<p>spark.submit.pyFiles<br>无<br>要放置在 Python 应用程序的 PYTHONPATH 上的 .zip/.egg/.py 文件的逗号分隔列表.允许使用 Glob.</p>
+<p>spark.jars<br>无<br>要包含在驱动程序和执行程序类路径中的以逗号分隔的 jar 列表.允许使用 Glob.</p>
+<p>spark.jars.packages<br>无<br>要包含在驱动程序和执行程序类路径中的 jar 的 Maven 坐标的逗号分隔列表.坐标应为 <code>groupId:artifactId:version</code>.如果<code>spark.jars.ivySettings</code> 给定工件将根据文件中的配置进行解析,否则将在本地 maven 存储库中搜索工件,然后是 maven 中心,最后是命令行选项给出的任何其他远程存储库<code>--repositories</code>.有关详细信息,请参阅高级依赖管理.</p>
+<p>spark.jars.excludes<br>无<br><code>groupId:artifactId</code> 的逗号分隔列表,在解析中提供的依赖项时排除<code>spark.jars.packages</code>以避免依赖项冲突.</p>
+<p>spark.jars.ivy<br>无<br>指定 Ivy 用户目录的路径,用于本地 Ivy 缓存和来自 <code>spark.jars.packages</code>.这将覆盖<code>ivy.default.ivy.user.dir</code> 默认为 <code>~/.ivy2</code> 的 Ivy 属性.</p>
+<p>spark.jars.ivySettings<br>无<br>Ivy 设置文件的路径,用于自定义使用<code>spark.jars.packages</code> 而不是内置默认值(例如 Maven Central)指定的 jar 的分辨率.命令行选项给出的附加存储库<code>--repositories</code>或<code>spark.jars.repositories</code>也将包括在内.对于允许 Spark 从防火墙后面解析工件很有用,例如通过像 Artifactory 这样的内部工件服务器.有关设置文件格式的详细信息,请参见设置文件</p>
+<p>spark.jars.repositories<br>无<br>以逗号分隔的附加远程存储库列表,用于搜索使用--packages或给出的 Maven 坐标spark.jars.packages.</p>
+<p>spark.pyspark.driver.python<br>无<br>用于驱动程序中 PySpark 的 Python 二进制可执行文件.(默认为spark.pyspark.python)</p>
+<p>spark.pyspark.python<br>无<br>在驱动程序和执行程序中用于 PySpark 的 Python 二进制可执行文件.</p>
+<h3 id="Shuffle-Behavior"><a href="#Shuffle-Behavior" class="headerlink" title="Shuffle Behavior"></a>Shuffle Behavior</h3><p>spark.reducer.maxSizeInFlight<br>48m<br>除非另有说明,否则从每个 reduce 任务同时获取的 map 输出的最大大小,以 MiB 为单位.由于每个输出都需要我们创建一个缓冲区来接收它,这代表每个 reduce 任务的固定内存开销,因此除非您有大量内存,否则请保持较小的内存开销.</p>
+<p>spark.reducer.maxReqsInFlight<br>Int.MaxValue<br>此配置限制了在任何给定点获取块的远程请求的数量.当集群中的主机数量增加时,可能会导致一个或多个节点的入站连接数量非常多,从而导致 worker 在负载下失败.通过允许它限制获取请求的数量,可以缓解这种情况.</p>
+<p>spark.reducer.maxBlocksInFlightPerAddress<br>Int.MaxValue<br>此配置限制了每个 reduce 任务从给定主机端口获取的远程块的数量.当在一次获取中或同时从给定地址请求大量块时,这可能会使服务执行程序或节点管理器崩溃.这对于在启用外部shuffle时减少节点管理器上的负载特别有用.您可以通过将其设置为较低的值来缓解此问题.</p>
+<p>spark.maxRemoteBlockSizeFetchToMem<br>Int.MaxValue - 512<br>当块的大小超过此阈值(以字节为单位)时,远程块将被提取到磁盘.这是为了避免占用过多内存的巨大请求.默认情况下,这仅对大于 2GB 的块启用,因为无论有什么资源可用,这些块都不能直接提取到内存中.但它也可以调低到一个低得多的值(例如 200m)以避免在较小的块上使用过多的内存.请注意,此配置将影响随机提取和块管理器远程块提取.对于开启了external shuffle service的用户,该功能只能在external shuffle service版本高于Spark 2.2的情况下使用.</p>
+<p>spark.shuffle.compress<br>TRUE<br>是否压缩map输出文件.通常是个好主意.压缩将使用 <code>spark.io.compression.codec</code>.</p>
+<p>spark.shuffle.file.buffer<br>32k<br>除非另有说明,否则每个shuffle文件输出流的内存缓冲区大小(以 KiB 为单位).这些缓冲区减少了创建中间shuffle文件时进行的磁盘搜索和系统调用的次数.</p>
+<p>spark.shuffle.io.maxRetries<br>3<br>(仅限 Netty)如果将其设置为非零值,则由于与 IO 相关的异常而失败的提取将自动重试.面对长时间的 GC 暂停或瞬态网络连接问题,此重试逻辑有助于稳定大型shuffle.</p>
+<p>spark.shuffle.io.numConnectionsPerPeer<br>1<br>(仅限 Netty)重用主机之间的连接,以减少大型集群的连接建立.对于硬盘多主机少的集群,这可能会导致并发不足,导致所有磁盘都饱和,用户可以考虑提高该值.</p>
+<p>spark.shuffle.io.preferDirectBufs<br>TRUE<br>(仅限 Netty)堆外缓冲区用于减少shuffle和缓存块传输期间的垃圾收集.对于堆外内存受到严格限制的环境,用户可能希望关闭此功能以强制所有来自 Netty 的分配都在堆上.</p>
+<p>spark.shuffle.io.retryWait<br>5s<br>(仅限 Netty)重试获取之间等待的时间.重试导致的最大延迟默认为 15 秒,计算方式为<code>maxRetries * retryWait</code>.</p>
+<p>spark.shuffle.service.enabled<br>FALSE<br>启用shuffle播放服务.此服务保留执行程序编写的随机文件,以便可以安全地删除执行程序.如果<code>spark.dynamicAllocation.enabled=true</code> ,则必须启用.必须设置外部shuffle服务才能启用它.有关详细信息,请参阅动态分配配置和设置文档.</p>
+<p>spark.shuffle.service.port<br>7337<br>外部shuffle服务将运行的端口.</p>
+<p>spark.shuffle.service.index.cache.size<br>100m<br>缓存条目限制为指定的内存占用量(以字节为单位).</p>
+<p>spark.shuffle.maxChunksBeingTransferred<br>Long.MAX_VALUE<br>在 shuffle 服务上允许同时传输的最大块数.请注意,当达到最大数量时,新的传入连接将被关闭.客户端将根据 shuffle 重试配置(参见spark.shuffle.io.maxRetries和 spark.shuffle.io.retryWait)进行重试,如果达到这些限制,任务将因获取失败而失败.</p>
+<p>spark.shuffle.sort.bypassMergeThreshold<br>200<br>(高级)在基于排序的 shuffle 管理器中,如果没有 map 端聚合并且最多有这么多 reduce 分区,请避免合并排序数据.</p>
+<p>spark.shuffle.spill.compress<br>TRUE<br>是否压缩shuffle期间溢出的数据.压缩将使用 spark.io.compression.codec.</p>
+<p>spark.shuffle.accurateBlockThreshold<br>100 * 1024 * 1024<br>准确记录 HighlyCompressedMapStatus 中混洗块大小的阈值(以字节为单位).这有助于通过避免在获取shuffle块时低估shuffle块大小来防止 OOM.</p>
+<p>spark.shuffle.registration.timeout<br>5000<br>注册到外部shuffle服务的超时时间(以毫秒为单位).</p>
+<p>spark.shuffle.registration.maxAttempts<br>3<br>当我们注册到外部 shuffle 服务失败时,我们将重试 maxAttempts 次.</p>
+<h3 id="Spark-UI"><a href="#Spark-UI" class="headerlink" title="Spark UI"></a>Spark UI</h3><p>spark.eventLog.logBlockUpdates.enabled<br>FALSE<br>是否为每个块更新记录事件,如果<code>spark.eventLog.enabled = true</code>.<em>警告</em>:这将大大增加事件日志的大小.</p>
+<p>spark.eventLog.longForm.enabled<br>FALSE<br>如果为真,则在事件日志中使用长格式的呼叫站点.否则使用缩写形式.</p>
+<p>spark.eventLog.compress<br>FALSE<br>是否压缩记录的事件,如果spark.eventLog.enabled为true.压缩将使用spark.io.compression.codec.</p>
+<p>spark.eventLog.dir<br>file:///tmp/spark-events<br>记录 Spark 事件的基本目录(如果spark.eventLog.enabled为true).在这个基本目录中,Spark 为每个应用程序创建一个子目录,并将特定于该应用程序的事件记录在该目录中.用户可能希望将其设置为一个统一的位置,如 HDFS 目录,以便历史服务器可以读取历史文件.</p>
+<p>spark.eventLog.enabled<br>FALSE<br>是否记录 Spark 事件,用于在应用程序完成后重建 Web UI.</p>
+<p>spark.eventLog.overwrite<br>FALSE<br>是否覆盖任何现有文件.</p>
+<p>spark.eventLog.buffer.kb<br>100k<br>写入输出流时使用的缓冲区大小,除非另有说明,否则以 KiB 为单位.</p>
+<p>spark.ui.dagGraph.retainedRootRDDs<br>Int.MaxValue<br>在垃圾收集之前,Spark UI 和状态 API 记住了多少 DAG 图节点.</p>
+<p>spark.ui.enabled<br>TRUE<br>是否为 Spark 应用程序运行 Web UI.</p>
+<p>spark.ui.killEnabled<br>TRUE<br>允许从 Web UI 中终止作业和阶段.</p>
+<p>spark.ui.liveUpdate.period<br>100ms<br>更新活动实体的频率.-1 表示重放应用程序时&quot;永不更新&quot;,这意味着只会发生最后一次写入.对于实时应用程序,这避免了一些我们在快速处理传入任务事件时可以不用的操作.</p>
+<p>spark.ui.liveUpdate.minFlushPeriod<br>1s<br>刷新陈旧的 UI 数据之前经过的最短时间.当传入的任务事件不经常触发时,这可以避免 UI 陈旧.</p>
+<p>spark.ui.port<br>4040<br>应用程序仪表板的端口,显示内存和工作负载数据.</p>
+<p>spark.ui.retainedJobs<br>1000<br>Spark UI 和状态 API 在垃圾收集之前记住了多少作业.这是一个目标最大值,在某些情况下可能会保留更少的元素.</p>
+<p>spark.ui.retainedStages<br>1000<br>Spark UI 和状态 API 在垃圾收集之前记住了多少个阶段.这是一个目标最大值,在某些情况下可能会保留更少的元素.</p>
+<p>spark.ui.retainedTasks<br>100000<br>在垃圾收集之前,Spark UI 和状态 API 在一个阶段中记住了多少任务.这是一个目标最大值,在某些情况下可能会保留更少的元素.</p>
+<p>spark.ui.reverseProxy<br>FALSE<br>启用运行 Spark Master 作为 worker 和应用程序 UI 的反向代理.在这种模式下,Spark master 将反向代理 worker 和应用程序 UI 以启用访问,而无需直接访问其主机.请谨慎使用,因为无法直接访问 worker 和应用程序 UI,您只能通过 spark master/proxy 公共 URL 访问它们.此设置会影响集群中运行的所有工作程序和应用程序 UI,并且必须在所有工作程序/驱动程序和主程序上进行设置.</p>
+<p>spark.ui.reverseProxyUrl<br>无<br>这是运行代理的 URL.此 URL 用于在 Spark Master 前面运行的代理.这在运行代理进行身份验证时很有用,例如 OAuth 代理.确保这是一个完整的 URL,包括方案 (http/https) 和到达您的代理的端口.</p>
+<p>spark.ui.showConsoleProgress<br>FALSE<br>在控制台中显示进度条.进度条显示运行时间超过 500 毫秒的阶段的进度.如果多个阶段同时运行,同一行会显示多个进度条.注意:在shell环境下,spark.ui.showConsoleProgress的默认值为true.</p>
+<p>spark.worker.ui.retainedExecutors<br>1000<br>在垃圾收集之前,Spark UI 和状态 API 记住了多少已完成的执行程序.</p>
+<p>spark.worker.ui.retainedDrivers<br>1000<br>在垃圾收集之前,Spark UI 和状态 API 记住了多少已完成的驱动程序.</p>
+<p>spark.sql.ui.retainedExecutions<br>1000<br>在垃圾收集之前,Spark UI 和状态 API 记住了多少已完成的执行.</p>
+<p>spark.streaming.ui.retainedBatches<br>1000<br>在垃圾收集之前,Spark UI 和状态 API 记住了多少已完成的批次.</p>
+<p>spark.ui.retainedDeadExecutors<br>100<br>在垃圾收集之前,Spark UI 和状态 API 记住了多少死执行者.</p>
+<p>spark.ui.filters<br>None<br>要应用于 Spark Web UI 的过滤器类名称的逗号分隔列表.过滤器应该是标准的 javax servlet Filter.过滤器参数也可以在配置中指定,通过设置表单的配置条目<code>spark.&lt;class name of filter&gt;.param.&lt;param name&gt;=&lt;value&gt;</code>.例如:<code>spark.ui.filters=com.test.filter1</code>;<code>spark.com.test.filter1.param.name1=foo</code>;<code>spark.com.test.filter1.param.name2=bar</code></p>
+<p>spark.ui.requestHeaderSize<br>8k<br>除非另有说明,否则 HTTP 请求标头的最大允许大小(以字节为单位).此设置也适用于 Spark History Server.</p>
+<h3 id="Compression-and-Serialization"><a href="#Compression-and-Serialization" class="headerlink" title="Compression and Serialization"></a>Compression and Serialization</h3><p>spark.broadcast.compress<br>TRUE<br>是否在发送之前压缩广播变量.通常是个好主意.压缩将使用spark.io.compression.codec.</p>
+<p>spark.checkpoint.compress<br>FALSE<br>是否压缩 RDD 检查点.通常是个好主意.压缩将使用spark.io.compression.codec.</p>
+<p>spark.io.compression.codec<br>lz4<br>用于压缩 RDD 分区/事件日志/广播变量和随机输出等内部数据的编解码器.默认情况下,Spark 提供四种编解码器:lz4/lzf/ snappy和zstd.您还可以使用完全限定的类名来指定编解码器,例如 org.apache.spark.io.LZ4CompressionCodec/ org.apache.spark.io.LZFCompressionCodec/ org.apache.spark.io.SnappyCompressionCodec和org.apache.spark.io.ZStdCompressionCodec.</p>
+<p>spark.io.compression.lz4.blockSize<br>32k<br>在使用 LZ4 压缩编解码器的情况下,LZ4 压缩中使用的块大小(以字节为单位).使用 LZ4 时,降低此块大小也会降低shuffle内存的使用.</p>
+<p>spark.io.compression.snappy.blockSize<br>32k<br>在使用 Snappy 压缩编解码器的情况下,用于 Snappy 压缩的块大小(以字节为单位).使用 Snappy 时,降低此块大小也会降低shuffle内存的使用.</p>
+<p>spark.io.compression.zstd.level<br>1<br>Zstd 压缩编解码器的压缩级别.增加压缩级别将导致更好的压缩,但会占用更多 CPU 和内存.</p>
+<p>spark.io.compression.zstd.bufferSize<br>32k<br>在使用 Zstd 压缩编解码器的情况下,Zstd 压缩中使用的缓冲区大小(以字节为单位).降低这个大小会降低使用 Zstd 时的 shuffle 内存使用,但它可能会因为过多的 JNI 调用开销而增加压缩成本.</p>
+<p>spark.kryo.classesToRegister<br>(none)<br>如果您使用 Kryo 序列化,请提供以逗号分隔的自定义类名列表以向 Kryo 注册.有关详细信息, 请参阅调整指南.</p>
+<p>spark.kryo.referenceTracking<br>TRUE<br>在使用 Kryo 序列化数据时是否跟踪对同一对象的引用,如果您的对象图有循环,这是必要的,如果它们包含同一对象的多个副本,则对提高效率很有用.如果您知道情况并非如此,可以将其禁用以提高性能.</p>
+<p>spark.kryo.registrationRequired<br>FALSE<br>是否需要向 Kryo 注册.如果设置为&quot;true&quot;,Kryo 将在未注册的类被序列化时抛出异常.如果设置为 false(默认值),Kryo 将在每个对象中写入未注册的类名.编写类名会导致显着的性能开销,因此启用此选项可以严格强制用户没有在注册时遗漏类.</p>
+<p>spark.kryo.registrator<br>(none)<br>如果您使用 Kryo 序列化,请提供以逗号分隔的类列表,这些类将您的自定义类注册到 Kryo.如果您需要以自定义方式注册您的类,则此属性很有用,例如指定自定义字段序列化程序.否则spark.kryo.classesToRegister更简单.它应该设置为扩展的类KryoRegistrator.有关详细信息, 请参阅调整指南. </p>
+<p>spark.kryo.unsafe<br>FALSE<br>是否使用基于不安全的 Kryo 序列化程序.通过使用基于不安全的 IO 可以大大加快速度.</p>
+<p>spark.kryoserializer.buffer.max<br>64m<br>除非另有说明,否则 Kryo 序列化缓冲区的最大允许大小,以 MiB 为单位.这必须大于您尝试序列化的任何对象,并且必须小于 2048m.如果您在 Kryo 中遇到&quot;超出缓冲区限制&quot;异常,请增加此值.</p>
+<p>spark.kryoserializer.buffer<br>64k<br>Kryo 序列化缓冲区的初始大小,除非另有说明,否则以 KiB 为单位.请注意,每个 worker 上的每个核心将有一个缓冲区.如果需要, 此缓冲区将增长到<code>spark.kryoserializer.buffer.max</code>.</p>
+<p>spark.rdd.compress<br>FALSE<br>是否压缩序列化的 RDD 分区(例如 StorageLevel.MEMORY_ONLY_SER在 Java 和 Scala 中或StorageLevel.MEMORY_ONLY在 Python 中).可以以一些额外的 CPU 时间为代价节省大量空间.压缩将使用spark.io.compression.codec.</p>
+<p>spark.serializer<br>org.apache.spark.serializer.JavaSerializer<br>用于序列化将通过网络发送或需要以序列化形式缓存的对象的类.Java 序列化的默认值适用于任何可序列化的 Java 对象,但速度非常慢,因此我们建议在需要速度时使用 org.apache.spark.serializer.KryoSerializer和配置 Kryo 序列化 .可以是<code>org.apache.spark.Serializer</code>的任何子类.</p>
+<p>spark.serializer.objectStreamReset<br>100<br>使用 org.apache.spark.serializer.JavaSerializer 进行序列化时,序列化程序会缓存对象以防止写入冗余数据,但这会停止对这些对象进行垃圾回收.通过调用&quot;reset&quot;,您可以从序列化程序中清除该信息,并允许收集旧对象.要关闭此定期reset,请将其设置为 -1.默认情况下,它会每 100 个对象重置一次序列化程序.</p>
+<h3 id="Memory-Management-内存管理"><a href="#Memory-Management-内存管理" class="headerlink" title="Memory Management(内存管理)"></a>Memory Management(内存管理)</h3><p>spark.memory.fraction<br>0.6<br>用于执行和存储的(heap space - 300MB)的一部分.这个值越低,发生溢出和缓存数据驱逐的频率就越高.此配置的目的是为内部元数据/用户数据结构和在稀疏的/异常大的记录的情况下不精确的大小估计预留内存.建议将其保留为默认值.有关更多详细信息,包括有关在增加此值时正确调整 JVM 垃圾收集的重要信息.</p>
+<p>spark.memory.storageFraction<br>0.5<br>不受逐出影响的存储内存量,表示为由spark.memory.fraction预留的区域大小的分数.这个值越高,可用于执行的工作内存就越少,任务可能更频繁地溢出到磁盘.建议将其保留为默认值.</p>
+<p>spark.memory.offHeap.enabled<br>FALSE<br>如果为真,Spark 将尝试为某些操作使用off-heap内存.如果启用off-heap(堆外)内存使用,则spark.memory.offHeap.size必须为正.</p>
+<p>spark.memory.offHeap.size<br>0<br>可用于堆外分配的绝对内存量(以字节为单位).此设置对堆内存使用没有影响,因此如果您的执行程序的总内存消耗必须符合某个硬限制,那么请确保相应地缩小您的 JVM 堆大小.spark.memory.offHeap.enabled=true时必须将其设置为正值.</p>
+<p>spark.memory.useLegacyMode<br>FALSE<br>是否启用 Spark 1.5 及之前使用的遗留内存管理模式.遗留模式严格地将堆空间划分为固定大小的区域,如果未对应用程序进行调整,可能会导致过度溢出.除非启用,否则不会读取以下已弃用的内存分数配置: <code>spark.shuffle.memoryFraction</code>/<code>spark.storage.memoryFraction</code>/<code>spark.storage.unrollFraction</code></p>
+<p>spark.shuffle.memoryFraction<br>0.2<br>(已弃用)如果启用spark.memory.useLegacyMode, 则为只读.shuffle期间用于聚合和协同组的 Java 堆的分数.在任何给定时间,用于shuffle的所有内存映射的总大小受此限制的限制,超过该限制内容将开始溢出到磁盘.如果经常发生溢出,请考虑以spark.storage.memoryFraction.为代价增加此值</p>
+<p>spark.storage.memoryFraction<br>0.6<br>(已弃用)如果启用spark.memory.useLegacyMode, 则为只读.用于 Spark 内存缓存的 Java 堆部分.这不应大于 JVM 中对象的&quot;旧&quot;代,默认情况下,堆的大小为 0.6,但如果您配置自己的旧代大小,则可以增加它.</p>
+<p>spark.storage.unrollFraction<br>0.2<br>(已弃用)如果启用spark.memory.useLegacyMode, 则为只读.spark.storage.memoryFraction用于在内存中展开块的分数.这是通过在没有足够的可用存储空间来完整展开新块时删除现有块来动态分配的.</p>
+<p>spark.storage.replication.proactive<br>FALSE<br>为 RDD 块启用主动块复制.如果有任何现有的可用副本,则会补充由于执行程序故障而丢失的缓存 RDD 块副本.这试图使块的复制级别达到初始数量.</p>
+<p>spark.cleaner.periodicGC.interval<br>30min<br>控制触发垃圾收集的频率.仅当垃圾收集弱引用时,此上下文清理器才会触发清理.在具有大型驱动程序 JVM 的长时间运行的应用程序中,驱动程序的内存压力很小,这种情况可能偶尔发生或根本不会发生.根本不清理可能会导致执行程序在一段时间后耗尽磁盘空间.</p>
+<p>spark.cleaner.referenceTracking<br>TRUE<br>启用或禁用上下文清理.</p>
+<p>spark.cleaner.referenceTracking.blocking<br>TRUE<br>控制清理线程是否应阻塞清理任务(shuffle除外,它由 s<code>park.cleaner.referenceTracking.blocking.shuffleSpark</code> 属性控制).</p>
+<p>spark.cleaner.referenceTracking.blocking.shuffle<br>FALSE<br>控制清理线程是否应阻塞随机清理任务.</p>
+<p>spark.cleaner.referenceTracking.cleanCheckpoints<br>FALSE<br>控制在引用超出范围时是否清除检查点文件.</p>
+<h3 id="Execution-Behavior-执行行为"><a href="#Execution-Behavior-执行行为" class="headerlink" title="Execution Behavior(执行行为)"></a>Execution Behavior(执行行为)</h3><p>spark.broadcast.blockSize<br>4m<br>除非另有说明,否则TorrentBroadcastFactory每个块的大小,以 KiB 为单位.太大的值会降低广播期间的并行度(使其变慢).但是,如果它太小,BlockManager可能会影响性能.</p>
+<p>spark.broadcast.checksum<br>TRUE<br>是否启用广播校验和.如果启用,广播将包括一个校验和,它可以帮助检测损坏的块,但代价是计算和发送更多数据.如果网络有其他机制来保证数据在广播期间不会被破坏,则可以禁用它.</p>
+<p>spark.executor.cores<br>1 in YARN mode, all the available cores on the worker in standalone and Mesos coarse-grained modes.<br>每个执行器上使用的核心数.在独立和 Mesos 粗粒度模式下.</p>
+<p>spark.default.parallelism<br>对于reduceByKey和join之类的分布式shuffle操作,父 RDD 中的最大分区数.对于parallelize 没有父 RDD 的操作,它取决于集群管理器:本地模式:本地机器上的核心数;Mesos 细粒度模式:8;其他:所有执行器节点上的核心总数或2,以较大者为准<br>转换返回的 RDD 中的默认分区数,如join, reduceByKey, 以及parallelize当用户未设置时.</p>
+<p>spark.executor.heartbeatInterval<br>10s<br>每个执行者向驱动程序发出心跳的时间间隔.心跳让驱动程序知道执行程序仍然存在,并使用正在进行的任务的指标更新它.spark.executor.heartbeatInterval 应该明显小于 spark.network.timeout</p>
+<p>spark.files.fetchTimeout<br>60s<br>从驱动程序中获取通过 SparkContext.addFile() 添加的文件时使用的通信超时.</p>
+<p>spark.files.useFetchCache<br>TRUE<br>如果设置为 true(默认),文件获取将使用属于同一应用程序的执行程序共享的本地缓存,这可以在同一主机上运行多个执行程序时提高任务启动性能.如果设置为 false,这些缓存优化将被禁用,所有执行程序将获取自己的文件副本.为了使用驻留在 NFS 文件系统上的 Spark 本地目录,可以禁用此优化.</p>
+<p>spark.files.overwrite<br>FALSE<br>当目标文件存在且其内容与源文件的内容不匹配时,是否覆盖通过 SparkContext.addFile() 添加的文件.</p>
+<p>spark.files.maxPartitionBytes<br>134217728 (128 MB)<br>读取文件时打包到单个分区中的最大字节数.</p>
+<p>spark.files.openCostInBytes<br>4194304 (4 MB)<br>打开文件的估计成本,以可以同时扫描的字节数衡量.将多个文件放入分区时使用.最好高估,然后小文件的分区会比大文件的分区快.</p>
+<p>spark.hadoop.cloneConf<br>FALSE<br>如果设置为 true,则为每个任务克隆一个新的 HadoopConfiguration对象.应启用此选项以解决Configuration线程安全问题.默认情况下禁用此功能,以避免不受这些问题影响的作业出现意外的性能回归.</p>
+<p>spark.hadoop.validateOutputSpecs<br>TRUE<br>如果设置为 true,则验证 saveAsHadoopFile 和其他变体中使用的输出规范(例如,检查输出目录是否已经存在).由于预先存在的输出目录,这可以被禁用以沉默异常.我们建议用户不要禁用此功能,除非试图实现与以前版本的 Spark 的兼容性.只需使用 Hadoop 的文件系统 API 手动删除输出目录.对于通过 Spark Streaming 的 StreamingContext 生成的作业,此设置将被忽略,因为在检查点恢复期间可能需要将数据重写到预先存在的输出目录.</p>
+<p>spark.storage.memoryMapThreshold<br>2m<br>从磁盘读取块时,Spark 内存映射的块大小(以字节为单位).这可以防止 Spark 内存映射非常小的块.通常,内存映射对于接近或小于操作系统页面大小的块具有很高的开销.</p>
+<p>spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version<br>1<br>文件输出提交者算法版本,有效算法版本号:1 或 2.根据MAPREDUCE-4815 ,版本 2 可能具有更好的性能,但版本 1 在某些情况下可以更好地处理故障.</p>
+<h3 id="Networking"><a href="#Networking" class="headerlink" title="Networking"></a>Networking</h3><p>spark.rpc.message.maxSize<br>128<br>&quot;控制平面&quot;通信中允许的最大消息大小(以 MB 为单位).通常仅适用于在执行程序和驱动程序之间发送的映射输出大小信息.如果您正在运行具有数千个 map 和 reduce 任务的作业并查看有关 RPC 消息大小的消息,请增加此值.</p>
+<p>spark.blockManager.port<br>(random)<br>所有块管理器监听的端口.这些存在于驱动程序和执行程序上.</p>
+<p>spark.driver.blockManager.port<br>(value of spark.blockManager.port)<br>供块管理器监听的特定于驱动程序的端口,用于它不能使用与执行程序相同的配置的情况.</p>
+<p>spark.driver.bindAddress<br>(value of spark.driver.host)<br>绑定侦听套接字的主机名或 IP 地址.此配置覆盖 SPARK_LOCAL_IP 环境变量(见下文).它还允许将与本地地址不同的地址通告给执行者或外部系统.这很有用,例如,在使用桥接网络运行容器时.为了使其正常工作,驱动程序(RPC/块管理器和 UI)使用的不同端口需要从容器的主机转发.</p>
+<p>spark.driver.host<br>(local hostname)<br>驱动程序的主机名或 IP 地址.这用于与执行者和独立 Master 进行通信.</p>
+<p>spark.driver.port<br>(random)<br>驱动程序监听的端口.这用于与执行者和独立 Master 进行通信.</p>
+<p>spark.network.timeout<br>120s<br>所有网络交互的默认超时.此配置将用于代替 spark.storage.blockManagerSlaveTimeoutMs, spark.shuffle.io.connectionTimeout,spark.rpc.askTimeout或者 spark.rpc.lookupTimeout如果它们未配置.</p>
+<p>spark.port.maxRetries<br>16<br>放弃前绑定到端口的最大重试次数.当端口被赋予特定值(非 0)时,每次后续重试都会在重试之前将上一次尝试中使用的端口递增 1.这实质上允许它尝试从指定的起始端口到端口 + maxRetries 的一系列端口.</p>
+<p>spark.rpc.numRetries<br>3<br>RPC 任务放弃前重试的次数.RPC 任务最多运行此次数.</p>
+<p>spark.rpc.retry.wait<br>3s<br>RPC 请求操作在重试之前等待的持续时间.</p>
+<p>spark.rpc.askTimeout<br>spark.network.timeout<br>RPC 请求操作在超时前等待的持续时间.</p>
+<p>spark.rpc.lookupTimeout<br>120s<br>RPC 远程端点查找操作在超时前等待的持续时间.</p>
+<h3 id="Scheduling"><a href="#Scheduling" class="headerlink" title="Scheduling"></a>Scheduling</h3><p>spark.cores.max<br>(not set)<br>当以&quot;粗粒度&quot;共享模式在独立部署集群或 Mesos 集群上运行时,跨集群(而不是每台机器)为应用程序请求的最大 CPU 核心数量.如果未设置,默认值spark.deploy.defaultCores将 在 Spark 的独立集群管理器上,或在 Mesos 上为无限(所有可用核心). </p>
+<p>spark.locality.wait<br>3s<br>在放弃并在非本地节点上启动数据本地任务之前等待启动数据本地任务的时间.相同的等待将用于遍历多个位置级别(进程本地/节点本地/机架本地,然后是任何).也可以通过设置spark.locality.wait.node等自定义每个级别的等待时间.如果您的任务很长并且看到局部性差,您应该增加此设置,但默认值通常效果很好.</p>
+<p>spark.locality.wait.node<br>spark.locality.wait<br>自定义等待节点位置的位置.例如,您可以将其设置为 0 以跳过节点位置并立即搜索机架位置(如果您的集群有机架信息).</p>
+<p>spark.locality.wait.process<br>spark.locality.wait<br>自定义 locality 等待进程 locality.这会影响尝试访问特定执行程序进程中的缓存数据的任务.</p>
+<p>spark.locality.wait.rack<br>spark.locality.wait<br>自定义等待机架位置的位置.</p>
+<p>spark.scheduler.maxRegisteredResourcesWaitingTime<br>30s<br>在调度开始之前等待资源注册的最长时间.</p>
+<p>spark.scheduler.minRegisteredResourcesRatio<br>0.8 for KUBERNETES mode; 0.8 for YARN mode; 0.0 for standalone mode and Mesos coarse-grained mode<br>注册资源的最小比例(注册资源/总预期资源)(资源为yarn模式和Kubernetes模式下的executor,standalone模式和Mesos粗粒度模式下的CPU cores <code>[&#39;spark.cores.max&#39;值是total expected resources for Mesos 粗粒度模式]</code> ) 在调度开始之前等待.指定为 0.0 和 1.0 之间的双精度值.无论是否达到最小资源比例,调度开始前等待的最长时间由 config 控制 spark.scheduler.maxRegisteredResourcesWaitingTime.</p>
+<p>spark.scheduler.mode<br>FIFO<br>提交到同一个 SparkContext 的作业之间 的调度方式.可以设置为FAIR 使用公平共享而不是一个接一个地排队作业.对多用户服务很有用.</p>
+<p>spark.scheduler.revive.interval<br>1s<br>调度程序恢复工作资源提供运行任务的间隔长度.</p>
+<p>spark.scheduler.listenerbus.eventqueue.capacity<br>10000<br>Spark 侦听器总线中事件队列的容量必须大于 0.如果侦听器事件被删除,请考虑增加值(例如 20000).增加此值可能会导致驱动程序使用更多内存.</p>
+<p>spark.scheduler.blacklist.unschedulableTaskSetTimeout<br>120s<br>在中止由于完全列入黑名单而无法调度的 TaskSet 之前等待获取新执行程序并安排任务的超时秒数.</p>
+<p>spark.blacklist.enabled<br>FALSE<br>如果设置为&quot;true&quot;,则阻止 Spark 将任务调度到因任务失败次数过多而被列入黑名单的执行器上.黑名单算法可以通过其他&quot;spark.blacklist&quot;配置选项进一步控制.</p>
+<p>spark.blacklist.timeout<br>1h<br>(实验性的)一个节点或执行器在被无条件地从黑名单中删除以尝试运行新任务之前被整个应用程序列入黑名单的时间.</p>
+<p>spark.blacklist.task.maxTaskAttemptsPerExecutor<br>1<br>(实验性的)对于给定的任务,在执行者被列入该任务的黑名单之前,它可以在一个执行者上重试多少次.</p>
+<p>spark.blacklist.task.maxTaskAttemptsPerNode<br>2<br>(实验性的)对于给定的任务,在整个节点被列入该任务的黑名单之前,它可以在一个节点上重试多少次.</p>
+<p>spark.blacklist.stage.maxFailedTasksPerExecutor<br>2<br>(实验性的)在执行者被列入该阶段的黑名单之前,在一个阶段内,一个执行者必须失败多少个不同的任务.</p>
+<p>spark.blacklist.stage.maxFailedExecutorsPerNode<br>2<br>(实验性的)在整个节点被标记为失败之前,有多少不同的执行者被标记为给定阶段的黑名单.</p>
+<p>spark.blacklist.application.maxFailedTasksPerExecutor<br>2<br>(实验性的)在一个执行器被列入整个应用程序的黑名单之前,在成功的任务集中,有多少不同的任务必须在一个执行器上失败.列入黑名单的执行程序将在指定的超时后自动添加回可用资源池 spark.blacklist.timeout.但是请注意,使用动态分配时,执行程序可能会被标记为空闲并被集群管理器回收.</p>
+<p>spark.blacklist.application.maxFailedExecutorsPerNode<br>2<br>(实验性的)在节点被列入整个应用程序的黑名单之前,有多少不同的执行者必须被列入整个应用程序的黑名单.列入黑名单的节点将在指定的超时后自动添加回可用资源池 spark.blacklist.timeout.但是请注意,使用动态分配时,节点上的执行程序可能会被标记为空闲并被集群管理器回收.</p>
+<p>spark.blacklist.killBlacklistedExecutors<br>FALSE<br>(实验性的)如果设置为&quot;true&quot;,允许 Spark 在获取失败时被列入黑名单或整个应用程序被列入黑名单时自动终止执行程序,由 <code>spark.blacklist.application.*</code> 控制.需要注意的是,当整个节点加入黑名单后,该节点上的所有执行器都会被杀死.</p>
+<p>spark.blacklist.application.fetchFailure.enabled<br>FALSE<br>(实验性的)如果设置为&quot;true&quot;,Spark 将在发生获取失败时立即将执行程序列入黑名单.如果启用外部shuffle服务,则整个节点将被列入黑名单.</p>
+<p>spark.speculation<br>FALSE<br>如果设置为&quot;true&quot;,则执行任务的推测执行.这意味着如果一个或多个任务在一个阶段运行缓慢,它们将被重新启动.</p>
+<p>spark.speculation.interval<br>100ms<br>Spark 将多久检查一次要推测的任务.</p>
+<p>spark.speculation.multiplier<br>1.5<br>一项任务比中位数慢多少倍才会被考虑用于推测.</p>
+<p>spark.speculation.quantile<br>0.75<br>在为特定阶段启用推测之前必须完成的任务的一部分.</p>
+<p>spark.task.cpus<br>1<br>为每个任务分配的核心数.</p>
+<p>spark.task.maxFailures<br>4<br>在放弃工作之前任何特定任务的失败次数.分布在不同任务上的失败总数不会导致作业失败.特定任务必须失败此次数的尝试.应大于或等于 1.允许的重试次数 = 此值 - 1.</p>
+<p>spark.task.reaper.enabled<br>FALSE<br>启用对终止/中断任务的监视.当设置为 true 时,任何被终止的任务都将由执行程序监视,直到该任务真正完成执行.<code>spark.task.reaper.*</code>.当设置为 false(默认值)时,任务终止将使用缺少此类监控的旧代码路径.</p>
+<p>spark.task.reaper.pollingInterval<br>10s<br>当 spark.task.reaper.enabled = true时,此设置控制执行程序轮询已终止任务状态的频率.如果被终止的任务在轮询时仍在运行,那么将记录警告,并且默认情况下,将记录任务的线程转储(可以通过spark.task.reaper.threadDump设置禁用此线程转储,如下所述).</p>
+<p>spark.task.reaper.threadDump<br>TRUE<br>当spark.task.reaper.enabled = true时,此设置控制是否在定期轮询终止任务期间记录任务线程转储.将此设置为 false 以禁用线程转储的收集.</p>
+<p>spark.task.reaper.killTimeout<br>-1<br>当 spark.task.reaper.enabled = true时,此设置指定一个超时时间,如果被终止的任务没有停止运行,则执行程序 JVM 将在该超时时间后自行终止.默认值 -1 禁用此机制并防止执行程序自毁.此设置的目的是充当安全网,以防止失控的不可取消任务导致执行程序不可用.</p>
+<p>spark.stage.maxConsecutiveAttempts<br>4<br>在阶段中止之前允许的连续阶段尝试次数.</p>
+<h3 id="Dynamic-Allocation-动态分配"><a href="#Dynamic-Allocation-动态分配" class="headerlink" title="Dynamic Allocation(动态分配)"></a>Dynamic Allocation(动态分配)</h3><p>spark.dynamicAllocation.enabled<br>FALSE<br>是否使用动态资源分配,这会根据工作负载上下调整注册到此应用程序的执行程序的数量.有关详细信息,请参阅 此处的说明.这个需要spark.shuffle.service.enabled设置.以下配置也相关: spark.dynamicAllocation.minExecutors/ spark.dynamicAllocation.maxExecutors和 spark.dynamicAllocation.initialExecutors spark.dynamicAllocation.executorAllocationRatio</p>
+<p>spark.dynamicAllocation.executorIdleTimeout<br>60s<br>如果启用了动态分配并且执行程序空闲时间超过此持续时间,则执行程序将被删除.</p>
+<p>spark.dynamicAllocation.cachedExecutorIdleTimeout<br>infinity<br>如果启用了动态分配并且具有缓存数据块的执行器空闲时间超过此持续时间,则该执行器将被删除.</p>
+<p>spark.dynamicAllocation.initialExecutors<br>spark.dynamicAllocation.minExecutors<br>启用动态分配时要运行的初始执行程序数.如果设置了 <code>--num-executors</code>(或 <code>spark.executor.instances</code>)并且大于这个值,它将被用作执行器的初始数量.</p>
+<p>spark.dynamicAllocation.maxExecutors<br>infinity<br>如果启用动态分配,执行者数量的上限.</p>
+<p>spark.dynamicAllocation.minExecutors<br>0<br>如果启用动态分配,执行者数量的下限.</p>
+<p>spark.dynamicAllocation.executorAllocationRatio<br>1<br>默认情况下,动态分配会根据要处理的任务数量请求足够的执行器来最大化并行度.虽然这最大限度地减少了作业的延迟,但对于小任务,由于执行程序分配开销,此设置可能会浪费大量资源,因为某些执行程序甚至可能不做任何工作.此设置允许设置一个比率,该比率将用于减少完全并行的执行程序数量.默认为 1.0 以提供最大并行度.0.5 会将目标执行者数除以 2 由 dynamicAllocation 计算的目标执行者数仍然可以被spark.dynamicAllocation.minExecutors和 spark.dynamicAllocation.maxExecutors设置 覆盖</p>
+<p>spark.dynamicAllocation.schedulerBacklogTimeout<br>1s<br>如果启用动态分配并且有待处理的任务积压超过此持续时间,将请求新的执行程序.</p>
+<p>spark.dynamicAllocation.sustainedSchedulerBacklogTimeout<br>schedulerBacklogTimeout<br>与 相同spark.dynamicAllocation.schedulerBacklogTimeout,但仅用于后续执行程序请求.</p>
+<h3 id="Spark-Streaming"><a href="#Spark-Streaming" class="headerlink" title="Spark Streaming"></a>Spark Streaming</h3><p>spark.streaming.backpressure.enabled<br>FALSE<br>启用或禁用 Spark Streaming 的内部背压机制(自 1.5 起).这使得 Spark Streaming 能够根据当前的批处理调度延迟和处理时间来控制接收速率,以便系统只接收系统可以处理的速度.在内部,这会动态设置接收器的最大接收速率.该速率受值的上限 spark.streaming.receiver.maxRate以及spark.streaming.kafka.maxRatePerPartition 是否已设置(见下文).</p>
+<p>spark.streaming.backpressure.initialRate<br>not set<br>这是启用背压机制时每个接收器接收第一批数据的初始最大接收速率.</p>
+<p>spark.streaming.blockInterval<br>200ms<br>Spark Streaming 接收器接收到的数据在存储到 Spark 之前被分块为数据块的时间间隔.建议的最小值 - 50 毫秒.有关详细信息,请参阅 Spark Streaming 编程指南中 的性能调整部分.</p>
+<p>spark.streaming.receiver.maxRate<br>not set<br>每个接收器接收数据的最大速率(每秒记录数).实际上,每个流每秒最多消耗此数量的记录.将此配置设置为 0 或负数将不限制速率.有关模式详细信息,请参阅 Spark Streaming 编程指南中的部署指南 .</p>
+<p>spark.streaming.receiver.writeAheadLog.enable<br>FALSE<br>为接收器启用预写日志.通过接收器接收到的所有输入数据都将保存到预写日志中,以便在驱动程序故障后恢复.有关详细信息,请参阅 Spark Streaming 编程指南中的部署指南 .</p>
+<p>spark.streaming.unpersist<br>TRUE<br>强制由 Spark Streaming 生成和持久化的 RDD 自动从 Spark 的内存中取消持久化.Spark Streaming 接收到的原始输入数据也会自动清除.将此设置为 false 将允许在流式应用程序之外访问原始数据和持久化 RDD,因为它们不会被自动清除.但它是以 Spark 中更高的内存使用量为代价的.</p>
+<p>spark.streaming.stopGracefullyOnShutdown<br>FALSE<br>如果true,Spark 会StreamingContext在 JVM 关闭时优雅地关闭而不是立即关闭.</p>
+<p>spark.streaming.kafka.maxRatePerPartition<br>not set<br>使用新的 Kafka 直接流 API 时从每个 Kafka 分区读取数据的最大速率(每秒记录数).有关详细信息,请参阅 Kafka 集成指南 .</p>
+<p>spark.streaming.kafka.minRatePerPartition<br>1<br>使用新的 Kafka 直接流 API 时从每个 Kafka 分区读取数据的最小速率(每秒记录数).</p>
+<p>spark.streaming.kafka.maxRetries<br>1<br>为了找到每个分区的领导者的最新偏移量,驱动程序将进行的最大连续重试次数(默认值 1 意味着驱动程序将进行最多 2 次尝试).仅适用于新的 Kafka 直接流 API.</p>
+<p>spark.streaming.ui.retainedBatches<br>1000<br>在垃圾收集之前,Spark Streaming UI 和状态 API 记住了多少批次.</p>
+<p>spark.streaming.driver.writeAheadLog.closeFileAfterWrite<br>FALSE<br>在驱动程序上写入预写日志记录后是否关闭文件.当您想要对驱动程序上的元数据 WAL 使用 S3(或任何不支持刷新的文件系统)时,将此设置为&quot;true&quot;.</p>
+<p>spark.streaming.receiver.writeAheadLog.closeFileAfterWrite<br>FALSE<br>在接收器上写入预写日志记录后是否关闭文件.当你想对接收器上的数据 WAL 使用 S3(或任何不支持刷新的文件系统)时,将此设置为&quot;true&quot;.</p>
+<h3 id="SparkR"><a href="#SparkR" class="headerlink" title="SparkR"></a>SparkR</h3><p>spark.r.numRBackendThreads<br>2<br>RBackend 用于处理来自 SparkR 包的 RPC 调用的线程数.</p>
+<p>spark.r.command<br>Rscript<br>可执行,用于在集群模式下为驱动程序和工作程序执行 R 脚本.</p>
+<p>spark.r.driver.command<br>spark.r.command<br>可执行文件,用于在驱动程序的客户端模式下执行 R 脚本.在集群模式下被忽略.</p>
+<p>spark.r.shell.command<br>R<br>用于在驱动程序的客户端模式下执行 sparkR shell 的可执行文件.在集群模式下被忽略.它与环境变量相同SPARKR_DRIVER_R,但优先于它. spark.r.shell.command用于 sparkR shell 而spark.r.driver.command用于运行 R 脚本.</p>
+<p>spark.r.backendConnectionTimeout<br>6000<br>R 进程在其与 RBackend 的连接上设置的连接超时(以秒为单位).</p>
+<p>spark.r.heartBeatInterval<br>100<br>从 SparkR 后端发送到 R 进程以防止连接超时的心跳间隔.</p>
+<h3 id="GraphX"><a href="#GraphX" class="headerlink" title="GraphX"></a>GraphX</h3><p>spark.graphx.pregel.checkpointInterval<br>-1<br>Pregel 中图形和消息的检查点间隔.它用于避免在多次迭代后由于长沿袭链而导致的 stackOverflowError.默认情况下禁用检查点.</p>
+<h3 id="Deploy-部署"><a href="#Deploy-部署" class="headerlink" title="Deploy(部署)"></a>Deploy(部署)</h3><p>spark.deploy.recoveryMode<br>None<br>恢复模式设置用于在失败并重新启动时使用集群模式恢复提交的 Spark 作业.这仅适用于使用 Standalone 或 Mesos 运行时的集群模式.</p>
+<p>spark.deploy.zookeeper.url<br>None<br>当 spark.deploy.recoveryMode 设置为 ZOOKEEPER 时,此配置用于设置要连接的 zookeeper URL.</p>
+<p>spark.deploy.zookeeper.dir<br>None<br>当 spark.deploy.recoveryMode 设置为 ZOOKEEPER 时,此配置用于设置 zookeeper 目录以存储恢复状态.</p>
+<h3 id="Security"><a href="#Security" class="headerlink" title="Security"></a>Security</h3><p><a target="_blank" rel="noopener" href="https://spark.apache.org/docs/2.4.8/security.html">https://spark.apache.org/docs/2.4.8/security.html</a></p>
+<img src="/images/fly1336.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1337.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="Spark-SQL"><a href="#Spark-SQL" class="headerlink" title="Spark SQL"></a>Spark SQL</h3><p>运行<code>SET -v</code>命令将显示 SQL 配置的完整列表.</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//scala</span></span><br><span class="line">spark.sql(<span class="string">&quot;SET -v&quot;</span>).show(numRows = <span class="number">200</span>, truncate = <span class="literal">false</span>)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//java</span></span><br><span class="line">spark.sql(<span class="string">&quot;SET -v&quot;</span>).show(<span class="number">200</span>, <span class="keyword">false</span>);</span><br></pre></td></tr></table></figure>
+
+<h3 id="集群管理器"><a href="#集群管理器" class="headerlink" title="集群管理器"></a>集群管理器</h3><h4 id="yarn"><a href="#yarn" class="headerlink" title="yarn"></a>yarn</h4><h4 id="Standalone-Mode"><a href="#Standalone-Mode" class="headerlink" title="Standalone Mode"></a>Standalone Mode</h4><h1 id="Environment-Variables-环境变量"><a href="#Environment-Variables-环境变量" class="headerlink" title="Environment Variables(环境变量)"></a>Environment Variables(环境变量)</h1><p>某些 Spark 设置可以通过环境变量进行配置,环境变量是从Spark 安装目录 conf/spark-env.sh(或Windows 上conf/spark-env.cmd)的脚本中读取的.<br>在 Standalone 和 Mesos 模式下,此文件可以提供机器特定信息,例如主机名.<br>在运行本地 Spark 应用程序或提交脚本时也会获取它.</p>
+<p>请注意,安装 Spark 时conf/spark-env.sh默认情况下不存在.<br>但是,您可以通过复制conf/spark-env.sh.template来创建它.<br>确保使副本可执行.</p>
+<p>可以设置以下变量spark-env.sh:</p>
+<table>
+<thead>
+<tr>
+<th align="left">环境变量</th>
+<th align="left">意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">JAVA_HOME</td>
+<td align="left">Java 的安装位置(如果它不在默认位置PATH).</td>
+</tr>
+<tr>
+<td align="left">PYSPARK_PYTHON</td>
+<td align="left">用于驱动程序和工作程序中 PySpark 的 Python 二进制可执行文件(python2.7如果可用则为默认值,否则为python).如果设置了属性spark.pyspark.python优先</td>
+</tr>
+<tr>
+<td align="left">PYSPARK_DRIVER_PYTHON</td>
+<td align="left">仅在驱动程序中用于 PySpark 的 Python 二进制可执行文件(默认为PYSPARK_PYTHON).如果设置了属性spark.pyspark.driver.python优先</td>
+</tr>
+<tr>
+<td align="left">SPARKR_DRIVER_R</td>
+<td align="left">用于 SparkR shell 的 R 二进制可执行文件(默认为R).如果设置了属性spark.r.shell.command优先</td>
+</tr>
+<tr>
+<td align="left">SPARK_LOCAL_IP</td>
+<td align="left">要绑定的机器的 IP 地址.</td>
+</tr>
+<tr>
+<td align="left">SPARK_PUBLIC_DNS</td>
+<td align="left">主机名,您的 Spark 程序将通告给其他机器.</td>
+</tr>
+</tbody></table>
+<p>除了上述之外,还有用于设置 Spark 独立集群脚本的选项,例如每台机器上使用的内核数和最大内存.</p>
+<p>由于spark-env.sh是一个 shell 脚本,其中一些可以通过编程方式设置——例如,您可以SPARK_LOCAL_IP通过查找特定网络接口的 IP 来计算.</p>
+<p>注意:在 YARNcluster模式下运行 Spark 时,需要使用文件中的<code>spark.yarn.appMasterEnv.[EnvironmentVariableName]</code>属性设置环境变量conf/spark-defaults.conf.<br>在模式下设置的环境变量spark-env.sh不会反映在 YARN Application Master 进程中cluster.<br>有关详细信息,请参阅与YARN 相关的 Spark 属性.</p>
+<h1 id="配置日志记录"><a href="#配置日志记录" class="headerlink" title="配置日志记录"></a>配置日志记录</h1><p>Spark 使用log4j进行日志记录.<br>您可以通过 log4j.properties在目录中添加文件来配置它conf.<br>开始的一种方法是复制 log4j.properties.template位于那里的现有内容.</p>
+<h1 id="覆盖配置目录"><a href="#覆盖配置目录" class="headerlink" title="覆盖配置目录"></a>覆盖配置目录</h1><p>要指定默认&quot;SPARK_HOME/conf&quot;以外的其他配置目录,您可以设置 SPARK_CONF_DIR.<br>Spark 将使用此目录中的配置文件(spark-defaults.conf/spark-env.sh/log4j.properties 等).</p>
+<h1 id="继承-Hadoop-集群配置"><a href="#继承-Hadoop-集群配置" class="headerlink" title="继承 Hadoop 集群配置"></a>继承 Hadoop 集群配置</h1><p>如果您计划使用 Spark 从 HDFS 读取和写入,则应在 Spark 的类路径中包含两个 Hadoop 配置文件:<br>hdfs-site.xml,它为 HDFS 客户端提供默认行为.<br>core-site.xml,它设置默认的文件系统名称.</p>
+<p>这些配置文件的位置因 Hadoop 版本而异,但一个常见的位置是在/etc/hadoop/conf. 一些工具即时创建配置,但提供一种机制来下载它们的副本.</p>
+<p>要使这些文件对 Spark 可见,请设置HADOOP_CONF_DIR为$SPARK_HOME/conf/spark-env.sh 包含配置文件的位置.</p>
+<h1 id="自定义-Hadoop-Hive-配置"><a href="#自定义-Hadoop-Hive-配置" class="headerlink" title="自定义 Hadoop/Hive 配置"></a>自定义 Hadoop/Hive 配置</h1><p>如果您的 Spark 应用程序与 Hadoop/Hive 或两者交互,则 Spark 的类路径中可能有 Hadoop/Hive 配置文件.</p>
+<p>多个正在运行的应用程序可能需要不同的 Hadoop/Hive 客户端配置.<br>您可以在 Spark 的类路径中为每个应用程序复制和修改hdfs-site.xml, core-site.xml, yarn-site.xml, hive-site.xml.<br>在 YARN 上运行的 Spark 集群中,这些配置文件是在集群范围内设置的,应用程序无法安全地更改它们.</p>
+<p>更好的选择是以<code>spark.hadoop.*</code>. 它们可以被认为与可以在中设置的普通火花属性相同$SPARK_HOME/conf/spark-defaults.conf</p>
+<p>在某些情况下,您可能希望避免在SparkConf. 例如,Spark 允许您简单地创建一个空的 conf 并设置 spark/spark hadoop 属性.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">val conf &#x3D; new SparkConf().set(&quot;spark.hadoop.abc.def&quot;,&quot;xyz&quot;)</span><br><span class="line">val sc &#x3D; new SparkContext(conf)</span><br></pre></td></tr></table></figure>
+
+<p>此外,您可以在运行时修改或添加配置:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;spark-submit \ </span><br><span class="line">  --name &quot;My app&quot; \ </span><br><span class="line">  --master local[4] \  </span><br><span class="line">  --conf spark.eventLog.enabled&#x3D;false \ </span><br><span class="line">  --conf &quot;spark.executor.extraJavaOptions&#x3D;-XX:+PrintGCDetails -XX:+PrintGCTimeStamps&quot; \ </span><br><span class="line">  --conf spark.hadoop.abc.def&#x3D;xyz \ </span><br><span class="line">  myApp.jar</span><br></pre></td></tr></table></figure>
+
+
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/spark/" rel="tag"># spark</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/11/16/spark%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/" rel="prev" title="spark内存模型">
+                  <i class="fa fa-chevron-left"></i> spark内存模型
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/11/21/spark%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E5%99%A8/" rel="next" title="spark集群管理器">
+                  spark集群管理器 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

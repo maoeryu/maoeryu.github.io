@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="由于大多数 Spark 计算的内存特性,Spark 程序可能会受到集群中任何资源的瓶颈:CPU&#x2F;网络带宽&#x2F;内存.大多数情况下,如果数据适合内存,瓶颈是网络带宽,但有时,您还需要进行一些调优,例如 以序列化形式存储 RDD,以减少内存使用.本指南将涵盖两个主要主题:数据序列化,这对于良好的网络性能至关重要,还可以减少内存使用,以及内存调整.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="spark调优指南">
+<meta property="og:url" content="https://maoeryu.github.io/2022/11/21/spark%E8%B0%83%E4%BC%98%E6%8C%87%E5%8D%97/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="由于大多数 Spark 计算的内存特性,Spark 程序可能会受到集群中任何资源的瓶颈:CPU&#x2F;网络带宽&#x2F;内存.大多数情况下,如果数据适合内存,瓶颈是网络带宽,但有时,您还需要进行一些调优,例如 以序列化形式存储 RDD,以减少内存使用.本指南将涵盖两个主要主题:数据序列化,这对于良好的网络性能至关重要,还可以减少内存使用,以及内存调整.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-11-20T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-11-22T02:27:22.625Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="spark">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2022/11/21/spark%E8%B0%83%E4%BC%98%E6%8C%87%E5%8D%97/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>spark调优指南 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%8F%E5%88%97%E5%8C%96"><span class="nav-number">1.</span> <span class="nav-text">数据序列化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E8%B0%83%E6%95%B4"><span class="nav-number">2.</span> <span class="nav-text">内存调整</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E6%A6%82%E8%BF%B0"><span class="nav-number">2.1.</span> <span class="nav-text">内存管理概述</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A1%AE%E5%AE%9A%E5%86%85%E5%AD%98%E6%B6%88%E8%80%97"><span class="nav-number">2.2.</span> <span class="nav-text">确定内存消耗</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%B0%83%E6%95%B4%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">2.3.</span> <span class="nav-text">调整数据结构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BA%8F%E5%88%97%E5%8C%96-RDD-%E5%AD%98%E5%82%A8"><span class="nav-number">2.4.</span> <span class="nav-text">序列化 RDD 存储</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E8%B0%83%E6%95%B4"><span class="nav-number">2.5.</span> <span class="nav-text">垃圾收集调整</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%A1%A1%E9%87%8F-GC-%E7%9A%84%E5%BD%B1%E5%93%8D"><span class="nav-number">2.5.1.</span> <span class="nav-text">衡量 GC 的影响</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%AB%98%E7%BA%A7-GC-%E8%B0%83%E6%95%B4"><span class="nav-number">2.5.2.</span> <span class="nav-text">高级 GC 调整</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="nav-number">3.</span> <span class="nav-text">其他注意事项</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B9%B6%E8%A1%8C%E5%BA%A6"><span class="nav-number">3.1.</span> <span class="nav-text">并行度</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BE%93%E5%85%A5%E8%B7%AF%E5%BE%84%E4%B8%8A%E7%9A%84%E5%B9%B6%E8%A1%8C%E5%88%97%E8%A1%A8"><span class="nav-number">3.2.</span> <span class="nav-text">输入路径上的并行列表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Reduce-%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%86%85%E5%AD%98%E4%BD%BF%E7%94%A8"><span class="nav-number">3.3.</span> <span class="nav-text">Reduce 任务的内存使用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B9%BF%E6%92%AD%E5%A4%A7%E5%8F%98%E9%87%8F"><span class="nav-number">3.4.</span> <span class="nav-text">广播大变量</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%B1%80%E9%83%A8%E6%80%A7"><span class="nav-number">3.5.</span> <span class="nav-text">数据局部性</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/11/21/spark%E8%B0%83%E4%BC%98%E6%8C%87%E5%8D%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          spark调优指南
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-11-21 00:00:00" itemprop="dateCreated datePublished" datetime="2022-11-21T00:00:00+08:00">2022-11-21</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-11-22 10:27:22" itemprop="dateModified" datetime="2022-11-22T10:27:22+08:00">2022-11-22</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>由于大多数 Spark 计算的内存特性,Spark 程序可能会受到集群中任何资源的瓶颈:CPU/网络带宽/内存.<br>大多数情况下,如果数据适合内存,瓶颈是网络带宽,但有时,您还需要进行一些调优,例如 以序列化形式存储 RDD,以减少内存使用.<br>本指南将涵盖两个主要主题:数据序列化,这对于良好的网络性能至关重要,还可以减少内存使用,以及内存调整.</p>
+<span id="more"></span>
+<h3 id="数据序列化"><a href="#数据序列化" class="headerlink" title="数据序列化"></a>数据序列化</h3><p>序列化在任何分布式应用程序的性能中都扮演着重要的角色.<br>将对象序列化为缓慢的格式或消耗大量字节的格式将大大降低计算速度.<br>通常,这将是您优化 Spark 应用程序时应该调整的第一件事.<br>Spark 旨在在便利性(允许您在操作中使用任何 Java 类型)和性能之间取得平衡.<br>它提供了两个序列化库:</p>
+<ol>
+<li>Java 序列化<br>默认情况下,Spark 使用 Java 的ObjectOutputStream框架序列化对象,并且可以与您创建的任何实现 java.io.Serializable.<br>您还可以通过扩展 java.io.Externalizable.<br>Java 序列化很灵活,但通常很慢,并且会导致许多类的序列化格式很大.</li>
+<li>Kryo 序列化<br>Spark 还可以使用 Kryo 库(版本 4)更快地序列化对象.<br>Kryo 比 Java 序列化(通常快 10 倍)明显更快/更紧凑,但并不支持所有 Serializable类型,并且需要您提前注册您将在程序中使用的类以获得最佳性能.</li>
+</ol>
+<p>您可以通过使用SparkConf初始化作业 并调用<code>conf.set(&quot;spark.serializer&quot;, &quot;org.apache.spark.serializer.KryoSerializer&quot;)</code>来切换到使用 Kryo .<br>此设置配置序列化程序,不仅用于在工作节点之间混洗数据,还用于将 RDD 序列化到磁盘.<br>Kryo 不是默认设置的唯一原因是自定义注册要求,但我们建议在任何网络密集型应用程序中尝试使用它.<br>从 Spark 2.0.0 开始,我们在对具有简单类型/简单类型数组或字符串类型的 RDD 进行洗牌时在内部使用 Kryo 序列化程序.</p>
+<p>Spark 自动为Twitter chill库中的 AllScalaRegistrar 中涵盖的许多常用核心 Scala 类包含 Kryo 序列化程序.</p>
+<p>要向 Kryo 注册您自己的自定义类,请使用该<font color="blue">registerKryoClasses</font>方法.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">val conf &#x3D; new SparkConf().setMaster(...).setAppName(...)</span><br><span class="line">conf.registerKryoClasses(Array(classOf[MyClass1], classOf[MyClass2]))</span><br><span class="line">val sc &#x3D; new SparkContext(conf)</span><br></pre></td></tr></table></figure>
+
+<p>Kryo文档描述了更多高级注册选项,例如添加自定义序列化代码.<br><a target="_blank" rel="noopener" href="https://github.com/EsotericSoftware/kryo">https://github.com/EsotericSoftware/kryo</a></p>
+<p>如果您的对象很大,您可能还需要增加<code>spark.kryoserializer.buffer</code> 配置.<br>该值需要足够大以容纳您将序列化的最大对象.</p>
+<p>最后,如果你不注册你的自定义类,Kryo 仍然可以工作,但它必须为每个对象存储完整的类名,这是一种浪费.</p>
+<h3 id="内存调整"><a href="#内存调整" class="headerlink" title="内存调整"></a>内存调整</h3><p>调整内存使用有三个考虑因素:</p>
+<ol>
+<li>对象使用的内存量(您可能希望整个数据集都适合内存)</li>
+<li>访问这些对象的成本</li>
+<li>垃圾收集的开销(如果您的周转率很高)对象的术语).</li>
+</ol>
+<p>默认情况下,Java 对象访问速度很快,但很容易消耗比其字段内的&quot;原始&quot;数据多 2-5 倍的空间.<br>这是由于以下几个原因:</p>
+<ol>
+<li>每个不同的 Java 对象都有一个&quot;对象头&quot;,大约 16 个字节,包含指向其类的指针等信息.<br>对于其中包含很少数据的对象(比如一个Int字段),这可能比数据大.</li>
+<li>Java Strings 在原始字符串数据上有大约 40 字节的开销(因为它们将它存储在 s 的数组中Char并保留额外的数据,例如长度),并且由于的内部使用 UTF-16而将每个字符存储为两个String字节编码.<br>因此,一个 10 个字符的字符串很容易占用 60 个字节.</li>
+<li>常见的集合类,例如HashMap和LinkedList,使用链接数据结构,其中每个条目都有一个&quot;包装器&quot;对象(例如Map.Entry).<br>这个对象不仅有一个头,还有指向列表中下一个对象的指针(通常每个 8 个字节).</li>
+<li>原始类型的集合通常将它们存储为&quot;盒装&quot;对象,例如java.lang.Integer.</li>
+</ol>
+<p>本节将从 Spark 中的内存管理概述开始,然后讨论用户可以采取的具体策略,以便在应用程序中更有效地使用内存.<br>特别是,我们将描述如何确定对象的内存使用情况,以及如何改进它——通过更改数据结构或以序列化格式存储数据.<br>然后我们将介绍调整 Spark 的缓存大小和 Java 垃圾收集器.</p>
+<h4 id="内存管理概述"><a href="#内存管理概述" class="headerlink" title="内存管理概述"></a>内存管理概述</h4><p>Spark 中的内存使用主要属于两类之一:执行(execution)和存储(storage).<br>执行内存是指用于洗牌/连接/排序和聚合中的计算,而存储内存是指用于在集群中缓存和传播内部数据的内存.<br>在 Spark 中,执行和存储共享一个统一的区域(M).<br>当没有使用执行内存时,存储可以获得所有可用内存,反之亦然.<br>如有必要,执行可能会逐出存储,但只有在总存储内存使用量低于某个阈值 (R) 时才会执行.<br>换句话说,R描述了M缓存块永远不会被驱逐的子区域.<br>由于实现的复杂性,存储可能不会驱逐执行.</p>
+<p>这种设计确保了几个理想的特性.<br>首先,不使用缓存的应用程序可以使用整个空间来执行,避免不必要的磁盘溢出.<br>其次,确实使用缓存的应用程序可以保留最小存储空间 (R),使它们的数据块不会被逐出.<br>最后,这种方法为各种工作负载提供合理的开箱即用性能,而无需用户了解内部内存划分方式的专业知识.</p>
+<p>虽然有两个相关配置,但一般用户不需要调整它们,因为默认值适用于大多数工作负载:</p>
+<ol>
+<li>spark.memory.fraction<br>将大小表示M为(JVM 堆空间 - 300MB)的一小部分(默认为 0.6).<br>其余空间 (40%) 保留用于用户数据结构/Spark 中的内部元数据,以及在稀疏和异常大的记录情况下防止 OOM 错误.</li>
+<li>spark.memory.storageFraction<br>将大小表示R为分数M(默认为 0.5).<br>R是M缓存块免于被执行逐出的存储空间.</li>
+</ol>
+<p>spark.memory.fraction应该设置的值,以便在 JVM 的旧代或&quot;永久&quot;代中轻松地适应这个堆空间量.<br>有关详细信息,请参阅下面关于高级 GC 调优的讨论.</p>
+<h4 id="确定内存消耗"><a href="#确定内存消耗" class="headerlink" title="确定内存消耗"></a>确定内存消耗</h4><p>确定数据集所需内存消耗量的最佳方法是创建一个 RDD,将其放入缓存,然后查看 Web UI 中的&quot;存储&quot;页面.<br>该页面将告诉您 RDD 占用了多少内存.</p>
+<p>要估计特定对象的内存消耗,请使用SizeEstimator的estimate方法.<br>这对于试验不同的数据布局以减少内存使用以及确定广播变量将在每个执行程序堆上占用的空间量非常有用.</p>
+<h4 id="调整数据结构"><a href="#调整数据结构" class="headerlink" title="调整数据结构"></a>调整数据结构</h4><p>减少内存消耗的第一个方法是避免增加开销的 Java 特性,例如基于指针的数据结构和包装对象.<br>做这件事有很多种方法:</p>
+<ol>
+<li>将数据结构设计为更喜欢对象数组和原始类型,而不是标准的 Java 或 Scala 集合类(例如HashMap).<br>fastutil 库为兼容 Java 标准库的原始类型提供了方便的集合类.</li>
+<li>尽可能避免包含大量小对象和指针的嵌套结构.</li>
+<li>考虑使用数字 ID 或枚举对象而不是字符串作为键.</li>
+<li>如果您的 RAM 少于 32 GB,请设置 JVM 标志<font color="blue">-XX:+UseCompressedOops</font>以使指针为四个字节而不是八个字节.<br>您可以在 spark-env.sh.</li>
+</ol>
+<h4 id="序列化-RDD-存储"><a href="#序列化-RDD-存储" class="headerlink" title="序列化 RDD 存储"></a>序列化 RDD 存储</h4><p>尽管进行了这种调整,当你的对象仍然太大而无法有效存储时,减少内存使用的一种更简单的方法是以序列化形式存储它们,使用RDD 持久性 API中的序列化 StorageLevels ,例如MEMORY_ONLY_SER. 然后 Spark 会将每个 RDD 分区存储为一个大字节数组.<br>以序列化形式存储数据的唯一缺点是访问时间较慢,因为必须动态反序列化每个对象.<br>如果您想以序列化形式缓存数据,我们强烈建议您使用 Kryo,因为它比 Java 序列化(当然也比原始 Java 对象)小得多.</p>
+<h4 id="垃圾收集调整"><a href="#垃圾收集调整" class="headerlink" title="垃圾收集调整"></a>垃圾收集调整</h4><p>当你的程序存储的 RDD 有很大的&quot;流失&quot;时,JVM 垃圾收集可能会成为一个问题.<br>(在只读取一次 RDD 然后对其运行许多操作的程序中,这通常不是问题.<br>)当 Java 需要驱逐旧对象为新对象腾出空间时,它需要跟踪所有 Java 对象并找到未使用的.<br>这里要记住的要点是垃圾收集的成本与 Java 对象的数量成正比,因此使用对象较少的数据结构(例如 s 数组Int而不是 a LinkedList)可以大大降低此成本.<br>一种更好的方法是以序列化形式持久化对象,如上所述:现在只有一个每个 RDD 分区的对象(一个字节数组).<br>在尝试其他技术之前,如果 GC 有问题,首先要尝试的是使用序列化缓存.</p>
+<p>由于任务的工作内存(运行任务所需的空间量)和节点上缓存的 RDD 之间的干扰,GC 也可能成为一个问题.<br>我们将讨论如何控制分配给 RDD 缓存的空间以缓解这种情况.</p>
+<h5 id="衡量-GC-的影响"><a href="#衡量-GC-的影响" class="headerlink" title="衡量 GC 的影响"></a>衡量 GC 的影响</h5><p>GC 调优的第一步是收集有关垃圾收集发生频率和 GC 花费时间的统计信息.<br>这可以通过添加<code>-verbose:gc -XX:+PrintGCDetails -XX:+PrintGCTimeStamps</code>到 Java 选项来完成.<br>(有关将 Java 选项传递给 Spark 作业的信息,请参阅配置指南.<br>)下次运行 Spark 作业时,每次发生垃圾收集时,您都会在工作人员的日志中看到打印的消息.<br>请注意,这些日志将位于您集群的工作节点上(在stdout其工作目录中的文件中),而不是您的驱动程序上.</p>
+<h5 id="高级-GC-调整"><a href="#高级-GC-调整" class="headerlink" title="高级 GC 调整"></a>高级 GC 调整</h5><p>为了进一步调优垃圾收集,我们首先需要了解JVM中内存管理的一些基本信息:</p>
+<ol>
+<li>Java Heap 空间分为两个区域 Young 和 Old.<br>年轻一代是用来存放寿命短的对象,而老年代是用来存放寿命较长的对象.</li>
+<li>Young generation又分为三个区域<code>[Eden, Survivor1, Survivor2]</code>.</li>
+<li>垃圾收集过程的简单描述:当 Eden 已满时,将在 Eden 上运行次要 GC,并将 Eden 和 Survivor1 中存活的对象复制到 Survivor2.<br>幸存者区域被交换.<br>如果对象足够旧或 Survivor2 已满,则将其移至 Old.<br>最后,当 Old 接近 full 时,将调用 full GC.</li>
+</ol>
+<p>Spark 中 GC 调优的目标是确保只有长寿命的 RDD 存储在老年代,而年轻代的大小足以存储短寿命的对象.<br>这将有助于避免 full GC 收集任务执行期间创建的临时对象.<br>一些可能有用的步骤是:</p>
+<ol>
+<li>通过收集 GC 统计信息检查垃圾回收是否过多.<br>如果在任务完成之前多次调用完整 GC,则意味着没有足够的内存可用于执行任务.</li>
+<li>如果 minor collections 太多但 major GC 不多,为 Eden 分配更多内存会有所帮助.<br>您可以将伊甸园的大小设置为对每个任务需要多少内存的高估.<br>如果确定了Eden 的大小E,那么就可以使用选项来设置新生代的大小-Xmn=4/3 * E.<br>(扩大 4/3 也是为了考虑幸存者区域使用的空间.)</li>
+<li>在打印的 GC 统计信息中,如果 OldGen 接近满,则通过降低spark.memory.fraction来减少用于缓存的内存量.<br>缓存更少的对象比减慢任务执行要好.<br>或者,考虑减小年轻一代的大小.</li>
+</ol>
+<p>-Xmn如果您已按上述设置,这意味着降低.<br>如果不是,请尝试更改 JVMNewRatio参数的值.<br>许多 JVM 默认为 2,这意味着 Old generation 占据堆的 2/3.<br>它应该足够大,以至于这个分数超过spark.memory.fraction.<br>4. 尝试使用 G1GC 垃圾收集器-XX:+UseG1GC.<br>它可以在垃圾收集成为瓶颈的某些情况下提高性能.<br>请注意,对于较大的执行程序堆大小,增加G1 区域大小可能很重要<code>-XX:G1HeapRegionSize</code><br>5. 例如,如果您的任务是从 HDFS 读取数据,则可以使用从 HDFS 读取的数据块的大小来估计任务使用的内存量.<br>请注意,解压缩块的大小通常是块大小的 2 或 3 倍.<br>因此,如果我们希望拥有 3 或 4 个任务的工作空间,并且 HDFS 块大小为 128 MB,我们可以估计 Eden 的大小为4 * 3 * 128MB.<br>6. 监视垃圾收集的频率和时间如何随着新设置而变化.</p>
+<p>我们的经验表明,GC 调整的效果取决于您的应用程序和可用内存量.<br>在线描述了更多的调优选项,但在较高层次上,管理 full GC 发生的频率有助于减少开销.</p>
+<p>可以通过在作业配置中设置<font color="blue">spark.executor.extraJavaOptions</font>来指定执行程序的 GC 调整标志.</p>
+<h3 id="其他注意事项"><a href="#其他注意事项" class="headerlink" title="其他注意事项"></a>其他注意事项</h3><h4 id="并行度"><a href="#并行度" class="headerlink" title="并行度"></a>并行度</h4><p>除非您将每个操作的并行度设置得足够高,否则集群不会得到充分利用.<br>Spark 会根据每个文件的大小自动设置要在每个文件上运行的&quot;映射&quot;任务的数量(尽管您可以通过SparkContext.textFile等的可选参数来控制它),对于分布式&quot;归约&quot;操作,例如groupByKey和reduceByKey,它使用最大的父级RDD 的分区数.<br>您可以将并行级别作为第二个参数传递(请参阅spark.PairRDDFunctions文档),或设置配置属性spark.default.parallelism以更改默认值.<br>通常,我们建议集群中每个 CPU 内核执行 2-3 个任务.</p>
+<h4 id="输入路径上的并行列表"><a href="#输入路径上的并行列表" class="headerlink" title="输入路径上的并行列表"></a>输入路径上的并行列表</h4><p>有时,当作业输入有大量目录时,您可能还需要增加目录列表并行度,否则该过程可能会花费很长时间,尤其是针对像 S3 这样的对象存储时.<br>如果你的工作在 RDD 上工作,使用 Hadoop 输入格式(例如,via SparkContext.sequenceFile),并行度由 via 控制<code>spark.hadoop.mapreduce.input.fileinputformat.list-status.num-threads</code>(当前默认为 1).</p>
+<p>对于具有基于文件的数据源的 Spark SQL,您可以调整<code>spark.sql.sources.parallelPartitionDiscovery.threshold</code>和 <code>spark.sql.sources.parallelPartitionDiscovery.parallelism</code>改进列表并行性.<br>详情请参考Spark SQL 性能调优指南.</p>
+<h4 id="Reduce-任务的内存使用"><a href="#Reduce-任务的内存使用" class="headerlink" title="Reduce 任务的内存使用"></a>Reduce 任务的内存使用</h4><p>有时,您会得到 OutOfMemoryError 不是因为您的 RDD 不适合内存,而是因为您的一项任务的工作集,例如 中的 reduce 任务之一groupByKey,太大了.<br>Spark 的混洗操作(sortByKey/groupByKey/reduceByKey/join等)在每个任务中构建一个哈希表来执行分组,这通常可能很大.<br>这里最简单的修复是 增加并行度,这样每个任务的输入集就更小了.<br>Spark 可以有效地支持短至 200 毫秒的任务,因为它在多个任务中重用一个执行器 JVM,并且任务启动成本低,因此您可以安全地将并行度级别提高到超过集群中的核心数量.</p>
+<h4 id="广播大变量"><a href="#广播大变量" class="headerlink" title="广播大变量"></a>广播大变量</h4><p>使用中 可用的广播功能SparkContext可以大大减少每个序列化任务的大小,以及在集群上启动作业的成本.<br>如果您的任务在其中使用来自驱动程序的任何大对象(例如静态查找表),请考虑将其转换为广播变量.<br>Spark 在 master 上打印每个任务的序列化大小,因此您可以查看它来决定您的任务是否太大.<br>一般来说,大于 20 KB 的任务可能值得优化.</p>
+<h4 id="数据局部性"><a href="#数据局部性" class="headerlink" title="数据局部性"></a>数据局部性</h4><p>数据局部性会对 Spark 作业的性能产生重大影响.<br>如果数据和对其进行操作的代码在一起,那么计算往往会很快.<br>但是,如果代码和数据是分开的,那么一个就必须转移到另一个.<br>通常,将序列化代码从一个地方传送到另一个地方比传送一大块数据要快,因为代码大小比数据小得多.<br>Spark 围绕数据局部性这一一般原则构建其调度.</p>
+<p>数据局部性是数据与处理它的代码的接近程度.<br>根据数据的当前位置,存在多个位置级别.<br>从最近到最远的顺序:</p>
+<ol>
+<li>PROCESS_LOCAL数据与运行代码位于同一 JVM 中.这是最好的地方</li>
+<li>NODE_LOCAL数据在同一个节点上.<br>示例可能在同一个节点上的 HDFS 中,或者在同一个节点上的另一个执行程序中.<br>这比PROCESS_LOCAL数据必须在进程之间传输要慢一点</li>
+<li>NO_PREF从任何地方都可以同样快速地访问数据,并且没有位置偏好</li>
+<li>RACK_LOCAL数据在同一个服务器机架上.<br>数据位于同一机架上的不同服务器上,因此需要通过网络发送,通常是通过单个交换机</li>
+<li>ANY数据在网络上的其他地方,而不是在同一个机架中</li>
+</ol>
+<p>Spark 更喜欢在最佳位置级别安排所有任务,但这并不总是可能的.<br>在任何空闲执行程序上都没有未处理数据的情况下,Spark 会切换到较低的位置级别.<br>有两种选择:</p>
+<ol>
+<li>等到繁忙的 CPU 空闲下来以在同一台服务器上启动数据任务</li>
+<li>立即在需要将数据移动到那里的更远地方启动新任务.</li>
+</ol>
+<p>Spark 通常做的是稍等片刻,希望繁忙的 CPU 能够腾出时间.<br>一旦超时到期,它就会开始将数据从远处移动到可用的 CPU 上.<br>每个级别之间回退的等待超时可以在一个参数中单独配置或一起配置.<br>详情见 配置页spark.locality参数.<br>如果您的任务很长并且局部性不好,您应该增加这些设置,但默认设置通常效果很好.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/spark/" rel="tag"># spark</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/11/21/spark%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86%E5%99%A8/" rel="prev" title="spark集群管理器">
+                  <i class="fa fa-chevron-left"></i> spark集群管理器
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/11/21/spark%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E7%9B%91%E6%8E%A7/" rel="next" title="spark应用程序监控">
+                  spark应用程序监控 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

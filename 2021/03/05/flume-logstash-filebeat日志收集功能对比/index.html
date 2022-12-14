@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="官方文档.http:&#x2F;&#x2F;flume.apache.org&#x2F;releases&#x2F;content&#x2F;1.7.0&#x2F;FlumeUserGuide.htmlhttps:&#x2F;&#x2F;www.elastic.co&#x2F;guide&#x2F;en&#x2F;logstash&#x2F;6.8&#x2F;index.htmlhttps:&#x2F;&#x2F;www.elastic.co&#x2F;guide&#x2F;en&#x2F;beats&#x2F;filebeat&#x2F;6.8&#x2F;index.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="flume-logstash-filebeat日志收集功能对比">
+<meta property="og:url" content="https://maoeryu.github.io/2021/03/05/flume-logstash-filebeat%E6%97%A5%E5%BF%97%E6%94%B6%E9%9B%86%E5%8A%9F%E8%83%BD%E5%AF%B9%E6%AF%94/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="官方文档.http:&#x2F;&#x2F;flume.apache.org&#x2F;releases&#x2F;content&#x2F;1.7.0&#x2F;FlumeUserGuide.htmlhttps:&#x2F;&#x2F;www.elastic.co&#x2F;guide&#x2F;en&#x2F;logstash&#x2F;6.8&#x2F;index.htmlhttps:&#x2F;&#x2F;www.elastic.co&#x2F;guide&#x2F;en&#x2F;beats&#x2F;filebeat&#x2F;6.8&#x2F;index.html">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/flume_logstash1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flume_logstash2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/flume_filebeat.png">
+<meta property="article:published_time" content="2021-03-04T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-11-08T06:29:00.798Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="logstash">
+<meta property="article:tag" content="filebeat">
+<meta property="article:tag" content="flume">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/flume_logstash1.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2021/03/05/flume-logstash-filebeat%E6%97%A5%E5%BF%97%E6%94%B6%E9%9B%86%E5%8A%9F%E8%83%BD%E5%AF%B9%E6%AF%94/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>flume-logstash-filebeat日志收集功能对比 | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#flume"><span class="nav-number">1.1.</span> <span class="nav-text">flume</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#logstash"><span class="nav-number">1.2.</span> <span class="nav-text">logstash</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#logstash%E7%AE%A1%E9%81%93"><span class="nav-number">1.2.1.</span> <span class="nav-text">logstash管道</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#pipeline"><span class="nav-number">1.2.2.</span> <span class="nav-text">pipeline</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#instance"><span class="nav-number">1.2.3.</span> <span class="nav-text">instance</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#event"><span class="nav-number">1.2.4.</span> <span class="nav-text">event</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#filebeat"><span class="nav-number">1.3.</span> <span class="nav-text">filebeat</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#harvesters"><span class="nav-number">1.3.1.</span> <span class="nav-text">harvesters</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#prospector"><span class="nav-number">1.3.2.</span> <span class="nav-text">prospector</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E6%AF%94"><span class="nav-number">2.</span> <span class="nav-text">对比</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Flume"><span class="nav-number">3.1.</span> <span class="nav-text">Flume</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Logstash"><span class="nav-number">3.2.</span> <span class="nav-text">Logstash</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Filebeat"><span class="nav-number">3.3.</span> <span class="nav-text">Filebeat</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">220</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/03/05/flume-logstash-filebeat%E6%97%A5%E5%BF%97%E6%94%B6%E9%9B%86%E5%8A%9F%E8%83%BD%E5%AF%B9%E6%AF%94/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          flume-logstash-filebeat日志收集功能对比
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-03-05 00:00:00" itemprop="dateCreated datePublished" datetime="2021-03-05T00:00:00+08:00">2021-03-05</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">Edited on</span>
+        <time title="Modified: 2022-11-08 14:29:00" itemprop="dateModified" datetime="2022-11-08T14:29:00+08:00">2022-11-08</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8D%8F%E5%90%8C%E6%A1%86%E6%9E%B6/" itemprop="url" rel="index"><span itemprop="name">协同框架</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>官方文档.<br><a target="_blank" rel="noopener" href="http://flume.apache.org/releases/content/1.7.0/FlumeUserGuide.html">http://flume.apache.org/releases/content/1.7.0/FlumeUserGuide.html</a><br><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/logstash/6.8/index.html">https://www.elastic.co/guide/en/logstash/6.8/index.html</a><br><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/beats/filebeat/6.8/index.html">https://www.elastic.co/guide/en/beats/filebeat/6.8/index.html</a></p>
+<span id="more"></span>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><h3 id="flume"><a href="#flume" class="headerlink" title="flume"></a>flume</h3><p>flume的设计宗旨是向hadoop集群批量导入基于事件的海量数据.<br>系统中最核心的角色是agent,flume采集系统就是由一个个agent所连接起来形成,每一个agent相当于一个数据传递员,内部有三个组件,</p>
+<ul>
+<li>source:采集源,用于跟数据源对接,以获取数据.</li>
+<li>channel:agent内部的数据传输通道,用于从source传输数据到sink.</li>
+<li>sink:传送数据到目的地,用于往下一级agent或最终存储系统传递数据.</li>
+</ul>
+<img src="/images/flume_logstash1.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="logstash"><a href="#logstash" class="headerlink" title="logstash"></a>logstash</h3><p>开源的服务器端数据处理管道,能够同时从多个来源采集/转换数据,然后将数据发送到存储库中.<br>数据从源传输到存储库的过程中,logstash过滤器能够解析各个事件,识别已命名的字段以构建结构,并将它们转换成通用格式.</p>
+<p>logstash是基于pipeline方式进行数据处理的,pipeline可以理解为数据处理流程的抽象.<br>在一条pipeline数据经过上游数据源汇总到消息队列中,然后由多个工作线程进行数据的转换处理,最后输出到下游组件.</p>
+<p>一个logstash可以包含多个pipeline.</p>
+<h4 id="logstash管道"><a href="#logstash管道" class="headerlink" title="logstash管道"></a>logstash管道</h4><p>1.input(必需)<br>数据输入组件,用于对接各种数据源,接入数据,支持解码器,允许对数据进行编解码操作.</p>
+<p>2.filter(可选)<br>数据过滤组件,负责对输入数据进行加工处理.</p>
+<p>3.output(必需)<br>数据输出组件,用于对接下游组件,发送处理后的数据,支持解码器,允许对数据进行编解码操作.</p>
+<h4 id="pipeline"><a href="#pipeline" class="headerlink" title="pipeline"></a>pipeline</h4><p>一条数据处理流程的逻辑抽象,类似于一条管道,数据从一端流入,经过处理后,从另一端流出.</p>
+<p>包括输入/过滤/输出3个部分.</p>
+<h4 id="instance"><a href="#instance" class="headerlink" title="instance"></a>instance</h4><p>一个logstash实例,可以包含多条数据处理流程(多个pipeline).</p>
+<h4 id="event"><a href="#event" class="headerlink" title="event"></a>event</h4><p>pipeline中的数据都是基于事件的,一个event可以看作是数据流中的一条数据/消息.</p>
+<img src="/images/flume_logstash2.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="filebeat"><a href="#filebeat" class="headerlink" title="filebeat"></a>filebeat</h3><p>一个日志文件托运工具.</p>
+<p>filebeat会监控日志目录或指定的日志文件,追踪读取这些文件(追踪文件变化,不停的读),并且转发这些消息到elastic或logstash中存入.</p>
+<p>当开启filebeat时,它会启动一个或多个探测器(prospectors)去检测你指定的日志目录或文件.<br>对于找出的每一个日志文件,filebeat启动收割进程(harvester).<br>每一个收割进程读取一个日志文件的新内容,并发送到处理程序(spooler).<br>处理程序会集合这些事件,最后filebeat会发送集合的数据到指定的地点.<br>主要组成部分有harvesters和prospector.</p>
+<h4 id="harvesters"><a href="#harvesters" class="headerlink" title="harvesters"></a>harvesters</h4><p>负责读取单个文件内容,逐行读取并发送到output,每个文件都将启动一个.<br>同时负责文件的打开和关闭.<br>如果在收集过程中,对文件进行删除或重命名,filebeat依然会继续读取这个文件,直到harvester关闭.<br>默认情况下,超过close_inactive参数,filebeat会关闭harvester.</p>
+<h4 id="prospector"><a href="#prospector" class="headerlink" title="prospector"></a>prospector</h4><p>负责管理harvesters,并且找到所有需要进行读取的数据源.<br>如果input type配置的是log类型,prospector将会去配置路径下查找所有匹配上的文件,然后为每一个文件创建一个harvester.</p>
+<p>prospector目前支持两种类型,log和stdin.<br>每个prospector类型可以定义多个.<br>log prospector将检查每一个文件是否需要启动harvester,启动的harvester是否还在运行,或文件是否被忽略.</p>
+<img src="/images/flume_filebeat.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h2 id="对比"><a href="#对比" class="headerlink" title="对比"></a>对比</h2><table>
+<thead>
+<tr>
+<th align="left">指标</th>
+<th align="left">flume</th>
+<th align="left">logstash</th>
+<th align="left">filebeat</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">内存</td>
+<td align="left">大</td>
+<td align="left">大</td>
+<td align="left">小</td>
+</tr>
+<tr>
+<td align="left">cpu</td>
+<td align="left">大</td>
+<td align="left">小</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">背压敏感协议</td>
+<td align="left">否</td>
+<td align="left">否</td>
+<td align="left">是</td>
+</tr>
+<tr>
+<td align="left">插件</td>
+<td align="left">需要api</td>
+<td align="left">多</td>
+<td align="left">多</td>
+</tr>
+<tr>
+<td align="left">功能</td>
+<td align="left">从多种输入端采集数据并输出到多种输出端</td>
+<td align="left">从多种输入端采集并实时解析和转换数据并输出到多种输出端</td>
+<td align="left">传输</td>
+</tr>
+<tr>
+<td align="left">轻重</td>
+<td align="left">相对较重</td>
+<td align="left">相对较重</td>
+<td align="left">轻量级二进制文件</td>
+</tr>
+<tr>
+<td align="left">过滤能力</td>
+<td align="left">自带拦截器功能</td>
+<td align="left">强大的过滤能力</td>
+<td align="left">有过滤能力但是弱</td>
+</tr>
+<tr>
+<td align="left">编写语言</td>
+<td align="left">java</td>
+<td align="left">ruby</td>
+<td align="left">go</td>
+</tr>
+<tr>
+<td align="left">输出到多个接收方</td>
+<td align="left">支持</td>
+<td align="left">支持</td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><h3 id="Flume"><a href="#Flume" class="headerlink" title="Flume"></a>Flume</h3><p>1.更注重于数据的传输,对于数据的预处理不如Logstash.<br>2.在传输上Flume比Logstash更可靠一些,因为数据会持久化在channel中.<br>3.数据只有存储在sink端中,才会从channel中删除,这个过程是通过事物来控制的,保证了数据的可靠性.</p>
+<h3 id="Logstash"><a href="#Logstash" class="headerlink" title="Logstash"></a>Logstash</h3><p>1.ELK组件中的一个,一般都是同ELK其它组件一起使用.<br>2.更注重于数据的预处理,Logstash有比Flume丰富的插件可选,所以在扩展功能上比Flume全面.</p>
+<h3 id="Filebeat"><a href="#Filebeat" class="headerlink" title="Filebeat"></a>Filebeat</h3><p>1.一个轻量型日志采集工具,因为Filebeat是Elastic Stack的一部分,因此能够同ELK组件无缝协作.<br>2.Filebeat占用的内存要比Logstash小很多.<br>3.性能比较稳健,很少出现宕机.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/logstash/" rel="tag"># logstash</a>
+              <a href="/tags/filebeat/" rel="tag"># filebeat</a>
+              <a href="/tags/flume/" rel="tag"># flume</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/03/05/flume%E5%A4%9A%E6%97%A5%E5%BF%97%E5%8C%BA%E5%88%86%E6%9D%A5%E6%BA%90/" rel="prev" title="flume多日志区分来源">
+                  <i class="fa fa-chevron-left"></i> flume多日志区分来源
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/03/05/elk%E6%90%AD%E5%BB%BA%E6%97%A5%E5%BF%97%E6%94%B6%E9%9B%86%E5%B9%B3%E5%8F%B0/" rel="next" title="elk搭建日志收集平台">
+                  elk搭建日志收集平台 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
