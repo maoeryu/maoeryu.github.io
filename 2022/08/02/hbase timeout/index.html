@@ -23,26 +23,31 @@
     var NexT = window.NexT || {};
     var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
   </script>
-<meta name="description" content="重试机制某业务在使用HBase客户端读取数据时出现了大量线程block的情况,当时的线程堆栈信息,如下图所示,   首先从日志和监控排查了业务表和region server,确认了在很长时间内确实没有请求进来,除此之外并没有其他有用的信息,同时也没有接到该集群上其他用户的异常反馈,从现象看,这次异常是在特定环境下才会触发的.">
+<meta name="description" content="客户端重试机制某业务在使用HBase客户端读取数据时出现了大量线程block的情况,当时的线程堆栈信息,如下图所示,   首先从日志和监控排查了业务表和region server,确认了在很长时间内确实没有请求进来,除此之外并没有其他有用的信息,同时也没有接到该集群上其他用户的异常反馈,从现象看,这次异常是在特定环境下才会触发的.">
 <meta property="og:type" content="article">
-<meta property="og:title" content="hbase客户端重试-超时机制">
-<meta property="og:url" content="https://maoeryu.github.io/2022/08/02/hbase%E5%AE%A2%E6%88%B7%E7%AB%AF%E9%87%8D%E8%AF%95-%E8%B6%85%E6%97%B6%E6%9C%BA%E5%88%B6/index.html">
+<meta property="og:title" content="hbase timeout">
+<meta property="og:url" content="https://maoeryu.github.io/2022/08/02/hbase%20timeout/index.html">
 <meta property="og:site_name" content="FlyingPig">
-<meta property="og:description" content="重试机制某业务在使用HBase客户端读取数据时出现了大量线程block的情况,当时的线程堆栈信息,如下图所示,   首先从日志和监控排查了业务表和region server,确认了在很长时间内确实没有请求进来,除此之外并没有其他有用的信息,同时也没有接到该集群上其他用户的异常反馈,从现象看,这次异常是在特定环境下才会触发的.">
+<meta property="og:description" content="客户端重试机制某业务在使用HBase客户端读取数据时出现了大量线程block的情况,当时的线程堆栈信息,如下图所示,   首先从日志和监控排查了业务表和region server,确认了在很长时间内确实没有请求进来,除此之外并没有其他有用的信息,同时也没有接到该集群上其他用户的异常反馈,从现象看,这次异常是在特定环境下才会触发的.">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="https://maoeryu.github.io/images/hbre1.png">
 <meta property="og:image" content="https://maoeryu.github.io/images/hbre2.png">
 <meta property="og:image" content="https://maoeryu.github.io/images/hbre3.png">
 <meta property="og:image" content="https://maoeryu.github.io/images/hbre4.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbq1.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbq2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbq3.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbq5.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbq4.png">
 <meta property="article:published_time" content="2022-08-01T16:00:00.000Z">
-<meta property="article:modified_time" content="2022-09-06T06:29:03.798Z">
+<meta property="article:modified_time" content="2023-02-16T09:09:58.058Z">
 <meta property="article:author" content="maoeryu">
 <meta property="article:tag" content="hbase">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://maoeryu.github.io/images/hbre1.png">
 
 
-<link rel="canonical" href="https://maoeryu.github.io/2022/08/02/hbase%E5%AE%A2%E6%88%B7%E7%AB%AF%E9%87%8D%E8%AF%95-%E8%B6%85%E6%97%B6%E6%9C%BA%E5%88%B6/">
+<link rel="canonical" href="https://maoeryu.github.io/2022/08/02/hbase%20timeout/">
 
 
 <script class="page-configurations">
@@ -54,7 +59,7 @@
     lang   : 'en'
   };
 </script>
-<title>hbase客户端重试-超时机制 | FlyingPig</title>
+<title>hbase timeout | FlyingPig</title>
   
 
 
@@ -164,7 +169,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%87%8D%E8%AF%95%E6%9C%BA%E5%88%B6"><span class="nav-number">1.</span> <span class="nav-text">重试机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E6%9E%90%E8%BF%87%E7%A8%8B"><span class="nav-number">1.1.</span> <span class="nav-text">分析过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HBase-Rpc%E9%87%8D%E8%AF%95%E6%9C%BA%E5%88%B6"><span class="nav-number">1.2.</span> <span class="nav-text">HBase Rpc重试机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%8F%82%E6%95%B0%E4%BC%98%E5%8C%96%E5%AE%9E%E8%B7%B5"><span class="nav-number">1.3.</span> <span class="nav-text">客户端参数优化实践</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B6%85%E6%97%B6%E6%9C%BA%E5%88%B6"><span class="nav-number">2.</span> <span class="nav-text">超时机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#hbase-rpc-timeout"><span class="nav-number">2.1.</span> <span class="nav-text">hbase.rpc.timeout</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hbase-client-operation-timeout"><span class="nav-number">2.2.</span> <span class="nav-text">hbase.client.operation.timeout</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hbase-client-scanner-timeout-period"><span class="nav-number">2.3.</span> <span class="nav-text">hbase.client.scanner.timeout.period</span></a></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF"><span class="nav-number">1.</span> <span class="nav-text">客户端</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E8%AF%95%E6%9C%BA%E5%88%B6"><span class="nav-number">1.1.</span> <span class="nav-text">重试机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E6%9E%90%E8%BF%87%E7%A8%8B"><span class="nav-number">1.1.1.</span> <span class="nav-text">分析过程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HBase-Rpc%E9%87%8D%E8%AF%95%E6%9C%BA%E5%88%B6"><span class="nav-number">1.1.2.</span> <span class="nav-text">HBase Rpc重试机制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%8F%82%E6%95%B0%E4%BC%98%E5%8C%96%E5%AE%9E%E8%B7%B5"><span class="nav-number">1.1.3.</span> <span class="nav-text">客户端参数优化实践</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B6%85%E6%97%B6%E6%9C%BA%E5%88%B6"><span class="nav-number">1.2.</span> <span class="nav-text">超时机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#hbase-rpc-timeout"><span class="nav-number">1.2.1.</span> <span class="nav-text">hbase.rpc.timeout</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hbase-client-operation-timeout"><span class="nav-number">1.2.2.</span> <span class="nav-text">hbase.client.operation.timeout</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hbase-client-scanner-timeout-period"><span class="nav-number">1.2.3.</span> <span class="nav-text">hbase.client.scanner.timeout.period</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E7%AB%AF"><span class="nav-number">2.</span> <span class="nav-text">服务端</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%9F%E5%9B%A0"><span class="nav-number">2.1.</span> <span class="nav-text">原因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B6%85%E6%97%B6%E6%97%B6%E9%97%B4"><span class="nav-number">2.2.</span> <span class="nav-text">超时时间</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zookeeper%E6%BA%90%E7%A0%81"><span class="nav-number">2.3.</span> <span class="nav-text">zookeeper源码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="nav-number">2.4.</span> <span class="nav-text">解决方法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#zk%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.1.</span> <span class="nav-text">zk配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hbase-gc%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.2.</span> <span class="nav-text">hbase gc配置</span></a></li></ol></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -178,7 +183,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">223</span>
+          <span class="site-state-item-count">219</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -232,7 +237,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/02/hbase%E5%AE%A2%E6%88%B7%E7%AB%AF%E9%87%8D%E8%AF%95-%E8%B6%85%E6%97%B6%E6%9C%BA%E5%88%B6/">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2022/08/02/hbase%20timeout/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -245,7 +250,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          hbase客户端重试-超时机制
+          hbase timeout
         </h1>
 
         <div class="post-meta-container">
@@ -263,7 +268,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">Edited on</span>
-        <time title="Modified: 2022-09-06 14:29:03" itemprop="dateModified" datetime="2022-09-06T14:29:03+08:00">2022-09-06</time>
+        <time title="Modified: 2023-02-16 17:09:58" itemprop="dateModified" datetime="2023-02-16T17:09:58+08:00">2023-02-16</time>
       </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -285,12 +290,12 @@
     
     
     <div class="post-body" itemprop="articleBody">
-        <h2 id="重试机制"><a href="#重试机制" class="headerlink" title="重试机制"></a>重试机制</h2><p>某业务在使用HBase客户端读取数据时出现了大量线程block的情况,当时的线程堆栈信息,如下图所示,</p>
+        <h2 id="客户端"><a href="#客户端" class="headerlink" title="客户端"></a>客户端</h2><h3 id="重试机制"><a href="#重试机制" class="headerlink" title="重试机制"></a>重试机制</h3><p>某业务在使用HBase客户端读取数据时出现了大量线程block的情况,当时的线程堆栈信息,如下图所示,</p>
 <img src="/images/hbre1.png" style="margin-left: 0px; padding-bottom: 10px;">
 
 <p>首先从日志和监控排查了业务表和region server,确认了在很长时间内确实没有请求进来,除此之外并没有其他有用的信息,同时也没有接到该集群上其他用户的异常反馈,从现象看,这次异常是在特定环境下才会触发的.</p>
 <span id="more"></span>
-<h3 id="分析过程"><a href="#分析过程" class="headerlink" title="分析过程"></a>分析过程</h3><p>根据上图所示,所有的请求都block在<code>&lt;0x0000000782a936f0&gt;</code>这把全局锁上,这里需要关注两个问题:<br>1)哪个线程持有了这把全局锁&lt;0x0000000782a936f0&gt;?这是一把什么样的全局锁?<br>2)哪个线程持有了这把锁?</p>
+<h4 id="分析过程"><a href="#分析过程" class="headerlink" title="分析过程"></a>分析过程</h4><p>根据上图所示,所有的请求都block在<code>&lt;0x0000000782a936f0&gt;</code>这把全局锁上,这里需要关注两个问题:<br>1)哪个线程持有了这把全局锁&lt;0x0000000782a936f0&gt;?这是一把什么样的全局锁?<br>2)哪个线程持有了这把锁?</p>
 <p>很容易在jstack日志中通过搜索找到全局锁&lt;0x0000000782a936f0&gt;被如下线程持有:</p>
 <img src="/images/hbre2.png" style="margin-left: 0px; padding-bottom: 10px;">
 
@@ -316,7 +321,7 @@
 
 <p>参考源码注释可知,这把锁是为了防止同时多线程并发加载meta分区.<br>全局锁代码块首先会从缓存中查找meta分区,如果不存在会执行prefetchRegionCache方法远程查找并写入缓存,因此如果第一个线程成功加载meta分区数据并写入缓存,后来线程可以直接使用.</p>
 <p>正常情况下,prefetchRegionCache方法只有在缓存不存在的情况下会执行,如果此时网络不存在问题,远程查找meta分区信息会很快完成,持锁时间也会很短.<br>一旦网络出现长时间抖动,就有可能出现这把锁一直被持有,阻塞其他线程.</p>
-<h3 id="HBase-Rpc重试机制"><a href="#HBase-Rpc重试机制" class="headerlink" title="HBase Rpc重试机制"></a>HBase Rpc重试机制</h3><p>通过上文分析可知,HBase的重试机制是这次异常发生的关键点,有必要对其进行一次解析.<br>HBase执行rpc失败之后会执行重试操作,</p>
+<h4 id="HBase-Rpc重试机制"><a href="#HBase-Rpc重试机制" class="headerlink" title="HBase Rpc重试机制"></a>HBase Rpc重试机制</h4><p>通过上文分析可知,HBase的重试机制是这次异常发生的关键点,有必要对其进行一次解析.<br>HBase执行rpc失败之后会执行重试操作,</p>
 <p>重试的最大次数可以通过配置文件配置,对应的参数为hbase.client.retries.number,0.98版本中该参数的默认值为31.</p>
 <p>同时每两次重试之间会sleep一段时间,即上文提到的expectedSleep变量,该变量实现具体算法如下:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> RETRY_BACKOFF[] = &#123; <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">10</span>, <span class="number">20</span>, <span class="number">40</span>, <span class="number">100</span>, <span class="number">100</span>, <span class="number">100</span>, <span class="number">100</span>, <span class="number">200</span>, <span class="number">200</span> &#125;;</span><br><span class="line"><span class="keyword">long</span> normalPause = pause * HConstants.RETRY_BACKOFF[ntries];</span><br><span class="line"><span class="keyword">long</span> jitter =  (<span class="keyword">long</span>)(normalPause * RANDOM.nextFloat() * <span class="number">0.01f</span>); <span class="comment">// 1% possible jitter</span></span><br><span class="line"><span class="keyword">return</span> normalPause + jitter;</span><br></pre></td></tr></table></figure>
@@ -324,19 +329,19 @@
 <p>其中RETRY_BACKOFF是一个重试系数表,由小到大递增表示重试时间会随着重试次数逐渐递增.<br>pause变量可以通过配置文件配置,对应的参数为hbase.client.pause,0.98版本中该参数的默认值为100.</p>
 <p>暂时忽略jitter这个小随机变量,默认情况下最大的重试间隔休眠时间 expectedSleep = 100 * 200 = 20s.<br>默认重试次数为31,则每次连接集群重试之间的暂停时间将依次为:<br><code>[100,200,300,500,1000,2000,4000,10000,10000,10000,10000,20000,20000,...,20000]</code></p>
 <p>这意味着客户端将在448s内重试30次,然后放弃连接到集群.</p>
-<h3 id="客户端参数优化实践"><a href="#客户端参数优化实践" class="headerlink" title="客户端参数优化实践"></a>客户端参数优化实践</h3><p>很显然,根据上面第二部分和第三部分的介绍,一旦在网络出现抖动的异常情况下,默认最差情况下一个线程会存在8min左右的重试时间,从而会导致其他线程都阻塞在regionLockObject这把全局锁上.<br>为了构建一个更稳定/低延迟的HBase系统,除过需要对服务器端参数做各种调整外,客户端参数也需要做相应的调整:</p>
+<h4 id="客户端参数优化实践"><a href="#客户端参数优化实践" class="headerlink" title="客户端参数优化实践"></a>客户端参数优化实践</h4><p>很显然,根据上面第二部分和第三部分的介绍,一旦在网络出现抖动的异常情况下,默认最差情况下一个线程会存在8min左右的重试时间,从而会导致其他线程都阻塞在regionLockObject这把全局锁上.<br>为了构建一个更稳定/低延迟的HBase系统,除过需要对服务器端参数做各种调整外,客户端参数也需要做相应的调整:</p>
 <ol>
 <li>hbase.client.pause:默认为100,可以减少为50.</li>
 <li>hbase.client.retries.number:默认为31,可以减少为21.</li>
 </ol>
 <p>修改后,通过上面算法可以计算出每次连接集群重试之间的暂停时间将依次为:<br><code>[50,100,150,250,500,1000,2000,5000,5000,5000,5000,10000,10000,...,10000]</code></p>
 <p>客户端将会在2min内重试20次,然后放弃连接到集群,进而会再将全局锁交给其他线程,执行其他请求.</p>
-<h2 id="超时机制"><a href="#超时机制" class="headerlink" title="超时机制"></a>超时机制</h2><h3 id="hbase-rpc-timeout"><a href="#hbase-rpc-timeout" class="headerlink" title="hbase.rpc.timeout"></a>hbase.rpc.timeout</h3><p>从字面意思就可知道,该参数表示一次RPC请求的超时时间.<br>如果某次RPC时间超过该值,客户端就会主动关闭socket.<br>此时,服务器端就会捕获到如下的异常:</p>
+<h3 id="超时机制"><a href="#超时机制" class="headerlink" title="超时机制"></a>超时机制</h3><h4 id="hbase-rpc-timeout"><a href="#hbase-rpc-timeout" class="headerlink" title="hbase.rpc.timeout"></a>hbase.rpc.timeout</h4><p>从字面意思就可知道,该参数表示一次RPC请求的超时时间.<br>如果某次RPC时间超过该值,客户端就会主动关闭socket.<br>此时,服务器端就会捕获到如下的异常:</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">java.io.IOException: Connection reset by peer</span><br><span class="line">        at sun.nio.ch.FileDispatcherImpl.read0(Native Method)</span><br><span class="line">        at sun.nio.ch.SocketDispatcher.read(SocketDispatcher.java:39)</span><br><span class="line">        at sun.nio.ch.IOUtil.readIntoNativeBuffer(IOUtil.java:223)</span><br><span class="line">        at sun.nio.ch.IOUtil.read(IOUtil.java:197)</span><br><span class="line">        at sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:384)</span><br><span class="line">        at org.apache.hadoop.hbase.ipc.RpcServer.channelRead(RpcServer.java:2246)</span><br><span class="line">        at org.apache.hadoop.hbase.ipc.RpcServer$Connection.readAndProcess(RpcServer.java:1496)</span><br><span class="line">....</span><br><span class="line">2016-04-14 21:32:40,173 WARN  [B.DefaultRpcServer.handler&#x3D;125,queue&#x3D;5,port&#x3D;60020] ipc.RpcServer: RpcServer.respondercallId: 7540 service: ClientService methodName: Multi size: 100.2 K connection: 10.160.247.139:56031: output error</span><br><span class="line">2016-04-14 21:32:40,173 WARN  [B.DefaultRpcServer.handler&#x3D;125,queue&#x3D;5,port&#x3D;60020] ipc.RpcServer: B.DefaultRpcServer.handler&#x3D;125,queue&#x3D;5,port&#x3D;60020: caught a ClosedChannelException, this means that the server was processing a request but the client went away. The error message was: null</span><br></pre></td></tr></table></figure>
 
 <p>上述异常经常发生在大量高并发读写业务或者服务器端发生了比较严重的Full GC等场景下,导致某些请求无法得到及时处理,超过了时间间隔.<br>该值默认大小为60000ms,即1min.</p>
-<h3 id="hbase-client-operation-timeout"><a href="#hbase-client-operation-timeout" class="headerlink" title="hbase.client.operation.timeout"></a>hbase.client.operation.timeout</h3><p>该参数表示HBase客户端发起一次数据操作直至得到响应之间总的超时时间,数据操作类型包括get/append/increment/delete/put等.<br>很显然,hbase.rpc.timeout表示一次RPC的超时时间,而hbase.client.operation.timeout则表示一次操作的超时时间,有可能包含多个RPC请求.<br>举个例子说明,比如一次Put请求,客户端首先会将请求封装为一个caller对象,该对象发送RPC请求到服务器,假如此时因为服务器端正好发生了严重的Full GC,导致这次RPC时间超时引起SocketTimeoutException,对应的就是hbase.rpc.timeout.<br>那假如caller对象发送RPC请求之后刚好发生网络抖动,进而抛出网络异常,HBase客户端就会进行重试,重试多次之后如果总操作时间超时引起SocketTimeoutException,对应的就是hbase.client.operation.timeout.</p>
-<h3 id="hbase-client-scanner-timeout-period"><a href="#hbase-client-scanner-timeout-period" class="headerlink" title="hbase.client.scanner.timeout.period"></a>hbase.client.scanner.timeout.period</h3><p>hbase.client.operation.timeout参数规定的超时基本涉及到了HBase所有的数据操作,唯独没有scan操作.<br>然而scan操作却是最有可能发生超时的,也因此是用户最为关心的.<br>HBase当然考虑到了这点,并提供了一个单独的超时参数进行设置:hbase.client.scanner.timeout.period.<br>这个参数理解起来稍微有点复杂,需要对scan操作本身有比较全面的理解,这可能也是很多业务用户并不了解的地方.</p>
+<h4 id="hbase-client-operation-timeout"><a href="#hbase-client-operation-timeout" class="headerlink" title="hbase.client.operation.timeout"></a>hbase.client.operation.timeout</h4><p>该参数表示HBase客户端发起一次数据操作直至得到响应之间总的超时时间,数据操作类型包括get/append/increment/delete/put等.<br>很显然,hbase.rpc.timeout表示一次RPC的超时时间,而hbase.client.operation.timeout则表示一次操作的超时时间,有可能包含多个RPC请求.<br>举个例子说明,比如一次Put请求,客户端首先会将请求封装为一个caller对象,该对象发送RPC请求到服务器,假如此时因为服务器端正好发生了严重的Full GC,导致这次RPC时间超时引起SocketTimeoutException,对应的就是hbase.rpc.timeout.<br>那假如caller对象发送RPC请求之后刚好发生网络抖动,进而抛出网络异常,HBase客户端就会进行重试,重试多次之后如果总操作时间超时引起SocketTimeoutException,对应的就是hbase.client.operation.timeout.</p>
+<h4 id="hbase-client-scanner-timeout-period"><a href="#hbase-client-scanner-timeout-period" class="headerlink" title="hbase.client.scanner.timeout.period"></a>hbase.client.scanner.timeout.period</h4><p>hbase.client.operation.timeout参数规定的超时基本涉及到了HBase所有的数据操作,唯独没有scan操作.<br>然而scan操作却是最有可能发生超时的,也因此是用户最为关心的.<br>HBase当然考虑到了这点,并提供了一个单独的超时参数进行设置:hbase.client.scanner.timeout.period.<br>这个参数理解起来稍微有点复杂,需要对scan操作本身有比较全面的理解,这可能也是很多业务用户并不了解的地方.</p>
 <p>首先,我们来看一个最简单的scan操作示例:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">scan</span><span class="params">()</span> </span>&#123;</span><br><span class="line">   HTable table=(HTable) getHTablePool().getTable(<span class="string">&quot;tb_stu&quot;</span>);  </span><br><span class="line">   Scan scan=<span class="keyword">new</span> Scan(); </span><br><span class="line">   scan.setMaxResultSize(<span class="number">10000</span>); </span><br><span class="line">   scan.setCacheing(<span class="number">500</span>);</span><br><span class="line">   ResultScanner rs = table.getScanner(scan);</span><br><span class="line">   <span class="keyword">for</span> (Result r : rs) &#123;</span><br><span class="line">      <span class="keyword">for</span> (KeyValue kv : r.raw()) &#123;</span><br><span class="line">          System.out.println(String.format(<span class="string">&quot;row:%s, family:%s, qualifier:%s, qualifiervalue:%s, timestamp:%s&quot;</span>,</span><br><span class="line">                  Bytes.toString(kv.getRow()),</span><br><span class="line">                  Bytes.toString(kv.getFamily()),  </span><br><span class="line">                  Bytes.toString(kv.getQualifier()),</span><br><span class="line">                  Bytes.toString(kv.getValue()),</span><br><span class="line">                  kv.getTimestamp()));</span><br><span class="line">      ｝</span><br><span class="line">   ｝</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
@@ -358,7 +363,43 @@
 <p>可以通过修改配置文件hbase-site.xml来设置这几个参数,也可以通过代码的方式进行设置,如下所示:</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Confiuration conf = HBaseConfiguration.create();</span><br><span class="line">conf.setInt(<span class="string">&quot;hbase.rpc.timeout&quot;</span>,<span class="number">20000</span>);</span><br><span class="line">conf.setInt(<span class="string">&quot;hbase.client.operation.timeout&quot;</span>,<span class="number">30000</span>);</span><br><span class="line">conf.setInt(<span class="string">&quot;hbase.client.scanner.timeout.period&quot;</span>,<span class="number">20000</span>);</span><br><span class="line">HTable table = <span class="keyword">new</span> HTable(conf,<span class="string">&quot;tableName&quot;</span>);</span><br></pre></td></tr></table></figure>
 
+<h2 id="服务端"><a href="#服务端" class="headerlink" title="服务端"></a>服务端</h2><p>regionserver异常下线,日志如下,<br>util.Sleeper: We slept 54143ms instead of 3000ms, this is likely due to a long garbage collecting pause and it&#39;s usually bad, see <a target="_blank" rel="noopener" href="http://hbase.apache.org/book.html#trouble.rs.runtime.zkexpired">http://hbase.apache.org/book.html#trouble.rs.runtime.zkexpired</a></p>
+<h3 id="原因"><a href="#原因" class="headerlink" title="原因"></a>原因</h3><p>从下线的HRegionServer的日志中可以看到GC花了51038ms.<br>GC的时间过长,超过了HRegionServer与ZK的连接时间,被判定为异常,所以HRegionServer才被迫下线.</p>
+<h3 id="超时时间"><a href="#超时时间" class="headerlink" title="超时时间"></a>超时时间</h3><p>从HBase的配置页面上看到的信息是这样的,没有超过GC时间.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;zookeeper.session.timeout&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;90000&lt;&#x2F;value&gt;</span><br><span class="line">&lt;source&gt;hbase-site.xml&lt;&#x2F;source&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
 
+<p>官网参数描述如下,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">&lt;name&gt;zookeeper.session.timeout&lt;&#x2F;name&gt;</span><br><span class="line">&lt;value&gt;90000&lt;&#x2F;value&gt;</span><br><span class="line">&lt;description&gt;ZooKeeper session timeout in milliseconds. It is used in two different ways.</span><br><span class="line">First, this value is used in the ZK client that HBase uses to connect to the ensemble.</span><br><span class="line">It is also used by HBase when it starts a ZK server and it is passed as the &#39;maxSessionTimeout&#39;. See</span><br><span class="line">http:&#x2F;&#x2F;hadoop.apache.org&#x2F;zookeeper&#x2F;docs&#x2F;current&#x2F;zookeeperProgrammers.html#ch_zkSessions.</span><br><span class="line">For example, if a HBase region server connects to a ZK ensemble that&#39;s also managed by HBase, then the</span><br><span class="line">session timeout will be the one specified by this configuration. But, a region server that connects</span><br><span class="line">to an ensemble managed with a different configuration will be subjected that ensemble&#39;s maxSessionTimeout. So,</span><br><span class="line">even though HBase might propose using 90 seconds, the ensemble can have a max timeout lower than this and</span><br><span class="line">it will take precedence. The current default that ZK ships with is 40 seconds, which is lower than HBase&#39;s.</span><br><span class="line">&lt;&#x2F;description&gt;</span><br><span class="line">&lt;&#x2F;property&gt;</span><br></pre></td></tr></table></figure>
+
+<p>HBase建议的时间是90秒,如果全局中有比这个值低的,将优先使用这个低的值,需要注意的是zk的默认时间是40秒.</p>
+<h3 id="zookeeper源码"><a href="#zookeeper源码" class="headerlink" title="zookeeper源码"></a>zookeeper源码</h3><p>zookeeper源码中对sessionTimeOut时间的计算方式,</p>
+<img src="/images/hbq1.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/hbq2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/hbq3.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>tickTime默认3000,minSessionTimeout/maxSessionTimeout默认-1,可配置.</p>
+<blockquote>
+<p>zk配置如下</p>
+</blockquote>
+<img src="/images/hbq5.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<p>查看zk启动日志,</p>
+<img src="/images/hbq4.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<blockquote>
+<p>所以zk的连接最大超时时间应该是2000 * 20 = 40000,即40s.<br>也就是说HRegionServer与ZK的连接超时时间实际为40秒.</p>
+<p>HBase的GC一共花费了50多秒,超过了与ZK的连接时间,被判定为异常,所以被强制下线.</p>
+</blockquote>
+<h3 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h3><h4 id="zk配置"><a href="#zk配置" class="headerlink" title="zk配置"></a>zk配置</h4><p>修改zookeeper配置,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"># The number of milliseconds of each tick</span><br><span class="line">tickTime&#x3D;2000</span><br><span class="line">initLimit&#x3D;10</span><br><span class="line">syncLimit&#x3D;5</span><br><span class="line">maxClientCnxns&#x3D;2000</span><br><span class="line">minSessionTimeout&#x3D;4000</span><br><span class="line">maxSessionTimeout&#x3D;90000</span><br></pre></td></tr></table></figure>
+
+<h4 id="hbase-gc配置"><a href="#hbase-gc配置" class="headerlink" title="hbase gc配置"></a>hbase gc配置</h4><p>修改HBase配置文件hbase-env.sh,调整JVM参数.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">-XX:+UseParNewGC  #设置年轻代为并行收集</span><br><span class="line">-XX:+UseConcMarkSweepGC #使用CMS内存收集 </span><br><span class="line">-XX:+UseCompressedClassPointers #压缩类指针</span><br><span class="line">-XX:+UseCompressedOops  #压缩对象指针</span><br><span class="line">-XX:+UseCMSCompactAtFullCollection  #使用并发收集器时,开启对年老代的压缩</span><br><span class="line">-XX:CMSInitiatingOccupancyFraction&#x3D;80 #使用cms作为垃圾回收使用80％后开始CMS收集</span><br></pre></td></tr></table></figure>
+
+<p>export HBASE_OPTS=&quot;-XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseCompressedClassPointers -XX:+UseCompressedOops -XX:+UseCMSCompactAtFullCollection -XX:CMSInitiatingOccupancyFraction=80&quot;</p>
+<p>在使用下面这两个JVM参数的时候,JVM的HeapSize不能超过32G.<br>-XX:+UseCompressedClassPointers<br>-XX:+UseCompressedOops</p>
 
     </div>
 

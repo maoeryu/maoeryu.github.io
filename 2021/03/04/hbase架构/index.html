@@ -25,8 +25,8 @@
   </script>
 <meta name="description" content="HBase 表是由一个或者多个 region 组成,一个 region 由一个或者多个列蔟组成,一个列蔟由一个 store 组成,一个 store 由唯一 memstore 加上一个或者多个 HFile 组成,HFile 又是由 block 组成,而 block 是由多个 cell 组成.">
 <meta property="og:type" content="article">
-<meta property="og:title" content="hbase角色及目录结构">
-<meta property="og:url" content="https://maoeryu.github.io/2021/03/04/hbase%E8%A7%92%E8%89%B2%E5%8F%8A%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84/index.html">
+<meta property="og:title" content="hbase架构">
+<meta property="og:url" content="https://maoeryu.github.io/2021/03/04/hbase%E6%9E%B6%E6%9E%84/index.html">
 <meta property="og:site_name" content="FlyingPig">
 <meta property="og:description" content="HBase 表是由一个或者多个 region 组成,一个 region 由一个或者多个列蔟组成,一个列蔟由一个 store 组成,一个 store 由唯一 memstore 加上一个或者多个 HFile 组成,HFile 又是由 block 组成,而 block 是由多个 cell 组成.">
 <meta property="og:locale" content="en_US">
@@ -39,15 +39,21 @@
 <meta property="og:image" content="https://maoeryu.github.io/images/hbt3.png">
 <meta property="og:image" content="https://maoeryu.github.io/images/hbt5.png">
 <meta property="og:image" content="https://maoeryu.github.io/images/hbt6.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbase-admin.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbase-admin2.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbase_table.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbase_file.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbase_value.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/hbase_crud.png">
 <meta property="article:published_time" content="2021-03-03T16:00:00.000Z">
-<meta property="article:modified_time" content="2023-02-15T09:35:14.796Z">
+<meta property="article:modified_time" content="2023-02-16T08:53:46.891Z">
 <meta property="article:author" content="maoeryu">
 <meta property="article:tag" content="hbase">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://maoeryu.github.io/images/hbase_架构.png">
 
 
-<link rel="canonical" href="https://maoeryu.github.io/2021/03/04/hbase%E8%A7%92%E8%89%B2%E5%8F%8A%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84/">
+<link rel="canonical" href="https://maoeryu.github.io/2021/03/04/hbase%E6%9E%B6%E6%9E%84/">
 
 
 <script class="page-configurations">
@@ -59,7 +65,7 @@
     lang   : 'en'
   };
 </script>
-<title>hbase角色及目录结构 | FlyingPig</title>
+<title>hbase架构 | FlyingPig</title>
   
 
 
@@ -169,7 +175,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#hbase%E6%9E%B6%E6%9E%84%E5%9B%BE"><span class="nav-number">1.</span> <span class="nav-text">hbase架构图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E4%B8%80%E8%87%B4%E6%80%A7%E5%92%8C%E5%88%86%E5%8C%BA%E5%AE%B9%E9%94%99"><span class="nav-number">2.</span> <span class="nav-text">网络一致性和分区容错</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%92%E8%89%B2"><span class="nav-number">3.</span> <span class="nav-text">角色</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#client"><span class="nav-number">3.1.</span> <span class="nav-text">client</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#zookeeper"><span class="nav-number">3.2.</span> <span class="nav-text">zookeeper</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hmaster"><span class="nav-number">3.3.</span> <span class="nav-text">hmaster</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#regionserver"><span class="nav-number">3.4.</span> <span class="nav-text">regionserver</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%A8%E5%AD%98%E5%82%A8%E5%B1%82%E6%AC%A1"><span class="nav-number">4.</span> <span class="nav-text">表存储层次</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#wal"><span class="nav-number">4.1.</span> <span class="nav-text">wal</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Region"><span class="nav-number">4.2.</span> <span class="nav-text">Region</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Store"><span class="nav-number">4.3.</span> <span class="nav-text">Store</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hstore"><span class="nav-number">4.4.</span> <span class="nav-text">hstore</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Memstore"><span class="nav-number">4.5.</span> <span class="nav-text">Memstore</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#StoreFile"><span class="nav-number">4.6.</span> <span class="nav-text">StoreFile</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HFile"><span class="nav-number">4.7.</span> <span class="nav-text">HFile</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Block"><span class="nav-number">4.8.</span> <span class="nav-text">Block</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#KeyValue"><span class="nav-number">4.9.</span> <span class="nav-text">KeyValue</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%BB%E6%B5%81%E7%A8%8B"><span class="nav-number">5.</span> <span class="nav-text">读流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99%E6%B5%81%E7%A8%8B"><span class="nav-number">6.</span> <span class="nav-text">写流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zk%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-number">7.</span> <span class="nav-text">zk目录结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hdfs%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-number">8.</span> <span class="nav-text">hdfs目录结构</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A0%B9%E7%BA%A7%E7%9B%AE%E5%BD%95"><span class="nav-number">8.1.</span> <span class="nav-text">根级目录</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%90%8D%E5%AD%97%E7%A9%BA%E9%97%B4%E5%92%8C%E8%A1%A8%E7%9B%AE%E5%BD%95"><span class="nav-number">8.2.</span> <span class="nav-text">名字空间和表目录</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#region%E7%9B%AE%E5%BD%95"><span class="nav-number">8.3.</span> <span class="nav-text">region目录</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%97%E7%B0%87"><span class="nav-number">8.4.</span> <span class="nav-text">列簇</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96"><span class="nav-number">9.</span> <span class="nav-text">性能优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86"><span class="nav-number">10.</span> <span class="nav-text">集群管理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%8B%E7%BA%BF%E8%8A%82%E7%82%B9"><span class="nav-number">10.1.</span> <span class="nav-text">下线节点</span></a></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84%E5%9B%BE"><span class="nav-number">1.</span> <span class="nav-text">架构图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%92%E8%89%B2"><span class="nav-number">2.</span> <span class="nav-text">角色</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#client"><span class="nav-number">2.1.</span> <span class="nav-text">client</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#zookeeper"><span class="nav-number">2.2.</span> <span class="nav-text">zookeeper</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hmaster"><span class="nav-number">2.3.</span> <span class="nav-text">hmaster</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#regionserver"><span class="nav-number">2.4.</span> <span class="nav-text">regionserver</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%AF%E8%AF%AD"><span class="nav-number">3.</span> <span class="nav-text">术语</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#wal"><span class="nav-number">3.1.</span> <span class="nav-text">wal</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Region"><span class="nav-number">3.2.</span> <span class="nav-text">Region</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Store"><span class="nav-number">3.3.</span> <span class="nav-text">Store</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hstore"><span class="nav-number">3.4.</span> <span class="nav-text">hstore</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Memstore"><span class="nav-number">3.5.</span> <span class="nav-text">Memstore</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#StoreFile"><span class="nav-number">3.6.</span> <span class="nav-text">StoreFile</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HFile"><span class="nav-number">3.7.</span> <span class="nav-text">HFile</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Block"><span class="nav-number">3.8.</span> <span class="nav-text">Block</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#KeyValue"><span class="nav-number">3.9.</span> <span class="nav-text">KeyValue</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%BB%E5%86%99%E6%B5%81%E7%A8%8B"><span class="nav-number">4.</span> <span class="nav-text">读写流程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%BB%E6%B5%81%E7%A8%8B"><span class="nav-number">4.1.</span> <span class="nav-text">读流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%99%E6%B5%81%E7%A8%8B"><span class="nav-number">4.2.</span> <span class="nav-text">写流程</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-number">5.</span> <span class="nav-text">目录结构</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#zk%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-number">5.1.</span> <span class="nav-text">zk目录结构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hdfs%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-number">5.2.</span> <span class="nav-text">hdfs目录结构</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%A0%B9%E7%BA%A7%E7%9B%AE%E5%BD%95"><span class="nav-number">5.2.1.</span> <span class="nav-text">根级目录</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%90%8D%E5%AD%97%E7%A9%BA%E9%97%B4%E5%92%8C%E8%A1%A8%E7%9B%AE%E5%BD%95"><span class="nav-number">5.2.2.</span> <span class="nav-text">名字空间和表目录</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#region%E7%9B%AE%E5%BD%95"><span class="nav-number">5.2.3.</span> <span class="nav-text">region目录</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%97%E7%B0%87"><span class="nav-number">5.2.4.</span> <span class="nav-text">列簇</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B1%BB%E5%9B%BE"><span class="nav-number">6.</span> <span class="nav-text">类图</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#admin"><span class="nav-number">6.1.</span> <span class="nav-text">admin</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#table"><span class="nav-number">6.2.</span> <span class="nav-text">table</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#file"><span class="nav-number">6.3.</span> <span class="nav-text">file</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#value"><span class="nav-number">6.4.</span> <span class="nav-text">value</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#crud"><span class="nav-number">6.5.</span> <span class="nav-text">crud</span></a></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -183,7 +189,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">223</span>
+          <span class="site-state-item-count">219</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -237,7 +243,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/03/04/hbase%E8%A7%92%E8%89%B2%E5%8F%8A%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84/">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2021/03/04/hbase%E6%9E%B6%E6%9E%84/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -250,7 +256,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          hbase角色及目录结构
+          hbase架构
         </h1>
 
         <div class="post-meta-container">
@@ -268,7 +274,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">Edited on</span>
-        <time title="Modified: 2023-02-15 17:35:14" itemprop="dateModified" datetime="2023-02-15T17:35:14+08:00">2023-02-15</time>
+        <time title="Modified: 2023-02-16 16:53:46" itemprop="dateModified" datetime="2023-02-16T16:53:46+08:00">2023-02-16</time>
       </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -293,11 +299,11 @@
         <p>HBase 表是由一个或者多个 region 组成,<br>一个 region 由一个或者多个列蔟组成,<br>一个列蔟由一个 store 组成,<br>一个 store 由唯一 memstore 加上一个或者多个 HFile 组成,<br>HFile 又是由 block 组成,<br>而 block 是由多个 cell 组成.</p>
 <span id="more"></span>
 
-<h3 id="hbase架构图"><a href="#hbase架构图" class="headerlink" title="hbase架构图"></a>hbase架构图</h3><img src="/images/hbase_架构.png" style="margin-left: 0px; padding-bottom: 10px;">
+<h3 id="架构图"><a href="#架构图" class="headerlink" title="架构图"></a>架构图</h3><img src="/images/hbase_架构.png" style="margin-left: 0px; padding-bottom: 10px;">
 
-<h3 id="网络一致性和分区容错"><a href="#网络一致性和分区容错" class="headerlink" title="网络一致性和分区容错"></a>网络一致性和分区容错</h3><p>CAP定理指出,分布式系统可以保持以下三个特征中的两个:</p>
+<p>CAP定理指出,分布式系统可以保持以下三个特征中的两个:</p>
 <ul>
-<li><strong>C</strong> 一致性--所有节点都看到相同的数据.</li>
+<li><strong>C</strong> 网络一致性--所有节点都看到相同的数据.</li>
 <li><strong>A</strong> vailability--每个请求都会收到一个关于它是成功还是失败的响应.</li>
 <li><strong>P</strong> partition tolerance--即使系统的某些组件对其他组件不可用,系统仍会继续运行.</li>
 </ul>
@@ -338,7 +344,7 @@
 <li>hregion由多个hstore组成</li>
 <li>每个hstore对应了table中的一个column family存储.</li>
 </ul>
-<h3 id="表存储层次"><a href="#表存储层次" class="headerlink" title="表存储层次"></a>表存储层次</h3><h4 id="wal"><a href="#wal" class="headerlink" title="wal"></a>wal</h4><ul>
+<h3 id="术语"><a href="#术语" class="headerlink" title="术语"></a>术语</h3><h4 id="wal"><a href="#wal" class="headerlink" title="wal"></a>wal</h4><ul>
 <li>在写入memstore时,也会写入到wal中.</li>
 <li>wal定期滚动,已持久化的数据会删除wal.</li>
 <li>hbase启动时,首先会处理wal,将不同region数据进行拆分,放到相应region目录下.</li>
@@ -433,7 +439,7 @@
 <blockquote>
 <p>Row,Column Family 都有一个 length 标志,为什么 Column Qualifier 没有呢?<br>由于 Key 中其它的字段占用大小已经知道,并且知道整个 Key 的大小,因此没有存储 Column Qualifier 的大小.<br>Column Qualifier 的 Length 可以由 key length 减去其他 length 得到,这样可以减少一定的存储量.</p>
 </blockquote>
-<h3 id="读流程"><a href="#读流程" class="headerlink" title="读流程"></a>读流程</h3><ul>
+<h3 id="读写流程"><a href="#读写流程" class="headerlink" title="读写流程"></a>读写流程</h3><h4 id="读流程"><a href="#读流程" class="headerlink" title="读流程"></a>读流程</h4><ul>
 <li>客户端联系zk</li>
 <li><ul>
 <li>通过-ROOT-的region服务器</li>
@@ -453,7 +459,7 @@
 <p>如果在Memstore中查到结果则直接将结果返回给Client.</p>
 <p>在Memstore中没有查到匹配的数据,接下来会读已持久化的StoreFile文件中的数据.<br>StoreFile也是按key排序的树形结构的文件,并且是特别为范围查询或block查询优化过的.<br>另外HBase读取磁盘文件是按其基本I/O单元(即HBase Block)读数据的.</p>
 <p>如果在BlockCache中能查到要造的数据则这届返回结果,否则就读去相应的StoreFile文件中读取一block的数据.<br>如果还没有读到要查的数据,就将该数据block放到HRegion Server的blockcache中.<br>然后接着读下一block块儿的数据,一直到这样循环的block数据直到找到要请求的数据并返回结果.<br>如果将该 Region中的数据都没有查到要找的数据,最后接直接返回null,表示没有找的匹配的数据.<br>当然blockcache会在其大小大于阀值(heapsize * hfile.block.cache.size * 0.85)后启动基于LRU算法的淘汰机制,将最老最不常用的block删除.</p>
-<h3 id="写流程"><a href="#写流程" class="headerlink" title="写流程"></a>写流程</h3><ul>
+<h4 id="写流程"><a href="#写流程" class="headerlink" title="写流程"></a>写流程</h4><ul>
 <li>当向hregionserver发起写入请求时,其会将请求交给对应的hregion实例来处理.</li>
 <li>第一步是决定数据是否需要写到由hlog类实现的预定日志中.</li>
 <li>一旦写入到WAL中,数据就会被放到memstore中,同时检查memstore是否满.</li>
@@ -464,11 +470,11 @@
 <p>region关闭前的预刷写</p>
 </blockquote>
 <p>当region被要求关闭时,首先检查memstore,大于<code>hbase.hregion.preclose.flush.size</code>(默认5MB)的memstore会刷写到磁盘,然后在最后一轮阻塞正常访问的刷写后关闭region.</p>
-<h3 id="zk目录结构"><a href="#zk目录结构" class="headerlink" title="zk目录结构"></a>zk目录结构</h3><p>可在hbase shell中执行<code>zk_dump</code>命令,或在zk cli中查看.</p>
+<h3 id="目录结构"><a href="#目录结构" class="headerlink" title="目录结构"></a>目录结构</h3><h4 id="zk目录结构"><a href="#zk目录结构" class="headerlink" title="zk目录结构"></a>zk目录结构</h4><p>可在hbase shell中执行<code>zk_dump</code>命令,或在zk cli中查看.</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">hbase(main):002:0&gt; zk_dump</span><br><span class="line">HBase is rooted at &#x2F;hbase</span><br><span class="line">Active master address: oceanbase004,16000,1611810141749</span><br><span class="line">Backup master addresses:</span><br><span class="line">Region server holding hbase:meta: oceanbase004,16020,1611810151896</span><br><span class="line">Region servers:</span><br><span class="line"> oceanbase004,16023,1611810184591</span><br><span class="line"> oceanbase004,16021,1611810173825</span><br><span class="line"> oceanbase004,16024,1611810186065</span><br><span class="line"> oceanbase004,16020,1611810151896</span><br><span class="line"> oceanbase004,16022,1611810183418</span><br><span class="line">&#x2F;hbase&#x2F;replication: </span><br><span class="line">&#x2F;hbase&#x2F;replication&#x2F;peers: </span><br><span class="line">&#x2F;hbase&#x2F;replication&#x2F;rs: </span><br><span class="line">&#x2F;hbase&#x2F;replication&#x2F;rs&#x2F;oceanbase004,16022,1611810183418: </span><br><span class="line">&#x2F;hbase&#x2F;replication&#x2F;rs&#x2F;oceanbase004,16020,1611810151896: </span><br><span class="line">&#x2F;hbase&#x2F;replication&#x2F;rs&#x2F;oceanbase004,16024,1611810186065: </span><br><span class="line">&#x2F;hbase&#x2F;replication&#x2F;rs&#x2F;oceanbase004,16021,1611810173825: </span><br><span class="line">&#x2F;hbase&#x2F;replication&#x2F;rs&#x2F;oceanbase004,16023,1611810184591: </span><br><span class="line">Quorum Server Statistics:</span><br><span class="line"> localhost:2181</span><br><span class="line">  Zookeeper version: 3.4.10-39d3a4f269333c922ed3db283be479f9deacaa0f, built on 03&#x2F;23&#x2F;2017 10:13 GMT</span><br><span class="line">  Clients:</span><br><span class="line">   &#x2F;127.0.0.1:34698[1](queued&#x3D;0,recved&#x3D;2427162,sent&#x3D;2427166)</span><br></pre></td></tr></table></figure>
 
-<h3 id="hdfs目录结构"><a href="#hdfs目录结构" class="headerlink" title="hdfs目录结构"></a>hdfs目录结构</h3><p>/hbase/data/{namespace}/{tablename}/{md5(regionname)}/{columnfamily}/{filename}</p>
-<h4 id="根级目录"><a href="#根级目录" class="headerlink" title="根级目录"></a>根级目录</h4><p>一级目录:/hbase<br>配置项:<code>&lt;name&gt;hbase.rootdir&lt;/name&gt;</code></p>
+<h4 id="hdfs目录结构"><a href="#hdfs目录结构" class="headerlink" title="hdfs目录结构"></a>hdfs目录结构</h4><p>/hbase/data/{namespace}/{tablename}/{md5(regionname)}/{columnfamily}/{filename}</p>
+<h5 id="根级目录"><a href="#根级目录" class="headerlink" title="根级目录"></a>根级目录</h5><p>一级目录:/hbase<br>配置项:<code>&lt;name&gt;hbase.rootdir&lt;/name&gt;</code></p>
 <p>二级目录:hbase.id,hbase.version,WALs,oldWALs,data</p>
 <img src="/images/hbt2.png" style="margin-left: 0px; padding-bottom: 10px;">
 
@@ -530,30 +536,27 @@
 <p><code>hbase.regionserver.logroll.period</code><br>日志文件被滚动,默认60分钟.</p>
 <p>当所有修改都被持久化到文件时,日志文件会被放到oldWALs目录下.<br><code>hbase.master.logcleaner.ttl</code><br>旧日志文件被master删除,默认10分钟.</p>
 <p><code>hbase.master.cleaner.interval</code><br>master每分钟检查一次这些文件.</p>
-<h4 id="名字空间和表目录"><a href="#名字空间和表目录" class="headerlink" title="名字空间和表目录"></a>名字空间和表目录</h4><p>三级目录:hbase,default<br>四级目录:表名</p>
+<h5 id="名字空间和表目录"><a href="#名字空间和表目录" class="headerlink" title="名字空间和表目录"></a>名字空间和表目录</h5><p>三级目录:hbase,default<br>四级目录:表名</p>
 <p>hbase这个namespace下面存储了HBase的namespace/meta/acl 三个表.<br>如果没有开启HBase权限的话不会有acl这个表.<br>启用HBase授权,设置<code>hbase.security.authorization = true</code>.</p>
 <p>default是默认的名字空间,下面是创建的表,每个表目录下是region目录,包含:<br>region名(837ae58c50606ffbfc24d7af57641899,encoded_regionname即region编码名),<br>.tmp(中间临时数据,当.tableinfo被更新时该目录就会被用到),<br>.tabledesc(表的元数据目录)</p>
 <img src="/images/hbt5.png" style="margin-left: 0px; padding-bottom: 10px;">
 
-<h4 id="region目录"><a href="#region目录" class="headerlink" title="region目录"></a>region目录</h4><p>五级目录:region名(MD5值)<br>包含:<br>.regioninfo(region描述目录),<br>.tmp(存储临时文件,比如某个合并产生的重新写回的文件),<br>d(列簇名),<br>recovered.edits(WAL日志回放目录)</p>
+<h5 id="region目录"><a href="#region目录" class="headerlink" title="region目录"></a>region目录</h5><p>五级目录:region名(MD5值)<br>包含:<br>.regioninfo(region描述目录),<br>.tmp(存储临时文件,比如某个合并产生的重新写回的文件),<br>d(列簇名),<br>recovered.edits(WAL日志回放目录)</p>
 <img src="/images/hbt6.png" style="margin-left: 0px; padding-bottom: 10px;">
 
-<h4 id="列簇"><a href="#列簇" class="headerlink" title="列簇"></a>列簇</h4><p>列簇下为文件名<br>/hbase/data/default/xx1/837ae58c50606ffbfc24d7af57641899/d/ dd0127dca17d4803ac68c37ef84fe853</p>
-<h3 id="性能优化"><a href="#性能优化" class="headerlink" title="性能优化"></a>性能优化</h3><p>1.预防拆分/合并风暴<br>关闭自动拆分,使用手动拆分.</p>
-<p>2.region热点<br>预拆分region.</p>
-<p>3.禁止自动刷写<br>使用扫描缓存,限定扫描范围.</p>
-<p>4.关闭resultscanner/scan<br>5.减少zk超时时间<br><code>zookeeper.session.timeout</code>,默认3分钟.</p>
-<p>6.增加处理线程<br><code>hbase.regionserver.handler.count</code>,默认10个.</p>
-<p>7.增加region大小<br><code>hbase.hregion.max.filesize</code>,默认256MB.</p>
-<p>8.调整块缓存大小<br><code>perf.hfile.block.cache.size</code>,默认0.2<br>控制堆中块缓存大小.<br>在读请求下,增加这个值,让更多块缓存,观察是否存在块被换出的情况.</p>
-<p>9.调整memstore限制<br><code>hbase.regionserver.global.memstore.upperlimit</code>,默认0.4.<br>上限表示内存存储占用的堆大小.</p>
-<p><code>hbase.regionserver.global.memstore.lowerlimit</code>,默认0.35.<br>下限控制当服务器清空memstore后剩余的大小.</p>
-<p>将上下限设置接近可以避免过度刷写.</p>
-<p>当主要为读请求时,可以同时减少memstore的上下限来增加块缓存的空间,块缓存和memstore总占比不超过0.6.</p>
-<p>10.增加阻塞时存储文件数量<br><code>hbase.hstore.blockingstorefiles</code>,默认7.<br>当存储文件数量达到时,将阻塞客户端put/delete等操作.</p>
-<p>11.增加阻塞倍率<br><code>hbase.hregion.memstore.block.multiplier</code>,默认2.<br>当memstore达到属性flush大小限制时,阻止更新操作.</p>
-<p>12.减少最大日志文件限制<br><code>hbase.regionserver.maxlogs</code>,默认32.</p>
-<h3 id="集群管理"><a href="#集群管理" class="headerlink" title="集群管理"></a>集群管理</h3><h4 id="下线节点"><a href="#下线节点" class="headerlink" title="下线节点"></a>下线节点</h4><p>节点下线前需禁用负载均衡,使用脚本<code>graceful_stop.sh</code><br>来下线regionserver,脚本传入hostname参数</p>
+<h5 id="列簇"><a href="#列簇" class="headerlink" title="列簇"></a>列簇</h5><p>列簇下为文件名<br>/hbase/data/default/xx1/837ae58c50606ffbfc24d7af57641899/d/ dd0127dca17d4803ac68c37ef84fe853</p>
+<h3 id="类图"><a href="#类图" class="headerlink" title="类图"></a>类图</h3><h4 id="admin"><a href="#admin" class="headerlink" title="admin"></a>admin</h4><img src="/images/hbase-admin.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<img src="/images/hbase-admin2.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<!-- more -->
+<h4 id="table"><a href="#table" class="headerlink" title="table"></a>table</h4><img src="/images/hbase_table.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="file"><a href="#file" class="headerlink" title="file"></a>file</h4><img src="/images/hbase_file.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="value"><a href="#value" class="headerlink" title="value"></a>value</h4><img src="/images/hbase_value.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="crud"><a href="#crud" class="headerlink" title="crud"></a>crud</h4><img src="/images/hbase_crud.png" style="margin-left: 0px; padding-bottom: 10px;">
 
     </div>
 
@@ -570,13 +573,13 @@
 
           <div class="post-nav">
             <div class="post-nav-item">
-                <a href="/2021/03/04/shell%E5%8F%98%E9%87%8F%E5%8F%96%E5%80%BC%E7%94%A8%E6%B3%95/" rel="prev" title="shell变量取值用法">
-                  <i class="fa fa-chevron-left"></i> shell变量取值用法
+                <a href="/2021/03/04/hbase%E7%9A%84rowkey%E8%AE%BE%E8%AE%A1/" rel="prev" title="hbase的rowkey设计">
+                  <i class="fa fa-chevron-left"></i> hbase的rowkey设计
                 </a>
             </div>
             <div class="post-nav-item">
-                <a href="/2021/03/04/hbase%E7%B1%BB%E5%9B%BE/" rel="next" title="hbase类图">
-                  hbase类图 <i class="fa fa-chevron-right"></i>
+                <a href="/2021/03/04/hbase%20filter/" rel="next" title="hbase filter">
+                  hbase filter <i class="fa fa-chevron-right"></i>
                 </a>
             </div>
           </div>
