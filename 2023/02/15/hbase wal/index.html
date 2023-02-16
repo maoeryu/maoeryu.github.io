@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"maoeryu.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.2.1","exturl":false,"sidebar":{"position":"left","width":200,"display":"post","padding":7,"offset":5},"copycode":true,"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="Write Ahead Log (WAL)将 HBase 中数据的所有更改记录到基于文件的存储中.在正常操作下,不需要 WAL,因为数据更改从 MemStore 移动到 StoreFiles.但是,如果 RegionServer 在刷新 MemStore 之前崩溃或变得不可用,则 WAL 确保可以重放对数据的更改.如果写入 WAL 失败,则整个修改数据的操作失败. HBase 使用WAL接口的实现">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hbase wal">
+<meta property="og:url" content="https://maoeryu.github.io/2023/02/15/hbase%20wal/index.html">
+<meta property="og:site_name" content="FlyingPig">
+<meta property="og:description" content="Write Ahead Log (WAL)将 HBase 中数据的所有更改记录到基于文件的存储中.在正常操作下,不需要 WAL,因为数据更改从 MemStore 移动到 StoreFiles.但是,如果 RegionServer 在刷新 MemStore 之前崩溃或变得不可用,则 WAL 确保可以重放对数据的更改.如果写入 WAL 失败,则整个修改数据的操作失败. HBase 使用WAL接口的实现">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1403.png">
+<meta property="article:published_time" content="2023-02-14T16:00:00.000Z">
+<meta property="article:modified_time" content="2023-02-15T02:37:35.256Z">
+<meta property="article:author" content="maoeryu">
+<meta property="article:tag" content="hbase">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1403.png">
+
+
+<link rel="canonical" href="https://maoeryu.github.io/2023/02/15/hbase%20wal/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>hbase wal | FlyingPig</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">FlyingPig</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%A5%E5%BF%97"><span class="nav-number">1.</span> <span class="nav-text">日志</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MultiWAL"><span class="nav-number">2.</span> <span class="nav-text">MultiWAL</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-MultiWAL"><span class="nav-number">2.1.</span> <span class="nav-text">配置 MultiWAL</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#WAL-Flushing"><span class="nav-number">3.</span> <span class="nav-text">WAL Flushing</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#WAL-Splitting"><span class="nav-number">4.</span> <span class="nav-text">WAL Splitting</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%87%E7%A8%8B-%E6%97%A5%E5%BF%97%E6%8B%86%E5%88%86-%E4%B8%80%E6%AD%A5%E4%B8%80%E6%AD%A5"><span class="nav-number">4.1.</span> <span class="nav-text">过程:日志拆分,一步一步</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E6%8B%86%E5%88%86%E8%BF%87%E7%A8%8B%E4%B8%AD%E7%9A%84%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86"><span class="nav-number">4.2.</span> <span class="nav-text">日志拆分过程中的错误处理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8B%86%E5%88%86%E5%B4%A9%E6%BA%83%E7%9A%84-RegionServer-%E7%9A%84-WAL-%E6%97%B6%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86-EOFExceptions"><span class="nav-number">4.3.</span> <span class="nav-text">拆分崩溃的 RegionServer 的 WAL 时如何处理 EOFExceptions</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E6%8B%86%E5%88%86%E6%9C%9F%E9%97%B4%E7%9A%84%E6%80%A7%E8%83%BD%E6%94%B9%E8%BF%9B"><span class="nav-number">4.4.</span> <span class="nav-text">日志拆分期间的性能改进</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%90%AF%E7%94%A8%E6%88%96%E7%A6%81%E7%94%A8%E5%88%86%E5%B8%83%E5%BC%8F%E6%97%A5%E5%BF%97%E6%8B%86%E5%88%86"><span class="nav-number">4.5.</span> <span class="nav-text">启用或禁用分布式日志拆分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E6%97%A5%E5%BF%97%E6%8B%86%E5%88%86-%E4%B8%80%E6%AD%A5%E4%B8%80%E6%AD%A5"><span class="nav-number">4.6.</span> <span class="nav-text">分布式日志拆分,一步一步</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%A6%82%E6%9E%9C%E5%90%AF%E7%94%A8%E4%BA%86%E5%88%86%E5%B8%83%E5%BC%8F%E6%97%A5%E5%BF%97%E5%A4%84%E7%90%86-HMaster-%E4%BC%9A%E5%9C%A8%E9%9B%86%E7%BE%A4%E5%90%AF%E5%8A%A8%E6%97%B6%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E6%8B%86%E5%88%86%E6%97%A5%E5%BF%97%E7%AE%A1%E7%90%86%E5%99%A8%E5%AE%9E%E4%BE%8B"><span class="nav-number">4.6.1.</span> <span class="nav-text">如果启用了分布式日志处理,HMaster 会在集群启动时创建一个拆分日志管理器实例.</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%8B%86%E5%88%86%E6%97%A5%E5%BF%97%E7%AE%A1%E7%90%86%E5%99%A8%E7%9B%91%E6%8E%A7%E6%97%A5%E5%BF%97%E6%8B%86%E5%88%86%E4%BB%BB%E5%8A%A1%E5%92%8C%E5%B7%A5%E4%BD%9C%E8%80%85"><span class="nav-number">4.6.2.</span> <span class="nav-text">拆分日志管理器监控日志拆分任务和工作者.</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%AF%8F%E4%B8%AA-RegionServer-%E7%9A%84%E6%8B%86%E5%88%86%E6%97%A5%E5%BF%97%E5%B7%A5%E4%BD%9C%E8%80%85%E6%89%A7%E8%A1%8C%E6%97%A5%E5%BF%97%E6%8B%86%E5%88%86%E4%BB%BB%E5%8A%A1"><span class="nav-number">4.6.3.</span> <span class="nav-text">每个 RegionServer 的拆分日志工作者执行日志拆分任务.</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#%E6%8B%86%E5%88%86%E6%97%A5%E5%BF%97%E5%B7%A5%E4%BD%9C%E8%80%85%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86%E4%BB%BB%E5%8A%A1"><span class="nav-number">4.6.3.1.</span> <span class="nav-text">拆分日志工作者如何处理任务</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%8B%86%E5%88%86%E6%97%A5%E5%BF%97%E7%AE%A1%E7%90%86%E5%99%A8%E7%9B%91%E8%A7%86%E6%9C%AA%E5%AE%8C%E6%88%90%E7%9A%84%E4%BB%BB%E5%8A%A1"><span class="nav-number">4.6.4.</span> <span class="nav-text">拆分日志管理器监视未完成的任务.</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E6%97%A5%E5%BF%97%E9%87%8D%E6%94%BE"><span class="nav-number">4.7.</span> <span class="nav-text">分布式日志重放</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%90%AF%E7%94%A8%E5%88%86%E5%B8%83%E5%BC%8F%E6%97%A5%E5%BF%97%E9%87%8D%E6%94%BE"><span class="nav-number">4.8.</span> <span class="nav-text">启用分布式日志重放</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A6%81%E7%94%A8-WAL"><span class="nav-number">5.</span> <span class="nav-text">禁用 WAL</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">maoeryu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">223</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">50</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://maoeryu.github.io/2023/02/15/hbase%20wal/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="maoeryu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="FlyingPig">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          hbase wal
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2023-02-15 00:00:00 / Modified: 10:37:35" itemprop="dateCreated datePublished" datetime="2023-02-15T00:00:00+08:00">2023-02-15</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>Write Ahead Log (WAL)将 HBase 中数据的所有更改记录到基于文件的存储中.<br>在正常操作下,不需要 WAL,因为数据更改从 MemStore 移动到 StoreFiles.<br>但是,<font color="blue">如果 RegionServer 在刷新 MemStore 之前崩溃或变得不可用,则 WAL 确保可以重放对数据的更改</font>.<br>如果写入 WAL 失败,则整个修改数据的操作失败.</p>
+<p>HBase 使用WAL接口的实现.<br>通常,<font color="blue">每个 RegionServer 只有一个 WAL 实例</font>.<br>RegionServer 在将它们记录到受影响的Store 的MemStore之前记录 Puts 和 Deletes 到它.</p>
+<span id="more"></span>
+<h3 id="日志"><a href="#日志" class="headerlink" title="日志"></a>日志</h3><p>在 2.0 之前,HBase 中 WAL 的接口被命名为HLog.<br>在 0.94 中,HLog 是 WAL 实现的名称.<br>您可能会在为这些旧版本定制的文档中找到对 HLog 的引用.</p>
+<p>WAL 驻留在 HDFS 的<font color="red">/hbase/WALs/</font>目录中(在 HBase 0.94 之前,它们存储在/hbase/.logs/中),每个区域都有子目录.</p>
+<img src="/images/fly1403.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h3 id="MultiWAL"><a href="#MultiWAL" class="headerlink" title="MultiWAL"></a>MultiWAL</h3><p>每个 RegionServer 有一个 WAL,RegionServer 必须串行写入 WAL,因为 HDFS 文件必须是顺序的.<br>这导致 WAL 成为性能瓶颈.</p>
+<p>HBase 1.0 在HBASE-5699中引入了对 MultiWal 的支持.<br>MultiWAL 允许 RegionServer 通过在底层 HDFS 实例中使用多个管道并行写入多个 WAL 流,这增加了写入期间的总吞吐量.<br>这种并行化是通过按区域对传入的编辑进行分区来完成的.<br>因此,当前的实现无助于增加单个区域的吞吐量.</p>
+<p>使用原始 WAL 实现的 RegionServer 和使用 MultiWAL 实现的 RegionServer 都可以处理任一组 WAL 的恢复,因此可以<font color="blue">通过滚动重启实现零停机配置更新</font>.</p>
+<h4 id="配置-MultiWAL"><a href="#配置-MultiWAL" class="headerlink" title="配置 MultiWAL"></a>配置 MultiWAL</h4><p>要为 RegionServer 配置 MultiWAL,请通过粘贴以下 XML将属性的值设置<code>hbase.wal.provider</code>为:multiwal</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">name</span>&gt;</span>hbase.wal.provider<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">value</span>&gt;</span>multiwal<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>重新启动 RegionServer 以使更改生效.<br>要为 RegionServer 禁用 MultiWAL,请取消设置该属性并重新启动 RegionServer.</p>
+<h3 id="WAL-Flushing"><a href="#WAL-Flushing" class="headerlink" title="WAL Flushing"></a>WAL Flushing</h3><h3 id="WAL-Splitting"><a href="#WAL-Splitting" class="headerlink" title="WAL Splitting"></a>WAL Splitting</h3><p>RegionServer 服务于许多区域.<br>区域服务器中的所有区域共享相同的活动 WAL 文件.<br>WAL 文件中的每个编辑都包含有关它属于哪个区域的信息.<br>当一个区域被打开时,属于该区域的 WAL 文件中的编辑需要被重放.<br>因此,WAL 文件中的编辑必须按区域分组,以便可以重放特定集以重新生成特定区域中的数据.<br>按区域对 WAL 编辑进行分组的过程称为日志拆分.<br>如果区域服务器发生故障,它是恢复数据的关键过程.</p>
+<p>日志拆分在集群启动期间由 HMaster 完成,或在区域服务器关闭时由 ServerShutdownHandler 完成.<br>为了保证一致性,受影响的区域在数据恢复之前不可用.<br>在给定区域再次可用之前,需要恢复和重放所有 WAL 编辑.<br>因此,在该过程完成之前,受日志拆分影响的区域不可用.</p>
+<h4 id="过程-日志拆分-一步一步"><a href="#过程-日志拆分-一步一步" class="headerlink" title="过程:日志拆分,一步一步"></a>过程:日志拆分,一步一步</h4><p>1.<code>/hbase/WALs/&lt;host&gt;,&lt;port&gt;,&lt;startcode&gt;</code>目录已重命名.<br>重命名目录很重要,因为 RegionServer 可能仍在运行并接受请求,即使 HMaster 认为它已关闭.<br>如果 RegionServer 没有立即响应并且没有心跳它的 ZooKeeper 会话,HMaster 可能会将此解释为 RegionServer 故障.<br>重命名日志目录可确保活跃但繁忙的 RegionServer 仍在使用的现有有效 WAL 文件不会被意外写入.</p>
+<p>新目录根据以下模式命名:<code>/hbase/WALs/&lt;host&gt;,&lt;port&gt;,&lt;startcode&gt;-splitting</code></p>
+<p>2.每个日志文件都被拆分,一次一个.<br>日志拆分器一次读取日志文件一个编辑条目,并将每个编辑条目放入与编辑区域对应的缓冲区中.<br>同时,拆分器启动多个写入器线程.<br>Writer threads 获取相应的缓冲区并将缓冲区中的编辑条目写入临时恢复的编辑文件.<br>临时编辑文件使用以下命名模式存储到磁盘:<code>/hbase/&lt;table_name&gt;/&lt;region_id&gt;/recovered.edits/.temp</code><br>此文件用于存储此区域的 WAL 日志中的所有编辑.<br>日志拆分完成后,.temp文件将重命名为写入该文件的第一个日志的序列 ID.</p>
+<p>为了确定是否所有编辑都已写入,将序列 ID 与写入 HFile 的最后编辑的序列进行比较.<br>如果最后一次编辑的sequence大于等于文件名中包含的sequence ID,则说明该edit文件的所有写入已经完成.</p>
+<p>3.日志拆分完成后,每个受影响的region都会分配给一个RegionServer.<br>当区域打开时,将检查<font color="blue">recovered.edits</font>文件夹中是否有恢复的编辑文件.<br>如果存在任何此类文件,则通过读取编辑并将它们保存到 MemStore 来重放它们.<br>回放完所有编辑文件后,将MemStore的内容写入磁盘(HFile),删除编辑文件.</p>
+<h4 id="日志拆分过程中的错误处理"><a href="#日志拆分过程中的错误处理" class="headerlink" title="日志拆分过程中的错误处理"></a>日志拆分过程中的错误处理</h4><p>如果将<code>hbase.hlog.split.skip.errors</code>选项设置为true,错误将按如下方式处理:</p>
+<ol>
+<li>拆分过程中遇到的任何错误都将被记录下来.</li>
+<li>有问题的 WAL 日志将被移动到hbase 下rootdir的<code>.corrupt</code>目录中.</li>
+<li>WAL 的处理将继续.</li>
+</ol>
+<p>如果该hbase.hlog.split.skip.errors选项设置为false(默认值),则将传播异常并将拆分记录为失败.<br>请参阅HBASE-2958 当 hbase.hlog.split.skip.errors 设置为 false 时,我们无法进行拆分,但仅此而已.<br>如果设置了这个标志,我们需要做的不仅仅是失败拆分.</p>
+<h4 id="拆分崩溃的-RegionServer-的-WAL-时如何处理-EOFExceptions"><a href="#拆分崩溃的-RegionServer-的-WAL-时如何处理-EOFExceptions" class="headerlink" title="拆分崩溃的 RegionServer 的 WAL 时如何处理 EOFExceptions"></a>拆分崩溃的 RegionServer 的 WAL 时如何处理 EOFExceptions</h4><p>如果在拆分日志时发生 EOFException,即使hbase.hlog.split.skip.errors设置为false,拆分也会继续.<br>读取要拆分的文件集中的最后一个日志时可能会出现 EOFException,因为 RegionServer 可能在崩溃时正在写入记录.<br>背景参见HBASE-2643 图how to deal with eof splitting logs</p>
+<h4 id="日志拆分期间的性能改进"><a href="#日志拆分期间的性能改进" class="headerlink" title="日志拆分期间的性能改进"></a>日志拆分期间的性能改进</h4><p>WAL 日志拆分和恢复可能会占用大量资源并花费很长时间,具体取决于崩溃中涉及的 RegionServer 数量和区域大小.<br><code>distributed.log.splitting</code>是为了提高日志拆分期间的性能而开发的.</p>
+<h4 id="启用或禁用分布式日志拆分"><a href="#启用或禁用分布式日志拆分" class="headerlink" title="启用或禁用分布式日志拆分"></a>启用或禁用分布式日志拆分</h4><p>从 HBase 0.92 开始,默认启用分布式日志处理.<br>该设置由属性控制<code>hbase.master.distributed.log.splitting</code>,可以设置为true或false,但默认为true.</p>
+<h4 id="分布式日志拆分-一步一步"><a href="#分布式日志拆分-一步一步" class="headerlink" title="分布式日志拆分,一步一步"></a>分布式日志拆分,一步一步</h4><p>配置分布式日志拆分后,HMaster控制进程.<br>HMaster将各个RegionServer注册到日志拆分过程中,实际拆分日志的工作由RegionServers完成.<br>日志拆分的一般过程,如分布式日志拆分,逐步说明中所述,此处仍然适用.</p>
+<h5 id="如果启用了分布式日志处理-HMaster-会在集群启动时创建一个拆分日志管理器实例"><a href="#如果启用了分布式日志处理-HMaster-会在集群启动时创建一个拆分日志管理器实例" class="headerlink" title="如果启用了分布式日志处理,HMaster 会在集群启动时创建一个拆分日志管理器实例."></a>如果启用了分布式日志处理,HMaster 会在集群启动时创建一个拆分日志管理器实例.</h5><ol>
+<li>拆分日志管理器管理所有需要扫描和拆分的日志文件.</li>
+<li>拆分日志管理器将所有日志作为任务放入 ZooKeeper 拆分日志节点 ( /hbase/splitlog ).</li>
+<li>您可以通过发出以下zkCli命令来查看 splitlog 的内容.</li>
+</ol>
+<p>显示示例输出.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ls &#x2F;hbase&#x2F;splitlog</span><br><span class="line"></span><br><span class="line">[hdfs%3A%2F%2Fhost2.sample.com%3A56020%2Fhbase%2F.logs%2Fhost8.sample.com%2C57020%2C1340474893275-splitting%2Fhost8.sample.com%253A57020.1340474893900,</span><br><span class="line">hdfs%3A%2F%2Fhost2.sample.com%3A56020%2Fhbase%2F.logs%2Fhost3.sample.com%2C57020%2C1340474893299-splitting%2Fhost3.sample.com%253A57020.1340474893931,</span><br><span class="line">hdfs%3A%2F%2Fhost2.sample.com%3A56020%2Fhbase%2F.logs%2Fhost4.sample.com%2C57020%2C1340474893287-splitting%2Fhost4.sample.com%253A57020.1340474893946]</span><br></pre></td></tr></table></figure>
+
+<p>输出包含一些非 ASCII 字符.<br>解码后,它看起来更简单:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[hdfs:&#x2F;&#x2F;host2.sample.com:56020&#x2F;hbase&#x2F;.logs</span><br><span class="line">&#x2F;host8.sample.com,57020,1340474893275-splitting</span><br><span class="line">&#x2F;host8.sample.com%3A57020.1340474893900,</span><br><span class="line">hdfs:&#x2F;&#x2F;host2.sample.com:56020&#x2F;hbase&#x2F;.logs</span><br><span class="line">&#x2F;host3.sample.com,57020,1340474893299-splitting</span><br><span class="line">&#x2F;host3.sample.com%3A57020.1340474893931,</span><br><span class="line">hdfs:&#x2F;&#x2F;host2.sample.com:56020&#x2F;hbase&#x2F;.logs</span><br><span class="line">&#x2F;host4.sample.com,57020,1340474893287-splitting</span><br><span class="line">&#x2F;host4.sample.com%3A57020.1340474893946]</span><br></pre></td></tr></table></figure>
+
+<p>列表表示要扫描和拆分的 WAL 文件名,这是一个日志拆分任务列表.</p>
+<h5 id="拆分日志管理器监控日志拆分任务和工作者"><a href="#拆分日志管理器监控日志拆分任务和工作者" class="headerlink" title="拆分日志管理器监控日志拆分任务和工作者."></a>拆分日志管理器监控日志拆分任务和工作者.</h5><p>拆分日志管理器负责以下正在进行的任务:</p>
+<ul>
+<li>一旦拆分日志管理器将所有任务发布到splitlog znode,它就会监视这些任务节点并等待它们被处理.</li>
+<li>检查是否有任何死的分裂日志工作者排队.<br>如果它发现没有响应的工作人员要求的任务,它将重新提交这些任务.<br>如果由于某些 ZooKeeper 异常而导致重新提交失败,则死掉的工作人员将再次排队等待重试.</li>
+<li>检查是否有任何未分配的任务.<br>如果找到,它会创建一个临时的重新扫描节点,以便通知每个拆分日志工作者通过nodeChildrenChanged ZooKeeper 事件重新扫描未分配的任务.</li>
+<li>检查已分配但已过期的任务.<br>如果找到任何一个,它们将TASK_UNASSIGNED再次移回状态,以便可以重试.<br>有可能这些任务被分配给了慢工,或者它们可能已经完成了.<br>这不是问题,因为日志拆分任务具有幂等性.<br>换句话说,同一个日志拆分任务可以处理多次而不会出现问题.</li>
+<li>拆分日志管理器不断监视 HBase 拆分日志 znode.<br>如果任何拆分日志任务节点数据发生更改,拆分日志管理器将检索节点数据.<br>节点数据包含任务的当前状态.<br>您可以使用该zkCli get命令来检索任务的当前状态.<br>在下面的示例输出中,输出的第一行显示任务当前未分配.</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">get &#x2F;hbase&#x2F;splitlog&#x2F;hdfs%3A%2F%2Fhost2.sample.com%3A56020%2Fhbase%2F.logs%2Fhost6.sample.com%2C57020%2C1340474893287-splitting%2Fhost6.sample.com%253A57020.1340474893945</span><br><span class="line"></span><br><span class="line">unassigned host2.sample.com:57000</span><br><span class="line">cZxid &#x3D; 0×7115</span><br><span class="line">ctime &#x3D; Sat Jun 23 11:13:40 PDT 2012</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p>根据数据被更改的任务的状态,拆分日志管理器执行以下操作之一:</p>
+<ul>
+<li>如果未分配,请重新提交任务</li>
+<li>如果分配了任务,则对任务进行心跳</li>
+<li>如果任务已辞职,则重新提交或失败(请参阅任务失败的原因)</li>
+<li>如果任务完成时出现错误,则重新提交或失败(请参阅任务失败的原因)</li>
+<li>如果由于错误而无法完成任务,则重新提交或失败任务(请参阅任务失败的原因)</li>
+<li>如果成功完成或失败则删除任务</li>
+</ul>
+<blockquote>
+<p>任务失败的原因</p>
+</blockquote>
+<ol>
+<li>任务已删除.</li>
+<li>该节点不再存在.</li>
+<li>日志状态管理器无法将任务状态移动到TASK_UNASSIGNED.</li>
+<li>重新提交的次数超过了重新提交的阈值.</li>
+</ol>
+<h5 id="每个-RegionServer-的拆分日志工作者执行日志拆分任务"><a href="#每个-RegionServer-的拆分日志工作者执行日志拆分任务" class="headerlink" title="每个 RegionServer 的拆分日志工作者执行日志拆分任务."></a>每个 RegionServer 的拆分日志工作者执行日志拆分任务.</h5><p>每个 RegionServer 都运行一个名为split log worker 的守护线程,它负责拆分日志.<br>守护线程在 RegionServer 启动时启动,并注册自己以监视 HBase znode.<br>如果任何 splitlog znode 子节点发生变化,它会通知休眠的工作线程醒来并获取更多任务.<br>如果 worker 的当前任务的节点数据发生变化,则该 worker 会检查该任务是否已被另一个 worker 接管.<br>如果是这样,工作线程将停止处理当前任务.</p>
+<p>worker 不断地监控 splitlog znode.<br>当一个新任务出现时,拆分日志工作者检索任务路径并检查每个路径,直到它找到一个无人认领的任务,它会尝试认领该任务.<br>state如果声明成功,它会尝试执行任务并根据拆分结果更新任务的属性.<br>此时,split log worker 扫描另一个无人认领的任务.</p>
+<h6 id="拆分日志工作者如何处理任务"><a href="#拆分日志工作者如何处理任务" class="headerlink" title="拆分日志工作者如何处理任务"></a>拆分日志工作者如何处理任务</h6><ol>
+<li>它查询任务状态,并且仅当任务处于&quot;TASK_UNASSIGNED&quot;状态时才采取行动.</li>
+<li>如果任务处于TASK_UNASSIGNED状态,工作人员会尝试自行将状态设置为TASK_OWNED.<br>如果设置状态失败,另一个工作人员将尝试获取它.<br>如果任务仍未分配,拆分日志管理器还将要求所有工作人员稍后重新扫描.</li>
+<li>如果 worker 成功获得任务的所有权,它会尝试再次获取任务状态以确保它确实是异步获取的.<br>同时,它启动一个拆分任务执行器来完成实际工作:</li>
+</ol>
+<ul>
+<li>获取HBase根文件夹,在根目录下创建临时文件夹,将日志文件拆分到临时文件夹中.</li>
+<li>如果拆分成功,则任务执行器将任务设置为 state TASK_DONE.</li>
+<li>如果 worker 捕获到意外的 IOException,任务将设置为 state TASK_ERR.</li>
+<li>如果 worker 正在关闭,则将任务设置为 state TASK_RESIGNED.</li>
+<li>如果任务被另一个工作人员接管,则将其记录下来.</li>
+</ul>
+<h5 id="拆分日志管理器监视未完成的任务"><a href="#拆分日志管理器监视未完成的任务" class="headerlink" title="拆分日志管理器监视未完成的任务."></a>拆分日志管理器监视未完成的任务.</h5><p>当所有任务都成功完成时,拆分日志管理器返回.<br>如果所有任务都完成但有一些失败,拆分日志管理器会抛出异常,以便重试日志拆分.<br>由于异步实现,在极少数情况下,拆分日志管理器会丢失对某些已完成任务的跟踪.<br>因此,它会定期检查其任务映射或 ZooKeeper 中是否还有未完成的任务.<br>如果没有找到,它会抛出异常,以便可以立即重试日志拆分,而不是挂在那里等待不会发生的事情.</p>
+<h4 id="分布式日志重放"><a href="#分布式日志重放" class="headerlink" title="分布式日志重放"></a>分布式日志重放</h4><p>一个 RegionServer 发生故障后,其故障区域将分配给另一个 RegionServer,这些区域服务器在 ZooKeeper 中被标记为&quot;recovering&quot;.<br>拆分日志工作者直接将发生故障的 RegionServer 的 WAL 中的编辑重播到其新位置的区域.<br>当一个region处于&quot;recovering&quot;状态时,它可以接受写但不能读(包括Append和Increment),region分裂或合并.</p>
+<p>分布式日志重播扩展了<code>[distributed.log.splitting]</code>框架.<br>它通过直接将 WAL 编辑重播到另一个 RegionServer 而不是创建<code>recovered.edits</code>文件来工作.<br>与单独的分布式日志拆分相比,它具有以下优点:</p>
+<ol>
+<li>它消除了写入和读取大量recovered.edits文件的开销.<br>在 RegionServer 恢复期间同时创建和写入数千个recovered.edits文件并不罕见.<br>许多小的随机写入会降低整体系统性能.</li>
+<li>即使区域处于恢复状态,它也允许写入.<br>恢复区域只需几秒钟即可再次接受写入.</li>
+</ol>
+<h4 id="启用分布式日志重放"><a href="#启用分布式日志重放" class="headerlink" title="启用分布式日志重放"></a>启用分布式日志重放</h4><p>要启用分布式日志重播,请设置<code>hbase.master.distributed.log.replay</code>为true.<br>这将是 HBase 0.99 ( HBASE-10888 )的默认值.</p>
+<p>您还必须启用 HFile 版本 3(这是从 HBase 0.99 开始的默认 HFile 格式.<br>请参阅HBASE-10855).<br>分布式日志重放对于滚动升级是不安全的.</p>
+<h3 id="禁用-WAL"><a href="#禁用-WAL" class="headerlink" title="禁用 WAL"></a>禁用 WAL</h3><p>可以禁用 WAL,以提高某些特定情况下的性能.<br>但是,禁用 WAL 会使您的数据面临风险.<br>建议这样做的唯一情况是在批量加载期间.<br>这是因为,如果出现问题,可以重新运行批量加载,而没有数据丢失的风险.</p>
+<p>通过调用 HBase 客户端字段禁用 WAL Mutation.writeToWAL(false).<br>使用Mutation.setDurability(Durability.SKIP_WAL)和 Mutation.getDurability() 方法设置和获取字段的值.<br>无法仅针对特定表禁用 WAL.</p>
+<p>如果您为批量加载以外的任何事情禁用 WAL,您的数据就会面临风险.</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/hbase/" rel="tag"># hbase</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2023/02/06/flume%20try/" rel="prev" title="flume try">
+                  <i class="fa fa-chevron-left"></i> flume try
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">maoeryu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
