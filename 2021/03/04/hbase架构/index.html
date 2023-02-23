@@ -31,9 +31,13 @@
 <meta property="og:description" content="HBase 表是由一个或者多个 region 组成,一个 region 由一个或者多个列蔟组成,一个列蔟由一个 store 组成,一个 store 由唯一 memstore 加上一个或者多个 HFile 组成,HFile 又是由 block 组成,而 block 是由多个 cell 组成.">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="https://maoeryu.github.io/images/hbase_架构.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1416.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1417.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1418.png">
 <meta property="og:image" content="https://maoeryu.github.io/images/hbase_wal.png">
-<meta property="og:image" content="https://maoeryu.github.io/images/hbt1.png">
 <meta property="og:image" content="https://maoeryu.github.io/images/hbase_region查找.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1420.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1419.png">
 <meta property="og:image" content="https://maoeryu.github.io/images/hbt2.png">
 <meta property="og:image" content="https://maoeryu.github.io/images/hbt4.png">
 <meta property="og:image" content="https://maoeryu.github.io/images/hbt3.png">
@@ -46,7 +50,7 @@
 <meta property="og:image" content="https://maoeryu.github.io/images/hbase_value.png">
 <meta property="og:image" content="https://maoeryu.github.io/images/hbase_crud.png">
 <meta property="article:published_time" content="2021-03-03T16:00:00.000Z">
-<meta property="article:modified_time" content="2023-02-16T08:53:46.891Z">
+<meta property="article:modified_time" content="2023-02-22T11:44:55.661Z">
 <meta property="article:author" content="maoeryu">
 <meta property="article:tag" content="hbase">
 <meta name="twitter:card" content="summary">
@@ -175,7 +179,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84%E5%9B%BE"><span class="nav-number">1.</span> <span class="nav-text">架构图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%92%E8%89%B2"><span class="nav-number">2.</span> <span class="nav-text">角色</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#client"><span class="nav-number">2.1.</span> <span class="nav-text">client</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#zookeeper"><span class="nav-number">2.2.</span> <span class="nav-text">zookeeper</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hmaster"><span class="nav-number">2.3.</span> <span class="nav-text">hmaster</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#regionserver"><span class="nav-number">2.4.</span> <span class="nav-text">regionserver</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%AF%E8%AF%AD"><span class="nav-number">3.</span> <span class="nav-text">术语</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#wal"><span class="nav-number">3.1.</span> <span class="nav-text">wal</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Region"><span class="nav-number">3.2.</span> <span class="nav-text">Region</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Store"><span class="nav-number">3.3.</span> <span class="nav-text">Store</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hstore"><span class="nav-number">3.4.</span> <span class="nav-text">hstore</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Memstore"><span class="nav-number">3.5.</span> <span class="nav-text">Memstore</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#StoreFile"><span class="nav-number">3.6.</span> <span class="nav-text">StoreFile</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HFile"><span class="nav-number">3.7.</span> <span class="nav-text">HFile</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Block"><span class="nav-number">3.8.</span> <span class="nav-text">Block</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#KeyValue"><span class="nav-number">3.9.</span> <span class="nav-text">KeyValue</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%BB%E5%86%99%E6%B5%81%E7%A8%8B"><span class="nav-number">4.</span> <span class="nav-text">读写流程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%BB%E6%B5%81%E7%A8%8B"><span class="nav-number">4.1.</span> <span class="nav-text">读流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%99%E6%B5%81%E7%A8%8B"><span class="nav-number">4.2.</span> <span class="nav-text">写流程</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-number">5.</span> <span class="nav-text">目录结构</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#zk%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-number">5.1.</span> <span class="nav-text">zk目录结构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hdfs%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-number">5.2.</span> <span class="nav-text">hdfs目录结构</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%A0%B9%E7%BA%A7%E7%9B%AE%E5%BD%95"><span class="nav-number">5.2.1.</span> <span class="nav-text">根级目录</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%90%8D%E5%AD%97%E7%A9%BA%E9%97%B4%E5%92%8C%E8%A1%A8%E7%9B%AE%E5%BD%95"><span class="nav-number">5.2.2.</span> <span class="nav-text">名字空间和表目录</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#region%E7%9B%AE%E5%BD%95"><span class="nav-number">5.2.3.</span> <span class="nav-text">region目录</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%97%E7%B0%87"><span class="nav-number">5.2.4.</span> <span class="nav-text">列簇</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B1%BB%E5%9B%BE"><span class="nav-number">6.</span> <span class="nav-text">类图</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#admin"><span class="nav-number">6.1.</span> <span class="nav-text">admin</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#table"><span class="nav-number">6.2.</span> <span class="nav-text">table</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#file"><span class="nav-number">6.3.</span> <span class="nav-text">file</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#value"><span class="nav-number">6.4.</span> <span class="nav-text">value</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#crud"><span class="nav-number">6.5.</span> <span class="nav-text">crud</span></a></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84%E5%9B%BE"><span class="nav-number">1.1.</span> <span class="nav-text">架构图</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.2.</span> <span class="nav-text">数据模型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%89%A9%E7%90%86%E8%A7%86%E5%9B%BE"><span class="nav-number">1.3.</span> <span class="nav-text">物理视图</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A7%92%E8%89%B2"><span class="nav-number">1.4.</span> <span class="nav-text">角色</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#client"><span class="nav-number">1.4.1.</span> <span class="nav-text">client</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#zookeeper"><span class="nav-number">1.4.2.</span> <span class="nav-text">zookeeper</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#hmaster"><span class="nav-number">1.4.3.</span> <span class="nav-text">hmaster</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#regionserver"><span class="nav-number">1.4.4.</span> <span class="nav-text">regionserver</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%AF%E8%AF%AD"><span class="nav-number">2.</span> <span class="nav-text">术语</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#wal"><span class="nav-number">2.1.</span> <span class="nav-text">wal</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#BlockCache"><span class="nav-number">2.2.</span> <span class="nav-text">BlockCache</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Region"><span class="nav-number">2.3.</span> <span class="nav-text">Region</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Store"><span class="nav-number">2.4.</span> <span class="nav-text">Store</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Memstore"><span class="nav-number">2.5.</span> <span class="nav-text">Memstore</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HFile"><span class="nav-number">2.6.</span> <span class="nav-text">HFile</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Block"><span class="nav-number">2.7.</span> <span class="nav-text">Block</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#KeyValue"><span class="nav-number">2.8.</span> <span class="nav-text">KeyValue</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%BA%E5%88%B6"><span class="nav-number">3.</span> <span class="nav-text">机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#WAL%E6%9C%BA%E5%88%B6"><span class="nav-number">3.1.</span> <span class="nav-text">WAL机制</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#HLog%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="nav-number">3.1.1.</span> <span class="nav-text">HLog的生命周期</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#%E4%BA%A7%E7%94%9F"><span class="nav-number">3.1.1.1.</span> <span class="nav-text">产生</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#%E6%BB%9A%E5%8A%A8"><span class="nav-number">3.1.1.2.</span> <span class="nav-text">滚动</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#%E8%BF%87%E6%9C%9F"><span class="nav-number">3.1.1.3.</span> <span class="nav-text">过期</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#%E5%88%A0%E9%99%A4"><span class="nav-number">3.1.1.4.</span> <span class="nav-text">删除</span></a></li></ol></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MemStore%E5%88%B7%E7%9B%98"><span class="nav-number">3.2.</span> <span class="nav-text">MemStore刷盘</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Region%E6%8B%86%E5%88%86"><span class="nav-number">3.3.</span> <span class="nav-text">Region拆分</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Region%E6%8B%86%E5%88%86%E6%B5%81%E7%A8%8B"><span class="nav-number">3.3.1.</span> <span class="nav-text">Region拆分流程</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Region%E5%90%88%E5%B9%B6"><span class="nav-number">3.4.</span> <span class="nav-text">Region合并</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%B0%8F%E5%90%88%E5%B9%B6-Minor-Compaction"><span class="nav-number">3.4.1.</span> <span class="nav-text">小合并(Minor Compaction)</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%A4%A7%E5%90%88%E5%B9%B6-Major-Compation"><span class="nav-number">3.4.2.</span> <span class="nav-text">大合并(Major Compation)</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E7%AE%97%E6%B3%95"><span class="nav-number">3.4.3.</span> <span class="nav-text">具体算法</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#RegionServer%E6%95%85%E9%9A%9C%E6%81%A2%E5%A4%8D"><span class="nav-number">3.5.</span> <span class="nav-text">RegionServer故障恢复</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%BB%E5%86%99%E6%B5%81%E7%A8%8B"><span class="nav-number">4.</span> <span class="nav-text">读写流程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Region%E5%AF%BB%E5%9D%80%E6%96%B9%E5%BC%8F"><span class="nav-number">4.1.</span> <span class="nav-text">Region寻址方式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%BB%E6%B5%81%E7%A8%8B"><span class="nav-number">4.2.</span> <span class="nav-text">读流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%99%E6%B5%81%E7%A8%8B"><span class="nav-number">4.3.</span> <span class="nav-text">写流程</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-number">5.</span> <span class="nav-text">目录结构</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#zk%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-number">5.1.</span> <span class="nav-text">zk目录结构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#hdfs%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-number">5.2.</span> <span class="nav-text">hdfs目录结构</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%A0%B9%E7%BA%A7%E7%9B%AE%E5%BD%95"><span class="nav-number">5.2.1.</span> <span class="nav-text">根级目录</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%90%8D%E5%AD%97%E7%A9%BA%E9%97%B4%E5%92%8C%E8%A1%A8%E7%9B%AE%E5%BD%95"><span class="nav-number">5.2.2.</span> <span class="nav-text">名字空间和表目录</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#region%E7%9B%AE%E5%BD%95"><span class="nav-number">5.2.3.</span> <span class="nav-text">region目录</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%97%E7%B0%87"><span class="nav-number">5.2.4.</span> <span class="nav-text">列簇</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B1%BB%E5%9B%BE"><span class="nav-number">6.</span> <span class="nav-text">类图</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#admin"><span class="nav-number">6.1.</span> <span class="nav-text">admin</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#table"><span class="nav-number">6.2.</span> <span class="nav-text">table</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#file"><span class="nav-number">6.3.</span> <span class="nav-text">file</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#value"><span class="nav-number">6.4.</span> <span class="nav-text">value</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#crud"><span class="nav-number">6.5.</span> <span class="nav-text">crud</span></a></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -274,7 +278,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">Edited on</span>
-        <time title="Modified: 2023-02-16 16:53:46" itemprop="dateModified" datetime="2023-02-16T16:53:46+08:00">2023-02-16</time>
+        <time title="Modified: 2023-02-22 19:44:55" itemprop="dateModified" datetime="2023-02-22T19:44:55+08:00">2023-02-22</time>
       </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -299,7 +303,7 @@
         <p>HBase 表是由一个或者多个 region 组成,<br>一个 region 由一个或者多个列蔟组成,<br>一个列蔟由一个 store 组成,<br>一个 store 由唯一 memstore 加上一个或者多个 HFile 组成,<br>HFile 又是由 block 组成,<br>而 block 是由多个 cell 组成.</p>
 <span id="more"></span>
 
-<h3 id="架构图"><a href="#架构图" class="headerlink" title="架构图"></a>架构图</h3><img src="/images/hbase_架构.png" style="margin-left: 0px; padding-bottom: 10px;">
+<h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><h4 id="架构图"><a href="#架构图" class="headerlink" title="架构图"></a>架构图</h4><img src="/images/hbase_架构.png" style="margin-left: 0px; padding-bottom: 10px;">
 
 <p>CAP定理指出,分布式系统可以保持以下三个特征中的两个:</p>
 <ul>
@@ -308,7 +312,23 @@
 <li><strong>P</strong> partition tolerance--即使系统的某些组件对其他组件不可用,系统仍会继续运行.</li>
 </ul>
 <p>HBase 偏向于一致性和分区容忍度.</p>
-<h3 id="角色"><a href="#角色" class="headerlink" title="角色"></a>角色</h3><h4 id="client"><a href="#client" class="headerlink" title="client"></a>client</h4><blockquote>
+<h4 id="数据模型"><a href="#数据模型" class="headerlink" title="数据模型"></a>数据模型</h4><img src="/images/fly1416.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<ol>
+<li>Namespace(表命名空间)<br>表命名空间不是强制的,如果想把多个表分到一个组去统一管理的时候才会用到表命名空间.</li>
+<li>Table(表)<br>一个表由一个或者多个列族组成.</li>
+<li>Row(行)<br>一个行包含了多个列,这些列通过列族来分类.<br>行中的数据所属列族只能从该表所定义的列族中选取,不能定义这个表中不存在的列族.</li>
+<li>Column Family(列族)<br>列族是多个列的集合.</li>
+<li>Column Qualifier(列)<br>多个列组成一个行.<br>列族和列用<code>Column Family:Column Qualifier</code>表示.<br>列是可以随意定义的,一个行中的列不限名字,不限数量,只限定列族.</li>
+<li>Cell(单元格)<br>一个列中可以存储多个版本的数据,每个版本就称为一个Cell.<br>也就是说在HBase中一个列可以保存多个版本的数据.</li>
+<li>Timestamp(时间戳/版本号)<br>用来标定同一个列中多个Cell的版本号.<br>当在插入数据的时候,如果不指定版本号,系统会自动采用系统的当前时间戳来作为版本号,也可以手动指定一个数字作为版本号.</li>
+<li>Rowkey(行键)<br>用来标识表中唯一的一行数据,以字节数组形式存储,类似关系型数据库中表的主键.<br>rowkey在HBase中时严格按照<font color="red">字典序</font>排序的.</li>
+</ol>
+<h4 id="物理视图"><a href="#物理视图" class="headerlink" title="物理视图"></a>物理视图</h4><p>在物理存储上,数据是以Key-Vaule对形式存储,每个Key-Value只存储一个Cell里面的数据,不同的列族存储在不同的文件中,每个逻辑单元格(Cell)会对应一行数据,有Timestamp标记版本,每次插入/删除都会生成一行数据(append-only,写效率高).</p>
+<img src="/images/fly1417.png" style="margin-left: 0px; padding-bottom: 10px;">
+<img src="/images/fly1418.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<h4 id="角色"><a href="#角色" class="headerlink" title="角色"></a>角色</h4><h5 id="client"><a href="#client" class="headerlink" title="client"></a>client</h5><blockquote>
 <p>rpc交互</p>
 </blockquote>
 <ul>
@@ -316,35 +336,36 @@
 <li>对于管理类操作,client与hmaster进行rpc通信.</li>
 <li>对于数据类操作,client与hregionserver进行rpc交互.</li>
 </ul>
-<h4 id="zookeeper"><a href="#zookeeper" class="headerlink" title="zookeeper"></a>zookeeper</h4><blockquote>
+<h5 id="zookeeper"><a href="#zookeeper" class="headerlink" title="zookeeper"></a>zookeeper</h5><blockquote>
 <p>多hmaster选举<br>服务器状态同步</p>
 </blockquote>
 <ul>
-<li>存储hbase元数据信息.</li>
-<li>实时监控regionserver上/下线信息,存储所有region的寻址入口.</li>
-<li>保证hbase集群只有一个hmaster.</li>
+<li>为HBase提供Failover机制,选举master,避免master单点故障问题.</li>
+<li>存储所有Region的寻址入口,保存hbase:meta表信息.</li>
+<li>实时监控RegionServer的状态,将RegionServer的上线和下线信息实时通知给master.</li>
+<li>存储HBase的Schema,包括有哪些Table,每个Table有哪些Column Family.</li>
 </ul>
-<h4 id="hmaster"><a href="#hmaster" class="headerlink" title="hmaster"></a>hmaster</h4><blockquote>
+<h5 id="hmaster"><a href="#hmaster" class="headerlink" title="hmaster"></a>hmaster</h5><blockquote>
 <p>table和region的管理</p>
 </blockquote>
 <ul>
-<li>管理用户对table的增/删/改/查操作.</li>
 <li>管理regionserver的负载均衡,调整region分布.</li>
 <li>在region分裂后,负责新region的分配.</li>
 <li>在regionserver死机后,负责失效regionserver上的region迁移.</li>
 <li>hdfs上的垃圾文件回收.</li>
-<li>处理schema更新请求.</li>
+<li>处理schema更新请求(table的增/删/改/查操作).</li>
 </ul>
-<h4 id="regionserver"><a href="#regionserver" class="headerlink" title="regionserver"></a>regionserver</h4><blockquote>
+<h5 id="regionserver"><a href="#regionserver" class="headerlink" title="regionserver"></a>regionserver</h5><p>RegionServer内部管理一个或多个Region.<br>Region许多Store组成.<br>每个Store对用Table中的一个列族存储,即一个Store管理一个Region上的一个列族.<br>每个Store包含一个MemStore和0到多个StoreFile.</p>
+<blockquote>
 <p>响应用户i/o请求<br>向hdfs读写数据</p>
 </blockquote>
 <ul>
-<li>内部管理一系列hregion对象.</li>
-<li>每个hregion对应了table中的一个region.</li>
-<li>hregion由多个hstore组成</li>
-<li>每个hstore对应了table中的一个column family存储.</li>
+<li>维护Master分配给它的Region,处理Client对这些Region的IO请求.</li>
+<li>负责Region的Split、Compaction.</li>
 </ul>
-<h3 id="术语"><a href="#术语" class="headerlink" title="术语"></a>术语</h3><h4 id="wal"><a href="#wal" class="headerlink" title="wal"></a>wal</h4><ul>
+<h3 id="术语"><a href="#术语" class="headerlink" title="术语"></a>术语</h3><p>用户写入的数据先写入WAL,然后写入MemStore,当MemStore满了以后会Flush成一个StoreFile(存储为HFile),当StoreFile数量到达一定阈值,会触发Compact合并,将多个StoreFile合并成一个StoreFile.<br>StoreFiles合并后会逐渐形成越来越大的StoreFile,当Region内的所有的StoreFiles的总的大小超过阈值(<code>hbase.hregion.max.filesize</code>)会触发Split操作.<br>会把当前Region Split成两个Region,父Region下线,新Split的两个子Region被Master分配到合适的RegionServer上,使得原先一个Region的压力分流到两个Region上.</p>
+<h4 id="wal"><a href="#wal" class="headerlink" title="wal"></a>wal</h4><p>预写日志(Write Ahead Log).<br>当操作到达Region的时候,HBase先把数据写到WAL中,再把数据写到MemStore中,等数据达到阈值时才会被刷写(flush)到最终存储的HFile中.<br>WAL是一个保险机制,这样在Region的机器宕机时,由于WAL的数据是存储在HDFS中的,可以从WAL中恢复数据,所以数据并不会丢失.</p>
+<ul>
 <li>在写入memstore时,也会写入到wal中.</li>
 <li>wal定期滚动,已持久化的数据会删除wal.</li>
 <li>hbase启动时,首先会处理wal,将不同region数据进行拆分,放到相应region目录下.</li>
@@ -352,26 +373,13 @@
 </ul>
 <img src="/images/hbase_wal.png" style="margin-left: 0px; padding-bottom: 10px;">
 
-<h4 id="Region"><a href="#Region" class="headerlink" title="Region"></a>Region</h4><p>Region 类似于数据库的分片和分区的概念,每个 Region 负责一小部分 Rowkey 范围的数据的读写和维护.<br>这样即使是一张巨大的表,由于被切割到不同的 Region,访问起来的时延也很低.</p>
-<p>Region 包含了对应的起始行到结束行的所有信息.</p>
-<img src="/images/hbt1.png" style="margin-left: 0px; padding-bottom: 10px;">
+<h4 id="BlockCache"><a href="#BlockCache" class="headerlink" title="BlockCache"></a>BlockCache</h4><p>读缓存,用于在内存中缓存经常被读的数据.<br>Least Recently Used (LRU) 数据在存满时会被失效.</p>
+<h4 id="Region"><a href="#Region" class="headerlink" title="Region"></a>Region</h4><p>Region相当于一个数据的分片.<br>每一个Region都有起始rowkey和结束rowkey,这表示了Region的存储的row的范围.<br>一个RegionServer包含多个Region,一个表的一段键值在一个RegionServer上会产生一个Region.<br>在一个RegionServer中有一个或多个Region.</p>
+<img src="/images/hbase_region查找.png" width="600" style="margin-left: 0px; padding-bottom: 10px;">
 
-<img src="/images/hbase_region查找.png" style="margin-left: 0px; padding-bottom: 10px;">
-
-<h4 id="Store"><a href="#Store" class="headerlink" title="Store"></a>Store</h4><p>Store 是存储所有写入表中信息的实体,并且当数据需要从表中读取时也将被用到.<br><code>A Store is the same thing as a ColumnFamily</code>.<br>一个 Store 等价一个列簇.</p>
-<h4 id="hstore"><a href="#hstore" class="headerlink" title="hstore"></a>hstore</h4><blockquote>
-<p>hbase存储的核心<br>由memstore和storefile组成</p>
-</blockquote>
-<ul>
-<li>memstore(sorted memory buffer),用户写入的数据首先放入memstore.</li>
-<li>当memstore满了会flush成一个storefile(底层实现是hfile).</li>
-<li>当storefile文件数量增长到一定阀值,会触发compact,并逐步形成更大的storefile.</li>
-<li>当单个storefile大小超过阀值时,会触发split,拆分成两个region,父region下线.</li>
-</ul>
-<h4 id="Memstore"><a href="#Memstore" class="headerlink" title="Memstore"></a>Memstore</h4><p>HBase 是基于 LSM-Tree 模型的,所有的数据更新插入操作都首先写入 Memstore 中(同时会顺序写到日志HLog中),达到指定大小之后再将这些修改操作批量写入磁盘,生成一个新的 HFile 文件,这种设计可以极大地提升 HBase 的写入性能.<br>每一个 Store 里面都有一个 Memstore, MemStore 保存对 Store 的内存修改.<br>修改是 Cells / KeyValues.</p>
-<h4 id="StoreFile"><a href="#StoreFile" class="headerlink" title="StoreFile"></a>StoreFile</h4><p>StoreFile 为 HFile 上的一层类封装.<br><code>A StoreFile is a facade of HFile</code>.</p>
-<h4 id="HFile"><a href="#HFile" class="headerlink" title="HFile"></a>HFile</h4><p>HFile 对应的列蔟.<br>当内存写满必须要刷新到磁盘时,HFile 就会被创建,所以 HFile 存放的是某个时刻的 MemStore 刷写时的快照,一个完整的行的数据可能存放在多个 HFile 里.<br>随着时间推移,HFile 最终会被压缩(即合并)成大文件.<br>HFile 是 HBase 用来存储数据的文件格式.</p>
-<p>HFile 由不同种类的 block 块组成(索引块和数据块).<br>HFile 存储在 HDFS 上,因此获得 HDFS 的持久化和多副本的优势.</p>
+<h4 id="Store"><a href="#Store" class="headerlink" title="Store"></a>Store</h4><p>一个Region包含多个Store,一个列族分为一个Store,如果一个表只有一个列族,那么这个表在这台机器上的每一个Region里面都只有一个Store.<br>Store是HBase的存储核心,一个Store里面有一个MemStore和一个或多个HFile.</p>
+<h4 id="Memstore"><a href="#Memstore" class="headerlink" title="Memstore"></a>Memstore</h4><p>有序的内存缓冲区,用于缓存还未被持久化到磁盘的数据,在持久化之前会先将数据排序,每个Region的每个列族(Store)都有一个 MemStore.</p>
+<h4 id="HFile"><a href="#HFile" class="headerlink" title="HFile"></a>HFile</h4><p>真正存在硬盘上的,对数据按照Rowkey排好序的键值对文件.<br>每次MemStore的flush会产生新的HFile文件.</p>
 <h4 id="Block"><a href="#Block" class="headerlink" title="Block"></a>Block</h4><p>HFile 由 block 组成,不要与 HDFS 的 block 混淆了.<br>一个 HDFS 数据块可以包含很多 HFile block.<br>HFile block 通常在 8kb 和 1MB 之间,默认大小是 64kb(在建表语句中可以通过参数 BlockSize 指定).<br>如果一个表配置了压缩选项,HBase 仍会产生了 64kb 大小 block,然后压缩 block.<br>根据数据的大小以及压缩格式,压缩后的 block 存储在磁盘的大小也不一样.</p>
 <p>每个 block 的大小可以在创建表列簇的时候通过参数 blocksize ＝&gt; &#39;65535&#39; 进行指定,默认为 64k,大号的 Block 有利于顺序 Scan,小号 Block 利于随机查询,因而需要权衡.</p>
 <p>如果将 block size 配置得很小,将会产生过多的 HFile block 索引,这将会给内存造成压力.</p>
@@ -439,37 +447,75 @@
 <blockquote>
 <p>Row,Column Family 都有一个 length 标志,为什么 Column Qualifier 没有呢?<br>由于 Key 中其它的字段占用大小已经知道,并且知道整个 Key 的大小,因此没有存储 Column Qualifier 的大小.<br>Column Qualifier 的 Length 可以由 key length 减去其他 length 得到,这样可以减少一定的存储量.</p>
 </blockquote>
-<h3 id="读写流程"><a href="#读写流程" class="headerlink" title="读写流程"></a>读写流程</h3><h4 id="读流程"><a href="#读流程" class="headerlink" title="读流程"></a>读流程</h4><ul>
-<li>客户端联系zk</li>
-<li><ul>
-<li>通过-ROOT-的region服务器</li>
-</ul>
-</li>
-<li><ul>
-<li>查询.META.表中对应的region服务器名</li>
-</ul>
-</li>
-<li><ul>
-<li>再查找row</li>
-</ul>
-</li>
-<li>联系hregionserver,查找数据</li>
-</ul>
-<p>Client会通过内部缓存的相关的-ROOT-中的信息和.META.中的信息直接连接与请求数据匹配的HRegion server.<br>然后直接定位到该服务器上与客户请求对应的Region,客户请求首先会查询该Region在内存中的缓存-Memstore(Memstore是一个按key排序的树形结构的缓冲区).</p>
-<p>如果在Memstore中查到结果则直接将结果返回给Client.</p>
-<p>在Memstore中没有查到匹配的数据,接下来会读已持久化的StoreFile文件中的数据.<br>StoreFile也是按key排序的树形结构的文件,并且是特别为范围查询或block查询优化过的.<br>另外HBase读取磁盘文件是按其基本I/O单元(即HBase Block)读数据的.</p>
-<p>如果在BlockCache中能查到要造的数据则这届返回结果,否则就读去相应的StoreFile文件中读取一block的数据.<br>如果还没有读到要查的数据,就将该数据block放到HRegion Server的blockcache中.<br>然后接着读下一block块儿的数据,一直到这样循环的block数据直到找到要请求的数据并返回结果.<br>如果将该 Region中的数据都没有查到要找的数据,最后接直接返回null,表示没有找的匹配的数据.<br>当然blockcache会在其大小大于阀值(heapsize * hfile.block.cache.size * 0.85)后启动基于LRU算法的淘汰机制,将最老最不常用的block删除.</p>
-<h4 id="写流程"><a href="#写流程" class="headerlink" title="写流程"></a>写流程</h4><ul>
-<li>当向hregionserver发起写入请求时,其会将请求交给对应的hregion实例来处理.</li>
-<li>第一步是决定数据是否需要写到由hlog类实现的预定日志中.</li>
-<li>一旦写入到WAL中,数据就会被放到memstore中,同时检查memstore是否满.</li>
-<li>如果满了就会被请求刷写到磁盘中.</li>
-<li>刷写请求由另外一个hregionserver的线程处理,它会把数据写成一个新hfile.</li>
-</ul>
+<h3 id="机制"><a href="#机制" class="headerlink" title="机制"></a>机制</h3><h4 id="WAL机制"><a href="#WAL机制" class="headerlink" title="WAL机制"></a>WAL机制</h4><p>WAL(Write-Ahead Log,预写日志)主要用来来解决宕机之后的操作恢复问题的.<br>数据到达Region的时候会先写入WAL,然后再被写入MemStore.<br>就算Region的机器宕掉了,由于WAL的数据时存储在HDFS中的,所以数据并不会丢失,还可以从WAL中恢复.</p>
+<h5 id="HLog的生命周期"><a href="#HLog的生命周期" class="headerlink" title="HLog的生命周期"></a>HLog的生命周期</h5><h6 id="产生"><a href="#产生" class="headerlink" title="产生"></a>产生</h6><p>所有涉及到数据的变更都会先写到HLog中,除非是关闭了HLog.</p>
+<h6 id="滚动"><a href="#滚动" class="headerlink" title="滚动"></a>滚动</h6><p>HLog的大小可以通过参数<code>hbase.regionserver.logroll.period</code>来控制,默认是1小时,时间达到该参数设置的时间,HBase会创建一个新的HLog文件.<br>这就实现了HLog滚动的目的.<br>HBase通过<code>hbase.regionserver.maxlogs</code>参数控制HLog的个数.<br>滚动的目的是为了避免单个HLog文件过大的情况,方便后续的过期和删除.</p>
+<h6 id="过期"><a href="#过期" class="headerlink" title="过期"></a>过期</h6><p>HLog的过期依赖于sequenceid的判断.<br>HBase会将HLog的sequenceid和HFile最大的sequenceid(刷新到的最新位置)进行比较,如果该HLog文件中的sequenceid比刷新的最新位置的sequenceid都要小,那么这个HLog就过期了,对应HLog会被移动到<code>/hbase/oldWALs</code>目录.</p>
+<p>因为HBase有主从同步的功能,这个是依赖于HLog来同步HBase的变更,所以HLog虽然过期,也不会立即删除,而是移动到别的目录中.<br>再增加对应的检查和保留时间机制.</p>
+<h6 id="删除"><a href="#删除" class="headerlink" title="删除"></a>删除</h6><p>如果HBase开启了replication,当replication执行完一个HLog的时候,会删除Zookeeper上的对应HLog节点,在HLog被移动到<code>/hbase/oldWALs</code>目录后,HBase每隔<code>hbase.master.cleaner.interval</code>(默认60秒)时间会去检查<code>/hbase/oldWALs</code>目录下的所有HLog,确认对应的Zookeeper的HLog节点是否被删除,如果Zookeeper上不存在对应的HLog节点,那么久直接删除对应的HLog.</p>
+<p><code>hbase.master.logcleaner.ttl</code>(默认10分钟)这个参数用来控制<code>HLog在/hbase/oldWALs</code>目录保留的最长时间.</p>
+<h4 id="MemStore刷盘"><a href="#MemStore刷盘" class="headerlink" title="MemStore刷盘"></a>MemStore刷盘</h4><p>为了提高HBase的写入性能,当写请求写入MemStore后,不会立即刷盘,而是会等到一定的时候再进行刷盘操作.<br>发生MemStore刷盘场景:</p>
+<ol>
+<li>全局内存控制<br>当整个RegionServer中所有MemStore占用的内存达到阈值的时候,会触发刷盘的操作.</li>
+<li>MemStore达到上限<br>当MemStore占用内存的大小达到<code>hbase.hregion.memstore.flush.size</code>的值的时候会触发刷盘,默认128M.</li>
+<li>RegionServer的HLog数量达到上限<br>如果HLog太多的话,会导致故障恢复的时间过长,因此HBase会对HLog的最大个数做限制.<br>当达到HLog的最大个数的时候,会强制刷盘(<code>hbase.regionserver.max.logs</code>,默认32个).</li>
+<li>MemStore达到刷写时间间隔<br>当MemStore达到时间间隔的阈值,会触发刷写操作,<code>hbase.regionserver.optionalcacheflushinterval</code>.<br>默认3600000,即1小时,如果设置为0,则意味着关闭定时自动刷写.</li>
+<li>手工触发<br>可以通过hbase shell或者java api手工触发flush的操作.</li>
+<li>关闭RegionServer触发<br>当正常关闭RegionServer会触发刷盘的操作,全部数据刷盘后就不需要再使用HLog恢复数据</li>
+<li>Region使用HLog恢复完数据后触发<br>当RegionServer出现故障的时候,其上面的Region会迁移到其他正常的RegionServer上,在恢复完Region的数据后,会触发刷盘,当刷盘完成后才会提供给业务访问.</li>
+</ol>
+<h4 id="Region拆分"><a href="#Region拆分" class="headerlink" title="Region拆分"></a>Region拆分</h4><p>随着业务的发展,在表中的数据会越来越多,Region会越来越大,这样会严重影响数据读取效率.<br>所以当一个Region变的过大后,会触发Split操作,将一个Region分裂成两个子Region.<br>Region的拆分分为自动拆分和手动拆分两种.</p>
+<h5 id="Region拆分流程"><a href="#Region拆分流程" class="headerlink" title="Region拆分流程"></a>Region拆分流程</h5><ol>
+<li>RegionServer自身决定region拆分,并准备发起拆分.<br>作为第一步,它将在zookeeper的分区<code>/hbase/region-in-transition/region-name</code>下中创建一个znode.</li>
+<li>因为Master是父<code>region-in-transition</code>的znode节点的观察者,所以它知晓这个znode的建立.</li>
+<li>RegionServer在HDFS的父region目录下创建一个名为&quot;.splits&quot;的子目录.</li>
+<li>RegionServer关闭父region,强制cache刷盘并在本地数据结构中将这个region标记为offline.<br>此时,父region的client请求将抛出NotServingRegionException,client将重试.</li>
+<li>RegionServer为子region A和B分别在.splits目录下的region目录,并创建必要的数据结构.<br>然后拆分存储文件,即先在父region中创建每个存储文件两个reference文件.<br>这两个reference文件将指向父region文件.</li>
+<li>RegionServer在HDFS中创建实际的region目录,并为每个子region更新相应的reference文件.</li>
+<li>RegionServer发起Put请求到<code>.META.</code>表,并在<code>.META.</code>表中将父region设置为offline,表并添加有关子region的信息.<br>此时,<code>.META.</code>表中不会有每个子region的单独的条目.<br>client可以通过scan <code>.META.</code>表来知晓父region正在拆分,但是除非子region信息记录到<code>.META.</code>表,否则client是看不到子region的.<br>如果前面的Put操作成功写入到<code>.META.</code>表,则标志父region拆分完成.<br>如果RegionServer在put操作前返回失败,则Master和打开这个region的RegionServer将会清除region拆分的错误状态,如果<code>.META.</code>表成功更新,则region拆分状态会被Master向前翻.</li>
+<li>RegionServer打开子region并行地接受写入请求.</li>
+<li>RegionServer将子region A和B,以及它们的承载者信息分别添加到<code>.META.</code>表.<br>之后,client就可以发现新的region,并访问之.<br>client本地缓存<code>.META.</code>表信息,但是当它们访问RegionServer或者<code>.META.</code>表时,本地缓存失效,client从<code>.META.</code>表获取新的region信息.</li>
+<li>RegionServer更新zookeeper的<code>/hbase/region-in-transition/region-name</code>节点中的region状态到SPLIT,以便master感知其状态变化.<br>如果需要的话,负载器可以将子region自由地指定到其它region.</li>
+<li>region拆分完成后,其元数据和HDFS仍将包含对父region的引用.<br>这些引用将在子region压缩重写数据文件时被删除.<br>Master的GC任务会定期检查子region是否仍然引用父文件,如果没有,父region将被删除.</li>
+</ol>
+<p>为了减少对业务的影响,Region Split过程并不会真正将父Region中的HFile数据搬到子Region目录中.<br>Split过程仅仅是在子Region中创建了到父Region的HFile的引用文件,子Region1中的引用文件指向原HFile的上部,而子Region2的引用文件指向原HFile2的下部.<br>数据的真正搬迁工作是在Compaction过程中完成的.</p>
+<h4 id="Region合并"><a href="#Region合并" class="headerlink" title="Region合并"></a>Region合并</h4><p>Region的合并分为小合并(Minor Compaction)和大合并(Major Compaction).</p>
+<h5 id="小合并-Minor-Compaction"><a href="#小合并-Minor-Compaction" class="headerlink" title="小合并(Minor Compaction)"></a>小合并(Minor Compaction)</h5><p>当MemStore达到<code>hbase.hregion.memstore.flush.size</code>大小的时候会将数据刷写到磁盘,生成StoreFile.<br>随着业务的发展,数据量会越来越大,会产生很多的小文件,对于HBase的数据读取,如果要扫描大量的小文件,会导致性能很差,因此需要将这些小文件合并成一个大一点的文件.</p>
+<p>所谓的小合并,就是把多个小的StoreFile组合在一起,形成一个较大的StoreFile,通常是累积到3个SotreFile后执行.<br>通过<code>hbase.hstore.compationThreadhold</code>参数配置,小合并的步骤如下:</p>
+<ol>
+<li>分别读取出待合并的StoreFile文件的KeyValues,并顺序地写入到位于<code>/hbase/.tmp</code>目录下的临时文件中.</li>
+<li>将临时文件移动到对应的Region目录中.</li>
+<li>将合并的输入文件路径和输出路径封装成KeyValues写入WAL日志,并打上compaction标记,最后强制执行sync.</li>
+<li>将对应region数据目录下的合并的输入文件全部删除,合并完成.</li>
+</ol>
+<p>这种小合并一般速度比较快,对业务的影响也比较小.<br>本质上,小合并就是使用短时间的IO消耗以及带宽消耗换取后续查询的低延迟.<br>在Minor Compaction过程中,达到TTL(记录保留时间)的数据会被移除,但是由墓碑标记的记录不会被移除,因为墓碑标记可能存储在不同HFile中,合并可能会跨过部分墓碑标记.</p>
+<h5 id="大合并-Major-Compation"><a href="#大合并-Major-Compation" class="headerlink" title="大合并(Major Compation)"></a>大合并(Major Compation)</h5><p>大合并就是将一个Region下的所有StoreFile合并成一个大的StoreFile文件.<br>在大合并的过程中,之前删除的行和过期的版本都会被删除.<br>大合并一般一周做一次,由<code>hbase.hregion.majorcompaction</code>参数控制.<br>大合并的影响一般比较大,尽量避免同一时间多个Region进行合并,因此HBase通过<code>hbase.hregion.majorcompaction.jitter</code>参数来进行控制,用于防止多个Region同时进行大合并.</p>
+<h5 id="具体算法"><a href="#具体算法" class="headerlink" title="具体算法"></a>具体算法</h5><p><code>hbase.hregion.majorcompaction</code>参数的值乘以一个随机分数,这个随机分数不能超过<code>hbase.hregion.majorcompation.jitter</code>的值(默认为0.5).<br>通过<code>hbase.hregion.majorcompaction</code>参数的值加上或减去<code>hbase.hregion.majorcompaction</code>参数的值乘以一个随机分数的值就确定下一次大合并的时间区间.<br>可以通过<code>hbase.hregion.majorcompaction</code>设置为0来禁用major compaction.</p>
+<h4 id="RegionServer故障恢复"><a href="#RegionServer故障恢复" class="headerlink" title="RegionServer故障恢复"></a>RegionServer故障恢复</h4><p>在Zookeeper中保存着RegionServer的相关信息,在RegionServer启动的时候,会在Zookeeper中创建对应的临时节点.<br>RegionServer通过Socket和Zookeeper建立session会话,RegionServer会周期性的向Zookeeper发送ping消息包,以此说明自己还处于存活状态.<br>而Zookeeper收到ping包后,则会更新对应Session的超时时间.</p>
+<p>当Zookeeper超过session超时时间还未收到RegionServer的ping包,则Zookeeper会认为该RegionServer出现故障,Zookeeper会将该RegionServer对应的临时节点删除出,并通知Master,Master收到RegionServer挂掉的信息后就会启动数据恢复流程.</p>
+<h3 id="读写流程"><a href="#读写流程" class="headerlink" title="读写流程"></a>读写流程</h3><h4 id="Region寻址方式"><a href="#Region寻址方式" class="headerlink" title="Region寻址方式"></a>Region寻址方式</h4><ol>
+<li>首先Client请求Zookeeper,获取<code>hbase:meta</code>表所在的RegionServer的地址(<code>/hbase/meta-region-server</code>).</li>
+<li>Client连接hbase:meta表所在的RegionServer,获取需要访问的数据所在的RegionServer地址.<br>Client会将<code>hbase:meta</code>表的相关信息缓存起来,以便下一次能够快速访问.<br><code>hbase:meta</code>表存储了所有Region的行键范围信息,通过这个表可以查询出你要操作的Rowkey属于哪个Region的范围里面,以及这个Region是属于哪个RegionServer.</li>
+<li>Client请求数据所在的RegionServer,获取所需要的数据.</li>
+</ol>
+<h4 id="读流程"><a href="#读流程" class="headerlink" title="读流程"></a>读流程</h4><img src="/images/fly1420.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<ol>
+<li>Client通过Region寻址定位到需要访问的RegionServer.</li>
+<li>先从BlockCache中查找数据,找不到再去MemStore和StoreFile中查询数据.</li>
+</ol>
+<p>在对HBase进行写操作的时候,进行Put和Update操作的时候,其实是新增了一条数据,即使是在进行Delete操作的时候,也是新增一条数据,只是这条数据没有value,类型为DELETE,这条数据叫做墓碑标记(Tobstone).<br>数据的真正删除是在compact操作时进行的.</p>
+<h4 id="写流程"><a href="#写流程" class="headerlink" title="写流程"></a>写流程</h4><img src="/images/fly1419.png" style="margin-left: 0px; padding-bottom: 10px;">
+
+<ol>
+<li>Client通过Region寻址定位到需要访问的RegionServer.</li>
+<li>将更新写入WAL HLog,然后将更新写入MemStore,两者写入完成即返回ACK到Client.</li>
+<li>判断MemStore的大小是否达到阈值,是否需要flush为StoreFile.</li>
+</ol>
+<p>HBase使用MemStore和StoreFile存储对象表的更新,数据在更新的时候首先写入HLog和MemStore.<br>MemStore中的数据时排序的,当MemStore累积到一定阈值时,就会创建一个新的MemStore并将老的MemStore添加到flush队列,由单独的线程flush到磁盘上,成为一个StoreFile.<br>同时,系统会在Zookeeper中记录一个checkpoint,表示这个时刻之前的更新已经持久化了,当系统出现意外时,可能导致MemStore中的数据丢失,此时使用HLog来恢复chckpoint之后的数据.</p>
 <blockquote>
-<p>region关闭前的预刷写</p>
+<p>region关闭前的预刷写<br>当region被要求关闭时,首先检查memstore,大于<code>hbase.hregion.preclose.flush.size</code>(默认5MB)的memstore会刷写到磁盘,然后在最后一轮阻塞正常访问的刷写后关闭region.</p>
 </blockquote>
-<p>当region被要求关闭时,首先检查memstore,大于<code>hbase.hregion.preclose.flush.size</code>(默认5MB)的memstore会刷写到磁盘,然后在最后一轮阻塞正常访问的刷写后关闭region.</p>
 <h3 id="目录结构"><a href="#目录结构" class="headerlink" title="目录结构"></a>目录结构</h3><h4 id="zk目录结构"><a href="#zk目录结构" class="headerlink" title="zk目录结构"></a>zk目录结构</h4><p>可在hbase shell中执行<code>zk_dump</code>命令,或在zk cli中查看.</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">hbase(main):002:0&gt; zk_dump</span><br><span class="line">HBase is rooted at &#x2F;hbase</span><br><span class="line">Active master address: oceanbase004,16000,1611810141749</span><br><span class="line">Backup master addresses:</span><br><span class="line">Region server holding hbase:meta: oceanbase004,16020,1611810151896</span><br><span class="line">Region servers:</span><br><span class="line"> oceanbase004,16023,1611810184591</span><br><span class="line"> oceanbase004,16021,1611810173825</span><br><span class="line"> oceanbase004,16024,1611810186065</span><br><span class="line"> oceanbase004,16020,1611810151896</span><br><span class="line"> oceanbase004,16022,1611810183418</span><br><span class="line">&#x2F;hbase&#x2F;replication: </span><br><span class="line">&#x2F;hbase&#x2F;replication&#x2F;peers: </span><br><span class="line">&#x2F;hbase&#x2F;replication&#x2F;rs: </span><br><span class="line">&#x2F;hbase&#x2F;replication&#x2F;rs&#x2F;oceanbase004,16022,1611810183418: </span><br><span class="line">&#x2F;hbase&#x2F;replication&#x2F;rs&#x2F;oceanbase004,16020,1611810151896: </span><br><span class="line">&#x2F;hbase&#x2F;replication&#x2F;rs&#x2F;oceanbase004,16024,1611810186065: </span><br><span class="line">&#x2F;hbase&#x2F;replication&#x2F;rs&#x2F;oceanbase004,16021,1611810173825: </span><br><span class="line">&#x2F;hbase&#x2F;replication&#x2F;rs&#x2F;oceanbase004,16023,1611810184591: </span><br><span class="line">Quorum Server Statistics:</span><br><span class="line"> localhost:2181</span><br><span class="line">  Zookeeper version: 3.4.10-39d3a4f269333c922ed3db283be479f9deacaa0f, built on 03&#x2F;23&#x2F;2017 10:13 GMT</span><br><span class="line">  Clients:</span><br><span class="line">   &#x2F;127.0.0.1:34698[1](queued&#x3D;0,recved&#x3D;2427162,sent&#x3D;2427166)</span><br></pre></td></tr></table></figure>
 
