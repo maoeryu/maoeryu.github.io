@@ -30,18 +30,18 @@
 <meta property="og:site_name" content="FlyingPig">
 <meta property="og:description" content="读取数据时,首先到memestore上读数据,找不到再到blockcahce上找数据,再查不到则到磁盘查找,并把读入的数据同时放入blockcache. HBase在实现中提供了两种缓存结构:MemStore&#x2F;BlockCache. 其中MemStore称为写缓存,HBase执行写操作首先会将数据写入MemStore,并顺序写入HLog,等满足一定条件后统一将MemStore中数据刷新到磁盘,这种">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://maoeryu.github.io/images/hbb11.png">
-<meta property="og:image" content="https://maoeryu.github.io/images/hbb12.png">
-<meta property="og:image" content="https://maoeryu.github.io/images/hbb13.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1421.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1422.png">
+<meta property="og:image" content="https://maoeryu.github.io/images/fly1423.png">
 <meta property="og:image" content="https://maoeryu.github.io/images/hbb1.png">
 <meta property="og:image" content="https://maoeryu.github.io/images/hbb2.png">
 <meta property="og:image" content="https://maoeryu.github.io/images/hbb3.png">
 <meta property="article:published_time" content="2022-08-01T16:00:00.000Z">
-<meta property="article:modified_time" content="2023-02-14T03:44:07.522Z">
+<meta property="article:modified_time" content="2023-02-24T06:53:14.119Z">
 <meta property="article:author" content="maoeryu">
 <meta property="article:tag" content="hbase">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://maoeryu.github.io/images/hbb11.png">
+<meta name="twitter:image" content="https://maoeryu.github.io/images/fly1421.png">
 
 
 <link rel="canonical" href="https://maoeryu.github.io/2022/08/02/hbase%20blockcache/">
@@ -265,7 +265,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">Edited on</span>
-        <time title="Modified: 2023-02-14 11:44:07" itemprop="dateModified" datetime="2023-02-14T11:44:07+08:00">2023-02-14</time>
+        <time title="Modified: 2023-02-24 14:53:14" itemprop="dateModified" datetime="2023-02-24T14:53:14+08:00">2023-02-24</time>
       </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -308,14 +308,40 @@
 <h4 id="一级和二级缓存机制-RawL1-L2"><a href="#一级和二级缓存机制-RawL1-L2" class="headerlink" title="一级和二级缓存机制(RawL1+L2)"></a>一级和二级缓存机制(RawL1+L2)</h4><p>这个机制把元数据和列族信息缓存在LruBlockCache(一级缓存),然后从LruBlockCache读取数据缓存在BucketCache(二级缓存),如果要启动这个缓存机制,要先在hbase-site.xml中配置<code>hbase.bucketcache.combinedcache.enabled=false</code>,这个参数默认是true.</p>
 <p>从HBase2.0.0开始,L1与L2的概念便被弃用,第三种缓存方式只能在hbase2.0.0之前,可以设置.</p>
 <h3 id="缓存类型"><a href="#缓存类型" class="headerlink" title="缓存类型"></a>缓存类型</h3><h4 id="LRUBlockCache"><a href="#LRUBlockCache" class="headerlink" title="LRUBlockCache"></a>LRUBlockCache</h4><p>HBase默认的BlockCache实现方案.<br>Block数据块都存储在JVM heap内,由JVM进行垃圾回收管理.<br>它将内存从逻辑上分为了三块:<br>single-access区<br>mutil-access区<br>in-memory区,<br>分别占到整个BlockCache大小的25%/50%/25%.<br>一次随机读中,一个Block块从HDFS中加载出来之后首先放入signle区,<br>后续如果有多次请求访问到这块数据的话,就会将这块数据移到mutil-access区.<br>而in-memory区表示数据可以常驻内存,一般用来存放访问频繁/数据量小的数据,比如元数据,<br>用户也可以在建表的时候通过设置列族属性IN-MEMORY=true将此列族放入in-memory区.<br>很显然,这种设计策略类似于JVM中young区/old区/perm区.<br>无论哪个区,系统都会采用严格的Least-Recently-Used算法,当BlockCache总量达到一定阈值之后就会启动淘汰机制,最少使用的Block会被置换出来,为新加载的Block预留空间.</p>
-<img src="/images/hbb11.png" style="margin-left: 0px; padding-bottom: 10px;">
-
+<blockquote>
+<p><font color="red">Default LRUCache, L1 only block cache</font> <code>hbase.bucketcache.ioengine=NULL</code><br><img src="/images/fly1421.png" width="500" style="margin-left: 0px; padding-bottom: 10px;"></p>
+</blockquote>
+<ol>
+<li>20% minimum reserved for operations and rpc call queues</li>
+<li><code>hbase.regionserver.global.memstore.size</code>: default is 0.4, which means 40%</li>
+<li><code>hbase.regionserver.global.memstore.size</code> + <code>hfile.block.cache.size</code> ≤0.80, which means 80%</li>
+<li><code>hfile.block.cache.size</code>: default is 0.4, which means 40%</li>
+<li>slack reserved for HDFS SCR/NIO: number of open HFiles * <code>hbase.dfs.client.read.shortcircuit.buffer.size</code>, where <code>hbase.dfs.client.read.shortcircuit.buffer.size</code> is set to 128k.</li>
+</ol>
 <h4 id="BucketCache"><a href="#BucketCache" class="headerlink" title="BucketCache"></a>BucketCache</h4><p>BucketCache通过配置可以工作在三种模式下:heap/offheap/file.<br>无论工作在那种模式下,BucketCache都会申请许多带有固定大小标签的Bucket,和SlabCache一样,一种Bucket存储一种指定BlockSize的数据块,但和SlabCache不同的是,BucketCache会在初始化的时候申请14个不同大小的Bucket,而且即使在某一种Bucket空间不足的情况下,系统也会从其他Bucket空间借用内存使用,不会出现内存使用率低的情况.<br>接下来再来看看不同工作模式,heap模式表示这些Bucket是从JVM Heap中申请,offheap模式使用DirectByteBuffer技术实现堆外内存存储管理,而file模式使用类似SSD的高速缓存文件存储数据块.</p>
-<img src="/images/hbb12.png" style="margin-left: 0px; padding-bottom: 10px;">
-
+<blockquote>
+<p><font color="red">Default LRUCache, L1 only block cache</font> <code>hbase.bucketcache.ioengine=heap</code><br><img src="/images/fly1422.png" width="500" style="margin-left: 0px; padding-bottom: 10px;"></p>
+</blockquote>
+<ol>
+<li>20% minimum reserved for operations and rpc call queues</li>
+<li><code>hbase.regionserver.global.memstore.size</code>: default is 0.4, which means 40%</li>
+<li><code>hbase.regionserver.global.memstore.size</code> + <code>hfile.block.cache.size</code> ≤0.80, which means 80%</li>
+<li><code>hfile.block.cache.size</code>: default is 0.4, which means 40%</li>
+<li>slack reserved for HDFS SCR/NIO: number of open HFiles * <code>hbase.dfs.client.read.shortcircuit.buffer.size</code>, where <code>hbase.dfs.client.read.shortcircuit.buffer.size</code> is set to 128k.</li>
+<li><code>hbase.bucketcache.size</code>: default is 0.0<br>If <code>hbase.bucketcache.size</code> is float &lt;1, it represents the percentage of total heap size.<br>If <code>hbase.bucketcache.size</code> is ≥1, it represents the absolute value in MB. It must be &lt; <code>HBASE_OFFHEAPSIZE</code></li>
+</ol>
 <h4 id="CombinedBlockCache-BucketCache-LRUBlockCache"><a href="#CombinedBlockCache-BucketCache-LRUBlockCache" class="headerlink" title="CombinedBlockCache(BucketCache+LRUBlockCache)"></a>CombinedBlockCache(BucketCache+LRUBlockCache)</h4><p>实际实现中,HBase将BucketCache和LRUBlockCache搭配使用,称为CombinedBlockCache.<br>和DoubleBlockCache不同,系统在LRUBlockCache中主要存储Index Block和Bloom Block,而将Data Block存储在BucketCache中.<br>因此一次随机读需要首先在LRUBlockCache中查到对应的Index Block,然后再到BucketCache查找对应数据块.<br>BucketCache通过更加合理的设计修正了SlabCache的弊端,极大降低了JVM GC对业务请求的实际影响,但也存在一些问题,比如使用堆外内存会存在拷贝内存的问题,一定程度上会影响读写性能.</p>
-<img src="/images/hbb13.png" style="margin-left: 0px; padding-bottom: 10px;">
-
+<blockquote>
+<p><font color="red">Default LRUCache, L1 only block cache</font> <code>hbase.bucketcache.ioengine=offheap</code><br><img src="/images/fly1423.png" width="500" style="margin-left: 0px; padding-bottom: 10px;"></p>
+</blockquote>
+<ol>
+<li>20% minimum reserved for operations and rpc call queues</li>
+<li><code>hbase.regionserver.global.memstore.size</code>: default is 0.4, which means 40%</li>
+<li><code>hbase.regionserver.global.memstore.size</code> + <code>hfile.block.cache.size</code> ≤0.80, which means 80%</li>
+<li><code>hfile.block.cache.size</code>: default is 0.4 which means 40%</li>
+<li>slack reserved for HDFS SCR/NIO: number of open HFiles * <code>hbase.dfs.client.read.shortcircuit.buffer.size</code>, where <code>hbase.dfs.client.read.shortcircuit.buffer.size</code> is set to 128k.</li>
+<li><code>hbase.bucketcache.size</code>: default is 0.0<br>If <code>hbase.bucketcache.size</code> is float &lt;1, it represents the percentage of total heap size.<br>If <code>hbase.bucketcache.size</code> is ≥1, it represents the absolute value in MB.</li>
+</ol>
 <h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>1)在&quot;缓存全部命中&quot;场景下,LRU可谓完胜CBC.因此如果总数据量相比JVM内存容量很小的时候,选择LRU.<br>2)在所有其他存在缓存未命中情况的场景下,LRU的GC性能几乎只有CBC的1/3,而吞吐量/读写延迟/IO/CPU等指标两者基本相当,因此建议选择CBC.</p>
 <blockquote>
 <p>理论解释</p>
@@ -395,8 +421,8 @@
 
           <div class="post-nav">
             <div class="post-nav-item">
-                <a href="/2022/08/02/hbase%20memstore%20flush/" rel="prev" title="hbase memstore flush">
-                  <i class="fa fa-chevron-left"></i> hbase memstore flush
+                <a href="/2022/08/02/hbase%20gc/" rel="prev" title="hbase gc">
+                  <i class="fa fa-chevron-left"></i> hbase gc
                 </a>
             </div>
             <div class="post-nav-item">
